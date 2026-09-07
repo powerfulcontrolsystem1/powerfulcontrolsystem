@@ -1,0 +1,53 @@
+# Descripción del proyecto PCS
+
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+## Alcance revisado y límites
+
+- Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.
+- El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente.
+
+Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
+
+## Propósito y alcance
+
+PCS es una plataforma POS/ERP multiempresa con backend Go, PostgreSQL y web
+HTML/CSS/JavaScript. Integra operación comercial, estaciones, inventario, compras,
+finanzas, documentos e integraciones externas. El catálogo de páginas no demuestra
+que todas las integraciones ni requisitos sectoriales estén completos.
+
+## Actores y responsabilidades
+
+| Actor | Alcance |
+| --- | --- |
+| Administrador de plataforma | Gobierno global y funciones super autorizadas, con TOTP |
+| Administrador/operador de empresa | Empresa, rol efectivo, licencia y permisos de la operación |
+| Cliente público | Catálogo y operación pública delimitada; no recibe permisos administrativos |
+| Worker/dispositivo/proveedor | Identidad técnica y contrato cerrado; no elige libremente tenant |
+| Ingeniería y operación | Cambios revisables, datos aislados y evidencia del candidato |
+
+## Límites de producto
+
+- Una empresa no accede a datos de otra por conocer un identificador.
+- Vida personal añade privacidad por usuario y no crea operaciones comerciales.
+- Una plantilla especializa el núcleo; no duplica el sistema financiero/comercial.
+- Facturación depende de país, empresa y familia; configuración EC/PA no habilita emisión.
+- Una orden pagada, XML o documento local no demuestra aprobación de una pasarela,
+  aceptación DIAN, entrega de correo ni acción física.
+- La fachada móvil existe; la distribución de una aplicación nativa requiere evidencia propia.
+
+## Lectura de ingeniería
+
+[Arquitectura](arquitectura/descripcion_arquitectura.md),
+[requisitos](requisitos/especificacion_y_trazabilidad.md),
+[módulos](mapa_modulos.md), [flujos](flujos_operativos.md),
+[datos](estructura_bd.md), [permisos](matriz_roles_permisos_pos_multiempresa.md),
+[incorporación](desarrollo/incorporacion.md), [estado de entrega](estado_actual.md).
+
+La lectura operativa debe partir de estas fuentes vigentes y del código actual.
+
+## Fuentes y aceptación de la revisión
+
+[AGENTS.md](../AGENTS.md), [main.go](../backend/main.go), [descripcion_arquitectura.md](arquitectura/descripcion_arquitectura.md).
+
+Requisitos aplicables: PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

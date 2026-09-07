@@ -1,0 +1,59 @@
+:root {
+  color-scheme: dark;
+  --main-color: #e5eefb;
+  --main-bg-color: #06111f;
+  --main-bg-image: none;
+  --main-border-color: #213147;
+  --main-link-color: #38bdf8;
+  --main-link-hover-color: #7dd3fc;
+  --main-selection-bg-color: #0e7490;
+  --main-selection-color: #f8fafc;
+  --panel-bg-color: #0b1726;
+  --panel-border-color: #213147;
+  --toolbar-bg-color: #0f1c2e;
+  --toolbar-border-color: #213147;
+  --button-bg-color: #132238;
+  --button-border-color: #2e425f;
+  --button-color: #e5eefb;
+  --button-hover-bg-color: #17314f;
+  --button-hover-border-color: #38bdf8;
+  --button-primary-bg-color: #0284c7;
+  --button-primary-border-color: #38bdf8;
+  --button-primary-color: #f8fafc;
+  --input-bg-color: #07111f;
+  --input-border-color: #2e425f;
+  --input-color: #f8fafc;
+  --folder-list-bg-color: #07111f;
+  --message-list-bg-color: #0b1726;
+  --message-list-border-color: #213147;
+  --message-list-selected-bg-color: #123a5a;
+  --message-list-hover-bg-color: #10243a;
+  --message-view-bg-color: #0b1726;
+  --message-view-color: #e5eefb;
+  --dialog-bg-color: #0b1726;
+  --dialog-border-color: #2e425f;
+}
+
+body,
+.app,
+.b-content {
+  background: #06111f !important;
+  color: #e5eefb !important;
+}
+
+.b-toolbar,
+.b-folders,
+.b-message-list,
+.b-message-view,
+.b-settings-content {
+  background-color: #0b1726 !important;
+  border-color: #213147 !important;
+}
+
+input,
+textarea,
+select {
+  background-color: #07111f !important;
+  border-color: #2e425f !important;
+  color: #f8fafc !important;
+}

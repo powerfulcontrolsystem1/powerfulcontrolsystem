@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Logo sistema para pymes</title>
+  <desc id="desc">Logo con edificio, grafica y maletin sobre fondo verde corporativo.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#163b2f"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d9fff6"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+  <path d="M72 196V80c0-12 10-22 22-22h68c12 0 22 10 22 22v116" fill="url(#panel)"/>
+  <path d="M96 96h18M142 96h18M96 124h18M142 124h18" stroke="#0f766e" stroke-width="10" stroke-linecap="round"/>
+  <rect x="91" y="154" width="74" height="44" rx="12" fill="#ffe7bf"/>
+  <path d="M110 154v-10c0-7 5-12 12-12h12c7 0 12 5 12 12v10" stroke="#b45309" stroke-width="8" stroke-linecap="round"/>
+  <path d="M84 214h88" stroke="#8ff2df" stroke-width="12" stroke-linecap="round"/>
+  <path d="M190 84v54h-54" fill="none" stroke="#8ff2df" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M142 132l16-18 12 10 20-28" fill="none" stroke="#8ff2df" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración - Menú</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="admin-empresa-shell" data-auto-estacion-labels="true">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <h2>Configuración empresarial</h2>
+      <ul class="nav admin-nav-grouped" id="configuracionSidebarNav">
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Base empresarial</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionMain" href="/administrar_empresa/configuracion/productos_pedidos.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Productos y pedidos</a></li>
+            <li><a id="linkConfiguracionIdentidadVisual" href="/administrar_empresa/configuracion/identidad_visual.html" target="configuracionContentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Identidad visual</a></li>
+            <li><a id="linkConfiguracionEmailCorporativo" href="/administrar_empresa/configuracion/email_corporativo.html" target="configuracionContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Email corporativo</a></li>
+            <li><a id="linkConfiguracionPanelInicio" href="/administrar_empresa/configuracion/panel_inicio.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Panel de inicio</a></li>
+            <li><a id="linkConfiguracionMenuVisual" href="/administrar_empresa/configuracion/menu_visual.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Menu visible</a></li>
+            <li><a id="linkConfiguracionAvanzada" href="/administrar_empresa/configuracion/formato_monetario.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Formato monetario</a></li>
+            <li><a id="linkConfiguracionImpresora" href="/administrar_empresa/configuracion_impresora.html" target="configuracionContentFrame"><img class="icon" src="/img/print-color.svg" alt="">Impresora</a></li>
+            <li><a id="linkConfiguracionPermisos" href="/administrar_empresa/configuracion_permisos.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Permisos</a></li>
+            <li><a id="linkPlantillasIntegracion" href="/administrar_empresa/plantillas_integracion.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Adaptacion por tipo</a></li>
+            <li><a id="linkConfiguracionGuiada" href="/administrar_empresa/configuracion_guiada.html" target="configuracionContentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Configuracion guiada</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Chat IA</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionChatFlotante" href="/administrar_empresa/configuracion_chat_flotante.html" target="configuracionContentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Configurar chat y robot</a></li>
+            <li><a id="linkConfiguracionIAPropia" href="/administrar_empresa/configuracion_ia_propia.html" target="configuracionContentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">OpenAI propio</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Experiencia y multimedia</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkRadioOnline" href="/administrar_empresa/radio_online.html" target="configuracionContentFrame"><img class="icon" src="/img/play.svg" alt="">Radio online</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Ventas y cobro</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionCobroOperativo" href="/administrar_empresa/configuracion/cobro_operativo.html" target="configuracionContentFrame"><img class="icon" src="/img/money.svg" alt="">Cobro operativo</a></li>
+            <li><a id="linkConfiguracionRolCajero" href="/administrar_empresa/configuracion_rol_cajero.html" target="configuracionContentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Rol cajero</a></li>
+            <li><a id="linkConfiguracionCarritoEmpresa" href="/administrar_empresa/configuracion_carrito_de_compra_empresa.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carrito unificado</a></li>
+            <li><a id="linkCarritoCompras" href="/administrar_empresa/carrito_de_compras.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carritos</a></li>
+            <li><a id="linkVentaDirecta" href="/administrar_empresa/carrito_de_compras.html?modo=venta_directa&amp;perm_page=linkVentaDirecta" target="configuracionContentFrame"><img class="icon" src="/img/money.svg" alt="">Venta directa</a></li>
+            <li><a id="linkVentaPublica" href="/administrar_empresa/venta_publica.html" target="configuracionContentFrame"><img class="icon" src="/img/ecommerce.svg" alt="">Venta pública</a></li>
+            <li><a id="linkPropinas" href="/administrar_empresa/propinas.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Propinas</a></li>
+            <li><a id="linkComisiones" href="/administrar_empresa/comisiones.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Comisiones</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Estaciones, sensores y tarifas</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfigEstaciones" href="/administrar_empresa/configuracion_de_estaciones.html" target="configuracionContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Configuración de estaciones</a></li>
+            <li><a id="linkTarifasPorMinutos" href="/administrar_empresa/tarifas_por_minutos.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por minutos</a></li>
+            <li><a id="linkTarifasPorDia" href="/administrar_empresa/tarifas_por_dia.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por día</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Configuración de hotel</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkTarifasHotel" href="/administrar_empresa/tarifas_de_hotel.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas de hotel</a></li>
+            <li><a id="linkTutorialTarifasHotel" href="/administrar_empresa/tutorial_tarifas_hotel.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Tutorial tarifas de hotel</a></li>
+            <li><a id="linkHotelTarjetasAcceso" href="/administrar_empresa/hotel_tarjetas_acceso.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-security.svg" alt="">Tarjetas habitación</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Configuración de motel</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkTarifasMotel" href="/administrar_empresa/tarifas_de_motel.html" target="configuracionContentFrame"><img class="icon" src="/img/money.svg" alt="">Tarifas de motel</a></li>
+            <li><a id="linkTutorialTarifasMotel" href="/administrar_empresa/tutorial_tarifas_motel.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Tutorial tarifas de motel</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Fiscal y automatización</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkPerfilTributarioColombia" href="/administrar_empresa/configuracion/perfil_tributario_colombia.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Perfil tributario Colombia</a></li>
+            <li><a id="linkConfiguracionReporteCorte" href="/administrar_empresa/configuracion/corte_de_caja.html" target="configuracionContentFrame"><img class="icon" src="/img/report.svg" alt="">Reporte de corte</a></li>
+            <li id="menuFrecuenciaFE" hidden><a id="linkFrecuenciaFE" href="/administrar_empresa/frecuencia_fe.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Frecuencia FE</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Continuidad y pagos</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionBackupsPasarelas" href="/administrar_empresa/configuracion/respaldo.html" target="configuracionContentFrame"><img class="icon" src="/img/backup.svg" alt="">Respaldo</a></li>
+            <li><a id="linkConfiguracionPasarelasPago" href="/administrar_empresa/configuracion/pasarelas_pago.html" target="configuracionContentFrame"><img class="icon" src="/img/ecommerce.svg" alt="">Pasarelas de pago</a></li>
+            <li><a id="linkConfiguracionIntegraciones" href="/administrar_empresa/configuracion_integraciones.html" target="configuracionContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Integraciones</a></li>
+          </ul>
+        </li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="configuracionSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <iframe name="configuracionContentFrame" id="configuracionContentFrame" src="/administrar_empresa/configuracion/productos_pedidos.html" title="Contenido de configuración" class="admin-empresa-frame"></iframe>
+    </main>
+  </div>
+  <script src="/js/estaciones_labels.js"></script>
+  <script src="/js/administrar_empresa.js"></script>
+  <script>
+    (function openRequestedConfigSection(){
+      var frame = document.getElementById('configuracionContentFrame');
+      if (!frame) return;
+
+      function getRequestedSection() {
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var requested = String(params.get('open') || '').trim().toLowerCase();
+          if (requested) return requested;
+        } catch (e) {}
+        return String((window.location.hash || '').replace(/^#/, '')).trim().toLowerCase();
+      }
+
+      var requested = getRequestedSection();
+      var sectionRoutes = {
+        general: ['linkConfiguracionMain', '/administrar_empresa/configuracion/productos_pedidos.html'],
+        productos: ['linkConfiguracionMain', '/administrar_empresa/configuracion/productos_pedidos.html'],
+        productos_pedidos: ['linkConfiguracionMain', '/administrar_empresa/configuracion/productos_pedidos.html'],
+        identidad: ['linkConfiguracionIdentidadVisual', '/administrar_empresa/configuracion/identidad_visual.html'],
+        identidad_visual: ['linkConfiguracionIdentidadVisual', '/administrar_empresa/configuracion/identidad_visual.html'],
+        email: ['linkConfiguracionEmailCorporativo', '/administrar_empresa/configuracion/email_corporativo.html'],
+        correo: ['linkConfiguracionEmailCorporativo', '/administrar_empresa/configuracion/email_corporativo.html'],
+        email_corporativo: ['linkConfiguracionEmailCorporativo', '/administrar_empresa/configuracion/email_corporativo.html'],
+        correo_corporativo: ['linkConfiguracionEmailCorporativo', '/administrar_empresa/configuracion/email_corporativo.html'],
+        menu: ['linkConfiguracionMenuVisual', '/administrar_empresa/configuracion/menu_visual.html'],
+        menu_visible: ['linkConfiguracionMenuVisual', '/administrar_empresa/configuracion/menu_visual.html'],
+        visibilidad_menu: ['linkConfiguracionMenuVisual', '/administrar_empresa/configuracion/menu_visual.html'],
+        cobro: ['linkConfiguracionCobroOperativo', '/administrar_empresa/configuracion/cobro_operativo.html'],
+        cobro_operativo: ['linkConfiguracionCobroOperativo', '/administrar_empresa/configuracion/cobro_operativo.html'],
+        cajero: ['linkConfiguracionRolCajero', '/administrar_empresa/configuracion_rol_cajero.html'],
+        rol_cajero: ['linkConfiguracionRolCajero', '/administrar_empresa/configuracion_rol_cajero.html'],
+        configuracion_rol_cajero: ['linkConfiguracionRolCajero', '/administrar_empresa/configuracion_rol_cajero.html'],
+        corte: ['linkConfiguracionReporteCorte', '/administrar_empresa/configuracion/corte_de_caja.html'],
+        corte_caja: ['linkConfiguracionReporteCorte', '/administrar_empresa/configuracion/corte_de_caja.html'],
+        reporte_corte: ['linkConfiguracionReporteCorte', '/administrar_empresa/configuracion/corte_de_caja.html'],
+        formato: ['linkConfiguracionAvanzada', '/administrar_empresa/configuracion/formato_monetario.html'],
+        formato_monetario: ['linkConfiguracionAvanzada', '/administrar_empresa/configuracion/formato_monetario.html'],
+        panel_inicio: ['linkConfiguracionPanelInicio', '/administrar_empresa/configuracion/panel_inicio.html'],
+        panel_de_inicio: ['linkConfiguracionPanelInicio', '/administrar_empresa/configuracion/panel_inicio.html'],
+        perfil_tributario: ['linkPerfilTributarioColombia', '/administrar_empresa/configuracion/perfil_tributario_colombia.html'],
+        perfil_tributario_colombia: ['linkPerfilTributarioColombia', '/administrar_empresa/configuracion/perfil_tributario_colombia.html'],
+        tributario_colombia: ['linkPerfilTributarioColombia', '/administrar_empresa/configuracion/perfil_tributario_colombia.html'],
+        respaldo: ['linkConfiguracionBackupsPasarelas', '/administrar_empresa/configuracion/respaldo.html'],
+        backup: ['linkConfiguracionBackupsPasarelas', '/administrar_empresa/configuracion/respaldo.html'],
+        pasarelas: ['linkConfiguracionPasarelasPago', '/administrar_empresa/configuracion/pasarelas_pago.html'],
+        pasarelas_pago: ['linkConfiguracionPasarelasPago', '/administrar_empresa/configuracion/pasarelas_pago.html'],
+        chat_flotante: ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
+        'chat-flotante': ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
+        chat_robot: ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
+        ia_propia: ['linkConfiguracionIAPropia', '/administrar_empresa/configuracion_ia_propia.html'],
+        openai_propio: ['linkConfiguracionIAPropia', '/administrar_empresa/configuracion_ia_propia.html'],
+        'chat-robot': ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
+        guiada: ['linkConfiguracionGuiada', '/administrar_empresa/configuracion_guiada.html'],
+        configuracion_guiada: ['linkConfiguracionGuiada', '/administrar_empresa/configuracion_guiada.html'],
+        integraciones: ['linkConfiguracionIntegraciones', '/administrar_empresa/configuracion_integraciones.html']
+      };
+      var route = sectionRoutes[requested];
+      if (route) {
+        frame.src = route[1];
+        var link = document.getElementById(route[0]);
+        if (link) {
+          link.classList.add('active');
+        }
+      }
+    })();
+
+    (function bindFrecuenciaFPMenuVisibility(){
+      var item = document.getElementById('menuFrecuenciaFE');
+      if (!item || item.dataset.pcsBound === '1') return;
+      item.dataset.pcsBound = '1';
+
+      function getEmpresaIdFromUrl() {
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          return String(params.get("empresa_id") || params.get("id") || "").trim();
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function setVisible(ok) {
+        item.hidden = !ok;
+      }
+
+      async function check() {
+        try {
+          var empresaId = getEmpresaIdFromUrl();
+          var url = '/api/empresa/frecuencia_fp/permitido';
+          if (empresaId) {
+            url += '?empresa_id=' + encodeURIComponent(empresaId);
+          }
+          var res = await fetch(url, { method: 'GET' });
+          var txt = await res.text();
+          var data = {};
+          try { data = txt ? JSON.parse(txt) : {}; } catch (e) { data = {}; }
+          if (!res.ok) return setVisible(false);
+          setVisible(!!(data && data.allowed));
+        } catch (e) {
+          setVisible(false);
+        }
+      }
+
+      check();
+    })();
+  </script>
+</body>
+</html>

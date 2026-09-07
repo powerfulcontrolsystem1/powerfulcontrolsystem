@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Frecuencia FE</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body class="admin-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Frecuencia FE</h1>
+        <p class="form-help page-header-lead">Contenido disponible solo para administradores autorizados.</p>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2>Automatización por frecuencia</h2>
+      <p class="form-help">Configura cuántas ventas deben salir sin factura electrónica entre cada emisión automática. Regla: <b>1 con FE y N sin FE</b>.</p>
+
+      <form id="freqForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <div class="form-help"><label><input id="freqEnabled" type="checkbox"> Activar facturación automática por frecuencia</label></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Ventas sin FE entre cada factura</label>
+            <input id="freqCadaNNo" type="number" min="0" max="1000" step="1" class="form-input" value="0">
+            <div class="form-help">Ejemplo: 3 = se emite 1 factura electrónica y luego 3 ventas sin FE (ciclo 4).</div>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Posición actual del ciclo</label>
+            <input id="freqContador" type="number" class="form-input" readonly value="0">
+            <div class="form-help">0 significa que la próxima venta elegible emite FE.</div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar frecuencia</button>
+          <button type="button" id="btnReload" class="btn secondary">Recargar</button>
+        </div>
+        <div id="msg" class="form-help"></div>
+      </form>
+    </section>
+  </div>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/administrar_empresa/frecuencia_fe.js?v=20260813-p110-csp"></script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+(function () {
+  var form = document.getElementById('adminRegisterForm');
+  if (!form) {
+    return;
+  }
+
+  var emailInput = document.getElementById('registerEmail');
+  var nameInput = document.getElementById('registerName');
+  var phoneInput = document.getElementById('registerPhone');
+  var countryInput = document.getElementById('registerCountry');
+  var cityInput = document.getElementById('registerCity');
+  var cityCustomInput = document.getElementById('registerCityCustom');
+  var countryHelp = document.getElementById('registerCountryHelp');
+  var passwordInput = document.getElementById('registerPassword');
+  var passwordConfirmInput = document.getElementById('registerPasswordConfirm');
+  var submitButton = document.getElementById('adminRegisterBtn');
+  var messageBox = document.getElementById('adminRegisterMessage');
+  var recaptchaManager = window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminRegisterRecaptcha', action: 'admin_register' }) : null;
+  var queryParams = new URLSearchParams(window.location.search || '');
+  var invitationToken = normalize(queryParams.get('invitation_token'));
+
+  var countries = [
+    { code: 'AR', name: 'Argentina' },
+    { code: 'BO', name: 'Bolivia' },
+    { code: 'BR', name: 'Brasil' },
+    { code: 'CA', name: 'Canada' },
+    { code: 'CL', name: 'Chile' },
+    { code: 'CO', name: 'Colombia' },
+    { code: 'CR', name: 'Costa Rica' },
+    { code: 'CU', name: 'Cuba' },
+    { code: 'DO', name: 'Republica Dominicana' },
+    { code: 'EC', name: 'Ecuador' },
+    { code: 'SV', name: 'El Salvador' },
+    { code: 'ES', name: 'Espana' },
+    { code: 'US', name: 'Estados Unidos' },
+    { code: 'GT', name: 'Guatemala' },
+    { code: 'HN', name: 'Honduras' },
+    { code: 'MX', name: 'Mexico' },
+    { code: 'NI', name: 'Nicaragua' },
+    { code: 'PA', name: 'Panama' },
+    { code: 'PY', name: 'Paraguay' },
+    { code: 'PE', name: 'Peru' },
+    { code: 'PR', name: 'Puerto Rico' },
+    { code: 'UY', name: 'Uruguay' },
+    { code: 'VE', name: 'Venezuela' },
+    { code: 'DE', name: 'Alemania' },
+    { code: 'FR', name: 'Francia' },
+    { code: 'GB', name: 'Reino Unido' },
+    { code: 'IT', name: 'Italia' },
+    { code: 'PT', name: 'Portugal' },
+    { code: 'NL', name: 'Países Bajos' },
+    { code: 'JP', name: 'Japon' },
+    { code: 'AU', name: 'Australia' }
+  ];
+  var timezoneCountryMap = {
+    'America/Argentina/Buenos_Aires': 'AR',
+    'America/Bogota': 'CO',
+    'America/Caracas': 'VE',
+    'America/Costa_Rica': 'CR',
+    'America/El_Salvador': 'SV',
+    'America/Guatemala': 'GT',
+    'America/Guayaquil': 'EC',
+    'America/Havana': 'CU',
+    'America/Lima': 'PE',
+    'America/Managua': 'NI',
+    'America/Mexico_City': 'MX',
+    'America/Montevideo': 'UY',
+    'America/Panama': 'PA',
+    'America/Port-au-Prince': 'DO',
+    'America/Puerto_Rico': 'PR',
+    'America/Santiago': 'CL',
+    'America/Santo_Domingo': 'DO',
+    'America/Sao_Paulo': 'BR',
+    'America/Tegucigalpa': 'HN',
+    'America/Asuncion': 'PY',
+    'Europe/Madrid': 'ES',
+    'Europe/Lisbon': 'PT',
+    'Europe/London': 'GB',
+    'Europe/Paris': 'FR',
+    'Europe/Berlin': 'DE',
+    'Europe/Rome': 'IT',
+    'Europe/Amsterdam': 'NL',
+    'Asia/Tokyo': 'JP',
+    'Australia/Sydney': 'AU'
+  };
+  var latinAmericaCities = {
+    AR: ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata', 'Mar del Plata', 'Salta', 'Santa Fe', 'Neuquén'],
+    BO: ['La Paz', 'Santa Cruz de la Sierra', 'Cochabamba', 'Sucre', 'Oruro', 'Tarija', 'Potosí', 'Trinidad'],
+    BR: ['São Paulo', 'Río de Janeiro', 'Brasília', 'Salvador', 'Fortaleza', 'Belo Horizonte', 'Manaos', 'Curitiba', 'Recife'],
+    CL: ['Santiago', 'Valparaíso', 'Viña del Mar', 'Concepción', 'Antofagasta', 'Temuco', 'Iquique', 'Puerto Montt', 'La Serena'],
+    CO: ['Arauca', 'Armenia', 'Barrancabermeja', 'Barranquilla', 'Bello', 'Bogotá, D. C.', 'Bucaramanga', 'Buenaventura', 'Cali', 'Cartagena', 'Cartago', 'Caucasia', 'Chía', 'Ciénaga', 'Cúcuta', 'Dosquebradas', 'Duitama', 'Envigado', 'Florencia', 'Floridablanca', 'Fusagasugá', 'Girardot', 'Girón', 'Ibagué', 'Ipiales', 'Itagüí', 'Jamundí', 'Maicao', 'Manizales', 'Medellín', 'Montería', 'Neiva', 'Palmira', 'Pamplona', 'Pasto', 'Pereira', 'Piedecuesta', 'Pitalito', 'Popayán', 'Puerto Carreño', 'Puerto Inírida', 'Puerto Asís', 'Quibdó', 'Riohacha', 'Rionegro', 'Sabaneta', 'San Andrés', 'San José del Guaviare', 'Santa Marta', 'Sincelejo', 'Soacha', 'Sogamoso', 'Tuluá', 'Tunja', 'Turbo', 'Valledupar', 'Villavicencio', 'Yopal', 'Zipaquirá'],
+    CR: ['San José', 'Alajuela', 'Cartago', 'Heredia', 'Liberia', 'Limón', 'Puntarenas', 'San Isidro de El General'],
+    CU: ['La Habana', 'Santiago de Cuba', 'Camagüey', 'Holguín', 'Santa Clara', 'Guantánamo', 'Matanzas', 'Cienfuegos'],
+    DO: ['Santo Domingo', 'Santiago de los Caballeros', 'San Pedro de Macorís', 'La Romana', 'Puerto Plata', 'Higüey'],
+    EC: ['Quito', 'Guayaquil', 'Cuenca', 'Santo Domingo', 'Machala', 'Manta', 'Ambato', 'Loja', 'Riobamba'],
+    SV: ['San Salvador', 'Santa Ana', 'San Miguel', 'Soyapango', 'Mejicanos', 'Apopa', 'Sonsonate', 'Santa Tecla'],
+    GT: ['Ciudad de Guatemala', 'Quetzaltenango', 'Escuintla', 'Mixco', 'Villa Nueva', 'Cobán', 'Chimaltenango'],
+    HN: ['Tegucigalpa', 'San Pedro Sula', 'Choloma', 'La Ceiba', 'El Progreso', 'Comayagua', 'Puerto Cortés'],
+    MX: ['Ciudad de México', 'Guadalajara', 'Monterrey', 'Puebla', 'Tijuana', 'León', 'Ciudad Juárez', 'Mérida', 'Querétaro', 'Cancún'],
+    NI: ['Managua', 'León', 'Masaya', 'Matagalpa', 'Chinandega', 'Granada', 'Estelí', 'Jinotega'],
+    PA: ['Ciudad de Panamá', 'San Miguelito', 'Colón', 'David', 'La Chorrera', 'Santiago de Veraguas', 'Chitré', 'Penonomé', 'Aguadulce', 'Las Tablas'],
+    PY: ['Asunción', 'Ciudad del Este', 'San Lorenzo', 'Luque', 'Capiatá', 'Encarnación', 'Pedro Juan Caballero'],
+    PE: ['Lima', 'Arequipa', 'Trujillo', 'Chiclayo', 'Piura', 'Cusco', 'Iquitos', 'Huancayo', 'Tacna'],
+    PR: ['San Juan', 'Bayamón', 'Carolina', 'Ponce', 'Caguas', 'Guaynabo', 'Mayagüez', 'Arecibo'],
+    UY: ['Montevideo', 'Salto', 'Ciudad de la Costa', 'Paysandú', 'Las Piedras', 'Rivera', 'Maldonado'],
+    VE: ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto', 'Maracay', 'Ciudad Guayana', 'Maturín', 'Mérida']
+  };
+
+  function normalize(value) {
+    return String(value || '').trim();
+  }
+
+  function passwordPolicyError(password) {
+    if (String(password || '').length < 8) return 'La contraseña debe tener mínimo 8 caracteres.';
+    if (!/[A-ZÁÉÍÓÚÑ]/.test(password)) return 'La contraseña debe incluir una letra mayúscula.';
+    if (!/[a-záéíóúñ]/.test(password)) return 'La contraseña debe incluir una letra minúscula.';
+    if (!/[0-9]/.test(password)) return 'La contraseña debe incluir un número.';
+    if (/\s/.test(password)) return 'La contraseña no debe contener espacios.';
+    return '';
+  }
+
+  function hasCountry(code) {
+    for (var index = 0; index < countries.length; index += 1) {
+      if (countries[index].code === code) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function populateCountryOptions() {
+    if (!countryInput) {
+      return;
+    }
+    var options = [];
+    for (var index = 0; index < countries.length; index += 1) {
+      var item = countries[index];
+      options.push('<option value="' + item.code + '">' + item.name + '</option>');
+    }
+    countryInput.innerHTML = options.join('');
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[character];
+    });
+  }
+
+  function updateCityInput() {
+    if (!cityInput || !countryInput) {
+      return;
+    }
+    var cities = latinAmericaCities[countryInput.value] || [];
+    var options = ['<option value="" selected disabled>Selecciona una ciudad</option>'];
+    for (var index = 0; index < cities.length; index += 1) {
+      options.push('<option value="' + escapeHtml(cities[index]) + '">' + escapeHtml(cities[index]) + '</option>');
+    }
+    options.push('<option value="__other__">Otra ciudad o municipio</option>');
+    cityInput.innerHTML = options.join('');
+    if (cityCustomInput) {
+      cityCustomInput.hidden = true;
+      cityCustomInput.required = false;
+      cityCustomInput.value = '';
+    }
+  }
+
+  function updateCustomCityVisibility() {
+    if (!cityInput || !cityCustomInput) {
+      return;
+    }
+    var isOther = cityInput.value === '__other__';
+    cityCustomInput.hidden = !isOther;
+    cityCustomInput.required = isOther;
+    if (isOther) {
+      cityCustomInput.focus();
+    } else {
+      cityCustomInput.value = '';
+    }
+  }
+
+  function detectCountryCode() {
+    // La zona horaria del equipo suele representar mejor el país actual que el
+    // idioma del navegador (por ejemplo, Chrome en inglés usado desde Colombia).
+    try {
+      var timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      if (timezoneCountryMap[timezone]) {
+        return timezoneCountryMap[timezone];
+      }
+    } catch (error) {
+      // Sin soporte; continuar con idioma y respaldo colombiano.
+    }
+    var languages = [];
+    if (navigator.languages && navigator.languages.length) {
+      languages = navigator.languages.slice(0, 5);
+    } else if (navigator.language) {
+      languages = [navigator.language];
+    }
+    for (var index = 0; index < languages.length; index += 1) {
+      var raw = String(languages[index] || '');
+      var match = raw.match(/[-_]([A-Za-z]{2})$/);
+      if (match) {
+        var candidate = match[1].toUpperCase();
+        if (hasCountry(candidate)) {
+          return candidate;
+        }
+      }
+    }
+    // Colombia es el respaldo comercial y fiscal de PCS cuando el navegador
+    // no aporta una señal geográfica verificable.
+    return 'CO';
+  }
+
+  function getSelectedCountryName() {
+    if (!countryInput) {
+      return '';
+    }
+    var selectedIndex = countryInput.selectedIndex;
+    if (selectedIndex >= 0 && countryInput.options[selectedIndex]) {
+      return normalize(countryInput.options[selectedIndex].textContent);
+    }
+    return normalize(countryInput.value);
+  }
+
+  populateCountryOptions();
+  if (countryInput) {
+    countryInput.value = detectCountryCode();
+    updateCityInput();
+    countryInput.addEventListener('change', function () {
+      updateCityInput();
+      if (countryHelp) {
+        countryHelp.textContent = 'Puedes cambiar el país y la ciudad antes de registrar la cuenta.';
+      }
+    });
+  }
+  if (cityInput) {
+    cityInput.addEventListener('change', updateCustomCityVisibility);
+  }
+
+  fetch('/api/public/geo', {credentials: 'same-origin'})
+    .then(function (response) { return response.ok ? response.json() : null; })
+    .then(function (geo) {
+      var country = normalize(geo && geo.pais_codigo).toUpperCase();
+      if (!countryInput || !hasCountry(country)) {
+        return;
+      }
+      countryInput.value = country;
+      updateCityInput();
+      if (countryHelp) {
+        countryHelp.textContent = 'País detectado automáticamente. Puedes cambiarlo si no es correcto.';
+      }
+    })
+    .catch(function () {});
+  if (invitationToken) {
+    var invitedEmail = normalize(queryParams.get('email'));
+    if (emailInput && invitedEmail) {
+      emailInput.value = invitedEmail;
+      emailInput.readOnly = true;
+    }
+    if (submitButton) {
+      submitButton.textContent = 'Aceptar invitacion y registrar cuenta';
+    }
+    var subtitle = document.querySelector('.login-subtitle');
+    if (subtitle) {
+      subtitle.textContent = 'Completa tus datos y crea tu contrasena para aceptar la invitacion administrativa. Luego podras iniciar sesion y ver las empresas compartidas por el administrador principal.';
+    }
+  }
+
+  function showMessage(text, isError) {
+    if (!messageBox) {
+      return;
+    }
+    messageBox.classList.toggle('is-hidden', !text);
+    messageBox.classList.toggle('is-visible', !!text);
+    messageBox.textContent = text || '';
+    messageBox.classList.toggle('error', !!text && !!isError);
+    messageBox.classList.toggle('success', !!text && !isError);
+  }
+
+  function setBusy(isBusy) {
+    if (!submitButton) {
+      return;
+    }
+    if (!submitButton.dataset.defaultText) {
+      submitButton.dataset.defaultText = submitButton.textContent;
+    }
+    submitButton.disabled = !!isBusy;
+    submitButton.textContent = isBusy ? 'Registrando...' : submitButton.dataset.defaultText;
+  }
+
+  function getResponseMessage(response, fallback) {
+    return window.PCSAuthResponse.getMessage(response, fallback);
+  }
+
+  async function postJson(url, body) {
+    var response = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+      credentials: 'same-origin'
+    });
+    return window.PCSAuthResponse.read(response);
+  }
+
+  async function ensureRecaptcha() {
+    if (!recaptchaManager) {
+      return '';
+    }
+    var result = await recaptchaManager.ensureToken();
+    if (!result.ok) {
+      showMessage(result.message || 'Completa la verificación de seguridad para continuar.', true);
+      return null;
+    }
+    return result.token || '';
+  }
+
+  if (recaptchaManager) {
+    recaptchaManager.init().catch(function () {});
+  }
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    var email = normalize(emailInput && emailInput.value);
+    var name = normalize(nameInput && nameInput.value);
+    var telefono = normalize(phoneInput && phoneInput.value);
+    var pais = getSelectedCountryName();
+    var ciudad = normalize(cityInput && cityInput.value);
+    if (ciudad === '__other__') {
+      ciudad = normalize(cityCustomInput && cityCustomInput.value);
+    }
+    var password = passwordInput && passwordInput.value ? passwordInput.value : '';
+    var passwordConfirm = passwordConfirmInput && passwordConfirmInput.value ? passwordConfirmInput.value : '';
+
+    if (!email || !name || !telefono || !pais || !ciudad || !password || !passwordConfirm) {
+      showMessage('Debes completar todos los campos del registro.', true);
+      return;
+    }
+    var passwordError = passwordPolicyError(password);
+    if (passwordError) {
+	  showMessage(passwordError, true);
+      return;
+    }
+    if (password !== passwordConfirm) {
+      showMessage('Las contraseñas no coinciden.', true);
+      return;
+    }
+
+    setBusy(true);
+    showMessage('', false);
+    try {
+      var registerToken = await ensureRecaptcha();
+      if (registerToken === null) {
+        return;
+      }
+      var response = await postJson('/super/api/administradores/register', {
+        email: email,
+        name: name,
+        telefono: telefono,
+        pais: pais,
+        ciudad: ciudad,
+		password: password,
+        invitation_token: invitationToken,
+		recaptcha_token: registerToken
+      });
+      if (!response.ok) {
+        showMessage(getResponseMessage(response, 'No se pudo completar el registro.'), true);
+        return;
+      }
+      showMessage(getResponseMessage(response, 'Registro exitoso. Revisa tu correo para confirmar la cuenta.'), false);
+      var emailWasSent = !(response.json && response.json.email_sent === false);
+      if (!emailWasSent && !invitationToken) {
+        return;
+      }
+      window.setTimeout(function () {
+        window.location.href = '/login.html?email=' + encodeURIComponent(email);
+      }, 1800);
+    } catch (error) {
+      showMessage(error && error.message ? error.message : 'No se pudo completar el registro.', true);
+    } finally {
+      if (recaptchaManager) {
+        recaptchaManager.reset();
+      }
+      setBusy(false);
+    }
+  });
+})();

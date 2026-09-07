@@ -1,0 +1,558 @@
+{
+  "schema_version": 1,
+  "review_days": 90,
+  "maintained": {
+    "AGENTS.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "CONTRIBUTING.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "README.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "RESUMEN_DEL_PROYECTO.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "SECURITY.md": {
+      "owner": "Seguridad",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/README.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/api/README.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/arquitectura/descripcion_arquitectura.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/arquitectura/gobierno_datos.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/calidad/estrategia_verificacion.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/contexto_codex.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/contexto_especifico_del_sistema.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/contexto_general_del_sistema.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/decisiones_tecnicas.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/desarrollo/configuracion_y_entornos.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/desarrollo/incorporacion.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/estado_actual.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-06"
+    },
+    "documentos/gobernanza_tecnica/README.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/adr/ADR-0003-gobierno-documental-y-fuentes-canonicas.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/marco_documental.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/plantillas_documentales.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/riesgos_y_brechas.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_release_profesional.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/slo_sla_operativo.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/operacion/incidentes_y_continuidad.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/release_checklist.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/requisitos/especificacion_y_trazabilidad.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/seguridad/modelo_amenazas_y_privacidad.md": {
+      "owner": "Seguridad",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/README.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/README.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/activos_fijos_avanzado.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/activos_fijos_niif_fiscal.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/aiu_construccion.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/alquileres.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/carnets_empresariales.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/centros_costo.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/cierre_fiscal.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/cobranza.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/compras_avanzadas.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/contabilidad_colombia.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/contabilidad_colombia_avanzada.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/crm_ventas_avanzadas.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/declaraciones_tributarias.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/domicilios_profesional.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/importaciones_costeo.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/logistica_wms.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/portal_contador.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/portal_terceros_certificados.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/produccion_mrp.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/tesoreria_presupuesto.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/parqueadero_tickets_qr.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/promocion_asesor_licencias.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/carta_publica_productos.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/ia_orquestador_empresarial.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/soportes_compras_ia.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/vida.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/nomina_colombia_avanzada.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/energia_solar.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/domotica_raspberry_tunnel.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/email_corporativo_mailu.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/nextcloud_empresarial.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "services/voice_stream_server/README.md": {
+      "owner": "Ingeniería y operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md": {
+      "owner": "Ingeniería de pagos y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_matriz_pagos_reales.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_documentos_dinamicos_ia_exportacion.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_estaciones_sensores_ventas_simple.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md": {
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md": {
+      "owner": "Ingeniería fiscal y QA",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/adr/ADR-0001-frontera-multiempresa-empresa-id.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/arquitectura/adr_106_cxp_fuente_canonica.md": {
+      "owner": "Ingeniería backend y datos",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_staging_ci_e2e.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_recuperacion_desastre_docker_vps.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_hardening_vps.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_depuracion_soportes_ia_y_cuarentena.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_estaciones_sensores_ventas_simple.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/runbooks/runbook_madurez_empresarial_12_pasos.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    ".github/agents/agente_backend_db.agent.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".github/agents/agente_frontend_ux.agent.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".github/agents/agente_qa_operacion.agent.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".cursor/skills/pcs-agente-backend-db/SKILL.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".cursor/skills/pcs-agente-frontend-ux/SKILL.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".cursor/skills/pcs-agente-go/SKILL.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".cursor/skills/pcs-agente-qa-operacion/SKILL.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".cursor/skills/pcs-protocolo-por-modulo/SKILL.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".github/agents/agente_go.agent.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".github/agents/protocolo_delegacion.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".github/agents/plantilla_trabajo_por_modulo.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".github/agents/README.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".cursor/AGENTS.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".cursor/README.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    ".github/SECRETOS_REQUERIDOS.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/erp_multiempresa/README.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/arquitectura_modulos_universales.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/matriz_integracion_plantillas.md": {
+      "owner": "Ingeniería de módulos",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/modulos_empresariales_colombia.md": {
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/api/mobile_api_v1.md": {
+      "owner": "Ingeniería de API",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/api/ayuda_apis.md": {
+      "owner": "Ingeniería de API",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/gobernanza_tecnica/estandares_de_cambio_seguro.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/checklist_seguridad_endpoint_multiempresa.md": {
+      "owner": "Seguridad e ingeniería",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/manual_vps_seguridad.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/observability_runbook.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/vps2_operacion.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/descripcion_del_proyecto": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/descripcion_de_modulos": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/mapa_modulos.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/flujos_operativos.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/estructura_bd.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/matriz_roles_permisos_pos_multiempresa.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/diagramas/estructura_del_codigo.md": {
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/manual_de_instalacion.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/docker_vps_operacion.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/deploy_nginx_reverse_proxy_vps.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "deploy/README-compose-platform.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/comandos_codex.md": {
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/diagramas/diagrama_entidad_relacion.md": {
+      "owner": "Ingeniería de arquitectura",
+      "reviewed": "2026-09-05"
+    },
+    "documentos/diagramas/diagramas_sistema_pcs.md": {
+      "owner": "Ingeniería de arquitectura",
+      "reviewed": "2026-09-05"
+    }
+  },
+  "overrides": {
+    "documentos/api/openapi.mobile.v1.yaml": "contrato_maquina",
+    "documentos/gobernanza_tecnica/politica_catalogo.json": "control_documental"
+  }
+}

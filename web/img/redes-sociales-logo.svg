@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Logo sistema para redes sociales</title>
+  <desc id="desc">Logo con burbujas de contenido, corazon y megafono sobre fondo magenta azul.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#263174"/>
+      <stop offset="100%" stop-color="#c026d3"/>
+    </linearGradient>
+    <linearGradient id="bubble" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f5dcff"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+  <path d="M70 78h92c14 0 26 12 26 26v34c0 14-12 26-26 26h-38l-34 28v-28H70c-14 0-26-12-26-26v-34c0-14 12-26 26-26z" fill="url(#bubble)"/>
+  <path d="M104 122c0-12 16-17 24-6 8-11 24-6 24 6 0 16-24 29-24 29s-24-13-24-29z" fill="#d94670"/>
+  <path d="M164 92l30-16v70l-30-16z" fill="#8ff2df"/>
+  <path d="M76 110h18M76 136h18" stroke="#5367c8" stroke-width="10" stroke-linecap="round"/>
+</svg>

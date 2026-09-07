@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reporte de ventas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/print_documents.js"></script>
+  <style>
+    .ventas-fe-modal-backdrop{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.62);padding:18px}
+    .ventas-fe-modal-backdrop.is-visible{display:flex}
+    .ventas-fe-modal{width:min(720px,100%);max-height:92vh;overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);box-shadow:0 18px 70px rgba(0,0,0,.28);padding:16px}
+    .ventas-fe-modal h3{margin:0;color:var(--text);font-size:1.05rem}
+    .ventas-fe-modal p{margin:6px 0 0;color:var(--muted);font-size:.9rem;line-height:1.45}
+    .ventas-fe-modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .ventas-fe-hidden{display:none!important}
+    .ventas-relation-badge{display:inline-flex;align-items:center;min-height:28px;padding:4px 9px;border-radius:999px;border:1px solid var(--border);font-size:.78rem;font-weight:700;line-height:1.15;white-space:normal}
+    .ventas-relation-badge.sale-only{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.45);color:#92400e}
+    .ventas-relation-badge.with-fe{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.42);color:#047857}
+    .ventas-relation-badge.fe-doc{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.42);color:#1d4ed8}
+    .ventas-relation-badge.neutral{background:var(--surface-muted);color:var(--muted)}
+    .ventas-share-dropdown{display:inline-block;position:relative}
+    .ventas-share-dropdown summary{list-style:none;cursor:pointer}
+    .ventas-share-dropdown summary::-webkit-details-marker{display:none}
+    .ventas-share-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:grid;gap:4px;min-width:170px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow)}
+    .ventas-share-menu .btn{width:100%;justify-content:flex-start}
+    .ventas-filtros-compact{width:100%;max-width:none!important;padding:6px 8px}
+    .ventas-filtros-compact .empresa-section-header{margin-bottom:4px}
+    .ventas-filtros-compact .page-header-lead{display:none}
+    .ventas-filtros-compact .form{display:grid;grid-template-columns:minmax(112px,.75fr) minmax(112px,.75fr) minmax(180px,1.35fr) minmax(118px,.9fr) minmax(130px,.9fr) minmax(126px,.8fr) minmax(142px,.9fr) auto;gap:6px;align-items:end;width:100%}
+    .ventas-filtros-compact .form-row{display:contents;margin:0}
+    .ventas-filtros-compact .form-label{margin-bottom:3px}
+    .ventas-filtros-compact .form-col{min-width:0}
+    .ventas-filtros-compact .form-input{min-height:36px}
+    .ventas-filtros-compact .empresa-config-check.inline-check{min-height:36px;padding:6px 8px}
+    .ventas-filtros-compact .form-actions{margin:0;display:flex;align-items:end;justify-content:flex-end;gap:6px}
+    .ventas-filtros-compact .form-actions .btn{min-height:36px;padding:7px 10px}
+    .ventas-hidden-preview{display:none!important}
+    .empresa-module > .card.empresa-module-header{display:none!important}
+    .empresa-module > .card.ventas-hidden-preview{display:none!important}
+    @media(max-width:1180px){.ventas-filtros-compact .form{grid-template-columns:repeat(4,minmax(0,1fr))}.ventas-filtros-compact .form-row{display:contents}}
+    @media(max-width:760px){.ventas-filtros-compact .form{grid-template-columns:repeat(2,minmax(0,1fr))}.ventas-filtros-compact .form-actions{grid-column:1/-1}}
+    @media(max-width:520px){.ventas-filtros-compact .form{grid-template-columns:1fr}.ventas-filtros-compact .form-actions{grid-column:auto;flex-direction:column;align-items:stretch}.ventas-filtros-compact{padding:8px}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-module-header">
+      <div>
+        <span class="empresa-module-kicker">Comercial y facturación</span>
+        <h2 style="margin:6px 0 8px;">Seguimiento de ventas y documentos</h2>
+        <p class="page-header-lead" style="margin:0;">
+          Consulta ventas, facturas y comprobantes desde una vista enfocada en control comercial, exportación y soporte documental.
+        </p>
+      </div>
+      <div class="empresa-module-overview">
+        <div class="empresa-module-kpi">
+          <strong>Ventas</strong>
+          <span>Movimientos y clientes</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Facturación</strong>
+          <span>FE y comprobantes</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Exportación</strong>
+          <span>Consulta y CSV rápido</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card empresa-module-header">
+      <div>
+        <h1 id="pageTitle">Ventas</h1>
+        <p id="empresaInfo">Empresa: cargando...</p>
+      </div>
+      <div class="empresa-module-kpis">
+        <div class="kpi-box">
+          <span class="kpi-label">Ventas</span>
+          <strong id="kpiTotal">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Facturas FE</span>
+          <strong id="kpiFE">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Comprobantes</span>
+          <strong id="kpiCP">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Monto total</span>
+          <strong id="kpiMonto">$0</strong>
+        </div>
+      </div>
+    </section>
+
+    <div id="messageBox" class="form-help"></div>
+
+    <div id="facturarVentaModal" class="ventas-fe-modal-backdrop" aria-hidden="true">
+      <div class="ventas-fe-modal" role="dialog" aria-modal="true" aria-labelledby="facturarVentaTitle">
+        <h3 id="facturarVentaTitle">Generar factura electronica desde venta</h3>
+        <p id="facturarVentaSummary">Selecciona una venta para facturar.</p>
+        <div class="form mt-12">
+          <label class="form-label" for="facturarClienteSelect">Cliente para la factura</label>
+          <select id="facturarClienteSelect" class="form-input">
+            <option value="">Cargando clientes...</option>
+          </select>
+          <p class="form-help">La factura electronica se emite con fecha y hora legal nuevas. La venta origen no cambia de valor ni de forma de pago.</p>
+
+          <div id="facturarClienteNuevo" class="ventas-fe-hidden">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteTipoDocumento">Tipo documento</label>
+                <select id="facturarClienteTipoDocumento" class="form-input">
+                  <option value="CC">CC</option>
+                  <option value="NIT">NIT</option>
+                  <option value="CE">CE</option>
+                  <option value="PAS">PAS</option>
+                </select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteNumeroDocumento">Numero documento</label>
+                <input id="facturarClienteNumeroDocumento" class="form-input" maxlength="40">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteNombre">Nombre o razon social</label>
+                <input id="facturarClienteNombre" class="form-input" maxlength="180">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteEmail">Correo</label>
+                <input id="facturarClienteEmail" class="form-input" type="email" maxlength="180">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteTelefono">Telefono</label>
+                <input id="facturarClienteTelefono" class="form-input" maxlength="60">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="facturarClienteDireccion">Direccion</label>
+                <input id="facturarClienteDireccion" class="form-input" maxlength="220">
+              </div>
+            </div>
+          </div>
+
+          <label class="empresa-config-check" for="facturarEnviarCorreo">
+            <input id="facturarEnviarCorreo" type="checkbox" checked>
+            <span>Enviar factura electronica al correo del cliente al terminar</span>
+          </label>
+          <div id="facturarVentaMsg" class="form-help"></div>
+        </div>
+        <div class="ventas-fe-modal-actions">
+          <button id="btnFacturarVentaCancelar" type="button" class="btn secondary">Cancelar</button>
+          <button id="btnFacturarVentaConfirmar" type="button" class="btn">Generar y enviar</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="card empresa-section ventas-filtros-compact">
+      <div class="empresa-section-header">
+        <h2>Filtros</h2>
+        <div class="empresa-inline-actions">
+          <button id="btnExportCSV" class="btn secondary" type="button">Exportar CSV</button>
+        </div>
+      </div>
+      <p class="page-header-lead" style="margin:0 0 14px;">
+        Filtra por fecha, estado, cliente o tipo documental para responder más rápido a consultas comerciales, contables o de soporte.
+      </p>
+      <form id="filtrosForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="fechaDesde">Fecha desde</label>
+            <input id="fechaDesde" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fechaHasta">Fecha hasta</label>
+            <input id="fechaHasta" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="q">Búsqueda</label>
+            <input id="q" class="form-input" placeholder="Cliente, código, número legal...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Tipo venta</label>
+            <select id="tipoVenta" class="form-input">
+              <option value="">Todas</option>
+              <option value="factura_electronica">Factura electrónica</option>
+              <option value="comprobante_pago">Comprobante</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Estado documento</label>
+            <select id="estadoDocumento" class="form-input">
+              <option value="">Todos</option>
+              <option value="emitida">Emitida</option>
+              <option value="pendiente_emision">Pendiente emisión</option>
+              <option value="borrador">Borrador</option>
+              <option value="anulada">Anulada</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Opciones</label>
+            <label class="empresa-config-check inline-check" for="includeInactive">
+              <input id="includeInactive" type="checkbox">
+              <span>Incluir inactivos</span>
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="modoVisualizacion">Vista e impresion</label>
+            <select id="modoVisualizacion" class="form-input">
+              <option value="carta">Carta completa</option>
+              <option value="compacta">Compacta ejecutiva</option>
+              <option value="pos">Ticket POS 80mm</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="btnBuscar" type="submit" class="btn">Buscar</button>
+          <button id="btnLimpiar" type="button" class="btn secondary">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Resultados</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="ventasTable">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Código</th>
+              <th>Número legal</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Estado doc.</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section ventas-hidden-preview">
+      <div class="empresa-section-header">
+        <h2>Detalle / vista previa</h2>
+      </div>
+      <div id="detalle" class="form-help">Selecciona una venta para ver el detalle.</div>
+      <div id="preview" class="factura-print-preview-empty">Selecciona una venta para ver la vista previa.</div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      function qp(name){ try { return new URLSearchParams(window.location.search||"").get(name); } catch(e){ return ""; } }
+      function norm(v){ return String(v||"").trim(); }
+      function esc(v){ return String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#39;"); }
+      function formatDate(v){ var raw=norm(v); if(!raw) return "-"; var d=raw.length>=10?raw.slice(0,10):raw; var b=d.split("-"); return b.length===3?(b[2]+"/"+b[1]+"/"+b[0]):d; }
+      function formatMoney(val, moneda){
+        var amount = Number(val||0);
+        var cur = norm(moneda).toUpperCase() || "COP";
+        try { return new Intl.NumberFormat("es-CO",{style:"currency",currency:cur,maximumFractionDigits:2}).format(amount); }
+        catch(e){ return amount.toFixed(2)+" "+cur; }
+      }
+      function badge(estado){
+        var s=norm(estado).toLowerCase();
+        if(s==="emitida") return '<span class="badge low">emitida</span>';
+        if(s==="anulada") return '<span class="badge urgent">anulada</span>';
+        if(s==="pendiente_emision") return '<span class="badge mid">pendiente</span>';
+        return '<span class="badge high">'+esc(s||"borrador")+'</span>';
+      }
+      function api(url, opts){
+        return fetch(url, Object.assign({credentials:"same-origin"}, opts||{})).then(function(r){
+          if(!r.ok){ return r.text().then(function(t){ throw new Error(t||("HTTP "+r.status)); }); }
+          return r.json();
+        });
+      }
+      function msg(text, kind){
+        var box=document.getElementById("messageBox");
+        box.textContent=text||"";
+        box.className = (kind==="error") ? "error" : "form-help";
+      }
+
+      var empresaID = Number(qp("empresa_id")||qp("id")||0);
+      var tbody = document.querySelector("#ventasTable tbody");
+      var detalle = document.getElementById("detalle");
+      var preview = document.getElementById("preview");
+      var state = { items: [], index: Object.create(null), facturasPorBase: Object.create(null), selectedKey: "", empresaNombre: "", cfg: null, viewMode: "carta", clientes: [], facturarItem: null };
+
+      function vistaImpresionStorageKey(){
+        return "pcs_ventas_vista_impresion_" + String(empresaID || 0);
+      }
+
+      function loadSavedViewMode(){
+        try {
+          var saved = localStorage.getItem(vistaImpresionStorageKey());
+          if(saved === "carta" || saved === "pos" || saved === "compacta") return saved;
+        } catch(e) {}
+        return "carta";
+      }
+
+      function saveViewMode(value){
+        try {
+          localStorage.setItem(vistaImpresionStorageKey(), value || "carta");
+        } catch(e) {}
+      }
+
+      function applySavedViewMode(){
+        var el = document.getElementById("modoVisualizacion");
+        var saved = loadSavedViewMode();
+        state.viewMode = saved;
+        if(el) el.value = saved;
+        return saved;
+      }
+
+      function safeUrl(raw){
+        var v = norm(raw);
+        if(!v) return "";
+        var lower = v.toLowerCase();
+        if(lower.indexOf("http://")===0 || lower.indexOf("https://")===0 || v.indexOf("/")===0){
+          return v;
+        }
+        return "";
+      }
+
+      function companyLegalLines(cfg){
+        cfg = cfg && typeof cfg === "object" ? cfg : {};
+        var lines = [];
+        var razon = norm(cfg.razon_social) || norm(cfg.nombre_comercial) || "";
+        var nit = norm(cfg.nit) || "";
+        if(razon) lines.push(razon);
+        if(nit) lines.push("NIT: " + nit + (norm(cfg.digito_verificacion) ? ("-" + norm(cfg.digito_verificacion)) : ""));
+        var dir = norm(cfg.direccion_fiscal);
+        if(dir) lines.push("Dirección: " + dir);
+        var tel = norm(cfg.telefono_facturacion);
+        if(tel) lines.push("Tel: " + tel);
+        var mail = norm(cfg.email_facturacion);
+        if(mail) lines.push("Email: " + mail);
+        return lines;
+      }
+
+      function buildLegalBlock(cfg){
+        cfg = cfg && typeof cfg === "object" ? cfg : {};
+        var notas = norm(cfg.notas_legales);
+        var pie = norm(cfg.pie_factura);
+        var out = [];
+        if(notas) out.push(notas);
+        if(pie) out.push(pie);
+        return out.join("\n\n");
+      }
+
+      function printItemsConfig(cfg){
+        cfg = cfg && typeof cfg === "object" ? cfg : {};
+        if(window.PCSPrint && typeof window.PCSPrint.printItemsFromConfig === "function"){
+          return window.PCSPrint.printItemsFromConfig(cfg);
+        }
+        try { return JSON.parse(norm(cfg.impresion_recibo_items_json) || "{}"); } catch(e) { return {}; }
+      }
+
+      function printFieldEnabled(items, key, item){
+        if(window.PCSPrint && typeof window.PCSPrint.printItemEnabled === "function"){
+          return window.PCSPrint.printItemEnabled(items, key, item);
+        }
+        return !items || items[key] !== false;
+      }
+
+      function totalEnLetras(item){
+        if(window.PCSPrint && typeof window.PCSPrint.amountToWords === "function"){
+          return window.PCSPrint.amountToWords(Number(item && item.monto_total || 0), norm(item && item.moneda) || "COP");
+        }
+        return "";
+      }
+
+      function makeKey(it){ return norm(it.tipo_documento).toLowerCase()+"::"+norm(it.documento_codigo).toUpperCase(); }
+      function ventaBaseCode(code){
+        var raw = norm(code).toUpperCase().replace(/\s+/g, "");
+        if (raw.indexOf("CP-") === 0 || raw.indexOf("FV-") === 0) return raw.slice(3);
+        return raw;
+      }
+      function relatedFacturaFor(item){
+        if(!item || norm(item.tipo_documento).toLowerCase() !== "comprobante_pago") return null;
+        return state.facturasPorBase[ventaBaseCode(item.documento_codigo)] || null;
+      }
+      function typeLabel(item){
+        var tipo = norm(item && item.tipo_documento).toLowerCase();
+        if(tipo === "comprobante_pago") return "Venta";
+        if(tipo === "factura_electronica") return "Factura electronica";
+        return norm(item && item.tipo_documento) || "Documento";
+      }
+      function relationInfo(item){
+        var tipo = norm(item && item.tipo_documento).toLowerCase();
+        if(tipo === "factura_electronica"){
+          return { label: "Factura electronica", cls: "fe-doc", title: "Documento fiscal generado desde una venta" };
+        }
+        if(tipo === "comprobante_pago"){
+          var factura = relatedFacturaFor(item);
+          if(factura){
+            return { label: "Venta con factura electronica", cls: "with-fe", title: "Factura asociada: " + norm(factura.documento_codigo) };
+          }
+          return { label: "Solo venta", cls: "sale-only", title: "Venta sin factura electronica asociada" };
+        }
+        return { label: "Documento", cls: "neutral", title: "" };
+      }
+      function relationBadge(item){
+        var info = relationInfo(item);
+        return '<span class="ventas-relation-badge '+esc(info.cls)+'" title="'+esc(info.title)+'">'+esc(info.label)+'</span>';
+      }
+      function facturaCodeFromVentaCode(code){
+        var base = ventaBaseCode(code);
+        return base ? ("FV-" + base) : "";
+      }
+
+      function clienteDisplay(c){
+        if(!c) return "";
+        var nombre = norm(c.nombre_razon_social) || norm(c.nombre_comercial) || ("Cliente #" + String(c.id || ""));
+        var doc = [norm(c.tipo_documento), norm(c.numero_documento)].filter(Boolean).join(" ");
+        var mail = norm(c.email);
+        return nombre + (doc ? (" - " + doc) : "") + (mail ? (" - " + mail) : "");
+      }
+
+      function clienteByID(id){
+        id = Number(id || 0);
+        return state.clientes.find(function(c){ return Number(c.id || 0) === id; }) || null;
+      }
+
+      function loadClientes(){
+        if(!empresaID) return Promise.resolve([]);
+        return api("/api/empresa/clientes?empresa_id=" + encodeURIComponent(String(empresaID)) + "&include_inactive=1", { method:"GET" })
+          .then(function(rows){
+            state.clientes = Array.isArray(rows) ? rows : [];
+            return state.clientes;
+          })
+          .catch(function(){
+            state.clientes = [];
+            return [];
+          });
+      }
+
+      function renderFacturarClienteSelect(selectedID){
+        var select = document.getElementById("facturarClienteSelect");
+        var options = ['<option value="">Selecciona un cliente existente</option>'];
+        state.clientes.forEach(function(c){
+          var id = Number(c.id || 0);
+          options.push('<option value="' + esc(String(id)) + '"' + (Number(selectedID || 0) === id ? " selected" : "") + '>' + esc(clienteDisplay(c)) + '</option>');
+        });
+        options.push('<option value="__nuevo">Crear cliente rapido...</option>');
+        select.innerHTML = options.join("");
+      }
+
+      function syncFacturarClienteNuevo(){
+        var nuevo = document.getElementById("facturarClienteSelect").value === "__nuevo";
+        document.getElementById("facturarClienteNuevo").className = nuevo ? "" : "ventas-fe-hidden";
+      }
+
+      function setFacturarMsg(text, error){
+        var box = document.getElementById("facturarVentaMsg");
+        box.textContent = text || "";
+        box.className = error ? "error" : "form-help";
+      }
+
+      function openFacturarModal(item){
+        state.facturarItem = item || null;
+        var modal = document.getElementById("facturarVentaModal");
+        document.getElementById("facturarVentaSummary").textContent = item
+          ? ("Venta " + norm(item.documento_codigo) + " por " + formatMoney(item.monto_total, item.moneda || "COP") + ".")
+          : "Selecciona una venta para facturar.";
+        document.getElementById("facturarEnviarCorreo").checked = true;
+        document.getElementById("facturarClienteTipoDocumento").value = "CC";
+        document.getElementById("facturarClienteNumeroDocumento").value = "";
+        document.getElementById("facturarClienteNombre").value = norm(item && item.cliente_nombre);
+        document.getElementById("facturarClienteEmail").value = norm(item && item.cliente_email);
+        document.getElementById("facturarClienteTelefono").value = "";
+        document.getElementById("facturarClienteDireccion").value = "";
+        setFacturarMsg("", false);
+        renderFacturarClienteSelect(Number(item && item.entidad_relacionada_id || 0));
+        syncFacturarClienteNuevo();
+        modal.className = "ventas-fe-modal-backdrop is-visible";
+        modal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeFacturarModal(){
+        var modal = document.getElementById("facturarVentaModal");
+        modal.className = "ventas-fe-modal-backdrop";
+        modal.setAttribute("aria-hidden", "true");
+        state.facturarItem = null;
+      }
+
+      function collectFacturarPayload(item){
+        var selected = norm(document.getElementById("facturarClienteSelect").value);
+        var payload = {
+          empresa_id: empresaID,
+          tipo_documento: item.tipo_documento,
+          documento_codigo: item.documento_codigo
+        };
+        if(!selected){
+          throw new Error("Selecciona un cliente existente o crea uno rapido para emitir la factura electronica.");
+        }
+        if(selected && selected !== "__nuevo"){
+          payload.cliente_id = Number(selected);
+          var c = clienteByID(payload.cliente_id);
+          if(c){
+            payload.cliente_nombre = norm(c.nombre_razon_social) || norm(c.nombre_comercial);
+            payload.cliente_email = norm(c.email);
+          }
+          return payload;
+        }
+        if(selected === "__nuevo"){
+          payload.cliente_tipo_documento = norm(document.getElementById("facturarClienteTipoDocumento").value) || "CC";
+          payload.cliente_numero_documento = norm(document.getElementById("facturarClienteNumeroDocumento").value);
+          payload.cliente_nombre = norm(document.getElementById("facturarClienteNombre").value);
+          payload.cliente_email = norm(document.getElementById("facturarClienteEmail").value);
+          payload.cliente_telefono = norm(document.getElementById("facturarClienteTelefono").value);
+          payload.cliente_direccion = norm(document.getElementById("facturarClienteDireccion").value);
+          if(!payload.cliente_numero_documento || !payload.cliente_nombre){
+            throw new Error("Para crear cliente rapido debes indicar documento y nombre.");
+          }
+        }
+        return payload;
+      }
+
+      function setDefaultDates(){
+        var now=new Date(); var y=now.getFullYear(); var m=String(now.getMonth()+1).padStart(2,"0"); var d=String(now.getDate()).padStart(2,"0");
+        document.getElementById("fechaDesde").value = y+"-"+m+"-"+d;
+        document.getElementById("fechaHasta").value = y+"-"+m+"-"+d;
+      }
+
+      function buildQuery(){
+        var p=new URLSearchParams();
+        p.set("action","documentos");
+        p.set("empresa_id", String(empresaID));
+        var tipo=norm(document.getElementById("tipoVenta").value);
+        if(tipo) p.set("tipo_documento", tipo);
+        var estado=norm(document.getElementById("estadoDocumento").value);
+        if(estado) p.set("estado_documento", estado);
+        var q=norm(document.getElementById("q").value);
+        if(q) p.set("q", q);
+        var desde=norm(document.getElementById("fechaDesde").value);
+        var hasta=norm(document.getElementById("fechaHasta").value);
+        if(desde) p.set("fecha_desde", desde);
+        if(hasta) p.set("fecha_hasta", hasta);
+        if(document.getElementById("includeInactive").checked) p.set("include_inactive","1");
+        return p.toString();
+      }
+
+      function getPrintableMeta(item){
+        var tipo = norm(item && item.tipo_documento).toLowerCase();
+        if (tipo === "comprobante_pago") return { title:"Comprobante de pago", subtitle:"Documento comercial interno", accent:"comprobante" };
+        if (tipo === "nota_credito") return { title:"Nota crédito", subtitle:"Documento de ajuste", accent:"nota-credito" };
+        return { title:"Factura electrónica", subtitle:"Documento fiscal", accent:"factura" };
+      }
+
+      function currentViewMode(){
+        var el = document.getElementById("modoVisualizacion");
+        var v = norm(el && el.value).toLowerCase();
+        if(v === "pos" || v === "compacta") return v;
+        return "carta";
+      }
+
+      function normalizePrintFontSize(value, fallback, min, max){
+        var n = Number(value);
+        var base = Number(fallback);
+        if(!Number.isFinite(base)) base = min;
+        base = Math.max(min, Math.min(max, Math.trunc(base)));
+        if(!Number.isFinite(n)) return base;
+        n = Math.trunc(n);
+        if(n < min) return min;
+        if(n > max) return max;
+        return n;
+      }
+
+      function facturaPrintFontSize(cfg, formato){
+        cfg = cfg || {};
+        return formato === "pos"
+          ? normalizePrintFontSize(cfg.impresion_factura_fuente_pos, 11, 8, 16)
+          : normalizePrintFontSize(cfg.impresion_factura_fuente_carta, 13, 10, 22);
+      }
+
+      function buildPreviewBody(item){
+        var meta=getPrintableMeta(item);
+        var viewMode = currentViewMode();
+        var cliente = norm(item && item.cliente_nombre) || "Consumidor final";
+        var clienteEmail = norm(item && item.cliente_email) || "No registrado";
+        var numeroLegal = norm(item && item.numero_legal) || norm(item && item.documento_codigo) || "Pendiente";
+        var cfg = state.cfg || {};
+        var empresaLabel = norm(state.empresaNombre) || norm(cfg.razon_social) || norm(cfg.nombre_comercial) || ("Empresa #"+String(empresaID||""));
+        var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
+        var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
+        var logoHtml = window.PCSPrint && window.PCSPrint.resolveDocumentLogos && window.PCSPrint.logosHTML
+          ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg, "factura"))
+          : (logoUrl ? ('<img src="'+esc(logoUrl)+'" alt="Logo empresa">') : '');
+        var printItems = printItemsConfig(cfg);
+        var showEmpresa = printFieldEnabled(printItems, "empresa", item);
+        var showLegal = printFieldEnabled(printItems, "notas_legales", item);
+        var totalWords = printFieldEnabled(printItems, "total_en_letras", item) ? totalEnLetras(item) : "";
+        var legalBlock = showLegal ? buildLegalBlock(cfg) : "";
+        var strip = [
+          printFieldEnabled(printItems, "codigo", item) ? '<div><span>Codigo</span><strong>'+esc(item.documento_codigo||"")+'</strong></div>' : '',
+          printFieldEnabled(printItems, "numero_legal", item) ? '<div><span>Numero legal</span><strong>'+esc(numeroLegal)+'</strong></div>' : '',
+          printFieldEnabled(printItems, "fecha", item) ? '<div><span>Fecha</span><strong>'+esc(formatDate(item.fecha_documento||item.fecha_creacion))+'</strong></div>' : '',
+          printFieldEnabled(printItems, "estado", item) ? '<div><span>Estado</span><strong>'+esc(item.estado_documento||"borrador")+'</strong></div>' : ''
+        ].filter(Boolean).join("");
+        var clienteRows = [
+          printFieldEnabled(printItems, "cliente", item) ? '<div><dt>Nombre</dt><dd>'+esc(cliente)+'</dd></div>' : '',
+          printFieldEnabled(printItems, "cliente_email", item) ? '<div><dt>Correo</dt><dd>'+esc(clienteEmail)+'</dd></div>' : ''
+        ].filter(Boolean).join("");
+        var resumenRows = [
+          printFieldEnabled(printItems, "total", item) ? '<div><dt>Total</dt><dd>'+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</dd></div>' : '',
+          totalWords ? '<div><dt>Total en letras</dt><dd>'+esc(totalWords)+'</dd></div>' : '',
+          printFieldEnabled(printItems, "moneda", item) ? '<div><dt>Moneda</dt><dd>'+esc(item.moneda||"COP")+'</dd></div>' : '',
+          printFieldEnabled(printItems, "periodo", item) ? '<div><dt>Periodo</dt><dd>'+esc(item.periodo_contable||"")+'</dd></div>' : ''
+        ].filter(Boolean).join("");
+        if(viewMode === "pos"){
+          return '' +
+            '<article class="factura-print-sheet '+esc(meta.accent)+' factura-print-pos-preview">' +
+              '<header class="factura-print-head">' +
+                '<div class="factura-print-logo">' +
+                  (showEmpresa ? logoHtml : '') +
+                  '<div><span class="factura-print-kicker">Ticket POS</span><h3>'+esc(meta.title)+'</h3>'+(showEmpresa?'<p>'+esc(empresaLabel)+'</p>':'')+'</div>' +
+                '</div>' +
+              '</header>' +
+              (strip ? '<section class="factura-print-strip">'+strip+'</section>' : '') +
+              (clienteRows ? '<section class="factura-print-panel"><h4>Cliente</h4><dl>'+clienteRows+'</dl></section>' : '') +
+              (resumenRows ? '<section class="factura-print-panel"><h4>Resumen</h4><dl>'+resumenRows+'</dl></section>' : '') +
+              (legalBlock ? ('<section class="factura-print-legal">'+esc(legalBlock)+'</section>') : '') +
+            '</article>';
+        }
+        return '' +
+          '<article class="factura-print-sheet '+esc(meta.accent)+' '+(viewMode==="compacta" ? "factura-print-compacta" : "")+'">' +
+            '<header class="factura-print-head">' +
+              '<div class="factura-print-logo">' +
+                (showEmpresa ? logoHtml : '') +
+                '<div><span class="factura-print-kicker">Venta</span><h3>'+esc(meta.title)+'</h3><p>'+esc(meta.subtitle)+'</p></div>' +
+              '</div>' +
+              (showEmpresa ? '<div class="factura-print-company"><strong>'+esc(empresaLabel)+'</strong><span>'+esc(companyLegalLines(cfg).join(" · ") || ("ID empresa "+String(empresaID||0)))+'</span></div>' : '') +
+            '</header>' +
+            (strip ? '<section class="factura-print-strip">'+strip+'</section>' : '') +
+            (viewMode==="compacta" ? '' : '<div class="factura-print-grid">') +
+              (clienteRows ? '<section class="factura-print-panel"><h4>Cliente</h4><dl>'+clienteRows+'</dl></section>' : '') +
+              (resumenRows ? '<section class="factura-print-panel"><h4>Resumen</h4><dl>'+resumenRows+'</dl></section>' : '') +
+            (viewMode==="compacta" ? '' : '</div>') +
+            (legalBlock ? ('<section class="factura-print-legal">'+esc(legalBlock)+'</section>') : '') +
+          '</article>';
+      }
+
+      function renderDetail(item){
+        if(!item){
+          detalle.textContent="Selecciona una venta para ver el detalle.";
+          preview.className="factura-print-preview-empty";
+          preview.textContent="Selecciona una venta para ver la vista previa.";
+          return;
+        }
+        var relacion = relationInfo(item);
+        detalle.innerHTML =
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Tipo:</strong> '+esc(typeLabel(item))+'</div>' +
+            '<div class="form-col"><strong>Código:</strong> '+esc(item.documento_codigo||"")+'</div>' +
+            '<div class="form-col"><strong>Número legal:</strong> '+esc(item.numero_legal||"")+'</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Cliente:</strong> '+esc(item.cliente_nombre||"")+'</div>' +
+            '<div class="form-col"><strong>Correo:</strong> '+esc(item.cliente_email||"")+'</div>' +
+            '<div class="form-col"><strong>Total:</strong> '+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</div>' +
+          '</div>';
+        preview.className="factura-print-preview";
+        preview.innerHTML = buildPreviewBody(item);
+      }
+
+      function updateKPIs(){
+        var total=state.items.length, fe=0, cp=0, monto=0;
+        state.items.forEach(function(it){
+          var t=norm(it.tipo_documento).toLowerCase();
+          if(t==="factura_electronica") fe+=1;
+          if(t==="comprobante_pago") cp+=1;
+          monto += Number(it.monto_total||0);
+        });
+        document.getElementById("kpiTotal").textContent=String(total);
+        document.getElementById("kpiFE").textContent=String(fe);
+        document.getElementById("kpiCP").textContent=String(cp);
+        document.getElementById("kpiMonto").textContent=formatMoney(monto, "COP");
+      }
+
+      function renderTable(){
+        state.index = Object.create(null);
+        var facturasPorBase = Object.create(null);
+        state.items.forEach(function(it){
+          if (norm(it.tipo_documento).toLowerCase() === "factura_electronica") {
+            facturasPorBase[ventaBaseCode(it.documento_codigo)] = it;
+          }
+        });
+        state.facturasPorBase = facturasPorBase;
+        if(!state.items.length){
+          tbody.innerHTML='<tr><td colspan="8">No se encontraron ventas para los filtros seleccionados.</td></tr>';
+          renderDetail(null);
+          updateKPIs();
+          return;
+        }
+        var rows = state.items.map(function(it){
+          var key=makeKey(it); state.index[key]=it;
+          var clienteLabel = norm(it.cliente_nombre) || norm(it.cliente_email) || (norm(it.tipo_documento) === "factura_electronica" ? "Consumidor final" : "Sin cliente");
+          var tipo = norm(it.tipo_documento).toLowerCase();
+          var facturaRelacionada = relatedFacturaFor(it);
+          var accionesFactura = "";
+          if (tipo === "comprobante_pago") {
+            if (facturaRelacionada) {
+              accionesFactura = '<button type="button" class="btn secondary" data-action="ver_fe" data-target-key="'+esc(makeKey(facturaRelacionada))+'">Abrir factura FE</button> ' +
+                '<button type="button" class="btn secondary" data-action="reenviar_dian" data-target-key="'+esc(makeKey(facturaRelacionada))+'">Reenviar DIAN</button> ';
+            } else {
+              accionesFactura = '<button type="button" class="btn secondary" data-action="facturar" data-key="'+esc(key)+'">Hacer factura electrónica</button> ';
+            }
+          } else if (tipo === "factura_electronica") {
+            accionesFactura = '<button type="button" class="btn secondary" data-action="reenviar_dian" data-key="'+esc(key)+'">Reenviar DIAN</button> ';
+          }
+          var accionesAnulacion = tipo !== "comprobante_pago" || norm(it.estado_documento).toLowerCase() === "anulada"
+            ? ''
+            : '<button type="button" class="btn secondary" data-action="anular_venta" data-key="'+esc(key)+'">Anular venta</button> ';
+          return '<tr data-key="'+esc(key)+'">' +
+            '<td>'+esc(formatDate(it.fecha_documento||it.fecha_creacion))+'</td>' +
+            '<td>'+esc(typeLabel(it))+'</td>' +
+            '<td>'+esc(it.documento_codigo||"")+'</td>' +
+            '<td>'+esc(it.numero_legal||"")+'</td>' +
+            '<td>'+esc(clienteLabel)+'</td>' +
+            '<td>'+esc(formatMoney(it.monto_total, it.moneda||"COP"))+'</td>' +
+            '<td>'+badge(it.estado_documento)+'</td>' +
+            '<td>' +
+              '<button type="button" class="btn secondary" data-action="visualizar" data-key="'+esc(key)+'">Ver / imprimir</button> ' +
+              accionesFactura +
+              accionesAnulacion +
+              '<details class="ventas-share-dropdown">' +
+                '<summary class="btn secondary" title="Compartir"><img class="icon" src="/img/network-color.svg" alt="">Compartir</summary>' +
+                '<div class="ventas-share-menu">' +
+                  '<button type="button" class="btn secondary" data-action="enviar" data-key="'+esc(key)+'">Correo</button>' +
+                  '<button type="button" class="btn secondary" data-action="compartir_whatsapp" data-key="'+esc(key)+'">WhatsApp</button>' +
+                '</div>' +
+              '</details>' +
+            '</td>' +
+          '</tr>';
+        });
+        tbody.innerHTML = rows.join("");
+        updateKPIs();
+        state.selectedKey = state.selectedKey && state.index[state.selectedKey] ? state.selectedKey : makeKey(state.items[0]);
+        renderDetail(state.index[state.selectedKey]);
+      }
+
+      function buildPrintablePage(item){
+        var cfg = state.cfg || {};
+        var printItems = printItemsConfig(cfg);
+        var formato = currentViewMode();
+        if(formato === "pos"){
+          var lines = companyLegalLines(cfg);
+          var showEmpresa = printFieldEnabled(printItems, "empresa", item);
+          var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
+          var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
+          var notas = printFieldEnabled(printItems, "notas_legales", item) ? norm(cfg.notas_legales) : "";
+          var pie = printFieldEnabled(printItems, "notas_legales", item) ? norm(cfg.pie_factura) : "";
+          var numeroLegal = norm(item && item.numero_legal) || norm(item && item.documento_codigo) || "Pendiente";
+          if (window.PCSPrint) {
+            return window.PCSPrint.buildDocument({
+              title: "Recibo de venta",
+              kind: norm(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "recibo",
+              format: "pos",
+              printConfig: cfg,
+              logos: showEmpresa ? window.PCSPrint.resolveDocumentLogos(cfg, "factura") : [],
+              company: showEmpresa ? (lines[0] || "Empresa") : "",
+              subtitle: showEmpresa ? lines.slice(1).join(" | ") : "",
+              badge: "POS",
+              meta: [
+                printFieldEnabled(printItems, "codigo", item) ? { label: "Codigo", value: item && item.documento_codigo } : null,
+                printFieldEnabled(printItems, "numero_legal", item) ? { label: "Numero legal", value: numeroLegal } : null,
+                printFieldEnabled(printItems, "fecha", item) ? { label: "Fecha", value: formatDate(item && (item.fecha_documento || item.fecha_creacion)) } : null,
+                printFieldEnabled(printItems, "cliente", item) ? { label: "Cliente", value: norm(item && item.cliente_nombre) || norm(item && item.cliente_email) } : null,
+                printFieldEnabled(printItems, "estado", item) ? { label: "Estado", value: item && item.estado_documento } : null
+              ],
+              totalLabel: printFieldEnabled(printItems, "total", item) ? "Total" : "",
+              totalValue: printFieldEnabled(printItems, "total", item) ? formatMoney(item && item.monto_total, (item && item.moneda) || "COP") : "",
+              totalWords: printFieldEnabled(printItems, "total_en_letras", item) ? totalEnLetras(item) : "",
+              note: [notas, pie].filter(Boolean).join("\n"),
+              signatures: false,
+              closeAfterPrint: false
+            });
+          }
+          return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+            '<title>'+esc((item && item.documento_codigo) || "Tiquete")+'</title>' +
+            '<style>body{font-family:monospace;padding:12px;color:#111;font-size:'+facturaPrintFontSize(cfg, "pos")+'px}h1{font-size:18px;margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}</style>' +
+            '<script src="/js/ui_event_controls.js" defer><\/script>' +
+            '</head><body data-auto-print-delay="250">' +
+            (logoUrl ? ('<img src="'+esc(logoUrl)+'" alt="Logo">') : '') +
+            '<h1>Recibo de venta</h1>' +
+            (lines.length ? ('<p><strong>'+esc(lines[0])+'</strong><br><small>'+esc(lines.slice(1).join(" | "))+'</small></p>') : '') +
+            '<hr>' +
+            '<p>Código: <strong>'+esc(item.documento_codigo||"")+'</strong><br>Número legal: <strong>'+esc(numeroLegal)+'</strong><br>Fecha: '+esc(formatDate(item.fecha_documento||item.fecha_creacion))+'</p>' +
+            '<hr>' +
+            '<p><strong>Total:</strong> '+esc(formatMoney(item.monto_total, item.moneda||"COP"))+'</p>' +
+            (notas ? ('<hr><small>'+esc(notas)+'</small>') : '') +
+            (pie ? ('<p><small>'+esc(pie)+'</small></p>') : '') +
+            '</body></html>';
+        }
+
+        return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+          '<title>'+esc((item && item.documento_codigo) || "Venta")+'</title>' +
+          '<link rel="stylesheet" href="/estilos.css">' +
+          '<style>body{margin:0;background:#fff;color:#111827;font-family:Georgia,"Times New Roman",serif;color-scheme:light;font-size:'+facturaPrintFontSize(cfg, formato)+'px}.factura-print-shell{max-width:'+(formato==="compacta"?"780":"1120")+'px;margin:0 auto;padding:28px 18px 42px;background:#fff}.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{padding:0}}</style>' +
+          '<script src="/js/ui_event_controls.js" defer><\/script>' +
+          '</head><body><div class="factura-print-shell"><div class="factura-print-toolbar">' +
+          '<button type="button" class="btn" data-window-action="print">Imprimir ahora</button>' +
+          '<button type="button" class="btn secondary" data-window-action="close">Cerrar</button>' +
+          '</div>' + buildPreviewBody(item) + '</div></body></html>';
+      }
+
+      function loadEmpresaConfigAvanzada(){
+        return api("/api/empresa/configuracion_avanzada?empresa_id="+encodeURIComponent(String(empresaID)), { method:"GET" })
+          .then(function(cfg){ state.cfg = cfg || {}; })
+          .catch(function(){ state.cfg = state.cfg || {}; });
+      }
+
+      function visualizar(item){
+        var printableHtml = buildPrintablePage(item);
+        var win = window.open("", "_blank", "width=980,height=760");
+        if(!win){ msg("No se pudo abrir la ventana. Revisa el bloqueador de popups.", "error"); return; }
+        try {
+          win.document.open();
+          win.document.write(printableHtml);
+          win.document.close();
+          win.focus();
+        } catch(err) {
+          try {
+            var blob = new Blob([printableHtml], { type: "text/html;charset=utf-8" });
+            var blobUrl = URL.createObjectURL(blob);
+            win.location.replace(blobUrl);
+            window.setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 60000);
+            win.focus();
+          } catch(innerErr) {
+            msg("No se pudo abrir la vista para imprimir.", "error");
+          }
+        }
+      }
+
+      function reenviarCorreo(item){
+        var correoSugerido = norm(item.cliente_email);
+        var correo = window.prompt("Correo destino (deja vacío para usar el correo del cliente):", correoSugerido);
+        if (correo === null) return;
+        var nombreSugerido = norm(item.cliente_nombre);
+        var nombre = window.prompt("Nombre del cliente (opcional):", nombreSugerido);
+        if (nombre === null) return;
+        var payload = {
+          empresa_id: empresaID,
+          tipo_documento: item.tipo_documento,
+          documento_codigo: item.documento_codigo,
+          cliente_id: Number(item.entidad_relacionada_id || 0),
+          cliente_email: norm(correo),
+          cliente_nombre: norm(nombre)
+        };
+        api("/api/empresa/facturacion_electronica?action=reenviar_correo&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function(out){
+          var envio = out && out.factura_email ? out.factura_email : null;
+          if (envio && envio.enviado) { msg("Correo enviado a " + (envio.destinatario || "destinatario"), "ok"); return; }
+          if (envio && envio.error) { msg("No se pudo enviar correo: " + envio.error, "error"); return; }
+          msg("Intento de envío procesado.", "ok");
+        }).catch(function(err){
+          msg(err.message || "No se pudo reenviar el correo", "error");
+        });
+      }
+
+      function compartirVenta(item, channel){
+        if(!item) return;
+        var docUrl = new URL("/administrar_empresa/ventas.html", window.location.origin);
+        docUrl.searchParams.set("empresa_id", String(empresaID));
+        if(norm(item.tipo_documento)) docUrl.searchParams.set("tipo_documento", norm(item.tipo_documento));
+        if(norm(item.documento_codigo)) docUrl.searchParams.set("q", norm(item.documento_codigo));
+        var meta = getPrintableMeta(item);
+        var total = formatMoney(item.monto_total, item.moneda || "COP");
+        var company = norm(state.empresaNombre) || norm((state.cfg || {}).razon_social) || norm((state.cfg || {}).nombre_comercial);
+        var message = [
+          "Cliente: " + (norm(item.cliente_nombre) || norm(item.cliente_email) || "Consumidor final"),
+          "Estado: " + (norm(item.estado_documento) || "borrador")
+        ].join("\n");
+        if(window.PCSPrint && typeof window.PCSPrint.shareDocument === "function"){
+          window.PCSPrint.shareDocument({
+            channel: channel,
+            title: meta.title,
+            code: norm(item.numero_legal) || norm(item.documento_codigo),
+            total: total,
+            company: company,
+            message: message,
+            url: docUrl.toString()
+          });
+          return;
+        }
+        var body = encodeURIComponent(meta.title + "\nCodigo: " + (norm(item.numero_legal) || norm(item.documento_codigo)) + "\nTotal: " + total + "\n" + message + "\nEnlace: " + docUrl.toString());
+        var href = channel === "whatsapp" ? ("https://wa.me/?text=" + body) : ("mailto:?subject=" + encodeURIComponent(meta.title) + "&body=" + body);
+        window.open(href, "_blank", "noopener,noreferrer");
+      }
+
+      function facturaEmailAlreadySent(factura){
+        var envio = factura && factura.envio_correo_factura_fe;
+        return !!(envio && typeof envio === "object" && envio.enviado);
+      }
+
+      function enviarCorreoFacturaGenerada(factura, payload){
+        if(!factura || !norm(factura.documento_codigo)) return Promise.resolve(null);
+        payload = payload || {};
+        return api("/api/empresa/facturacion_electronica?action=reenviar_correo&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: empresaID,
+            tipo_documento: "factura_electronica",
+            documento_codigo: factura.documento_codigo,
+            cliente_id: Number(payload.cliente_id || 0),
+            cliente_email: norm(payload.cliente_email),
+            cliente_nombre: norm(payload.cliente_nombre)
+          })
+        });
+      }
+
+      function facturarDesdeVenta(item, extraPayload){
+        extraPayload = extraPayload || {};
+        return api("/api/empresa/facturacion_electronica?action=facturar_desde_venta&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.assign({
+            empresa_id: empresaID,
+            tipo_documento: item.tipo_documento,
+            documento_codigo: item.documento_codigo
+          }, extraPayload))
+        }).then(function(out){
+          var factura = out && out.factura_generada ? out.factura_generada : null;
+          if (factura && norm(factura.documento_codigo)) {
+            state.selectedKey = "factura_electronica::" + norm(factura.documento_codigo).toUpperCase();
+          }
+          if (factura && factura.ya_existia) {
+            msg("La factura electrónica ya existía para esta venta.", "ok");
+          } else if (factura && norm(factura.documento_codigo)) {
+            msg("Factura electrónica generada: " + norm(factura.documento_codigo), "ok");
+          } else {
+            msg("La factura electrónica quedó generada desde la venta.", "ok");
+          }
+          var enviar = document.getElementById("facturarEnviarCorreo") && document.getElementById("facturarEnviarCorreo").checked;
+          if(enviar && factura && !facturaEmailAlreadySent(factura)){
+            return enviarCorreoFacturaGenerada(factura, extraPayload).then(function(mailOut){
+              var envio = mailOut && mailOut.factura_email;
+              if(envio && envio.enviado){
+                msg("Factura electronica generada y enviada a " + (envio.destinatario || "cliente") + ".", "ok");
+              } else if(envio && envio.error){
+                msg("Factura generada, pero el correo no se pudo enviar: " + envio.error, "error");
+              }
+              return run();
+            });
+          }
+          return run();
+        });
+      }
+
+      function dianEstadoLabel(out){
+        var integ = out && out.integracion_fiscal ? out.integracion_fiscal : {};
+        var acuse = norm(integ.acuse_estado || integ.estado_dian || integ.estado_envio);
+        var ref = norm(integ.referencia_externa || integ.cufe || integ.track_id || out && out.codigo_validacion);
+        var err = norm(integ.error || integ.ultimo_error || integ.mensaje);
+        if(acuse){
+          return "DIAN: " + acuse + (ref ? " (" + ref + ")" : "");
+        }
+        if(err) return "DIAN respondio: " + err;
+        return "Reenvio DIAN procesado.";
+      }
+
+      function reenviarDIAN(item){
+        if(!item || !norm(item.documento_codigo)){
+          msg("No hay factura electronica seleccionada para reenviar a DIAN.", "error");
+          return Promise.resolve();
+        }
+        msg("Reenviando factura a DIAN...", "");
+        return api("/api/empresa/facturacion_electronica?action=reenviar_dian&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: empresaID,
+            tipo_documento: "factura_electronica",
+            documento_codigo: item.documento_codigo,
+            cliente_id: Number(item.entidad_relacionada_id || 0),
+            cliente_nombre: norm(item.cliente_nombre),
+            cliente_email: norm(item.cliente_email)
+          })
+        }).then(function(out){
+          var label = dianEstadoLabel(out);
+          var kind = out && out.ok ? "ok" : "error";
+          return run().then(function(){
+            msg(label, kind);
+          });
+        }).catch(function(err){
+          msg(err.message || "No se pudo reenviar a DIAN.", "error");
+        });
+      }
+
+      function anularVentaDesdeDocumento(item){
+        var codigoDoc = norm(item && item.documento_codigo);
+        var base = ventaBaseCode(codigoDoc);
+        if(!base){
+          msg("No se pudo identificar el carrito origen de esta venta.", "error");
+          return Promise.resolve();
+        }
+        var motivo = window.prompt("Motivo de anulacion de la venta:");
+        motivo = norm(motivo);
+        if(motivo.length < 5){
+          msg("La anulacion requiere un motivo de minimo 5 caracteres.", "error");
+          return Promise.resolve();
+        }
+        if(!window.confirm("Confirmas anular completamente la venta " + codigoDoc + "? Se libera inventario y queda trazabilidad en corte de caja.")){
+          return Promise.resolve();
+        }
+        return api("/api/empresa/carritos_compra?empresa_id=" + encodeURIComponent(String(empresaID)) + "&include_inactive=1&q=" + encodeURIComponent(base), { method:"GET" })
+          .then(function(rows){
+            rows = Array.isArray(rows) ? rows : [];
+            var carrito = rows.find(function(row){ return norm(row.codigo).toUpperCase() === base.toUpperCase(); }) || rows[0];
+            if(!carrito || !carrito.id) throw new Error("No se encontro el carrito origen para anular.");
+            return api("/api/empresa/carritos_compra?action=anular_venta&empresa_id=" + encodeURIComponent(String(empresaID)) + "&id=" + encodeURIComponent(String(carrito.id)), {
+              method:"PUT",
+              headers:{ "Content-Type":"application/json" },
+              body:JSON.stringify({ motivo:motivo, confirmar:true })
+            });
+          }).then(function(out){
+            var docs = Array.isArray(out && out.documentos_anulados) ? out.documentos_anulados.length : 0;
+            msg("Venta anulada correctamente. Documentos actualizados: " + docs + ".", "ok");
+            return run();
+          });
+      }
+
+      function exportCSV(){
+        if(!state.items.length){ msg("No hay ventas para exportar.", "error"); return; }
+        var headers = ["fecha","tipo_documento","relacion_fe","documento_codigo","numero_legal","cliente","cliente_email","monto_total","moneda","estado_documento","pais_codigo","ambiente_fe"];
+        var lines = [headers.join(",")];
+        state.items.forEach(function(it){
+          var row = [
+            norm(it.fecha_documento||it.fecha_creacion),
+            typeLabel(it),
+            relationInfo(it).label,
+            norm(it.documento_codigo),
+            norm(it.numero_legal),
+            norm(it.cliente_nombre),
+            norm(it.cliente_email),
+            String(Number(it.monto_total||0)),
+            norm(it.moneda||"COP"),
+            norm(it.estado_documento),
+            norm(it.pais_codigo),
+            norm(it.ambiente_fe)
+          ].map(function(cell){
+            var c = String(cell||"");
+            if (c.indexOf('"') !== -1) c = c.replace(/"/g,'""');
+            if (/[",\n]/.test(c)) c = '"' + c + '"';
+            return c;
+          });
+          lines.push(row.join(","));
+        });
+        var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "ventas_empresa_" + String(empresaID) + ".csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function run(){
+        msg("", "");
+        var qs = buildQuery();
+        return api("/api/empresa/facturacion_electronica?" + qs).then(function(data){
+          var items = Array.isArray(data && data.items) ? data.items : [];
+          state.items = items.filter(function(it){
+            var t = norm(it.tipo_documento).toLowerCase();
+            return t === "factura_electronica" || t === "comprobante_pago";
+          });
+          renderTable();
+        }).catch(function(err){
+          state.items = [];
+          renderTable();
+          msg(err.message || "No se pudo consultar ventas", "error");
+        });
+      }
+
+      function loadEmpresa(){
+        var empresaInfo=document.getElementById("empresaInfo");
+        empresaInfo.textContent="Empresa ID: "+String(empresaID);
+        return api("/super/api/empresas?id=" + encodeURIComponent(String(empresaID))).then(function(emp){
+          if(emp && emp.nombre){
+            state.empresaNombre = emp.nombre;
+            document.getElementById("pageTitle").textContent = "Ventas - " + emp.nombre;
+            empresaInfo.textContent = "Empresa: " + emp.nombre + " (ID " + empresaID + ")";
+          }
+        }).catch(function(){});
+      }
+
+      document.getElementById("filtrosForm").addEventListener("submit", function(ev){ ev.preventDefault(); run(); });
+      document.getElementById("btnLimpiar").addEventListener("click", function(){ document.getElementById("tipoVenta").value=""; document.getElementById("estadoDocumento").value=""; document.getElementById("q").value=""; document.getElementById("includeInactive").checked=false; setDefaultDates(); run(); });
+      document.getElementById("btnExportCSV").addEventListener("click", exportCSV);
+      tbody.addEventListener("click", function(ev){
+        var btn = ev.target.closest("button[data-action]");
+        if(!btn) return;
+        var action = norm(btn.getAttribute("data-action")).toLowerCase();
+        var key = norm(btn.getAttribute("data-key"));
+        var item = state.index[key];
+        var targetKey = norm(btn.getAttribute("data-target-key"));
+        if(action === "ver_fe"){
+          if (targetKey && state.index[targetKey]) {
+            state.selectedKey = targetKey;
+            renderDetail(state.index[targetKey]);
+          }
+          return;
+        }
+        if(action === "reenviar_dian" && targetKey && state.index[targetKey]){
+          item = state.index[targetKey];
+          key = targetKey;
+        }
+        if(!item) return;
+        state.selectedKey = key;
+        if(action==="visualizar"){ renderDetail(item); visualizar(item); return; }
+        if(action==="facturar"){
+          openFacturarModal(item);
+          return;
+        }
+        if(action==="anular_venta"){
+          anularVentaDesdeDocumento(item).catch(function(err){
+            msg(err.message || "No se pudo anular la venta.", "error");
+          });
+          return;
+        }
+        if(action==="reenviar_dian"){
+          reenviarDIAN(item);
+          return;
+        }
+        if(action==="enviar"){ reenviarCorreo(item); return; }
+        if(action==="compartir_whatsapp"){ compartirVenta(item, "whatsapp"); return; }
+        if(action==="compartir_correo"){ compartirVenta(item, "email"); return; }
+      });
+      document.getElementById("facturarClienteSelect").addEventListener("change", syncFacturarClienteNuevo);
+      document.getElementById("btnFacturarVentaCancelar").addEventListener("click", closeFacturarModal);
+      document.getElementById("facturarVentaModal").addEventListener("click", function(ev){
+        if(ev.target && ev.target.id === "facturarVentaModal") closeFacturarModal();
+      });
+      document.getElementById("btnFacturarVentaConfirmar").addEventListener("click", function(){
+        var item = state.facturarItem;
+        if(!item){ setFacturarMsg("No hay venta seleccionada.", true); return; }
+        var payload;
+        try {
+          payload = collectFacturarPayload(item);
+        } catch(err) {
+          setFacturarMsg(err && err.message ? err.message : "Datos de cliente invalidos.", true);
+          return;
+        }
+        setFacturarMsg("Generando factura electronica...", false);
+        facturarDesdeVenta(item, payload).then(function(){
+          closeFacturarModal();
+        }).catch(function(err){
+          setFacturarMsg(err.message || "No se pudo generar la factura electronica desde la venta.", true);
+          msg(err.message || "No se pudo generar la factura electronica desde la venta.", "error");
+        });
+      });
+
+      (function init(){
+        if(!empresaID){ msg("empresa_id es obligatorio en la URL", "error"); return; }
+        setDefaultDates();
+        applySavedViewMode();
+        document.getElementById("modoVisualizacion").addEventListener("change", function(){
+          state.viewMode = currentViewMode();
+          saveViewMode(state.viewMode);
+          if(state.selectedKey && state.index[state.selectedKey]) renderDetail(state.index[state.selectedKey]);
+        });
+        document.getElementById("modoVisualizacion").addEventListener("input", function(){
+          state.viewMode = currentViewMode();
+          saveViewMode(state.viewMode);
+        });
+        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadClientes()]).finally(function(){
+          applySavedViewMode();
+          run();
+        });
+      })();
+    })();
+  </script>
+</body>
+</html>
+

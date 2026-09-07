@@ -1,0 +1,36 @@
+# Configuracion local: copia este archivo a:
+#   scripts/pcs_deployment.local.ps1
+# (esta en .gitignore). Asi actualizar_repositorio.ps1 y sync_to_vps.ps1
+# comparten la misma URL de Git y datos del VPS sin repetir argumentos.
+#
+# Despues: .\scripts\publicar_git_y_vps.ps1
+#  o por separado: .\scripts\actualizar_repositorio.ps1  y  .\scripts\sync_to_vps.ps1
+
+# --- Git (push a origin) ---
+# Prioridad: -RepoUrl en linea de comandos, luego esta variable, luego REPO_URL / PCS_REPO_URL, luego actualizar_repositorio.repo_url
+$script:PcsGitRemoteUrl = "https://github.com/TU_USUARIO/TU_REPO.git"
+
+# --- VPS (sync_to_vps) ---
+# Si no pasas -RemoteHost / -RemoteUser / etc. en la linea de comandos, se usan estos valores:
+$script:PcsVpsHost = "2.24.197.58"
+$script:PcsVpsUser = "root"
+$script:PcsVpsRemotePath = "/root/powerfulcontrolsystem"
+$script:PcsVpsPort = 49222
+$script:PcsVpsHostKey = "SHA256:mDBX0SnNik0QapfC2K0rsZ8hE23TvOR5Wi2yKtdhl1U"
+
+# Opcionales (descomenta y ajusta):
+# $script:PcsVpsIdentityFile = "clave privada ssh.ppk"
+# $script:PcsVpsServerPort = "8080"
+# $script:PcsVpsPublicBaseUrl = "https://powerfulcontrolsystem.com/"
+
+# --- VPS2 local de pruebas (sync_to_vps2) ---
+# No guardes claves reales en archivos versionados. Este archivo es solo plantilla.
+$script:PcsVps2Host = "192.168.1.188"
+$script:PcsVps2User = "admin1"
+$script:PcsVps2RemotePath = "/home/admin1/powerfulcontrolsystem"
+$script:PcsVps2Port = 22
+$script:PcsVps2HostKey = "SHA256:QQmT0ZjCVNNxw7ICwV7FKwrzzzfWrOrtZ9zTrEGkwH0"
+# $script:PcsVps2RepoUrl = $script:PcsGitRemoteUrl
+# $script:PcsVps2IdentityFile = "clave privada ssh.ppk"
+# $script:PcsVps2Branch = "main"
+# $script:PcsVps2Password = "usar solo en scripts/pcs_deployment.local.ps1 real o PCS_VPS2_PASSWORD"

@@ -1,0 +1,149 @@
+package db
+
+import (
+	"database/sql"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// EnsureEmpresaNextcloudSchema stores only the technical assignment. Passwords
+// stay in Nextcloud and temporary credentials are returned once to the caller.
+func EnsureEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
+	if dbEmpresas == nil {
+		return nil
+	}
+	if legacySchemaBootstrapDisabled() {
+		return verifyEmpresaNextcloudSchema(dbEmpresas)
+	}
+	return applyEmpresaNextcloudSchema(dbEmpresas)
+}
+
+// applyEmpresaNextcloudSchema is retained only for the legacy bootstrap. New
+// production installs receive this schema through pcs-migrate instead.
+func applyEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
+	_, err := execSQLCompat(dbEmpresas, `CREATE TABLE IF NOT EXISTS empresa_nextcloud_accounts (
+		id BIGSERIAL PRIMARY KEY,
+		empresa_id BIGINT NOT NULL UNIQUE REFERENCES empresas(id) ON DELETE CASCADE,
+		nextcloud_user TEXT NOT NULL UNIQUE,
+		quota_mb BIGINT NOT NULL DEFAULT 1024 CHECK (quota_mb > 0),
+		activo BOOLEAN NOT NULL DEFAULT TRUE,
+		provisioned BOOLEAN NOT NULL DEFAULT FALSE,
+		provisioned_at TIMESTAMP,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "provisioned_at", "TIMESTAMP"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "activo", "BOOLEAN NOT NULL DEFAULT TRUE"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "provisioned", "BOOLEAN NOT NULL DEFAULT FALSE"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "quota_mb", "BIGINT NOT NULL DEFAULT 1024"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "created_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbEmpresas, "empresa_nextcloud_accounts", "updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"); err != nil {
+		return err
+	}
+	_, err = execSQLCompat(dbEmpresas, `CREATE INDEX IF NOT EXISTS idx_empresa_nextcloud_accounts_empresa
+		ON empresa_nextcloud_accounts(empresa_id)`)
+	return err
+}
+
+func verifyEmpresaNextcloudSchema(dbEmpresas *sql.DB) error {
+	var exists sql.NullString
+	if err := queryRowSQLCompat(dbEmpresas, `SELECT to_regclass('public.empresa_nextcloud_accounts')`).Scan(&exists); err != nil {
+		return fmt.Errorf("verify nextcloud schema: %w", err)
+	}
+	if !exists.Valid || strings.TrimSpace(exists.String) == "" {
+		return fmt.Errorf("nextcloud schema is missing; run pcs-migrate before starting the API")
+	}
+	var (
+		quotaMB       int64
+		active        bool
+		provisioned   bool
+		provisionedAt sql.NullTime
+		createdAt     time.Time
+		updatedAt     time.Time
+	)
+	if err := queryRowSQLCompat(dbEmpresas, `SELECT quota_mb, activo, provisioned, provisioned_at, created_at, updated_at
+		FROM empresa_nextcloud_accounts WHERE 1=0`).
+		Scan(&quotaMB, &active, &provisioned, &provisionedAt, &createdAt, &updatedAt); err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("nextcloud schema is incomplete; run pcs-migrate before starting the API: %w", err)
+	}
+	return nil
+}
+
+// EmpresaNextcloudSchemaReady expone al API una verificacion estrictamente de
+// solo lectura. El esquema debe haber sido aplicado previamente por pcs-migrate.
+func EmpresaNextcloudSchemaReady(dbEmpresas *sql.DB) error {
+	if dbEmpresas == nil {
+		return fmt.Errorf("conexion de base de datos no disponible")
+	}
+	return verifyEmpresaNextcloudSchema(dbEmpresas)
+}
+
+func legacySchemaBootstrapDisabled() bool {
+	if !strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_ENV")), "production") {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_RUNTIME_ROLE")), "api") {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("PCS_RUNTIME_SCHEMA_BOOTSTRAP"))) {
+	case "0", "false", "no", "off":
+		return true
+	default:
+		return false
+	}
+}
+
+// ProvisionEmpresaNextcloudAssignment creates the technical account assignment
+// immediately when a company is created. It does not contact Nextcloud.
+func ProvisionEmpresaNextcloudAssignment(dbEmpresas *sql.DB, empresaID, quotaMB int64) error {
+	if dbEmpresas == nil || empresaID <= 0 {
+		return nil
+	}
+	if quotaMB <= 0 {
+		quotaMB = 1024
+	}
+	if err := EmpresaNextcloudSchemaReady(dbEmpresas); err != nil {
+		return err
+	}
+	_, err := dbEmpresas.Exec(`INSERT INTO empresa_nextcloud_accounts (empresa_id, nextcloud_user, quota_mb, activo)
+		VALUES ($1, $2, $3, TRUE) ON CONFLICT (empresa_id) DO UPDATE SET quota_mb=EXCLUDED.quota_mb, updated_at=CURRENT_TIMESTAMP`, empresaID, "pcs_empresa_"+strconv.FormatInt(empresaID, 10), quotaMB)
+	return err
+}
+
+// SyncEmpresaNextcloudAssignmentsForAll applies the global default to every
+// existing company, preserving the empresa_id boundary.
+func SyncEmpresaNextcloudAssignmentsForAll(dbEmpresas *sql.DB, quotaMB int64) (int64, error) {
+	if dbEmpresas == nil {
+		return 0, nil
+	}
+	if quotaMB <= 0 {
+		quotaMB = 1024
+	}
+	if err := EmpresaNextcloudSchemaReady(dbEmpresas); err != nil {
+		return 0, err
+	}
+	res, err := dbEmpresas.Exec(`INSERT INTO empresa_nextcloud_accounts (empresa_id, nextcloud_user, quota_mb)
+		SELECT id, 'pcs_empresa_' || id::text, $1 FROM empresas
+		ON CONFLICT (empresa_id) DO UPDATE SET quota_mb=EXCLUDED.quota_mb, updated_at=CURRENT_TIMESTAMP`, quotaMB)
+	if err != nil {
+		return 0, err
+	}
+	count, _ := res.RowsAffected()
+	return count, nil
+}

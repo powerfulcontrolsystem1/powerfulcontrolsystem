@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Panel super administrador</title>
+  <script>
+    (function(){
+      var valid = {dark:1,"dark-violet":1,"dark-emerald":1,"dark-corporate":1,"dark-neon":1,light:1,"light-rose":1,"light-gold":1,"light-wood":1};
+      function cookie(name){ var match = String(document.cookie || "").match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)"); return match ? decodeURIComponent(match.pop()) : ""; }
+      var theme = "";
+      try { theme = window.localStorage.getItem("theme") || ""; } catch(e) {}
+      theme = String(theme || cookie("pcs_theme") || "light").trim().toLowerCase();
+      if(theme === "dark-protect") theme = "dark";
+      if(!valid[theme]) theme = "light";
+      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.classList.toggle("theme-light", theme.indexOf("light") === 0);
+      document.documentElement.classList.toggle("theme-dark", theme.indexOf("light") !== 0);
+    })();
+  </script>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root{color-scheme:light dark;--cmd-bg:var(--bg,#f4f7fb);--cmd-panel:var(--surface,#fff);--cmd-soft:var(--surface-soft,#f7f9fc);--cmd-line:var(--border,rgba(15,35,64,.16));--cmd-text:var(--text,#10243f);--cmd-muted:var(--muted,#52627a);--cmd-blue:var(--accent,#0f6fcb);--cmd-green:#15803d;--cmd-amber:#b45309;--cmd-red:#b91c1c;--cmd-ok-bg:color-mix(in srgb,var(--cmd-green) 10%,var(--cmd-panel));--cmd-warn-bg:color-mix(in srgb,var(--cmd-amber) 12%,var(--cmd-panel));--cmd-crit-bg:color-mix(in srgb,var(--cmd-red) 10%,var(--cmd-panel));--cmd-info-bg:color-mix(in srgb,var(--cmd-blue) 9%,var(--cmd-panel))}
+    html.theme-dark,html[data-theme^="dark"]{color-scheme:dark;--cmd-bg:var(--bg,#0c1420);--cmd-panel:color-mix(in srgb,var(--surface,#16253a) 94%,#000 6%);--cmd-soft:color-mix(in srgb,var(--surface-soft,#1d2f48) 86%,#000 14%);--cmd-line:color-mix(in srgb,var(--border,rgba(152,176,206,.26)) 78%,var(--text,#e8f0fb) 8%);--cmd-green:#4ade80;--cmd-amber:#fbbf24;--cmd-red:#f87171}
+    body.super-page{margin:0;background:var(--cmd-bg);color:var(--cmd-text);font-family:Inter,Segoe UI,Arial,sans-serif}
+    .cmd-shell{width:min(1220px,calc(100vw - 28px));margin:0 auto;padding:0 0 20px}
+    .cmd-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:8px 11px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);color:var(--cmd-text);font-weight:850;font-size:.8rem;text-decoration:none;cursor:pointer}
+    .cmd-btn.primary{background:var(--cmd-blue);border-color:var(--cmd-blue);color:#fff}
+    .cmd-btn.danger{background:var(--cmd-crit-bg);border-color:color-mix(in srgb,var(--cmd-red) 36%,var(--cmd-line));color:var(--cmd-red)}
+    .cmd-btn:hover{filter:brightness(.98)}
+    .cmd-top-row{display:grid;grid-template-columns:minmax(280px,1fr) minmax(190px,230px) minmax(220px,260px) minmax(220px,260px);gap:9px;align-items:stretch;margin-bottom:9px}
+    .cmd-favorites-panel{margin:0;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
+    .cmd-favorites-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .cmd-favorites-heading{display:flex;align-items:baseline;gap:8px;min-width:0}
+    .cmd-favorites-kicker{margin:0;color:var(--cmd-muted);font-size:.7rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+    .cmd-favorites-kicker::after{content:"/";margin-left:8px;color:color-mix(in srgb,var(--cmd-muted) 52%,transparent)}
+    .cmd-favorites-title{margin:0;color:var(--cmd-text);font-size:1rem;line-height:1.15;white-space:nowrap}
+    .cmd-favorites-count{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:24px;padding:0 8px;border-radius:999px;background:var(--cmd-info-bg);color:var(--cmd-blue);font-size:.76rem;font-weight:900}
+    .cmd-favorites-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px}
+    .cmd-favorite-card{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:center;min-height:46px;padding:7px 9px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft);color:var(--cmd-text);font-size:.78rem;font-weight:850;text-decoration:none}
+    .cmd-favorite-card:hover{border-color:color-mix(in srgb,var(--cmd-blue) 42%,var(--cmd-line));background:var(--cmd-info-bg)}
+    .cmd-favorite-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--cmd-panel);border:1px solid var(--cmd-line);color:var(--cmd-blue);font-weight:900}
+    .cmd-favorite-icon img{width:20px;height:20px;object-fit:contain}
+    .cmd-favorite-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cmd-favorites-empty{margin:0;padding:9px;border:1px dashed var(--cmd-line);border-radius:8px;color:var(--cmd-muted);font-size:.78rem}
+    .cmd-email-card{display:grid;align-content:space-between;gap:8px;padding:10px;border:1px solid color-mix(in srgb,var(--cmd-blue) 52%,var(--cmd-line));border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--cmd-blue) 82%,#38bdf8 18%),color-mix(in srgb,var(--cmd-blue) 62%,#0f766e 38%));color:#fff;text-decoration:none;min-height:100%;box-shadow:0 12px 24px color-mix(in srgb,var(--cmd-blue) 20%,transparent)}
+    .cmd-email-card:hover{border-color:color-mix(in srgb,#fff 42%,var(--cmd-blue));filter:brightness(1.03)}
+    .cmd-email-card-top{display:flex;align-items:center;gap:8px}
+    .cmd-email-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;border:1px solid var(--cmd-line);background:var(--cmd-panel)}
+    .cmd-email-icon img{width:20px;height:20px;object-fit:contain}
+    .cmd-email-card h2{margin:0;font-size:.92rem;line-height:1.1;color:#fff}
+    .cmd-email-card p{margin:3px 0 0;color:rgba(255,255,255,.84);font-size:.72rem;line-height:1.25}
+    .cmd-email-status{display:inline-flex;align-items:center;justify-content:center;width:max-content;border-radius:999px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.42);font-size:.68rem;font-weight:900;padding:4px 8px}
+    .cmd-openai-card,.cmd-usage-card{display:grid;gap:8px;padding:9px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);min-height:100%}
+    .cmd-openai-card-head,.cmd-usage-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .cmd-openai-card h2,.cmd-usage-card h2{margin:0;font-size:.92rem;line-height:1.1;color:var(--cmd-text)}
+    .cmd-openai-card p,.cmd-usage-card p{margin:3px 0 0;color:var(--cmd-muted);font-size:.72rem;line-height:1.25}
+    .cmd-openai-total,.cmd-usage-total{font-size:.95rem;font-weight:900;color:var(--cmd-blue);white-space:nowrap}
+    .cmd-usage-total.whatsapp{color:#16a34a}
+    .cmd-openai-bars,.cmd-usage-bars{display:flex;align-items:end;gap:3px;height:40px;padding-top:4px;border-top:1px solid var(--cmd-line)}
+    .cmd-openai-bar,.cmd-usage-bar{flex:1;min-width:3px;border-radius:3px 3px 0 0;background:color-mix(in srgb,var(--cmd-blue) 70%,var(--cmd-panel));opacity:.9}
+    .cmd-usage-bar.whatsapp{background:color-mix(in srgb,#16a34a 70%,var(--cmd-panel))}
+    .cmd-usage-bar.sales{background:color-mix(in srgb,var(--cmd-amber) 74%,var(--cmd-panel))}
+    .cmd-openai-meta,.cmd-usage-meta{display:flex;justify-content:space-between;gap:8px;color:var(--cmd-muted);font-size:.68rem;font-weight:850}
+    .cmd-license-overview{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:9px;align-items:stretch}
+    .cmd-license-card{display:flex;align-items:center;justify-content:space-between;gap:10px;width:max-content;min-width:230px;max-width:310px;padding:8px 10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
+    .cmd-license-card span{display:block;color:var(--cmd-muted);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+    .cmd-license-card strong{display:block;margin-top:4px;color:var(--cmd-text);font-size:1.35rem;line-height:1}
+    .cmd-sales-panel{margin-bottom:10px}
+    .cmd-sales-body{display:grid;grid-template-columns:minmax(180px,260px) minmax(0,1fr);gap:10px;padding:9px}
+    .cmd-sales-total{display:grid;gap:4px;align-content:center;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft);padding:9px}
+    .cmd-sales-total span{color:var(--cmd-muted);font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+    .cmd-sales-total strong{color:var(--cmd-amber);font-size:1.16rem;line-height:1;font-weight:900}
+    .cmd-sales-total small{color:var(--cmd-muted);font-size:.72rem;font-weight:850}
+    .cmd-license-card.ok strong{color:var(--cmd-green)}
+    .cmd-license-card.warn strong{color:var(--cmd-amber)}
+    .cmd-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
+    .cmd-panel{border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
+    .cmd-panel+.cmd-panel{margin-top:12px}
+    .cmd-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:9px 10px;border-bottom:1px solid var(--cmd-line)}
+    .cmd-panel-head h2{margin:0;color:var(--cmd-text);font-size:.98rem;line-height:1.15}
+    .cmd-panel-head p{margin:4px 0 0;color:var(--cmd-muted);font-size:.76rem;line-height:1.25}
+    .cmd-panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+    .cmd-pill{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:5px 8px;border-radius:999px;font-size:.68rem;font-weight:900;text-transform:uppercase;border:1px solid var(--cmd-line);background:var(--cmd-soft);color:var(--cmd-muted);white-space:nowrap}
+    .cmd-pill.ok{background:var(--cmd-ok-bg);border-color:color-mix(in srgb,var(--cmd-green) 32%,var(--cmd-line));color:var(--cmd-green)}
+    .cmd-pill.warn{background:var(--cmd-warn-bg);border-color:color-mix(in srgb,var(--cmd-amber) 34%,var(--cmd-line));color:var(--cmd-amber)}
+    .cmd-pill.crit{background:var(--cmd-crit-bg);border-color:color-mix(in srgb,var(--cmd-red) 34%,var(--cmd-line));color:var(--cmd-red)}
+    .cmd-pill.info{background:var(--cmd-info-bg);border-color:color-mix(in srgb,var(--cmd-blue) 28%,var(--cmd-line));color:var(--cmd-blue)}
+    .cmd-summary{display:grid;grid-template-columns:minmax(118px,150px) minmax(0,1fr);gap:7px;padding:7px}
+    .cmd-score{display:grid;place-items:center;align-content:center;min-height:118px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
+    .cmd-score-ring{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--cmd-green) 0deg,var(--cmd-green) var(--score-deg,0deg),color-mix(in srgb,var(--cmd-muted) 22%,transparent) var(--score-deg,0deg),color-mix(in srgb,var(--cmd-muted) 22%,transparent) 360deg)}
+    .cmd-score-ring>div{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;background:var(--cmd-panel)}
+    .cmd-score strong{font-size:1.45rem;line-height:1;color:var(--cmd-text)}
+    .cmd-score-label{margin-top:6px;font-size:.78rem;font-weight:900}
+    .cmd-score small{display:block;margin-top:4px;color:var(--cmd-muted);font-size:.7rem;font-weight:900;text-transform:uppercase}
+    .cmd-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+    .cmd-kpi{min-height:66px;padding:7px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
+    .cmd-kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--cmd-muted);font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+    .cmd-dot{width:10px;height:10px;border-radius:50%;background:var(--cmd-blue);flex:0 0 auto}
+    .ok .cmd-dot,.cmd-dot.ok{background:var(--cmd-green)}.warn .cmd-dot,.cmd-dot.warn{background:var(--cmd-amber)}.crit .cmd-dot,.cmd-dot.crit{background:var(--cmd-red)}.info .cmd-dot,.cmd-dot.info{background:var(--cmd-blue)}
+    .cmd-kpi-value{margin-top:7px;color:var(--cmd-text);font-size:.95rem;font-weight:900;line-height:1.12;overflow-wrap:anywhere}
+    #kpiPlatformValue{font-size:1.18rem;line-height:1.04}
+    .cmd-kpi-sub{margin-top:4px;color:var(--cmd-muted);font-size:.7rem;line-height:1.18}
+    .cmd-spark{height:50px;padding:0 8px 8px}
+    .cmd-spark svg{display:block;width:100%;height:100%}
+    .cmd-list{display:grid;gap:7px;padding:9px}
+    .cmd-alert{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:flex-start;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
+    .cmd-alert strong{display:block;color:var(--cmd-text);font-size:.82rem;line-height:1.2}
+    .cmd-alert span{display:block;margin-top:3px;color:var(--cmd-muted);font-size:.72rem;line-height:1.25;overflow-wrap:anywhere}
+    .cmd-table-wrap{overflow:auto;padding:0 8px 8px}
+    .cmd-table{width:100%;min-width:540px;border-collapse:separate;border-spacing:0}
+    .cmd-table th,.cmd-table td{padding:6px 8px;border-bottom:1px solid var(--cmd-line);text-align:left;vertical-align:top;font-size:.74rem}
+    .cmd-table th{color:var(--cmd-muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em}
+    .cmd-toast{position:fixed;right:14px;bottom:14px;z-index:20;display:none;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid var(--cmd-line);background:var(--cmd-text);color:var(--cmd-panel);font-size:.82rem}
+    .cmd-toast.show{display:block}
+    @media(max-width:1120px){.cmd-layout{grid-template-columns:1fr}}
+    @media(max-width:860px){.cmd-summary{grid-template-columns:1fr}.cmd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:980px){.cmd-top-row,.cmd-sales-body{grid-template-columns:1fr}.cmd-email-card,.cmd-openai-card,.cmd-usage-card{min-height:auto}}
+    @media(max-width:560px){.cmd-shell{width:min(100vw - 16px,1320px);padding-top:0}.cmd-kpis,.cmd-favorites-grid{grid-template-columns:1fr}.cmd-license-card{width:100%;max-width:none}.cmd-panel-head{display:grid}.cmd-panel-actions{justify-content:flex-start}.cmd-favorites-heading{gap:5px}.cmd-favorites-title{font-size:.9rem}.cmd-favorites-kicker{font-size:.64rem}}
+  </style>
+</head>
+<body class="super-page">
+  <main class="cmd-shell">
+    <div class="cmd-top-row">
+      <section class="cmd-favorites-panel" aria-labelledby="superFavoritesTitle">
+        <div class="cmd-favorites-head">
+          <div class="cmd-favorites-heading">
+            <p class="cmd-favorites-kicker">Accesos rapidos</p>
+            <h2 id="superFavoritesTitle" class="cmd-favorites-title">Favoritos</h2>
+          </div>
+          <span id="superFavoritesCount" class="cmd-favorites-count">0</span>
+        </div>
+        <div id="superFavoritesList" class="cmd-favorites-grid" aria-live="polite">
+          <p class="cmd-favorites-empty">Marca cualquier pagina con la estrella para verla aqui.</p>
+        </div>
+      </section>
+      <a class="cmd-email-card" href="/seleccionar_empresa.html" target="_top" aria-label="Seleccionar empresa">
+        <div class="cmd-email-card-top">
+          <span class="cmd-email-icon"><img src="/img/company-briefcase-color.svg" alt=""></span>
+          <div>
+            <h2>Seleccionar empresa</h2>
+            <p>Cambiar el alcance operativo</p>
+          </div>
+        </div>
+        <span class="cmd-email-status">Ver</span>
+      </a>
+      <section class="cmd-openai-card" aria-label="Consumo OpenAI">
+        <div class="cmd-openai-card-head">
+          <div>
+            <h2>Consumo OpenAI</h2>
+            <p>Ultimos 30 dias</p>
+          </div>
+          <strong id="openaiMonthTokens" class="cmd-openai-total">--</strong>
+        </div>
+        <div id="openaiMonthBars" class="cmd-openai-bars" aria-hidden="true"></div>
+        <div class="cmd-openai-meta"><span id="openaiMonthCalls">-- consultas</span><span id="openaiMonthToday">Hoy --</span></div>
+      </section>
+      <section class="cmd-usage-card" aria-label="Consumo WhatsApp API">
+        <div class="cmd-usage-card-head">
+          <div>
+            <h2>Consumo WhatsApp API</h2>
+            <p>Ultimos 30 dias</p>
+          </div>
+          <strong id="whatsappMonthTotal" class="cmd-usage-total whatsapp">--</strong>
+        </div>
+        <div id="whatsappMonthBars" class="cmd-usage-bars" aria-hidden="true"></div>
+        <div class="cmd-usage-meta"><span id="whatsappMonthSent">-- enviados</span><span id="whatsappMonthToday">Hoy --</span></div>
+      </section>
+    </div>
+
+    <section class="cmd-license-overview" aria-label="Estado de licencias por empresa">
+      <article class="cmd-license-card ok">
+        <div>
+          <span>Empresas con licencia activa</span>
+          <strong id="licenseActiveCompanies">--</strong>
+        </div>
+        <a class="cmd-btn primary" href="/super/empresas.html?licencia=activa">Ver</a>
+      </article>
+      <article class="cmd-license-card warn">
+        <div>
+          <span>Empresas sin licencia activa</span>
+          <strong id="licenseInactiveCompanies">--</strong>
+        </div>
+      </article>
+    </section>
+
+    <section class="cmd-panel cmd-sales-panel" aria-label="Ventas de licencias">
+      <div class="cmd-panel-head">
+        <div>
+          <h2>Ventas de licencias</h2>
+          <p>Facturacion comercial de Powerful Control System</p>
+        </div>
+        <span id="licenseSalesCount" class="cmd-pill info">-- ventas</span>
+      </div>
+      <div class="cmd-sales-body">
+        <div class="cmd-sales-total">
+          <span>Ingreso aprobado</span>
+          <strong id="licenseSalesTotal">$ --</strong>
+          <small>Pagos Wompi y Epayco aprobados</small>
+        </div>
+        <div>
+          <div id="licenseSalesBars" class="cmd-usage-bars" aria-label="Ventas mensuales de licencias"></div>
+          <div class="cmd-usage-meta"><span id="licenseSalesProvider">Empresa PCS</span><span id="licenseSalesUpdated">Sin lectura</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cmd-layout">
+      <div>
+        <section class="cmd-panel" aria-label="Resumen principal">
+          <div class="cmd-panel-head">
+            <div>
+              <h2>Estado general</h2>
+              <p id="cmdLastUpdate">Sin lectura reciente</p>
+            </div>
+            <div class="cmd-panel-actions" aria-label="Controles de estado general">
+              <span id="cmdMode" class="cmd-pill info">Normal</span>
+              <button id="cmdRefresh" class="cmd-btn primary" type="button">Actualizar</button>
+              <button id="cmdResetMetrics" class="cmd-btn" type="button">Reiniciar metricas</button>
+              <button id="cmdResetErrors" class="cmd-btn danger" type="button">Reiniciar errores</button>
+              <button id="cmdRunAlerts" class="cmd-btn danger" type="button">Evaluar alertas</button>
+            </div>
+          </div>
+          <div class="cmd-summary">
+            <div class="cmd-score">
+              <div id="cmdScoreRing" class="cmd-score-ring">
+                <div><strong id="cmdScore">--</strong></div>
+              </div>
+              <div id="cmdScoreLabel" class="cmd-score-label">Calculando</div>
+              <small>Score operativo</small>
+            </div>
+            <div class="cmd-kpis">
+              <article id="kpiPlatform" class="cmd-kpi info">
+                <div class="cmd-kpi-top"><span>Infraestructura</span><i class="cmd-dot"></i></div>
+                <div id="kpiPlatformValue" class="cmd-kpi-value">--</div>
+                <div id="kpiPlatformSub" class="cmd-kpi-sub">CPU, memoria y disco</div>
+              </article>
+              <article id="kpiDatabase" class="cmd-kpi info">
+                <div class="cmd-kpi-top"><span>PostgreSQL</span><i class="cmd-dot"></i></div>
+                <div id="kpiDatabaseValue" class="cmd-kpi-value">--</div>
+                <div id="kpiDatabaseSub" class="cmd-kpi-sub">Motor principal</div>
+              </article>
+              <article id="kpiSecurity" class="cmd-kpi info">
+                <div class="cmd-kpi-top"><span>Alertas</span><i class="cmd-dot"></i></div>
+                <div id="kpiSecurityValue" class="cmd-kpi-value">--</div>
+                <div id="kpiSecuritySub" class="cmd-kpi-sub">Seguridad y errores</div>
+              </article>
+              <article id="kpiCompanies" class="cmd-kpi info">
+                <div class="cmd-kpi-top"><span>Empresas</span><i class="cmd-dot"></i></div>
+                <div id="kpiCompaniesValue" class="cmd-kpi-value">--</div>
+                <div id="kpiCompaniesSub" class="cmd-kpi-sub">Clientes registrados</div>
+              </article>
+              <article id="kpiLicenses" class="cmd-kpi info">
+                <div class="cmd-kpi-top"><span>Licencias</span><i class="cmd-dot"></i></div>
+                <div id="kpiLicensesValue" class="cmd-kpi-value">--</div>
+                <div id="kpiLicensesSub" class="cmd-kpi-sub">Planes activos</div>
+              </article>
+              <article id="kpiContinuity" class="cmd-kpi info">
+                <div class="cmd-kpi-top"><span>Continuidad</span><i class="cmd-dot"></i></div>
+                <div id="kpiContinuityValue" class="cmd-kpi-value">--</div>
+                <div id="kpiContinuitySub" class="cmd-kpi-sub">Servicios criticos</div>
+              </article>
+            </div>
+          </div>
+          <div class="cmd-spark" aria-label="Tendencia de carga">
+            <svg id="cmdSparkSvg" viewBox="0 0 600 74" preserveAspectRatio="none" role="img"></svg>
+          </div>
+        </section>
+
+        <section class="cmd-panel">
+          <div class="cmd-panel-head">
+            <div><h2>Incidentes recientes</h2><p>Ultimos eventos que requieren trazabilidad.</p></div>
+            <a class="cmd-btn" href="/super/alertas_sistema.html">Gestionar</a>
+          </div>
+          <div class="cmd-table-wrap">
+            <table class="cmd-table">
+              <thead><tr><th>Nivel</th><th>Evento</th><th>Fecha</th></tr></thead>
+              <tbody id="errorRows"><tr><td colspan="3">Cargando errores...</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+      <aside>
+        <section class="cmd-panel">
+          <div class="cmd-panel-head">
+            <div><h2>Prioridades</h2><p>Lo que debe revisarse primero.</p></div>
+            <span id="riskBadge" class="cmd-pill info">--</span>
+          </div>
+          <div id="riskList" class="cmd-list">
+            <div class="cmd-alert"><i class="cmd-dot info"></i><div><strong>Cargando senales</strong><span>Espere la lectura inicial.</span></div></div>
+          </div>
+        </section>
+
+        <section class="cmd-panel" aria-label="Ciberseguridad">
+          <div class="cmd-panel-head">
+            <div><h2>Ciberseguridad</h2><p>Lectura del ultimo analisis y de alertas operativas.</p></div>
+            <a class="cmd-btn" href="/super/seguridad.html">Revisar</a>
+          </div>
+          <div id="cybersecurityList" class="cmd-list">
+            <div class="cmd-alert"><i class="cmd-dot info"></i><div><strong>Cargando postura</strong><span>Consultando las fuentes disponibles.</span></div></div>
+          </div>
+        </section>
+
+      </aside>
+    </section>
+    <section id="superPortalVisitCounter" class="cmd-panel portal-visit-counter super-portal-visit-counter" aria-labelledby="superPortalVisitTitle" data-portal-visits-widget data-count-visit="0">
+      <div class="cmd-panel-head">
+        <div>
+          <span class="portal-visit-kicker">Analitica publica</span>
+          <h2 id="superPortalVisitTitle">Visitas al portal por pais</h2>
+          <p class="portal-visit-status" data-portal-visits-status>Cargando contador...</p>
+        </div>
+        <div class="portal-visit-total" aria-label="Total de visitas registradas">
+          <strong data-portal-visits-total>0</strong>
+          <span>visitas registradas</span>
+        </div>
+      </div>
+      <div class="portal-visit-shell">
+        <div class="portal-visit-main">
+          <div class="portal-visit-map" aria-live="polite" data-portal-visits-map></div>
+        </div>
+        <aside class="portal-visit-side" aria-label="Visitas por pais">
+          <div data-portal-visits-countries></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <div id="cmdToast" class="cmd-toast" role="status"></div>
+
+  <script>
+    (function(){
+      "use strict";
+      var state = { metric:null, history:[], postgres:null, alerts:null, errors:null, services:[], licenses:[], companies:[], empresasEstado:null, consumos:null, licenseSales:null, securityScan:null };
+      var $ = function(id){ return document.getElementById(id); };
+      var favoritesKey = "super_admin:favorites";
+      function num(v){ var n = Number(v); return Number.isFinite(n) ? n : 0; }
+      function pct(v){ return Math.max(0, Math.min(100, num(v))); }
+      function text(id, value){ var el = $(id); if(el) el.textContent = value; }
+      function esc(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+      function toast(msg){ var el = $("cmdToast"); if(!el) return; el.textContent = msg; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(function(){ el.classList.remove("show"); }, 3200); }
+      function normalizeHref(href){
+        try {
+          var u = new URL(String(href || ""), window.location.origin);
+          return u.pathname + u.search;
+        } catch(e) {
+          return "";
+        }
+      }
+      function isAllowedFavoriteHref(href){
+        var path = normalizeHref(href).split("?")[0];
+        return path === "/ayuda/ayuda.html" || path.indexOf("/super/") === 0;
+      }
+      function readFavorites(){
+        try {
+          var parsed = JSON.parse(window.localStorage.getItem(favoritesKey) || "[]");
+          return Array.isArray(parsed) ? parsed.filter(function(item){
+            return item && isAllowedFavoriteHref(item.href);
+          }) : [];
+        } catch(e) {
+          return [];
+        }
+      }
+      function renderFavoriteIcon(favorite){
+        var icon = favorite && favorite.icon;
+        if(icon && icon.type === "img" && icon.src){
+          return '<span class="cmd-favorite-icon"><img src="'+esc(icon.src)+'" alt=""></span>';
+        }
+        return '<span class="cmd-favorite-icon">'+esc((icon && icon.value) || "*")+'</span>';
+      }
+      function renderFavorites(){
+        var list = $("superFavoritesList");
+        var count = $("superFavoritesCount");
+        if(!list) return;
+        var favorites = readFavorites().slice(0,8);
+        if(count) count.textContent = String(favorites.length);
+        list.innerHTML = "";
+        if(!favorites.length){
+          list.innerHTML = '<p class="cmd-favorites-empty">Marca cualquier pagina con la estrella para verla aqui.</p>';
+          return;
+        }
+        favorites.forEach(function(favorite){
+          var href = normalizeHref(favorite.href);
+          var title = favorite.title || "Pagina de super administrador";
+          var link = document.createElement("a");
+          link.className = "cmd-favorite-card";
+          link.href = href;
+          link.innerHTML = renderFavoriteIcon(favorite) + '<span class="cmd-favorite-text">'+esc(title)+'</span>';
+          list.appendChild(link);
+        });
+      }
+      function fmtPct(v){ return pct(v).toFixed(pct(v) >= 10 ? 0 : 1) + "%"; }
+      function moneyCOP(v){ return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(num(v)); }
+      function statusByPercent(v, warn, crit){ v = pct(v); return v >= crit ? "crit" : (v >= warn ? "warn" : "ok"); }
+      function serviceStatus(raw){
+        var s = String(raw || "").toLowerCase();
+        if(["active","ok","running","healthy"].indexOf(s) >= 0) return "ok";
+        if(["degraded","warning","warn","unavailable","unknown"].indexOf(s) >= 0) return "warn";
+        if(["error","failed","inactive"].indexOf(s) >= 0) return "crit";
+        return "info";
+      }
+      function severityStatus(raw){
+        var s = String(raw || "").toLowerCase();
+        if(["critical","critico","crit","error","danger"].indexOf(s) >= 0) return "crit";
+        if(["warning","warn","alto","media","medium"].indexOf(s) >= 0) return "warn";
+        if(["ok","healthy","stable","operativa","operativo"].indexOf(s) >= 0) return "ok";
+        return "info";
+      }
+      function setCard(id, status, value, sub){
+        var el = $(id);
+        if(el){ el.classList.remove("ok","warn","crit","info"); el.classList.add(status || "info"); }
+        text(id + "Value", value);
+        text(id + "Sub", sub);
+      }
+      async function getJSON(url, fallback){
+        try {
+          var res = await fetch(url, { credentials:"same-origin" });
+          if(!res.ok) throw new Error("HTTP " + res.status);
+          return await res.json();
+        } catch(e) {
+          return fallback;
+        }
+      }
+      async function postJSON(url){
+        var res = await fetch(url, { method:"POST", credentials:"same-origin" });
+        if(!res.ok) throw new Error(await res.text() || ("HTTP " + res.status));
+        return res.json().catch(function(){ return {}; });
+      }
+      async function resetPanelIndicator(action, buttonId, confirmText, doneText){
+        if(!window.confirm(confirmText)) return;
+        var btn = $(buttonId);
+        try {
+          if(btn) btn.disabled = true;
+          await postJSON("/super/api/panel_control/reset?action=" + encodeURIComponent(action));
+          await loadAll();
+          toast(doneText);
+        } catch(e) {
+          toast(e.message || "No se pudo reiniciar el indicador.");
+        } finally {
+          if(btn) btn.disabled = false;
+        }
+      }
+      function alertCandidates(){
+        var a = state.alerts || {};
+        return (a.evaluation && Array.isArray(a.evaluation.candidates)) ? a.evaluation.candidates : [];
+      }
+      function computeScore(){
+        var penalties = 0, m = state.metric || {};
+        penalties += pct(m.cpu_percent) > 90 ? 18 : (pct(m.cpu_percent) > 75 ? 9 : 0);
+        penalties += pct(m.mem_percent) > 90 ? 18 : (pct(m.mem_percent) > 78 ? 9 : 0);
+        penalties += pct(m.disk_percent) > 90 ? 22 : (pct(m.disk_percent) > 80 ? 11 : 0);
+        penalties += alertCandidates().filter(function(a){ return a.triggered; }).length * 10;
+        var errSummary = (state.errors && state.errors.summary) || {};
+        penalties += num(errSummary.critical) * 14 + Math.min(20, num(errSummary.last_24h) * 4);
+        penalties += state.services.filter(function(s){ return serviceStatus(s.estado) === "crit"; }).length * 10;
+        var pgHealth = String((state.postgres && state.postgres.health) || "").toLowerCase();
+        if(pgHealth === "critical" || pgHealth === "critico") penalties += 18;
+        else if(pgHealth === "warning" || pgHealth === "degraded") penalties += 9;
+        return Math.max(0, Math.min(100, 100 - penalties));
+      }
+      function scoreStatus(score){ return score < 60 ? "crit" : (score < 82 ? "warn" : "ok"); }
+      function renderSpark(){
+        var svg = $("cmdSparkSvg"), rows = state.history || [];
+        if(!svg) return;
+        if(!rows.length){ svg.innerHTML = '<text x="12" y="42" style="fill:var(--cmd-muted)" font-size="13">Sin historico de metricas</text>'; return; }
+        var data = rows.slice(-70).reverse();
+        function path(key){
+          return data.map(function(x,i){
+            var px = data.length === 1 ? 0 : (i/(data.length-1))*590+5;
+            var py = 64 - (pct(x[key])/100)*54;
+            return (i ? "L" : "M") + px.toFixed(1) + " " + py.toFixed(1);
+          }).join(" ");
+        }
+        svg.innerHTML = '<path d="M5 64H595" style="stroke:var(--cmd-line)"/><path d="'+path("cpu_percent")+'" fill="none" style="stroke:var(--cmd-blue)" stroke-width="2.4"/><path d="'+path("mem_percent")+'" fill="none" style="stroke:var(--cmd-green)" stroke-width="2.4"/><path d="'+path("disk_percent")+'" fill="none" style="stroke:var(--cmd-amber)" stroke-width="2.4"/>';
+      }
+      function renderTop(){
+        var score = computeScore(), status = scoreStatus(score);
+        var label = status === "ok" ? "Estable" : (status === "warn" ? "Atencion" : "Critico");
+        text("cmdScore", String(score));
+        text("cmdScoreLabel", label);
+        text("cmdMode", status === "ok" ? "Operativo" : (status === "warn" ? "Vigilancia" : "Incidente"));
+        $("cmdMode").className = "cmd-pill " + status;
+        text("cmdLastUpdate", "Ultima lectura: " + new Date().toLocaleString("es-CO"));
+        var ring = $("cmdScoreRing");
+        var color = status === "crit" ? "var(--cmd-red)" : status === "warn" ? "var(--cmd-amber)" : "var(--cmd-green)";
+        var deg = (score * 3.6).toFixed(0) + "deg";
+        ring.style.setProperty("--score-deg", deg);
+        ring.style.background = "conic-gradient(" + color + " 0deg," + color + " " + deg + ",color-mix(in srgb,var(--cmd-muted) 22%,transparent) " + deg + ",color-mix(in srgb,var(--cmd-muted) 22%,transparent) 360deg)";
+      }
+      function renderCards(){
+        var m = state.metric || {};
+        var infra = [statusByPercent(m.cpu_percent,75,90), statusByPercent(m.mem_percent,78,90), statusByPercent(m.disk_percent,80,90)];
+        var infraStatus = infra.indexOf("crit") >= 0 ? "crit" : (infra.indexOf("warn") >= 0 ? "warn" : "ok");
+        setCard("kpiPlatform", infraStatus, "CPU " + fmtPct(m.cpu_percent) + " / RAM " + fmtPct(m.mem_percent), "Disco " + fmtPct(m.disk_percent));
+
+        var pg = state.postgres || {};
+        var pgStatus = severityStatus(pg.health || (pg.ok === false ? "critical" : "ok"));
+        var c = (pg.cluster && (pg.cluster.active_connections || pg.cluster.connections)) || 0;
+        var max = (pg.cluster && pg.cluster.max_connections) || "-";
+        setCard("kpiDatabase", pgStatus, pg.health || (pg.ok === false ? "Sin lectura" : "Operativa"), c + " / " + max + " conexiones");
+
+        var errSummary = (state.errors && state.errors.summary) || {};
+        var critical = num(errSummary.critical), last24 = num(errSummary.last_24h);
+        var triggered = alertCandidates().filter(function(a){ return a.triggered; }).length;
+        setCard("kpiSecurity", critical ? "crit" : (last24 || triggered ? "warn" : "ok"), triggered + " alertas activas", last24 + " errores en 24h | " + critical + " criticos");
+
+        var empresasSummary = (state.empresasEstado && state.empresasEstado.summary) || {};
+        var totalEmpresas = num(empresasSummary.total) || state.companies.length;
+        var activas = num(empresasSummary.con_licencia_activa) || state.licenses.length;
+        var sinActiva = num(empresasSummary.sin_licencia_activa);
+        text("licenseActiveCompanies", activas.toLocaleString("es-CO"));
+        text("licenseInactiveCompanies", sinActiva.toLocaleString("es-CO"));
+        setCard("kpiCompanies", "ok", totalEmpresas.toLocaleString("es-CO"), "Empresas registradas");
+        setCard("kpiLicenses", activas ? "ok" : "warn", activas.toLocaleString("es-CO"), "Empresas con licencia activa");
+
+        var serviceCrit = state.services.filter(function(s){ return serviceStatus(s.estado) === "crit"; }).length;
+        setCard("kpiContinuity", serviceCrit ? "crit" : scoreStatus(computeScore()), serviceCrit ? serviceCrit + " servicio(s)" : "Controlada", "Score " + computeScore() + "/100");
+      }
+      function renderRisks(){
+        var risks = [], m = state.metric || {};
+        function add(st,title,detail){ risks.push({st:st,title:title,detail:detail}); }
+        if(pct(m.disk_percent) >= 90) add("crit","Disco en umbral critico","Uso actual " + fmtPct(m.disk_percent) + ".");
+        else if(pct(m.disk_percent) >= 80) add("warn","Disco cerca del umbral","Uso actual " + fmtPct(m.disk_percent) + ".");
+        if(pct(m.mem_percent) >= 90) add("crit","Memoria en presion","Uso actual " + fmtPct(m.mem_percent) + ".");
+        if(pct(m.cpu_percent) >= 90) add("crit","CPU saturada","Uso actual " + fmtPct(m.cpu_percent) + ".");
+        alertCandidates().filter(function(a){ return a.triggered; }).forEach(function(a){ add(severityStatus(a.severidad), a.titulo || a.tipo || "Alerta activa", a.detalle || "Regla de alerta activada."); });
+        var errSummary = (state.errors && state.errors.summary) || {};
+        if(num(errSummary.critical)) add("crit","Errores criticos registrados", num(errSummary.critical) + " eventos criticos en el monitor.");
+        else if(num(errSummary.last_24h)) add("warn","Errores recientes", num(errSummary.last_24h) + " eventos en 24h.");
+        state.services.filter(function(s){ return serviceStatus(s.estado) === "crit"; }).forEach(function(s){ add("crit", s.nombre || s.id, s.detalle || "Servicio critico."); });
+        if(!risks.length) add("ok","Operacion estable","No hay riesgos criticos con las senales disponibles.");
+        $("riskBadge").className = "cmd-pill " + (risks.some(function(r){return r.st==="crit";}) ? "crit" : risks.some(function(r){return r.st==="warn";}) ? "warn" : "ok");
+        text("riskBadge", risks.length + " senal(es)");
+        $("riskList").innerHTML = risks.slice(0,6).map(function(r){ return '<div class="cmd-alert"><i class="cmd-dot '+r.st+'"></i><div><strong>'+esc(r.title)+'</strong><span>'+esc(r.detail)+'</span></div></div>'; }).join("");
+      }
+      function renderErrors(){
+        var items = (state.errors && (state.errors.items || state.errors.errores || state.errors.rows)) || [];
+        // Los 401/403 esperados de navegacion o sondas sin sesion quedan en la
+        // auditoria de acceso; no deben ocultar incidentes operativos reales.
+        var operationalItems = items.filter(function(e){
+          var status = num(e.codigo_http || e.http_status || e.status);
+          var message = String(e.mensaje || e.message || e.error || e.detalle || "").toLowerCase();
+          return !((status === 401 || status === 403) && /unauthorized|unauthenticated|no autorizado|sesion no autenticada/.test(message));
+        });
+        $("errorRows").innerHTML = operationalItems.length ? operationalItems.slice(0,4).map(function(e){
+          var st = severityStatus(e.nivel || e.level || e.severidad);
+          var msg = e.mensaje || e.message || e.error || e.detalle || "Evento";
+          var date = e.fecha_creacion || e.created_at || e.fecha || "";
+          return '<tr><td><span class="cmd-pill '+st+'">'+esc(e.nivel || e.level || e.severidad || "info")+'</span></td><td>'+esc(msg)+'</td><td>'+esc(date)+'</td></tr>';
+        }).join("") : '<tr><td colspan="3">Sin incidentes operativos recientes.</td></tr>';
+      }
+      function renderOpenAIUsage(){
+        var data = (state.consumos && state.consumos.openai && state.consumos.openai.rango_mes && state.consumos.openai.rango_mes.dias) || [];
+        var bars = $("openaiMonthBars");
+        if(!bars) return;
+        var totalTokens = data.reduce(function(sum,item){ return sum + num(item.tokens_total); }, 0);
+        var totalCalls = data.reduce(function(sum,item){ return sum + num(item.consultas_total); }, 0);
+        var maxTokens = data.reduce(function(max,item){ return Math.max(max, num(item.tokens_total)); }, 0);
+        text("openaiMonthTokens", totalTokens.toLocaleString("es-CO") + " tok");
+        text("openaiMonthCalls", totalCalls.toLocaleString("es-CO") + " consultas");
+        var today = data.length ? data[data.length - 1] : null;
+        text("openaiMonthToday", "Hoy " + (today ? num(today.tokens_total).toLocaleString("es-CO") : "0"));
+        bars.innerHTML = data.map(function(item){
+          var h = maxTokens > 0 ? Math.max(4, Math.round((num(item.tokens_total) / maxTokens) * 40)) : 4;
+          return '<span class="cmd-openai-bar" style="height:'+h+'px" title="'+esc(item.fecha || "")+' | '+num(item.tokens_total).toLocaleString("es-CO")+' tokens"></span>';
+        }).join("");
+      }
+      function renderCybersecurity(){
+        var host = $("cybersecurityList");
+        if(!host) return;
+        var status = state.securityScan || {};
+        var report = status.report || {};
+        var summary = report.summary || {};
+        var findings = Array.isArray(report.findings) ? report.findings : [];
+        var items = [];
+        function add(st,title,detail){ items.push({st:st,title:title,detail:detail}); }
+        if(status.active){
+          add("info", "Analisis de seguridad en curso", "La lectura se actualizara cuando termine el analisis.");
+        } else if(status.status === "failed") {
+          add("warn", "Analisis de seguridad no disponible", status.error || "Revisa la configuracion del analizador VPS.");
+        } else if(report && report.scan_id){
+          var hardening = num(summary.hardening_index);
+          var level = String(summary.highest_severity || "").toLowerCase();
+          var severity = level === "critico" || level === "critical" ? "crit" : (level === "alto" || level === "high" || hardening < 70 ? "warn" : "ok");
+          add(severity, "Indice de endurecimiento: " + hardening + "/100", (summary.total_findings || 0) + " hallazgo(s) en el ultimo analisis.");
+          if(Array.isArray(summary.open_ports) && summary.open_ports.length){
+            add("info", "Puertos observados", summary.open_ports.join(", ") + ". Valida que cada uno sea necesario.");
+          }
+          findings.filter(function(f){ return /CRITICO|CRITICAL|ALTO|HIGH/i.test(String(f.severity || "")); }).slice(0,2).forEach(function(f){
+            add(/CRITICO|CRITICAL/i.test(String(f.severity || "")) ? "crit" : "warn", f.title || "Hallazgo de seguridad", f.recommendation || f.description || "Revisar en Seguridad VPS.");
+          });
+        } else {
+          add("info", "Sin analisis VPS reciente", "Ejecuta el analisis desde Seguridad antes de interpretar la postura.");
+        }
+        var errSummary = (state.errors && state.errors.summary) || {};
+        if(num(errSummary.critical)) add("crit", "Eventos criticos del monitor", num(errSummary.critical) + " evento(s) requieren investigacion.");
+        if(!items.length) add("ok", "Sin alertas detectadas", "No se reportaron senales en las fuentes consultadas.");
+        host.innerHTML = items.slice(0,5).map(function(item){ return '<div class="cmd-alert"><i class="cmd-dot '+item.st+'"></i><div><strong>'+esc(item.title)+'</strong><span>'+esc(item.detail)+'</span></div></div>'; }).join("");
+      }
+      function renderWhatsAppUsage(){
+        var data = (state.consumos && state.consumos.whatsapp && state.consumos.whatsapp.rango_mes && state.consumos.whatsapp.rango_mes.dias) || [];
+        var bars = $("whatsappMonthBars");
+        if(!bars) return;
+        var total = data.reduce(function(sum,item){ return sum + num(item.total); }, 0);
+        var sent = data.reduce(function(sum,item){ return sum + num(item.sent); }, 0);
+        var maxTotal = data.reduce(function(max,item){ return Math.max(max, num(item.total)); }, 0);
+        text("whatsappMonthTotal", total.toLocaleString("es-CO"));
+        text("whatsappMonthSent", sent.toLocaleString("es-CO") + " enviados");
+        var today = data.length ? data[data.length - 1] : null;
+        text("whatsappMonthToday", "Hoy " + (today ? num(today.total).toLocaleString("es-CO") : "0"));
+        bars.innerHTML = data.map(function(item){
+          var h = maxTotal > 0 ? Math.max(4, Math.round((num(item.total) / maxTotal) * 38)) : 4;
+          return '<span class="cmd-usage-bar whatsapp" style="height:'+h+'px" title="'+esc(item.fecha || "")+' | '+num(item.total).toLocaleString("es-CO")+' eventos"></span>';
+        }).join("");
+      }
+      function renderLicenseSales(){
+        var data = (state.licenseSales && Array.isArray(state.licenseSales.meses)) ? state.licenseSales.meses : [];
+        var bars = $("licenseSalesBars");
+        if(!bars) return;
+        var total = num(state.licenseSales && state.licenseSales.total_cop);
+        var count = num(state.licenseSales && state.licenseSales.cantidad);
+        var maxTotal = data.reduce(function(max,item){ return Math.max(max, num(item.total_cop)); }, 0);
+        text("licenseSalesTotal", moneyCOP(total));
+        text("licenseSalesCount", count.toLocaleString("es-CO") + " ventas");
+        text("licenseSalesProvider", ((state.licenseSales && state.licenseSales.empresa) || "Powerful Control System") + " | " + count.toLocaleString("es-CO") + " pago(s)");
+        var updated = state.licenseSales && state.licenseSales.actualizado ? new Date(state.licenseSales.actualizado) : null;
+        text("licenseSalesUpdated", updated && !isNaN(updated.getTime()) ? updated.toLocaleString("es-CO") : "Sin lectura");
+        bars.innerHTML = data.map(function(item){
+          var h = maxTotal > 0 ? Math.max(5, Math.round((num(item.total_cop) / maxTotal) * 38)) : 5;
+          return '<span class="cmd-usage-bar sales" style="height:'+h+'px" title="'+esc(item.mes || "")+' | '+moneyCOP(item.total_cop)+' | '+num(item.cantidad).toLocaleString("es-CO")+' venta(s)"></span>';
+        }).join("");
+      }
+      function renderAll(){ renderFavorites(); renderTop(); renderCards(); renderRisks(); renderErrors(); renderCybersecurity(); renderSpark(); renderOpenAIUsage(); renderWhatsAppUsage(); renderLicenseSales(); }
+      async function loadAll(){
+        $("cmdRefresh").disabled = true;
+        text("cmdLastUpdate","Actualizando...");
+        var results = await Promise.all([
+          getJSON("/super/api/metrics/current", null),
+          getJSON("/super/api/metrics/history?limit=180", []),
+          getJSON("/super/api/postgres/performance", null),
+          getJSON("/super/api/alertas_sistema", null),
+          getJSON("/super/api/errores?limit=6&offset=0", null),
+          getJSON("/super/api/servidores", null),
+          getJSON("/super/api/licencias?activo=1&con_empresa=1", []),
+          getJSON("/super/api/empresas", []),
+          getJSON("/super/api/empresas_estado?limit=1", null),
+          getJSON("/super/api/consumos", null),
+          getJSON("/super/api/licencias/ventas_resumen?months=6", null),
+          getJSON("/super/api/security/vps/status", null)
+        ]);
+        state.metric = results[0] || {};
+        state.history = Array.isArray(results[1]) ? results[1] : [];
+        state.postgres = results[2] || {};
+        state.alerts = results[3] || {};
+        state.errors = results[4] || {};
+        state.services = (results[5] && Array.isArray(results[5].servicios)) ? results[5].servicios : [];
+        state.licenses = Array.isArray(results[6]) ? results[6] : (results[6] && (results[6].licencias || results[6].items)) || [];
+        state.companies = Array.isArray(results[7]) ? results[7] : (results[7] && (results[7].empresas || results[7].items)) || [];
+        state.empresasEstado = results[8] || {};
+        state.consumos = results[9] || {};
+        state.licenseSales = results[10] || {};
+        state.securityScan = (results[11] && results[11].status) || {};
+        renderAll();
+        $("cmdRefresh").disabled = false;
+      }
+      $("cmdRefresh").addEventListener("click", function(){ loadAll().then(function(){ toast("Panel actualizado."); }); });
+      $("cmdResetMetrics").addEventListener("click", function(){
+        resetPanelIndicator("metricas", "cmdResetMetrics", "Esto borrara el historico de metricas del panel de control. ¿Continuar?", "Metricas del panel reiniciadas.");
+      });
+      $("cmdResetErrors").addEventListener("click", function(){
+        resetPanelIndicator("errores", "cmdResetErrors", "Esto borrara los indicadores y registros del monitor de errores. ¿Continuar?", "Indicadores de errores reiniciados.");
+      });
+      $("cmdRunAlerts").addEventListener("click", async function(){
+        try {
+          $("cmdRunAlerts").disabled = true;
+          await postJSON("/super/api/alertas_sistema?action=evaluar");
+          state.alerts = await getJSON("/super/api/alertas_sistema", state.alerts);
+          renderAll();
+          toast("Evaluacion de alertas ejecutada.");
+        } catch(e) {
+          toast(e.message || "No se pudo evaluar alertas.");
+        } finally {
+          $("cmdRunAlerts").disabled = false;
+        }
+      });
+      window.addEventListener("storage", function(event){
+        if(event && event.key === favoritesKey) renderFavorites();
+      });
+      window.addEventListener("message", function(event){
+        if(event.origin !== window.location.origin) return;
+        if(event.data && event.data.type === "pcs-super-favorites-changed") renderFavorites();
+      });
+      window.addEventListener("pcs-super-favorites-changed", renderFavorites);
+      renderFavorites();
+      loadAll();
+    })();
+  </script>
+  <script src="/js/portal_visits.js?v=20260525-portal-visitas-panel"></script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

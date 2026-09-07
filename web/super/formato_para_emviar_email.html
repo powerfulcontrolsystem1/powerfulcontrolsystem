@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Formatos para enviar email</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container email-templates-shell">
+    <div class="page-header">
+      <h1>Formatos para enviar email</h1>
+      <p class="form-help">Administra desde un solo lugar los correos que salen del sistema. Incluye confirmación de correo, pago de licencias y plantillas recomendadas para recuperación y alertas operativas.</p>
+    </div>
+
+    <div class="email-templates-actions">
+      <div class="form-help" id="emailTemplatesStatusTop">Cargando plantillas...</div>
+      <div class="form-actions">
+        <button id="emailTemplatesSaveTop" type="button" class="btn">Guardar cambios</button>
+      </div>
+    </div>
+
+    <div class="email-templates-layout">
+    <aside class="card form mp-card email-templates-submenu" aria-label="Submenú de formatos de email">
+      <h2>Submenú</h2>
+      <p class="form-help">Cada botón abre un grupo de formatos.</p>
+      <div class="email-templates-tabs" id="emailTemplateTabs">
+        <button type="button" class="email-templates-tab active" data-panel="panel-confirmacion">Confirmación de correo</button>
+        <button type="button" class="email-templates-tab" data-panel="panel-administracion">Administración</button>
+        <button type="button" class="email-templates-tab" data-panel="panel-licencias">Pago de licencia</button>
+        <button type="button" class="email-templates-tab" data-panel="panel-recomendadas">Recomendados</button>
+      </div>
+      <p class="form-help">Variables disponibles: escríbelas tal como aparecen entre llaves dobles, por ejemplo {{name}} o {{confirm_url}}.</p>
+    </aside>
+
+    <main class="email-templates-content">
+    <section id="panel-confirmacion" class="email-template-panel">
+      <article class="card form mp-card email-template-card" data-template-key="admin_confirmation">
+        <h2>Correo cuando se confirma cuenta administrativa</h2>
+        <p class="form-help">Se usa en el registro del super o administradores del panel.</p>
+        <div class="email-template-vars">
+          <span>{{name}}</span>
+          <span>{{confirm_url}}</span>
+          <span>{{login_url}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Asunto</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Última actualización</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto plano</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html"></textarea>
+          </div>
+        </div>
+      </article>
+
+      <article class="card form mp-card email-template-card" data-template-key="empresa_user_confirmation">
+        <h2>Correo cuando se confirma cuenta de usuario de empresa</h2>
+        <p class="form-help">Este es el formato principal para los usuarios creados por cada empresa. Aquí puedes editar el mensaje que recibe el usuario antes de confirmar su correo.</p>
+        <div class="email-template-vars">
+          <span>{{name}}</span>
+          <span>{{company_name}}</span>
+          <span>{{confirm_url}}</span>
+          <span>{{login_url}}</span>
+          <span>{{admin_message}}</span>
+          <span>{{admin_message_block_text}}</span>
+          <span>{{admin_message_block_html}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Asunto</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Última actualización</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto plano</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html"></textarea>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-administracion" class="email-template-panel" hidden>
+      <article class="card form mp-card email-template-card" data-template-key="empresa_admin_share_invitation">
+        <h2>Correo de invitación para compartir empresa entre administradores</h2>
+        <p class="form-help">Se envía cuando un administrador propietario comparte su empresa con otro administrador ya registrado. El invitado acepta desde el enlace y la empresa aparece en su selector.</p>
+        <div class="email-template-vars">
+          <span>{{name}}</span>
+          <span>{{company_name}}</span>
+          <span>{{invited_by_name}}</span>
+          <span>{{accept_url}}</span>
+          <span>{{login_url}}</span>
+          <span>{{admin_message}}</span>
+          <span>{{admin_message_block_text}}</span>
+          <span>{{admin_message_block_html}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Asunto</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Última actualización</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto plano</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html"></textarea>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-licencias" class="email-template-panel" hidden>
+      <article class="card form mp-card email-template-card" data-template-key="licencia_activation_payment">
+        <h2>Correo de bienvenida cuando un cliente paga una licencia</h2>
+        <p class="form-help">Se envia cuando el pago queda aprobado y la licencia se activa. Funciona como bienvenida a PCS y puede adjuntar la factura electronica en PDF segun la configuracion de Licencias; la licencia del software se descarga desde Administrar empresa.</p>
+        <div class="email-template-vars">
+          <span>{{company_name}}</span>
+          <span>{{license_name}}</span>
+          <span>{{provider}}</span>
+          <span>{{reference}}</span>
+          <span>{{license_name_line}}</span>
+          <span>{{start_date_line}}</span>
+          <span>{{end_date_line}}</span>
+          <span>{{reference_line}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Asunto</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Última actualización</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto plano</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html"></textarea>
+          </div>
+        </div>
+      </article>
+      <article class="card form mp-card email-template-card" data-template-key="licencia_software_pdf">
+        <h2>PDF de licencia del software</h2>
+        <p class="form-help">Este texto se convierte en el PDF que el cliente descarga desde Administrar empresa > Licencia del sistema. Ya no se adjunta al correo de bienvenida.</p>
+        <div class="email-template-vars">
+          <span>{{company_name}}</span>
+          <span>{{company_nit}}</span>
+          <span>{{license_name}}</span>
+          <span>{{license_code}}</span>
+          <span>{{provider}}</span>
+          <span>{{reference}}</span>
+          <span>{{license_download_url}}</span>
+          <span>{{issue_date}}</span>
+          <span>{{start_date}}</span>
+          <span>{{end_date}}</span>
+          <span>{{amount_paid}}</span>
+          <span>{{system_name}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Titulo del PDF</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Ultima actualizacion</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto del PDF</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html" placeholder="No se usa para generar el PDF; puedes dejarlo vacio."></textarea>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section id="panel-recomendadas" class="email-template-panel" hidden>
+      <article class="card form mp-card email-template-card" data-template-key="admin_password_recovery">
+        <h2>Recomendado: recuperación de contraseña administrativa</h2>
+        <div class="email-template-vars">
+          <span>{{name}}</span>
+          <span>{{token}}</span>
+          <span>{{reset_url}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Asunto</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Última actualización</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto plano</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html"></textarea>
+          </div>
+        </div>
+      </article>
+
+      <article class="card form mp-card email-template-card" data-template-key="empresa_user_password_recovery">
+        <h2>Recomendado: recuperación de contraseña de usuario empresa</h2>
+        <div class="email-template-vars">
+          <span>{{name}}</span>
+          <span>{{token}}</span>
+          <span>{{reset_url}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Asunto</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Última actualización</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto plano</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html"></textarea>
+          </div>
+        </div>
+      </article>
+
+      <article class="card form mp-card email-template-card" data-template-key="server_restart_alert">
+        <h2>Recomendado: alerta de inicio o reinicio del servidor</h2>
+        <p class="form-help">La recomiendo porque evita que se te olvide el mensaje operativo que llega cuando el backend inicia o detecta un reinicio inesperado.</p>
+        <div class="email-template-vars">
+          <span>{{hostname}}</span>
+          <span>{{event_date}}</span>
+          <span>{{listen_addr_line}}</span>
+          <span>{{reason}}</span>
+          <span>{{unexpected_restart}}</span>
+          <span>{{detail_line}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Asunto</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Última actualización</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto plano</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html"></textarea>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <div class="email-templates-actions">
+      <div class="form-help" id="emailTemplatesStatusBottom">Listo para guardar cambios.</div>
+      <div class="form-actions">
+        <button id="emailTemplatesSaveBottom" type="button" class="btn">Guardar cambios</button>
+      </div>
+    </div>
+    </main>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const statusTop = document.getElementById('emailTemplatesStatusTop');
+      const statusBottom = document.getElementById('emailTemplatesStatusBottom');
+      const saveButtons = [document.getElementById('emailTemplatesSaveTop'), document.getElementById('emailTemplatesSaveBottom')];
+
+      function setStatus(message, type){
+        const text = message || '';
+        [statusTop, statusBottom].forEach(function(node){
+          if (!node) return;
+          node.textContent = text;
+          node.className = 'form-help' + (type === 'error' ? ' error-text' : type === 'success' ? ' success-text' : '');
+        });
+      }
+
+      function setSavingState(saving){
+        saveButtons.forEach(function(btn){
+          if (!btn) return;
+          btn.disabled = !!saving;
+          btn.textContent = saving ? 'Guardando cambios...' : 'Guardar cambios';
+        });
+      }
+
+      function activatePanel(panelId){
+        document.querySelectorAll('.email-template-panel').forEach(function(panel){
+          panel.hidden = panel.id !== panelId;
+        });
+        document.querySelectorAll('.email-templates-tab').forEach(function(tab){
+          const active = tab.getAttribute('data-panel') === panelId;
+          tab.classList.toggle('active', active);
+          if (active) {
+            tab.setAttribute('aria-current', 'true');
+          } else {
+            tab.removeAttribute('aria-current');
+          }
+        });
+      }
+
+      function collectTemplates(){
+        return Array.prototype.slice.call(document.querySelectorAll('[data-template-key]')).map(function(card){
+          return {
+            key: card.getAttribute('data-template-key'),
+            subject: (card.querySelector('[data-field="subject"]') || {}).value || '',
+            body_text: (card.querySelector('[data-field="body_text"]') || {}).value || '',
+            body_html: (card.querySelector('[data-field="body_html"]') || {}).value || ''
+          };
+        });
+      }
+
+      function applyTemplates(items){
+        const byKey = {};
+        (items || []).forEach(function(item){ byKey[item.key] = item; });
+        document.querySelectorAll('[data-template-key]').forEach(function(card){
+          const key = card.getAttribute('data-template-key');
+          const item = byKey[key] || {};
+          const subject = card.querySelector('[data-field="subject"]');
+          const bodyText = card.querySelector('[data-field="body_text"]');
+          const bodyHTML = card.querySelector('[data-field="body_html"]');
+          const updatedAt = card.querySelector('[data-field="updated_at"]');
+          if (subject) subject.value = item.subject || '';
+          if (bodyText) bodyText.value = item.body_text || '';
+          if (bodyHTML) bodyHTML.value = item.body_html || '';
+          if (updatedAt) updatedAt.textContent = item.updated_at || 'Sin cambios guardados todavía';
+        });
+      }
+
+      async function loadTemplates(){
+        setStatus('Cargando plantillas de correo...', '');
+        try {
+          const res = await fetch('/super/api/config/email_templates', { credentials: 'same-origin' });
+          const raw = await res.text();
+          const body = raw ? JSON.parse(raw) : {};
+          if (!res.ok) {
+            throw new Error((body && body.error) || raw || 'No se pudieron cargar las plantillas.');
+          }
+          applyTemplates(body.templates || []);
+          setStatus('Plantillas cargadas correctamente.', 'success');
+        } catch (err) {
+          setStatus(err.message || 'No se pudieron cargar las plantillas.', 'error');
+        }
+      }
+
+      async function saveTemplates(){
+        setSavingState(true);
+        setStatus('Guardando cambios...', '');
+        try {
+          const res = await fetch('/super/api/config/email_templates', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ templates: collectTemplates() })
+          });
+          const raw = await res.text();
+          const body = raw ? JSON.parse(raw) : {};
+          if (!res.ok) {
+            throw new Error((body && body.error) || raw || 'No se pudieron guardar las plantillas.');
+          }
+          applyTemplates(body.templates || []);
+          setStatus('Plantillas guardadas correctamente.', 'success');
+        } catch (err) {
+          setStatus(err.message || 'No se pudieron guardar las plantillas.', 'error');
+        } finally {
+          setSavingState(false);
+        }
+      }
+
+      document.querySelectorAll('.email-templates-tab').forEach(function(tab){
+        tab.addEventListener('click', function(){
+          activatePanel(tab.getAttribute('data-panel'));
+        });
+      });
+      saveButtons.forEach(function(btn){
+        if (btn) btn.addEventListener('click', saveTemplates);
+      });
+
+      activatePanel('panel-confirmacion');
+      loadTemplates();
+    })();
+  </script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

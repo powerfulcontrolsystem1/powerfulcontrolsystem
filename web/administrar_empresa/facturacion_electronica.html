@@ -1,0 +1,3389 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Facturación electrónica por país</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .fe-config-progress-panel{margin:14px 0 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px}
+    .fe-config-progress-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .fe-config-progress-head h3{margin:0;color:var(--text);font-size:1rem;letter-spacing:0}
+    .fe-config-progress-head p{margin:4px 0 0;color:var(--muted);font-size:.86rem;line-height:1.4}
+    .fe-config-progress-percent{font-size:1.65rem;font-weight:950;color:var(--text);line-height:1;white-space:nowrap}
+    .fe-config-progress-track{position:relative;margin-top:12px;height:18px;border:1px solid var(--border);border-radius:999px;background:var(--surface);overflow:hidden}
+    .fe-config-progress-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#38bdf8,#22c55e);transition:width .24s ease}
+    .fe-config-progress-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+    .fe-config-progress-step{display:flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:8px;color:var(--muted);font-size:.78rem;font-weight:800;min-height:42px}
+    .fe-config-progress-step::before{content:"";width:10px;height:10px;border-radius:999px;background:var(--border);flex:0 0 auto}
+    .fe-config-progress-step.done{color:var(--text);border-color:color-mix(in srgb,var(--success) 34%,var(--border));background:color-mix(in srgb,var(--success) 12%,var(--surface))}
+    .fe-config-progress-step.done::before{background:var(--success)}
+    .fe-config-missing{margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;color:var(--muted);font-size:.86rem;line-height:1.45}
+    .fe-config-missing strong{color:var(--text)}
+    .fe-config-missing ul{margin:8px 0 0 18px;padding:0}
+    .fe-config-missing li{margin:3px 0}
+    .fe-required-note{display:flex;align-items:flex-start;gap:8px;margin:10px 0 12px;padding:10px 12px;border:1px solid color-mix(in srgb,#38bdf8 38%,var(--border));border-radius:8px;background:color-mix(in srgb,#38bdf8 8%,var(--surface));color:var(--muted);font-size:.86rem;line-height:1.42}
+    .fe-required-note strong{color:var(--text)}
+    .fe-required-mark{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:0 0 22px;border-radius:999px;background:color-mix(in srgb,#38bdf8 18%,var(--surface));border:1px solid color-mix(in srgb,#38bdf8 42%,var(--border));color:var(--text);font-weight:950}
+    .form-label.is-required::after{content:" *";color:#ef5350;font-weight:950}
+    .form-input.is-required-missing,.form-textarea.is-required-missing{border-color:#ef5350 !important;box-shadow:0 0 0 1px color-mix(in srgb,#ef5350 35%,transparent)}
+    .dian-readable-result{margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;color:var(--text);white-space:normal}
+    .dian-readable-result.is-empty{display:none}
+    .dian-readable-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+    .dian-readable-item{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:8px;min-height:52px}
+    .dian-readable-item span{display:block;color:var(--muted);font-size:.74rem;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
+    .dian-readable-item strong{display:block;margin-top:5px;color:var(--text);font-size:.9rem;overflow-wrap:anywhere}
+    .dian-readable-note{margin-top:8px;color:var(--muted);font-size:.86rem;line-height:1.45}
+    .dian-readable-note ul{margin:7px 0 0 18px;padding:0}
+    .dian-readable-detail{margin-top:10px;border-top:1px solid var(--border);padding-top:8px;color:var(--muted)}
+    .dian-readable-detail summary{cursor:pointer;font-weight:850;color:var(--text)}
+    .dian-readable-detail pre{margin:8px 0 0;max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)}
+    .dian-capture-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .dian-capture-actions{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+    .dian-ai-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:28px;border:1px solid color-mix(in srgb,#38bdf8 45%,var(--border));border-radius:8px;background:color-mix(in srgb,#38bdf8 12%,var(--surface));color:var(--text);font-weight:950;font-size:.78rem;letter-spacing:.02em}
+    .dian-capture-guide{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+    .dian-capture-step{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;min-height:112px}
+    .dian-capture-step strong{display:block;color:var(--text);font-size:.9rem;line-height:1.25}
+    .dian-capture-step span{display:block;margin-top:6px;color:var(--muted);font-size:.78rem;line-height:1.35}
+    .dian-capture-panel{border:1px dashed color-mix(in srgb,#38bdf8 44%,var(--border));border-radius:8px;background:color-mix(in srgb,#38bdf8 7%,var(--surface));padding:12px;margin-top:10px}
+    .dian-capture-results{margin-top:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px}
+    .dian-capture-results.is-empty{display:none}
+    .dian-capture-results h3{margin:0 0 8px;font-size:1rem;letter-spacing:0}
+    .dian-capture-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+    .dian-capture-field{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:8px;min-height:58px}
+    .dian-capture-field span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
+    .dian-capture-field strong{display:block;margin-top:5px;color:var(--text);font-size:.88rem;overflow-wrap:anywhere}
+    .dian-capture-missing{margin-top:8px;color:var(--muted);font-size:.86rem;line-height:1.4}
+    .dian-essential-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+    .dian-essential-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;min-height:84px}
+    .dian-essential-card strong{display:block;color:var(--text);font-size:.92rem;line-height:1.25}
+    .dian-essential-card span{display:inline-flex;margin-top:8px;align-items:center;border:1px solid var(--border);border-radius:999px;padding:3px 8px;color:var(--muted);font-size:.74rem;font-weight:900}
+    .dian-essential-card span.ok{border-color:color-mix(in srgb,var(--success) 42%,var(--border));color:var(--success);background:color-mix(in srgb,var(--success) 10%,var(--surface))}
+    .dian-essential-card span.warn{border-color:color-mix(in srgb,#f59e0b 48%,var(--border));color:#b45309;background:color-mix(in srgb,#f59e0b 10%,var(--surface))}
+    .dian-essential-card p{margin:7px 0 0;color:var(--muted);font-size:.78rem;line-height:1.35}
+    .fe-radian-panel{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 14px;padding:12px;border:1px solid color-mix(in srgb,var(--success) 34%,var(--border));border-radius:8px;background:color-mix(in srgb,var(--success) 7%,var(--surface))}
+    .fe-radian-panel strong{display:block;color:var(--text);font-size:.95rem}
+    .fe-radian-panel p{margin:4px 0 0;color:var(--muted);font-size:.82rem;line-height:1.35}
+    .fe-radian-panel a{white-space:nowrap}
+    .fe-country-state{display:none !important}
+    .fe-country-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px}
+    .fe-country-card h2{margin:0 0 6px;color:var(--text);font-size:1.08rem;letter-spacing:0}
+    .fe-country-grid{display:grid;grid-template-columns:minmax(220px,360px) minmax(220px,1fr) auto;gap:12px;align-items:end}
+    .fe-country-status{padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);min-height:58px}
+    .fe-country-status strong{display:block;color:var(--text);font-size:.95rem;line-height:1.25}
+    .fe-country-status span{display:block;margin-top:3px;color:var(--muted);font-size:.8rem;line-height:1.35}
+    .fe-country-add{border:1px solid color-mix(in srgb,#38bdf8 42%,var(--border));background:color-mix(in srgb,#38bdf8 7%,var(--surface));}
+    .fe-country-add h2{margin:0 0 5px;font-size:1.05rem}
+    .fe-detected-card,
+    #feVistaBloque{display:none !important}
+    .fe-page-stack > .card{order:20}
+    #feCountrySelectorCard{order:0}
+    #feDianConfigCard{order:1}
+    #feFirmaCard{order:2}
+    #feDianDocumentosCard{order:3}
+	#feContingenciaCard{order:4}
+    #feForm{order:5}
+    #advancedConfigCard{order:6}
+    .fe-page-stack{display:flex;flex-direction:column;gap:14px;padding-bottom:18px}
+    .fe-page-stack,.fe-page-stack > .card,.fe-page-stack > form.card{min-width:0;max-width:100%}
+    .fe-page-stack > .card,.fe-page-stack > form.card{margin:0}
+    #list{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    #list .table{min-width:556px}
+    .fe-firma-last-upload{max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+    @media (max-width:1100px){.dian-capture-guide{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-capture-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-essential-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:900px){.fe-config-progress-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:900px){.fe-country-grid{grid-template-columns:1fr}}
+    @media (max-width:560px){.fe-config-progress-steps,.dian-readable-grid,.dian-capture-guide,.dian-capture-fields,.dian-essential-grid{grid-template-columns:1fr}.fe-config-progress-percent{font-size:1.45rem}.fe-radian-panel{align-items:flex-start;flex-direction:column}.fe-radian-panel a{width:100%;text-align:center}}
+  </style>
+  <script src="/js/ai_button_icons.js?v=20260624-ia-button-icons"></script>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container fe-page-stack">
+    <div id="feCountrySelectorCard" class="fe-country-state" hidden aria-hidden="true">
+      <select id="pais_codigo" aria-label="País fiscal interno"></select>
+      <strong id="detectedCountry">Detectando...</strong>
+      <span id="detectedSource">Fuente pendiente</span>
+      <button id="detectBtn" type="button" aria-label="Detectar nuevamente el país fiscal">Detectar de nuevo</button>
+      <button id="openSelectedCountryBtn" type="button" aria-label="Cargar configuración del país seleccionado">Cargar pais</button>
+    </div>
+
+    <div id="feVistaBloque" class="card fe-vista-bloque">
+      <h2 id="feVistaTitulo">Perfil de facturación</h2>
+      <p id="feVistaEnte" class="form-help"></p>
+      <p id="feVistaResumen" class="form-help"></p>
+      <p id="feVistaIndependencia" class="form-help fe-vista-indep"></p>
+    </div>
+
+    <div id="feFirmaCard" class="card is-hidden">
+      <h2>Cargar firma electrónica (Colombia / DIAN)</h2>
+      <p class="form-help">
+        Sube la firma/certificado de la empresa en <code>.pem</code>, <code>.key</code>, <code>.p12</code> o <code>.pfx</code>. Se guarda en la carpeta aislada de esta empresa y se registra como referencia segura.
+      </p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="feFirmaFile">Archivo de firma/certificado</label>
+          <input id="feFirmaFile" class="form-input" type="file" accept=".pem,.key,.crt,.cer,.p12,.pfx,text/plain,application/x-pem-file,application/x-pkcs12">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="feFirmaPassword">Clave del P12/PFX o llave cifrada</label>
+          <input id="feFirmaPassword" class="form-input" type="password" autocomplete="new-password" placeholder="Opcional">
+        </div>
+        <div class="form-col form-col-end" style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
+          <button id="feFirmaUploadBtn" class="btn" type="button">Cargar firma</button>
+          <a id="feFirmaProviderBtn" class="btn secondary" href="/administrar_empresa/proveedores_firma_digital.html" target="_self">Adquirir Firma Electr&oacute;nica</a>
+        </div>
+      </div>
+      <div id="feFirmaMsg" class="form-help"></div>
+      <div class="form-help" style="margin-top:10px;">
+        <strong>Vencimiento del certificado:</strong>
+        <span id="feFirmaExpiryText">Sin verificar.</span>
+        <button id="feFirmaExpiryBtn" class="btn secondary" type="button" style="margin-left:8px;">Verificar vencimiento</button>
+      </div>
+      <div id="feFirmaLastUpload" class="form-help fe-firma-last-upload is-empty">
+        Ultima firma cargada: sin registro. Clave: no visible por seguridad.
+      </div>
+    </div>
+
+    <div id="feDianConfigCard" class="card is-hidden">
+      <h2>Configuración DIAN Colombia</h2>
+      <p class="form-help">
+        Checklist operativo para dejar lista la empresa: datos fiscales, Software ID/PIN, TestSetId, resolucion, rangos, firma/certificado X.509 y token de proveedor si aplica.
+      </p>
+      <div class="fe-config-progress-panel" aria-label="Porcentaje de configuración DIAN Colombia">
+        <div class="fe-config-progress-head">
+          <div>
+            <h3>Avance de configuraci&oacute;n DIAN</h3>
+            <p id="feDianSetupStage">Calculando campos requeridos.</p>
+          </div>
+          <div id="feDianSetupPercent" class="fe-config-progress-percent">0%</div>
+        </div>
+        <div id="feDianSetupTrack" class="fe-config-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Avance de configuración DIAN Colombia">
+          <div id="feDianSetupFill" class="fe-config-progress-fill"></div>
+        </div>
+        <div id="feDianSetupSteps" class="fe-config-progress-steps"></div>
+        <div id="feDianSetupMissing" class="fe-config-missing"></div>
+      </div>
+      <form id="feDianConfigForm" class="form">
+        <input type="hidden" id="dian_id">
+        <input type="hidden" id="dian_modo_operacion_descripcion">
+        <input type="hidden" id="dian_modo_operacion_fecha_inicio">
+        <input type="hidden" id="dian_modo_operacion_fecha_termino">
+        <input type="hidden" id="dian_set_documentos_requeridos">
+        <input type="hidden" id="dian_set_facturas_requeridas">
+        <input type="hidden" id="dian_set_notas_debito_requeridas">
+        <input type="hidden" id="dian_set_notas_credito_requeridas">
+        <input type="hidden" id="dian_set_documentos_aceptados_requeridos">
+        <input type="hidden" id="dian_set_facturas_aceptadas_requeridas">
+        <input type="hidden" id="dian_set_notas_debito_aceptadas_requeridas">
+        <input type="hidden" id="dian_set_notas_credito_aceptadas_requeridas">
+        <div class="dian-capture-panel" id="dianRutPanel">
+          <div class="dian-capture-head">
+            <div>
+              <h3>Registro &Uacute;nico Tributario (RUT) de la empresa</h3>
+              <p class="form-help">Carga el Formulario 001 de esta empresa para detectar identidad fiscal, ubicaci&oacute;n, c&oacute;digos DANE y responsabilidades. El PDF se procesa temporalmente: solo se guardan los datos que revises, apliques y confirmes en los formularios.</p>
+            </div>
+            <span class="dian-chip">RUT por empresa</span>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="dianRutPdfInput">PDF del RUT</label><input id="dianRutPdfInput" type="file" accept="application/pdf,.pdf" class="form-input"></div>
+            <div class="form-col dian-capture-actions">
+              <button id="btnDianRutPdf" type="button" class="btn secondary" data-ai-button="true">Cargar RUT con IA GPT-5.5</button>
+              <button id="btnDianRutAplicar" type="button" class="btn" disabled>Aplicar datos revisados</button>
+            </div>
+          </div>
+          <div id="dianRutPdfMsg" class="form-help"></div>
+          <div id="dianRutPdfResultado" class="dian-readable-result is-empty"></div>
+        </div>
+        <div class="dian-capture-panel" id="dianNumeracion1876Panel">
+          <div class="dian-capture-head">
+            <div>
+              <h3>Autorizaci&oacute;n de numeraci&oacute;n DIAN (Formulario 1876)</h3>
+              <p class="form-help">Carga el PDF oficial para detectar NIT, DV, raz&oacute;n social, prefijo, rango y vigencia. Luego revisa, guarda y asocia la numeraci&oacute;n al software en el portal DIAN.</p>
+            </div>
+            <span class="dian-chip">PDF DIAN</span>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label">PDF Formulario 1876</label><input id="dianNumeracionPdfInput" type="file" accept="application/pdf,.pdf" class="form-input"></div>
+            <div class="form-col" style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
+              <button id="btnDianNumeracionPdf" type="button" class="btn secondary" data-ai-button="true">Cargar PDF con IA GPT-5.5</button>
+              <button id="btnDianNumeracionAplicar" type="button" class="btn" disabled>Aplicar valores</button>
+            </div>
+          </div>
+          <div id="dianNumeracionPdfMsg" class="form-help"></div>
+          <div class="form-help" style="margin-top:8px;">
+            <strong>Paso obligatorio despu&eacute;s del Formulario 1876:</strong>
+            entra al portal DIAN de producci&oacute;n y registra/asocia el rango autorizado con el Software ID antes de emitir.
+            <a href="https://catalogo-vpfe.dian.gov.co/User/Login" target="_blank" rel="noopener">Abrir portal DIAN</a>
+          </div>
+          <div id="dianNumeracionPdfResultado" class="dian-readable-result is-empty"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">NIT</label><input id="dian_nit" class="form-input" placeholder="900123456"></div>
+          <div class="form-col"><label class="form-label">DV</label><input id="dian_dv" class="form-input" placeholder="0"></div>
+          <div class="form-col"><label class="form-label">Razón social</label><input id="dian_razon_social" class="form-input" placeholder="Empresa S.A.S."></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">Ambiente DIAN</label><select id="dian_tipo_ambiente" class="form-input"><option value="habilitacion">Habilitación</option><option value="produccion">Producción</option></select></div>
+          <div class="form-col"><label class="form-label">URL DIAN / proveedor</label><input id="dian_url" class="form-input" placeholder="https://vpfe-hab.dian.gov.co"></div>
+          <div class="form-col"><label class="form-label" for="dian_test_set_id">TestSetId</label><input id="dian_test_set_id" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_test_set_id_estado"><div id="dian_test_set_id_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="dian_software_id">Software ID</label><input id="dian_software_id" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_software_id_estado"><div id="dian_software_id_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><label class="form-label" for="dian_software_pin">Software PIN</label><input id="dian_software_pin" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_software_pin_estado"><div id="dian_software_pin_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><div class="form-help" style="margin-top:28px;"><label><input id="dian_usar_software_compartido" type="checkbox"> Usar software compartido SaaS</label></div></div>
+        </div>
+        <div class="dian-capture-panel" id="dianSoftwareProveedorPanel">
+          <div class="dian-capture-head">
+            <div>
+              <h3>Identidad del proveedor del software DIAN</h3>
+              <p class="form-help">Obligatoria para n&oacute;mina electr&oacute;nica cuando PCS usa software compartido SaaS. No contiene el PIN ni sustituye la identidad fiscal del empleador.</p>
+            </div>
+            <span class="dian-chip">Proveedor XML</span>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_nit">NIT proveedor</label><input id="dian_software_proveedor_nit" class="form-input" inputmode="numeric" autocomplete="off"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_dv">DV proveedor</label><input id="dian_software_proveedor_dv" class="form-input" inputmode="numeric" maxlength="1" pattern="[0-9]" autocomplete="off"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_razon_social">Raz&oacute;n social proveedor</label><input id="dian_software_proveedor_razon_social" class="form-input" autocomplete="organization"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_primer_apellido">Primer apellido (persona natural)</label><input id="dian_software_proveedor_primer_apellido" class="form-input" autocomplete="family-name"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_segundo_apellido">Segundo apellido (persona natural)</label><input id="dian_software_proveedor_segundo_apellido" class="form-input" autocomplete="off"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_primer_nombre">Primer nombre (persona natural)</label><input id="dian_software_proveedor_primer_nombre" class="form-input" autocomplete="given-name"></div>
+            <div class="form-col"><label class="form-label" for="dian_software_proveedor_otros_nombres">Otros nombres (opcional)</label><input id="dian_software_proveedor_otros_nombres" class="form-input" autocomplete="additional-name"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">Prefijo</label><input id="dian_prefijo" class="form-input" placeholder="FE"></div>
+          <div class="form-col"><label class="form-label">Resolución</label><input id="dian_resolucion_numero" class="form-input" placeholder="18760000000000"></div>
+          <div class="form-col"><label class="form-label">Consecutivo actual</label><input id="dian_consecutivo_actual" type="number" min="1" class="form-input" value="1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">Resolución desde</label><input id="dian_resolucion_fecha_desde" type="date" class="form-input"></div>
+          <div class="form-col"><label class="form-label">Resolución hasta</label><input id="dian_resolucion_fecha_hasta" type="date" class="form-input"></div>
+          <div class="form-col"><label class="form-label">Rango autorizado</label><div style="display:flex; gap:8px;"><input id="dian_rango_desde" type="number" min="1" class="form-input" placeholder="Desde"><input id="dian_rango_hasta" type="number" min="1" class="form-input" placeholder="Hasta"></div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label">Avisar vencimiento resoluci&oacute;n (d&iacute;as)</label><input id="dian_resolucion_alerta_dias" type="number" min="1" max="365" class="form-input" value="30"></div>
+          <div class="form-col" style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;"><button id="btnDianResolucionVencimiento" type="button" class="btn secondary">Verificar vencimiento resoluci&oacute;n</button></div>
+          <div class="form-col"><div id="feDianResolutionExpiryText" class="form-help">Resoluci&oacute;n sin verificar.</div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="dian_llave_tecnica">Llave t&eacute;cnica DIAN</label><input id="dian_llave_tecnica" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor; el guardado no se vuelve a mostrar" aria-describedby="dian_llave_tecnica_estado"><div id="dian_llave_tecnica_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><label class="form-label" for="dian_token_emisor_ref">Token proveedor/API (opcional en DIAN oficial)</label><input id="dian_token_emisor_ref" class="form-input" type="password" autocomplete="new-password" placeholder="Nuevo valor o referencia PCS_DIAN_*" aria-describedby="dian_token_emisor_ref_estado"><div id="dian_token_emisor_ref_estado" class="form-help dian-secret-status" role="status">No configurado (opcional).</div></div>
+          <div class="form-col"><label class="form-label" for="dian_certificado_url">Certificado X.509</label><input id="dian_certificado_url" class="form-input" type="password" readonly placeholder="Se administra únicamente con Cargar firma" aria-describedby="dian_certificado_url_estado"><div id="dian_certificado_url_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+          <div class="form-col"><label class="form-label" for="dian_certificado_clave_ref">Llave privada</label><input id="dian_certificado_clave_ref" class="form-input" type="password" readonly placeholder="Se administra únicamente con Cargar firma" aria-describedby="dian_certificado_clave_ref_estado"><div id="dian_certificado_clave_ref_estado" class="form-help dian-secret-status" role="status">No configurado.</div></div>
+        </div>
+        <div class="form-row"><div class="form-col"><label class="form-label">Observaciones DIAN</label><textarea id="dian_observaciones" class="form-textarea" placeholder="Notas internas de habilitación, producción o soporte"></textarea></div></div>
+        <div class="form-actions">
+          <button id="btnDianConfigGuardar" type="submit" class="btn">Guardar DIAN Colombia</button>
+          <button id="btnDianConfigValidar" type="button" class="btn secondary">Validar checklist</button>
+          <button id="btnDianConfigRecargar" type="button" class="btn secondary">Recargar</button>
+          <a id="btnDianAyudaNumeracion" class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/numeracion-autorizacion/" target="_blank" rel="noopener">Ayuda numeración DIAN</a>
+          <a id="btnDianAsociarNumeracion" class="btn secondary" href="https://catalogo-vpfe.dian.gov.co/User/Login" target="_blank" rel="noopener">Asociar numeraci&oacute;n DIAN</a>
+          <a id="btnDianPasarTest" class="btn secondary" href="/administrar_empresa/facturacion_electronica_pruebas_dian.html">Centro de habilitación DIAN</a>
+        </div>
+        <div id="feDianConfigMsg" class="form-help"></div>
+        <div id="feDianConfigResultado" class="dian-readable-result is-empty"></div>
+      </form>
+    </div>
+
+    <div id="feDianDocumentosCard" class="card is-hidden">
+      <h2>Documentos electronicos DIAN Colombia</h2>
+	  <p class="form-help">Selecciona únicamente los tipos con emisión disponible. Los demás se muestran como catálogo y permanecen bloqueados hasta contar con su adaptador DIAN específico.</p>
+      <div id="feDianEssentialDocs" class="dian-essential-grid"></div>
+      <div id="feRadianStatus" class="fe-radian-panel is-hidden"></div>
+      <div class="form-row">
+        <div class="form-col">
+          <h3>Documentos y eventos del SFE</h3>
+          <div id="feDianDocumentosList" class="fe-check-list"></div>
+        </div>
+        <div class="form-col">
+          <h3>Lo que suelen preparar los contadores</h3>
+          <div id="feDianContadorList" class="fe-check-list"></div>
+        </div>
+      </div>
+      <div id="feDianFuentesList" class="form-help"></div>
+      <div class="form-actions">
+		<button id="feDianSelectAllDocs" class="btn secondary" type="button">Seleccionar operativos</button>
+        <button id="feDianApplyDocs" class="btn" type="button">Aplicar seleccion al JSON</button>
+      </div>
+      <div id="feDianDocumentosMsg" class="form-help"></div>
+    </div>
+
+    <section id="feContingenciaCard" class="card is-hidden" aria-labelledby="feContingenciaTitle">
+      <h2 id="feContingenciaTitle">Contingencia fiscal Colombia</h2>
+      <p class="form-help"><strong>El comprobante offline no es una factura de contingencia.</strong> La falla DIAN conserva XML firmado pendiente de transmisi&oacute;n; la falla del facturador exige numeraci&oacute;n de talonario o papel autorizada previamente y posterior documento electr&oacute;nico tipo 03.</p>
+      <div class="dian-capture-panel">
+        <h3>Autorizaci&oacute;n de talonario o papel</h3>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cont_prefijo">Prefijo autorizado</label><input id="cont_prefijo" class="form-input" autocomplete="off"></div>
+          <div class="form-col"><label class="form-label" for="cont_resolucion">Resoluci&oacute;n DIAN</label><input id="cont_resolucion" class="form-input" autocomplete="off"></div>
+          <div class="form-col"><label class="form-label" for="cont_estado">Estado</label><select id="cont_estado" class="form-input"><option value="configurando">Configurando</option><option value="activo">Activo</option><option value="suspendido">Suspendido</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cont_fecha_desde">Vigencia desde</label><input id="cont_fecha_desde" type="date" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cont_fecha_hasta">Vigencia hasta</label><input id="cont_fecha_hasta" type="date" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cont_rango_desde">Rango desde</label><input id="cont_rango_desde" type="number" min="1" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cont_rango_hasta">Rango hasta</label><input id="cont_rango_hasta" type="number" min="1" class="form-input"></div>
+          <div class="form-col"><label class="form-label" for="cont_proximo">Pr&oacute;ximo n&uacute;mero</label><input id="cont_proximo" type="number" min="1" class="form-input"></div>
+        </div>
+        <div class="form-actions"><button id="contGuardarTalonario" type="button" class="btn secondary">Guardar autorizaci&oacute;n</button></div>
+      </div>
+      <div class="dian-capture-panel">
+        <h3>Declarar incidente real</h3>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cont_tipo">Origen</label><select id="cont_tipo" class="form-input"><option value="falla_dian">Servicio DIAN no disponible</option><option value="falla_facturador">Sistema del facturador no disponible</option></select></div>
+          <div class="form-col"><label class="form-label" for="cont_motivo">Motivo verificado</label><input id="cont_motivo" class="form-input" minlength="20" autocomplete="off"></div>
+          <div class="form-col"><label class="form-label" for="cont_evidencia">Referencia de evidencia</label><input id="cont_evidencia" class="form-input" placeholder="Incidente, monitoreo o respuesta DIAN" autocomplete="off"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-col"><label class="form-label" for="cont_confirmacion">Confirmaci&oacute;n</label><input id="cont_confirmacion" class="form-input" placeholder="ACTIVAR CONTINGENCIA" autocomplete="off"></div>
+          <div class="form-col" style="display:flex;align-items:flex-end"><button id="contAbrir" type="button" class="btn">Activar contingencia</button></div>
+        </div>
+        <p class="form-help">No actives este flujo para pruebas ni por una venta offline. Debe existir un incidente real, evidencia verificable y la configuraci&oacute;n fiscal de producci&oacute;n correspondiente.</p>
+      </div>
+	  <div class="dian-capture-panel">
+		<h3>Registrar factura de papel realmente expedida</h3>
+		<div class="form-row">
+		  <div class="form-col"><label class="form-label" for="cont_reg_incidente">ID contingencia</label><input id="cont_reg_incidente" type="number" min="1" class="form-input"></div>
+		  <div class="form-col"><label class="form-label" for="cont_reg_carrito">ID venta pagada</label><input id="cont_reg_carrito" type="number" min="1" class="form-input"></div>
+		  <div class="form-col"><label class="form-label" for="cont_reg_numero">N&uacute;mero exacto del papel</label><input id="cont_reg_numero" class="form-input" autocomplete="off"></div>
+		  <div class="form-col"><label class="form-label" for="cont_reg_fecha">Fecha de expedici&oacute;n</label><input id="cont_reg_fecha" type="date" class="form-input"></div>
+		</div>
+		<div class="form-row">
+		  <div class="form-col"><label class="form-label" for="cont_reg_confirmacion">Confirmaci&oacute;n</label><input id="cont_reg_confirmacion" class="form-input" placeholder="REGISTRAR TALONARIO" autocomplete="off"></div>
+		  <div class="form-col" style="display:flex;align-items:flex-end"><button id="contRegistrarTalonario" type="button" class="btn">Registrar expedici&oacute;n</button></div>
+		</div>
+		<p class="form-help">Solo registra una factura que haya sido entregada f&iacute;sicamente durante una falla real del facturador. PCS exige venta pagada, fuente fiscal inmutable, rango vigente y siguiente consecutivo exacto. La transmisi&oacute;n tipo 03 permanece pendiente hasta superar su preflight espec&iacute;fico.</p>
+	  </div>
+      <div id="feContingenciaMsg" class="form-help"></div>
+      <div id="feContingenciaList" class="dian-readable-result is-empty"></div>
+    </section>
+
+    <div id="feEstructuradoEC" class="card is-hidden fe-estructurado fe-estructurado-ec">
+      <h3>Campos estructurados — Ecuador (SRI)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code> (claves: <code>ruc</code>, <code>establecimiento</code>, <code>punto_emision</code>, <code>ambiente_sri</code>). No interfiere con Colombia ni con la DIAN.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ec_ruc">RUC</label><input id="fe_ec_ruc" class="form-input" placeholder="RUC" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ec_est">Establecimiento</label><input id="fe_ec_est" class="form-input" placeholder="001" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ec_punto">Punto de emisión</label><input id="fe_ec_punto" class="form-input" placeholder="001" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="fe_ec_ambiente_sri">Ambiente SRI (opcional)</label>
+          <select id="fe_ec_ambiente_sri" class="form-input">
+            <option value="">(definir en JSON o aquí)</option>
+            <option value="1">1 — Pruebas</option>
+            <option value="2">2 — Producción</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="feEstructuradoPA" class="card is-hidden fe-estructurado fe-estructurado-pa">
+      <h3>Campos estructurados — Panamá (DGI)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code> (claves: <code>ruc</code>, <code>dv</code>). Es independiente de Colombia y de la DIAN.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_pa_ruc">RUC</label><input id="fe_pa_ruc" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_pa_dv">Dígito verificador (DV)</label><input id="fe_pa_dv" class="form-input" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <div id="feEstructuradoCR" class="card is-hidden fe-estructurado fe-estructurado-cr">
+      <h3>Campos estructurados - Costa Rica (Hacienda)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code>: cedula, tipo_identificacion, sucursal, terminal, actividad_economica y version_xml.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_cr_cedula">Cedula</label><input id="fe_cr_cedula" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_cr_tipo_identificacion">Tipo identificacion</label><input id="fe_cr_tipo_identificacion" class="form-input" placeholder="01/02/03/04" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_cr_actividad">Actividad economica</label><input id="fe_cr_actividad" class="form-input" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_cr_sucursal">Sucursal</label><input id="fe_cr_sucursal" class="form-input" placeholder="001" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_cr_terminal">Terminal</label><input id="fe_cr_terminal" class="form-input" placeholder="00001" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_cr_version_xml">Version XML</label><input id="fe_cr_version_xml" class="form-input" placeholder="4.4" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <div id="feEstructuradoAR" class="card is-hidden fe-estructurado fe-estructurado-ar">
+      <h3>Campos estructurados - Argentina (ARCA)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code>: cuit, punto_venta, condicion_iva, tipo_comprobante y ws_servicio.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ar_cuit">CUIT</label><input id="fe_ar_cuit" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ar_punto_venta">Punto de venta</label><input id="fe_ar_punto_venta" class="form-input" placeholder="0001" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ar_condicion_iva">Condicion IVA</label><input id="fe_ar_condicion_iva" class="form-input" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ar_tipo_comprobante">Tipo comprobante</label><input id="fe_ar_tipo_comprobante" class="form-input" placeholder="factura" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ar_ws_servicio">Web service</label><input id="fe_ar_ws_servicio" class="form-input" placeholder="wsfev1" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <div id="feEstructuradoVE" class="card is-hidden fe-estructurado fe-estructurado-ve">
+      <h3>Campos estructurados - Venezuela (SENIAT)</h3>
+      <p class="form-help">Se fusionan con <code>campos_pais_json</code>: rif, serie, imprenta_digital, proveedor_homologado y moneda_referencia.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ve_rif">RIF</label><input id="fe_ve_rif" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ve_serie">Serie</label><input id="fe_ve_serie" class="form-input" placeholder="A" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ve_moneda_ref">Moneda referencia</label><input id="fe_ve_moneda_ref" class="form-input" placeholder="VES" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="fe_ve_imprenta">Imprenta digital</label><input id="fe_ve_imprenta" class="form-input" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="fe_ve_proveedor">Proveedor homologado</label><input id="fe_ve_proveedor" class="form-input" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <section class="card fe-country-add" aria-labelledby="newCountryTitle">
+      <h2 id="newCountryTitle">Agregar perfil de país</h2>
+      <p class="form-help">Crea una configuración separada para esta empresa usando el código ISO de dos letras. Un país nuevo queda en sandbox, inactivo y sin transmisión fiscal hasta que PCS implemente y valide su adaptador oficial.</p>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label" for="new_country_code">Código de país</label><input id="new_country_code" class="form-input" maxlength="2" placeholder="PE" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="pais_nombre">Nombre del país</label><input id="pais_nombre" class="form-input" maxlength="120" placeholder="Perú" autocomplete="off"></div>
+        <div class="form-col"><label class="form-label" for="new_country_currency">Moneda (opcional)</label><input id="new_country_currency" class="form-input" maxlength="3" placeholder="PEN" autocomplete="off"></div>
+      </div>
+      <div class="form-actions"><button id="addCountryBtn" type="button" class="btn secondary">Agregar país sin habilitar emisión</button></div>
+      <div id="newCountryMsg" class="form-help"></div>
+    </section>
+
+    <form id="feForm" class="form card">
+      <h2>Configuracion de facturacion por pais</h2>
+      <p class="form-help">Define el proveedor, ambiente, moneda, datos fiscales generales y preferencias de envío para el país seleccionado.</p>
+      <input type="hidden" id="empresa_id">
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Proveedor FE</label>
+          <input id="proveedor" class="form-input" placeholder="manual / proveedor externo">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Ambiente</label>
+          <select id="ambiente" class="form-input">
+            <option value="sandbox">Sandbox / pruebas</option>
+            <option value="produccion">Producción</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <input id="moneda_codigo" class="form-input" placeholder="COP / PAB / USD">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Tipo documento emisor</label>
+          <input id="tipo_documento_emisor" class="form-input" placeholder="NIT / RUC / Cédula jurídica">
+        </div>
+        <div class="form-col">
+          <label class="form-label" id="labelIdentificador">Identificador fiscal</label>
+          <input id="identificador_fiscal" class="form-input" placeholder="NIT / RUC por país">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Razón social</label>
+          <input id="razon_social" class="form-input" placeholder="Nombre legal del emisor">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Correo de facturación</label>
+          <input id="email_facturacion" type="email" class="form-input" placeholder="facturacion@empresa.com">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <div class="form-help">
+            <label>
+              <input id="enviar_factura_email_cliente_auto" type="checkbox">
+              Enviar factura electrónica automáticamente al correo del cliente
+            </label>
+          </div>
+          <p class="form-help">Al emitir una factura electrónica, el sistema usará el correo ingresado en la operación o el correo guardado en la ficha del cliente. El reenvío manual sigue disponible aunque esta opción esté apagada.</p>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Teléfono de facturación</label>
+          <input id="telefono_facturacion" class="form-input" placeholder="Contacto de facturación">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Dirección fiscal</label>
+          <input id="direccion_fiscal" class="form-input" placeholder="Dirección del emisor">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" id="labelPrefijo">Prefijo de factura</label>
+          <input id="prefijo_factura" class="form-input" placeholder="FE / INV / F">
+        </div>
+        <div class="form-col">
+          <label class="form-label" id="labelResolucion">Número de resolución</label>
+          <input id="resolucion_numero" class="form-input" placeholder="Resolución/autorización local">
+        </div>
+        <div class="form-col">
+          <label class="form-label">API base URL</label>
+          <input id="api_base_url" class="form-input" placeholder="https://api.proveedor.com">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Campos específicos del país (JSON)</label>
+          <textarea id="campos_pais_json" class="form-textarea" placeholder='{"sucursal":"001","punto_emision":"01"}'></textarea>
+          <div id="countryHint" class="form-help"></div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Notas internas de facturación"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn">Guardar configuración país</button>
+        <button type="button" id="reloadBtn" class="btn secondary">Recargar país</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <div class="card" >
+      <h2 >Configuraciones por país de esta empresa</h2>
+      <div id="list">Cargando...</div>
+    </div>
+
+    <div class="card" id="advancedConfigCard" >
+      <h2 >Configuración avanzada de facturación e impresión</h2>
+      <p class="form-help" >
+        Este bloque consolida los parámetros avanzados de facturación: datos fiscales, resolución y diseño de impresión.
+      </p>
+
+      <div id="advancedConfigNoAccess" class="form-help is-hidden">
+        Tu rol actual no tiene permisos para consultar o editar la configuración avanzada.
+      </div>
+
+      <form id="advancedConfigForm" class="form">
+        <input type="hidden" id="adv_empresa_id">
+        <input id="adv_enviar_factura_electronica_venta" type="checkbox" hidden aria-hidden="true">
+
+        <h3>Automatización de ventas y facturación</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <div class="form-help"><label><input id="adv_facturacion_electronica_activa" type="checkbox"> Activar facturación electrónica automática al cerrar venta</label></div>
+            <div class="form-help"><label><input id="adv_enviar_email_venta" type="checkbox"> Enviar correo de la venta (comprobante)</label></div>
+            <p id="advFacturaEmailAutoHint" class="form-help">El envío automático de factura electrónica al correo del cliente se configura una sola vez en la sección principal de facturación electrónica.</p>
+          </div>
+        </div>
+
+        <h3 >Datos fiscales del emisor</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Tipo documento</label>
+            <select id="adv_tipo_documento_emisor" class="form-input">
+              <option value="NIT">NIT</option>
+              <option value="CC">CC</option>
+              <option value="CE">CE</option>
+              <option value="PAS">PAS</option>
+              <option value="OTRO">OTRO</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">NIT / Documento</label>
+            <input id="adv_nit" class="form-input" placeholder="900123456">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Dígito verificación</label>
+            <input id="adv_digito_verificacion" class="form-input" placeholder="0-9">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Razón social</label>
+            <input id="adv_razon_social" class="form-input" placeholder="Mi empresa S.A.S.">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Nombre comercial</label>
+            <input id="adv_nombre_comercial" class="form-input" placeholder="Marca visible en factura">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Régimen fiscal</label>
+            <input id="adv_regimen_fiscal" class="form-input" placeholder="Responsable de IVA / SIMPLE">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Responsabilidad tributaria</label>
+            <input id="adv_responsabilidad_tributaria" class="form-input" placeholder="R-99-PN, O-13, O-15">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="adv_tipo_persona_fiscal">Tipo de persona fiscal</label>
+            <select id="adv_tipo_persona_fiscal" class="form-input">
+              <option value="">Seleccionar</option>
+              <option value="persona_natural">Persona natural</option>
+              <option value="persona_juridica">Persona jurídica</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="adv_regimen_tributario_colombia">Régimen tributario Colombia</label>
+            <select id="adv_regimen_tributario_colombia" class="form-input">
+              <option value="">Seleccionar</option>
+              <option value="ordinario">Renta régimen ordinario</option>
+              <option value="simple">Régimen Simple de Tributación</option>
+              <option value="especial">Régimen Tributario Especial</option>
+              <option value="ingresos_patrimonio">Ingresos y patrimonio</option>
+              <option value="no_declarante_pn">Persona natural no obligada a declarar</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="adv_iva_responsabilidad">Responsabilidad IVA</label>
+            <select id="adv_iva_responsabilidad" class="form-input">
+              <option value="">Seleccionar</option>
+              <option value="responsable_iva">Responsable de IVA</option>
+              <option value="no_responsable_iva">No responsable de IVA</option>
+              <option value="pj_no_responsable_iva_simple">Persona jurídica no responsable por SIMPLE</option>
+              <option value="bienes_exentos">Productor/exportador de bienes exentos</option>
+              <option value="servicios_exterior">Servicios desde el exterior</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="adv_responsabilidades_rut_codigos">Códigos de responsabilidades RUT</label>
+            <input id="adv_responsabilidades_rut_codigos" class="form-input" inputmode="numeric" placeholder="49, 52">
+            <p class="form-help">Códigos visibles en el campo 53 del RUT, separados por coma.</p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Correo facturación</label>
+            <input id="adv_email_facturacion" type="email" class="form-input" placeholder="facturacion@empresa.com">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Teléfono facturación</label>
+            <input id="adv_telefono_facturacion" class="form-input" placeholder="3001234567">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Dirección fiscal</label>
+            <input id="adv_direccion_fiscal" class="form-input" placeholder="Dirección principal para FE">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Departamento</label>
+            <input id="adv_departamento" class="form-input" placeholder="Antioquia">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Código DANE departamento</label>
+            <input id="adv_departamento_codigo_dane" class="form-input" inputmode="numeric" maxlength="2" placeholder="05">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Municipio</label>
+            <input id="adv_municipio" class="form-input" placeholder="Medellín">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Código DANE municipio</label>
+            <input id="adv_municipio_codigo_dane" class="form-input" inputmode="numeric" maxlength="5" placeholder="05001">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">País</label>
+            <input id="adv_pais_codigo" class="form-input" value="CO" placeholder="CO">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Código postal</label>
+            <input id="adv_codigo_postal" class="form-input" placeholder="Opcional">
+          </div>
+        </div>
+
+        <h3>Resolución y numeración de factura</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Ambiente FE</label>
+            <select id="adv_ambiente_fe" class="form-input">
+              <option value="habilitacion">Habilitación</option>
+              <option value="produccion">Producción</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Tipo operación</label>
+            <input id="adv_tipo_operacion" class="form-input" value="10" placeholder="10 (estándar DIAN)">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Prefijo factura</label>
+            <input id="adv_prefijo_factura" class="form-input" placeholder="FE, POS, FV...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Número resolución</label>
+            <input id="adv_resolucion_numero" class="form-input" placeholder="18760000000000">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Resolución desde</label>
+            <input id="adv_resolucion_fecha_desde" type="date" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Resolución hasta</label>
+            <input id="adv_resolucion_fecha_hasta" type="date" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Consecutivo desde</label>
+            <input id="adv_consecutivo_desde" type="number" min="1" class="form-input" value="1">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Consecutivo hasta</label>
+            <input id="adv_consecutivo_hasta" type="number" min="1" class="form-input" value="999999">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Próximo consecutivo</label>
+            <input id="adv_proximo_consecutivo" type="number" min="1" class="form-input" value="1">
+          </div>
+        </div>
+
+        <h3>Impresión y apariencia de factura</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Formato de impresión</label>
+            <select id="adv_formato_impresion" class="form-input">
+              <option value="carta">Tamaño grande / carta</option>
+              <option value="pos">Impresora POS (tirilla)</option>
+            </select>
+            <div class="form-help"><label><input id="adv_imprimir_copia_factura" type="checkbox"> Imprimir copia de la factura</label></div>
+            <div class="form-help"><label><input id="adv_total_en_letras" type="checkbox" checked> Mostrar total de la factura en letras</label></div>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Logo de factura</label>
+            <input id="adv_logo_url" class="form-input" placeholder="/uploads/empresas/empresa_1_nombre/imagenes/logos/factura/logo.png o URL pública">
+            <div class="form-help"><label><input id="adv_mostrar_logo" type="checkbox" checked> Mostrar logo en factura</label></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Pie de factura</label>
+            <textarea id="adv_pie_factura" class="form-textarea" placeholder="Mensaje comercial o de agradecimiento"></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Notas legales</label>
+            <textarea id="adv_notas_legales" class="form-textarea" placeholder="Texto legal/tributario que deba aparecer en la factura"></textarea>
+          </div>
+        </div>
+
+        <h3>Colores de estado del carrito en estaciones</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Color cuando carrito está activo</label>
+            <input id="adv_color_carrito_activo" type="color" class="form-input" value="#d9fbe8">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Color cuando carrito está inactivo</label>
+            <input id="adv_color_carrito_inactivo" type="color" class="form-input" value="#fff9ef">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Observaciones</label>
+            <textarea id="adv_observaciones" class="form-textarea" placeholder="Observaciones internas de la configuración"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar configuración avanzada</button>
+          <button type="button" id="advReloadBtn" class="btn secondary">Recargar configuración avanzada</button>
+        </div>
+        <div id="adv_msg" class="form-help"></div>
+        <p id="fiscalNumberingConsistency" role="alert" class="form-help" hidden></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/form_field_help.js?v=20260607-field-help1"></script>
+  <script>
+    const state = {
+      empresaID: 0,
+      paisSeleccionado: "",
+      paises: [],
+      catalog: [],
+      dianConfig: null,
+      dianCatalogo: null,
+      dianRutImport: null,
+      dianNumeracionImport: null,
+    };
+
+    const advancedConfigState = {
+      allowed: true,
+      current: {}
+    };
+
+    function removeFacturacionIntroCards() {
+      document.querySelectorAll(".fe-detected-card, #feVistaBloque").forEach(function(card) {
+        card.remove();
+      });
+    }
+
+    function reorderDianCards() {
+      var stack = document.querySelector(".fe-page-stack");
+      var dian = document.getElementById("feDianConfigCard");
+      var firma = document.getElementById("feFirmaCard");
+      if (stack && dian && firma && firma.previousElementSibling !== dian) {
+        stack.insertBefore(dian, firma);
+      }
+    }
+
+    function installFacturacionFieldHelp() {
+      if (!window.PCSFieldHelp || !window.PCSFieldHelp.install) return;
+      window.PCSFieldHelp.install({
+        feFirmaFile: "Archivo de firma digital de la empresa. DIAN Colombia suele usar P12/PFX o certificado X.509 con llave privada.",
+        feFirmaPassword: "Clave del archivo P12/PFX. Se usa para cargar la firma y no debe quedar escrita en observaciones ni documentos.",
+
+        dian_nit: "NIT del emisor registrado ante DIAN, sin puntos ni guiones. Debe coincidir con la empresa que esta en habilitacion.",
+        dian_dv: "Digito de verificacion del NIT. Se calcula a partir del NIT y DIAN lo valida en los documentos.",
+        dian_razon_social: "Nombre legal del emisor tal como aparece en RUT/DIAN.",
+        dian_tipo_ambiente: "Ambiente de envio: habilitacion para pruebas DIAN o produccion cuando DIAN ya autorizo emitir.",
+        dian_url: "Endpoint oficial DIAN o URL del proveedor tecnologico. Para habilitacion DIAN Colombia suele iniciar con vpfe-hab.",
+        dian_test_set_id: "Identificador del set de pruebas entregado por el portal DIAN. Es obligatorio para asociar los envios de habilitacion.",
+        dian_software_id: "Identificacion del software registrada en DIAN para esta operacion.",
+        dian_software_pin: "PIN del software DIAN. Debe guardarse como dato sensible y no publicarse en capturas, logs ni documentacion.",
+        dian_usar_software_compartido: "Activalo solo cuando la empresa opera con el software SaaS compartido autorizado para el sistema.",
+        dian_prefijo: "Prefijo autorizado por DIAN para la numeracion de facturas o set de pruebas, por ejemplo SETP o FE.",
+        dian_resolucion_numero: "Numero de resolucion o autorizacion de numeracion asignado por DIAN.",
+        dian_consecutivo_actual: "Siguiente numero que usara el sistema para emitir. Debe estar dentro del rango autorizado.",
+        dian_resolucion_fecha_desde: "Fecha inicial de vigencia de la resolucion de numeracion.",
+        dian_resolucion_fecha_hasta: "Fecha final de vigencia de la resolucion. No se debe emitir fuera de esa vigencia.",
+        dian_rango_desde: "Rango autorizado por DIAN: numero inicial y numero final permitidos para el prefijo.",
+        dian_llave_tecnica: "Clave tecnica entregada por DIAN para construir CUFE/CUDE con la numeracion autorizada.",
+        dian_token_emisor_ref: "Referencia del token solo si se usa proveedor/API. En DIAN oficial SOAP normalmente no es requerido.",
+        dian_certificado_url: "Referencia interna del certificado X.509 cargado. No debe ser una URL publica si contiene material sensible.",
+        dian_certificado_clave_ref: "Referencia segura de la llave privada o firma cargada. No pegues la clave real en este campo.",
+        dian_observaciones: "Notas internas de soporte sobre habilitacion, cambios o incidencias. No escribas PIN, claves, tokens ni certificados.",
+
+        pais_codigo: "Pais cuya normativa de facturacion electronica se configurara para esta empresa.",
+        proveedor: "Proveedor de facturacion electronica o modo manual. En Colombia puede ser DIAN oficial o un proveedor tecnologico.",
+        ambiente: "Ambiente general de la configuracion por pais: pruebas/sandbox o produccion.",
+        moneda_codigo: "Moneda principal de emision, por ejemplo COP para Colombia o USD/PAB segun pais.",
+        tipo_documento_emisor: "Tipo de identificacion fiscal del emisor: NIT, RUC, cedula juridica u otro segun pais.",
+        identificador_fiscal: "Numero fiscal principal del emisor, sin formato innecesario.",
+        razon_social: "Nombre legal que se usara como emisor en documentos electronicos.",
+        email_facturacion: "Correo operativo de facturacion para notificaciones y contacto del emisor.",
+        enviar_factura_email_cliente_auto: "Cuando esta activo, el sistema intenta enviar la factura electronica al correo del cliente al emitirla.",
+        telefono_facturacion: "Telefono de contacto fiscal o administrativo del emisor.",
+        direccion_fiscal: "Direccion fiscal registrada de la empresa emisora.",
+        prefijo_factura: "Prefijo local de factura para la configuracion del pais seleccionado.",
+        resolucion_numero: "Resolucion, autorizacion o referencia fiscal local segun pais.",
+        api_base_url: "URL base del proveedor externo cuando se integra por API. No aplica si el envio es DIAN oficial directo.",
+        campos_pais_json: "JSON opcional para datos especificos del pais que no tienen campo propio. Debe ser JSON valido.",
+        observaciones: "Notas internas de la configuracion por pais. No escribas secretos ni claves.",
+
+        adv_facturacion_electronica_activa: "Activa el envio automatico de factura electronica al cerrar una venta cuando la empresa ya esta lista para emitir.",
+        adv_enviar_email_venta: "Permite enviar al cliente el comprobante o venta por correo, independiente de la factura electronica.",
+        adv_enviar_factura_electronica_venta: "Intenta enviar la factura electronica al correo del cliente despues de cerrar la venta.",
+        adv_tipo_documento_emisor: "Tipo de documento fiscal del emisor para datos avanzados de facturacion.",
+        adv_nit: "NIT o documento fiscal del emisor para impresion y datos avanzados.",
+        adv_digito_verificacion: "Digito de verificacion asociado al NIT del emisor.",
+        adv_razon_social: "Razon social que aparecera en documentos y configuracion avanzada.",
+        adv_nombre_comercial: "Nombre de marca visible en factura o comprobantes, si difiere de la razon social.",
+        adv_regimen_fiscal: "Regimen tributario del emisor, por ejemplo Responsable de IVA o SIMPLE.",
+        adv_responsabilidad_tributaria: "Codigo o descripcion de responsabilidad tributaria exigida por la normativa aplicable.",
+        adv_tipo_persona_fiscal: "Clasificacion de la empresa como persona natural o juridica segun el RUT.",
+        adv_regimen_tributario_colombia: "Regimen de renta visible o verificable en el RUT. Si el PDF no lo determina, revisalo con el contador.",
+        adv_iva_responsabilidad: "Responsabilidad frente al IVA segun los codigos del campo 53 del RUT.",
+        adv_responsabilidades_rut_codigos: "Codigos numericos visibles en el campo 53 del RUT, separados por coma.",
+        adv_email_facturacion: "Correo usado como contacto de facturacion en la configuracion avanzada.",
+        adv_telefono_facturacion: "Telefono fiscal o administrativo del emisor.",
+        adv_direccion_fiscal: "Direccion principal que se imprime o usa como direccion fiscal del emisor.",
+        adv_departamento: "Departamento o provincia de la direccion fiscal.",
+        adv_municipio: "Municipio o ciudad de la direccion fiscal.",
+        adv_pais_codigo: "Codigo ISO del pais del emisor, por ejemplo CO.",
+        adv_codigo_postal: "Codigo postal si la normativa o el formato de impresion lo requiere.",
+        adv_ambiente_fe: "Ambiente operativo de facturacion electronica: habilitacion o produccion.",
+        adv_tipo_operacion: "Tipo de operacion fiscal. En DIAN Colombia el valor estandar suele ser 10.",
+        adv_prefijo_factura: "Prefijo avanzado para numeracion de factura.",
+        adv_resolucion_numero: "Numero de resolucion usado para numeracion avanzada.",
+        adv_resolucion_fecha_desde: "Inicio de vigencia de la resolucion avanzada.",
+        adv_resolucion_fecha_hasta: "Fin de vigencia de la resolucion avanzada.",
+        adv_consecutivo_desde: "Primer consecutivo permitido en el rango avanzado.",
+        adv_consecutivo_hasta: "Ultimo consecutivo permitido en el rango avanzado.",
+        adv_proximo_consecutivo: "Numero que se usara en la siguiente emision.",
+        adv_formato_impresion: "Formato visual de impresion: carta para documento amplio o POS para tirilla.",
+        adv_imprimir_copia_factura: "Imprime una copia adicional cuando el flujo operativo lo requiere.",
+        adv_logo_url: "Ruta del logo usado en la impresion de factura. Puede ser diferente al logo corporativo de la empresa.",
+        adv_mostrar_logo: "Muestra u oculta el logo en la impresion de factura.",
+        adv_pie_factura: "Mensaje comercial o de agradecimiento para el pie impreso.",
+        adv_notas_legales: "Texto legal o tributario que debe aparecer impreso cuando aplique.",
+        adv_color_carrito_activo: "Color de referencia para estaciones con carrito activo.",
+        adv_color_carrito_inactivo: "Color de referencia para estaciones con carrito inactivo.",
+        adv_observaciones: "Notas internas de configuracion avanzada. No guardes secretos aqui."
+      });
+    }
+
+    function q(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function txt(v) {
+      return (v || "").toString().trim();
+    }
+
+    function escapeHTML(raw) {
+      return txt(raw).replace(/[&<>"']/g, function(ch) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch];
+      });
+    }
+
+    function isSensitiveDianResultKey(key) {
+      return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|llave_tecnica|software_id|software_pin|test_set_id|certificado_url|certificado_clave/i.test(String(key || ""));
+    }
+
+    function sanitizeDianResultValue(value, key) {
+      if (isSensitiveDianResultKey(key)) return "[oculto]";
+      if (Array.isArray(value)) return value.map(function(item) { return sanitizeDianResultValue(item, ""); });
+      if (value && typeof value === "object") {
+        var out = {};
+        Object.keys(value).forEach(function(childKey) {
+          out[childKey] = sanitizeDianResultValue(value[childKey], childKey);
+        });
+        return out;
+      }
+      if (typeof value === "string" && value.length > 4000) return value.slice(0, 4000) + "\n...[respuesta truncada]";
+      return value;
+    }
+
+    function stringifyDianResult(data) {
+      try {
+        return JSON.stringify(sanitizeDianResultValue(data, ""), null, 2);
+      } catch (_) {
+        return String(data == null ? "" : data);
+      }
+    }
+
+    function labelDianResultValue(value, emptyText) {
+      if (Array.isArray(value)) return value.length ? value.join(", ") : (emptyText || "Sin datos");
+      if (value === true) return "Sí";
+      if (value === false) return "No";
+      if (value === null || typeof value === "undefined" || txt(value) === "") return emptyText || "Sin datos";
+      return txt(value);
+    }
+
+    function buildDianReadableResult(data) {
+      if (!data || typeof data !== "object") return "";
+      var title = data.ok === false ? "Resultado observado" : "Resultado correcto";
+      var cards = [
+        ["Estado", data.ok === false ? "Observado" : "Correcto"],
+        ["Ambiente", data.ambiente || data.tipo_ambiente || "No informado"],
+        ["Configuración", data.configurada === true ? "Completa" : (data.configurada === false ? "Pendiente" : "Revisada")],
+        ["Preparación", data.estado_preparacion || data.estado || data.status || "Validada"],
+        ["Empresa", data.empresa_id ? ("#" + data.empresa_id) : "Actual"],
+        ["Operaciones conectadas", labelDianResultValue(data.wsdl_operaciones_conectadas || data.operaciones_conectadas, "Sin dato")]
+      ];
+      var faltantes = Array.isArray(data.faltantes_configuracion) ? data.faltantes_configuracion : [];
+      var brechas = Array.isArray(data.brechas_tecnicas) ? data.brechas_tecnicas : [];
+      var html = '<div><strong>' + escapeHTML(title) + '</strong></div>';
+      html += '<div class="dian-readable-grid">' + cards.map(function(item) {
+        return '<div class="dian-readable-item"><span>' + escapeHTML(item[0]) + '</span><strong>' + escapeHTML(item[1]) + '</strong></div>';
+      }).join("") + '</div>';
+      html += '<div class="dian-readable-note"><strong>Siguiente paso:</strong> ' + escapeHTML(data.siguiente_fase || data.message || data.mensaje || "Continuar con la validación DIAN desde el centro de habilitación.") + '</div>';
+      html += '<div class="dian-readable-note"><strong>Campos pendientes:</strong> ' + (faltantes.length ? '<ul>' + faltantes.map(function(item) { return '<li>' + escapeHTML(item) + '</li>'; }).join("") + '</ul>' : 'Sin campos pendientes.') + '</div>';
+      if (brechas.length) {
+        html += '<div class="dian-readable-note"><strong>Observaciones técnicas:</strong><ul>' + brechas.map(function(item) { return '<li>' + escapeHTML(item) + '</li>'; }).join("") + '</ul></div>';
+      }
+      html += '<details class="dian-readable-detail"><summary>Ver detalle técnico</summary><pre>' + escapeHTML(stringifyDianResult(data)) + '</pre></details>';
+      return html;
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById("msg");
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function safeJSON(raw) {
+      const input = txt(raw);
+      if (!input) return "{}";
+      try {
+        const parsed = JSON.parse(input);
+        return JSON.stringify(parsed);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function responsabilidadesRUTCodesFromInput(raw) {
+      var seen = {};
+      return txt(raw).split(/[\s,;]+/).map(function(code) {
+        var digits = String(code || "").replace(/\D+/g, "");
+        if (digits.length === 1) digits = "0" + digits;
+        return digits;
+      }).filter(function(code) {
+        if (code.length !== 2 || seen[code]) return false;
+        seen[code] = true;
+        return true;
+      }).sort();
+    }
+
+    function responsabilidadesRUTCodesFromJSON(raw) {
+      if (Array.isArray(raw)) return responsabilidadesRUTCodesFromInput(raw.join(","));
+      try {
+        var parsed = JSON.parse(txt(raw) || "[]");
+        return Array.isArray(parsed) ? responsabilidadesRUTCodesFromInput(parsed.join(",")) : [];
+      } catch (_) {
+        return responsabilidadesRUTCodesFromInput(raw);
+      }
+    }
+
+    function ensureOk(res) {
+      if (res.ok) return Promise.resolve(res);
+      return res.text().then(function(t) {
+        throw new Error(t || ("HTTP " + res.status));
+      });
+    }
+
+    async function readJSONResponse(res) {
+      const textBody = await res.text();
+      let data = null;
+      if (textBody) {
+        try {
+          data = JSON.parse(textBody);
+        } catch (_) {
+          data = { error: textBody };
+        }
+      }
+      if (!res.ok) {
+        const msg = data && (data.motivo || data.error || data.message) ? (data.motivo || data.error || data.message) : ("HTTP " + res.status);
+        const err = new Error(msg);
+        err.data = data;
+        throw err;
+      }
+      return data || {};
+    }
+
+    function toInt(value, fallback) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return fallback;
+      return Math.trunc(n);
+    }
+
+    function asDateValue(value) {
+      const raw = txt(value);
+      if (!raw) return "";
+      return raw.length >= 10 ? raw.slice(0, 10) : raw;
+    }
+
+    function normalizeColorHex(value, fallback) {
+      const raw = txt(value).toLowerCase();
+      const base = txt(fallback).toLowerCase();
+      const color = raw || base;
+      if (!color || color.length !== 7 || color.charAt(0) !== "#") {
+        return base || "#fff9ef";
+      }
+      for (let i = 1; i < color.length; i += 1) {
+        const c = color.charCodeAt(i);
+        const isDigit = c >= 48 && c <= 57;
+        const isHexLower = c >= 97 && c <= 102;
+        if (!isDigit && !isHexLower) {
+          return base || "#fff9ef";
+        }
+      }
+      return color;
+    }
+
+    function setAdvancedMessage(text, isError) {
+      const el = document.getElementById("adv_msg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setAdvancedSectionVisibility(allowed) {
+      const denied = document.getElementById("advancedConfigNoAccess");
+      const form = document.getElementById("advancedConfigForm");
+      if (!denied || !form) return;
+      denied.style.display = allowed ? "none" : "";
+      form.style.display = allowed ? "" : "none";
+    }
+
+    const DEFAULT_RECIBO_PRINT_ITEMS_FE = {
+      fecha: true,
+      cliente: true,
+      identificacion_cliente: true,
+      productos: true,
+      subtotal: true,
+      descuento: true,
+      impuestos: true,
+      total: true,
+      total_en_letras: true,
+      pagos: true,
+      qr: true,
+      cufe: true,
+      resolucion: true,
+      notas: true
+    };
+
+    function parsePrintItemsJSON(value) {
+      if (!value) return Object.assign({}, DEFAULT_RECIBO_PRINT_ITEMS_FE);
+      if (typeof value === "object") return Object.assign({}, DEFAULT_RECIBO_PRINT_ITEMS_FE, value || {});
+      try {
+        const parsed = JSON.parse(String(value));
+        return Object.assign({}, DEFAULT_RECIBO_PRINT_ITEMS_FE, parsed && typeof parsed === "object" ? parsed : {});
+      } catch (_) {
+        return Object.assign({}, DEFAULT_RECIBO_PRINT_ITEMS_FE);
+      }
+    }
+
+    function collectReciboPrintItemsFromForm(cfg) {
+      const items = parsePrintItemsJSON(cfg && cfg.impresion_recibo_items_json);
+      const box = document.getElementById("adv_total_en_letras");
+      if (box) items.total_en_letras = !!box.checked;
+      return items;
+    }
+
+    function setAdvancedFormData(cfg) {
+      advancedConfigState.current = cfg && typeof cfg === "object" ? Object.assign({}, cfg) : {};
+      document.getElementById("adv_facturacion_electronica_activa").checked = cfg.facturacion_electronica_activa === true || txt(cfg.modo_documento_venta) === "factura_electronica";
+      document.getElementById("adv_enviar_email_venta").checked = cfg.enviar_email_venta === true;
+      document.getElementById("adv_enviar_factura_electronica_venta").checked = cfg.enviar_factura_electronica_venta === true;
+      document.getElementById("adv_tipo_documento_emisor").value = txt(cfg.tipo_documento_emisor) || "NIT";
+      document.getElementById("adv_nit").value = txt(cfg.nit);
+      document.getElementById("adv_digito_verificacion").value = txt(cfg.digito_verificacion);
+      document.getElementById("adv_razon_social").value = txt(cfg.razon_social);
+      document.getElementById("adv_nombre_comercial").value = txt(cfg.nombre_comercial);
+      document.getElementById("adv_regimen_fiscal").value = txt(cfg.regimen_fiscal);
+      document.getElementById("adv_responsabilidad_tributaria").value = txt(cfg.responsabilidad_tributaria);
+      document.getElementById("adv_tipo_persona_fiscal").value = txt(cfg.tipo_persona_fiscal);
+      document.getElementById("adv_regimen_tributario_colombia").value = txt(cfg.regimen_tributario_colombia);
+      document.getElementById("adv_iva_responsabilidad").value = txt(cfg.iva_responsabilidad);
+      document.getElementById("adv_responsabilidades_rut_codigos").value = responsabilidadesRUTCodesFromJSON(cfg.responsabilidades_rut_json).join(", ");
+      document.getElementById("adv_email_facturacion").value = txt(cfg.email_facturacion);
+      document.getElementById("adv_telefono_facturacion").value = txt(cfg.telefono_facturacion);
+      document.getElementById("adv_direccion_fiscal").value = txt(cfg.direccion_fiscal);
+      document.getElementById("adv_departamento").value = txt(cfg.departamento);
+      document.getElementById("adv_departamento_codigo_dane").value = txt(cfg.departamento_codigo_dane);
+      document.getElementById("adv_municipio").value = txt(cfg.municipio);
+      document.getElementById("adv_municipio_codigo_dane").value = txt(cfg.municipio_codigo_dane);
+      document.getElementById("adv_pais_codigo").value = txt(cfg.pais_codigo) || "CO";
+      document.getElementById("adv_codigo_postal").value = txt(cfg.codigo_postal);
+      document.getElementById("adv_ambiente_fe").value = txt(cfg.ambiente_fe) || "habilitacion";
+      document.getElementById("adv_tipo_operacion").value = txt(cfg.tipo_operacion) || "10";
+      document.getElementById("adv_prefijo_factura").value = txt(cfg.prefijo_factura);
+      document.getElementById("adv_resolucion_numero").value = txt(cfg.resolucion_numero);
+      document.getElementById("adv_resolucion_fecha_desde").value = asDateValue(cfg.resolucion_fecha_desde);
+      document.getElementById("adv_resolucion_fecha_hasta").value = asDateValue(cfg.resolucion_fecha_hasta);
+      document.getElementById("adv_consecutivo_desde").value = toInt(cfg.consecutivo_desde, 1);
+      document.getElementById("adv_consecutivo_hasta").value = toInt(cfg.consecutivo_hasta, 999999);
+      document.getElementById("adv_proximo_consecutivo").value = toInt(cfg.proximo_consecutivo, 1);
+      document.getElementById("adv_formato_impresion").value = txt(cfg.formato_impresion) || "carta";
+      document.getElementById("adv_imprimir_copia_factura").checked = cfg.imprimir_copia_factura === true;
+      document.getElementById("adv_total_en_letras").checked = parsePrintItemsJSON(cfg.impresion_recibo_items_json).total_en_letras !== false;
+      document.getElementById("adv_logo_url").value = txt(cfg.logo_factura_url || cfg.logo_url);
+      document.getElementById("adv_mostrar_logo").checked = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
+      document.getElementById("adv_pie_factura").value = txt(cfg.pie_factura);
+      document.getElementById("adv_notas_legales").value = txt(cfg.notas_legales);
+      document.getElementById("adv_color_carrito_activo").value = normalizeColorHex(cfg.color_carrito_activo, "#d9fbe8");
+      document.getElementById("adv_color_carrito_inactivo").value = normalizeColorHex(cfg.color_carrito_inactivo, "#fff9ef");
+      document.getElementById("adv_observaciones").value = txt(cfg.observaciones);
+    }
+
+    function collectAdvancedPayload() {
+      var facturacionElectronicaActiva = !!document.getElementById("adv_facturacion_electronica_activa").checked;
+      return {
+        empresa_id: Number(state.empresaID),
+        facturacion_electronica_activa: facturacionElectronicaActiva,
+        modo_documento_venta: facturacionElectronicaActiva ? "factura_electronica" : "comprobante_pago",
+        enviar_email_venta: !!document.getElementById("adv_enviar_email_venta").checked,
+        enviar_factura_electronica_venta: getEnviarFacturaEmailClienteAutoValue(),
+        tipo_documento_emisor: txt(document.getElementById("adv_tipo_documento_emisor").value) || "NIT",
+        nit: txt(document.getElementById("adv_nit").value),
+        digito_verificacion: txt(document.getElementById("adv_digito_verificacion").value),
+        razon_social: txt(document.getElementById("adv_razon_social").value),
+        nombre_comercial: txt(document.getElementById("adv_nombre_comercial").value),
+        regimen_fiscal: txt(document.getElementById("adv_regimen_fiscal").value),
+        responsabilidad_tributaria: txt(document.getElementById("adv_responsabilidad_tributaria").value),
+        tipo_persona_fiscal: txt(document.getElementById("adv_tipo_persona_fiscal").value),
+        regimen_tributario_colombia: txt(document.getElementById("adv_regimen_tributario_colombia").value),
+        iva_responsabilidad: txt(document.getElementById("adv_iva_responsabilidad").value),
+        responsabilidades_rut_json: JSON.stringify(responsabilidadesRUTCodesFromInput(document.getElementById("adv_responsabilidades_rut_codigos").value)),
+        email_facturacion: txt(document.getElementById("adv_email_facturacion").value),
+        telefono_facturacion: txt(document.getElementById("adv_telefono_facturacion").value),
+        direccion_fiscal: txt(document.getElementById("adv_direccion_fiscal").value),
+        departamento: txt(document.getElementById("adv_departamento").value),
+        departamento_codigo_dane: txt(document.getElementById("adv_departamento_codigo_dane").value),
+        municipio: txt(document.getElementById("adv_municipio").value),
+        municipio_codigo_dane: txt(document.getElementById("adv_municipio_codigo_dane").value),
+        pais_codigo: txt(document.getElementById("adv_pais_codigo").value) || "CO",
+        codigo_postal: txt(document.getElementById("adv_codigo_postal").value),
+        ambiente_fe: txt(document.getElementById("adv_ambiente_fe").value) || "habilitacion",
+        tipo_operacion: txt(document.getElementById("adv_tipo_operacion").value) || "10",
+        prefijo_factura: txt(document.getElementById("adv_prefijo_factura").value),
+        resolucion_numero: txt(document.getElementById("adv_resolucion_numero").value),
+        resolucion_fecha_desde: txt(document.getElementById("adv_resolucion_fecha_desde").value),
+        resolucion_fecha_hasta: txt(document.getElementById("adv_resolucion_fecha_hasta").value),
+        consecutivo_desde: toInt(document.getElementById("adv_consecutivo_desde").value, 1),
+        consecutivo_hasta: toInt(document.getElementById("adv_consecutivo_hasta").value, 999999),
+        proximo_consecutivo: toInt(document.getElementById("adv_proximo_consecutivo").value, 1),
+        formato_impresion: txt(document.getElementById("adv_formato_impresion").value) || "carta",
+        imprimir_copia_factura: !!document.getElementById("adv_imprimir_copia_factura").checked,
+        impresion_recibo_items_json: JSON.stringify(collectReciboPrintItemsFromForm(advancedConfigState.current || {})),
+        mostrar_logo_factura: !!document.getElementById("adv_mostrar_logo").checked,
+        logo_factura_url: txt(document.getElementById("adv_logo_url").value),
+        pie_factura: txt(document.getElementById("adv_pie_factura").value),
+        notas_legales: txt(document.getElementById("adv_notas_legales").value),
+        color_carrito_activo: normalizeColorHex(document.getElementById("adv_color_carrito_activo").value, "#d9fbe8"),
+        color_carrito_inactivo: normalizeColorHex(document.getElementById("adv_color_carrito_inactivo").value, "#fff9ef"),
+        observaciones: txt(document.getElementById("adv_observaciones").value)
+      };
+    }
+
+    async function loadAdvancedConfig() {
+      const res = await fetch("/api/empresa/configuracion_avanzada?empresa_id=" + encodeURIComponent(state.empresaID));
+      if (res.status === 401 || res.status === 403) {
+        advancedConfigState.allowed = false;
+        setAdvancedSectionVisibility(false);
+        setAdvancedMessage("", false);
+        return false;
+      }
+      await ensureOk(res);
+      const cfg = await res.json();
+      advancedConfigState.allowed = true;
+      setAdvancedSectionVisibility(true);
+      setAdvancedFormData(cfg || {});
+      renderFiscalNumberingConsistency();
+      return true;
+    }
+
+    function renderFiscalNumberingConsistency() {
+      var notice = document.getElementById("fiscalNumberingConsistency");
+      if (!notice) return;
+      var value = function(id) { var el = document.getElementById(id); return el ? String(el.value || "").trim() : ""; };
+      var sameRange = value("dian_prefijo").toUpperCase() === value("adv_prefijo_factura").toUpperCase() &&
+        value("dian_resolucion_numero") && value("dian_resolucion_numero") === value("adv_resolucion_numero");
+      var dianNext = Number(value("dian_consecutivo_actual"));
+      var salesNext = Number(value("adv_proximo_consecutivo"));
+      var mismatch = sameRange && dianNext > 0 && salesNext > 0 && dianNext !== salesNext;
+      notice.hidden = !mismatch;
+      notice.style.color = "#dc2626";
+      notice.textContent = mismatch ? "Numeración por revisar: DIAN muestra " + dianNext + " y ventas muestra " + salesNext + ". Contrasta documentos, cola y portal DIAN antes de emitir. No reduzcas consecutivos. El 100 % de campos completos no valida esta concordancia." : "";
+    }
+
+    function countryLabel(item) {
+      if (!item) return "";
+      return (item.bandera || item.bandera_pais || "") + " " + (item.nombre || item.pais_nombre || item.codigo || item.pais_codigo || "");
+    }
+
+    function ensureCountryOption(item) {
+      if (!item) return;
+      const code = txt(item.codigo || item.pais_codigo).toUpperCase();
+      if (!/^[A-Z]{2}$/.test(code)) return;
+      const normalized = {
+        codigo: code,
+        nombre: txt(item.nombre || item.pais_nombre) || ("Perfil " + code),
+        bandera: txt(item.bandera || item.bandera_pais),
+        moneda: txt(item.moneda || item.moneda_codigo),
+        vista: item.vista || null
+      };
+      state.catalog = Array.isArray(state.catalog) ? state.catalog : [];
+      if (!findCatalogItem(code)) state.catalog.push(normalized);
+      state.paises = state.catalog;
+      const select = document.getElementById("pais_codigo");
+      if (!select) return;
+      let option = Array.from(select.options).find(function(candidate) { return txt(candidate.value).toUpperCase() === code; });
+      if (!option) {
+        option = document.createElement("option");
+        option.value = code;
+        select.appendChild(option);
+      }
+      option.textContent = countryLabel(normalized).trim() || code;
+    }
+
+    function findCatalogItem(code) {
+      const c = (code || "").toUpperCase();
+      if (!state.catalog || !state.catalog.length) return null;
+      for (var i = 0; i < state.catalog.length; i += 1) {
+        if ((state.catalog[i].codigo || "").toUpperCase() === c) return state.catalog[i];
+      }
+      return null;
+    }
+
+    function updateSelectedCountryHeader(code, sourceText, labelText) {
+      const codeU = txt(code).toUpperCase() || "CO";
+      const item = findCatalogItem(codeU);
+      const label = txt(labelText) || countryLabel(item) || codeU;
+      var detectedCountry = document.getElementById("detectedCountry");
+      var detectedSource = document.getElementById("detectedSource");
+      if (detectedCountry) detectedCountry.textContent = label || "No detectado";
+      if (detectedSource) detectedSource.textContent = sourceText || "Configuración cargada para " + codeU;
+    }
+
+    function countryProfilePath(code) {
+      const codeU = txt(code).toUpperCase();
+      if (codeU === "EC") return "/administrar_empresa/facturacion_electronica_ecuador.html";
+      if (codeU === "PA") return "/administrar_empresa/facturacion_electronica_panama.html";
+      return "";
+    }
+
+    function withEmpresaAndPais(path, code) {
+      try {
+        var url = new URL(path, window.location.origin);
+        if (state.empresaID > 0) url.searchParams.set("empresa_id", String(state.empresaID));
+        if (code) url.searchParams.set("pais_codigo", txt(code).toUpperCase());
+        return url.pathname + url.search + url.hash;
+      } catch (_) {
+        return path;
+      }
+    }
+
+    function openCountryProfileIfNeeded(code) {
+      const codeU = txt(code).toUpperCase();
+      const path = countryProfilePath(codeU);
+      if (!path) return false;
+      window.location.href = withEmpresaAndPais(path, codeU);
+      return true;
+    }
+
+    function applyVistaForPais(code, vistaOpt) {
+      const codeU = (code || "").toUpperCase() || "CO";
+      var vista = vistaOpt;
+      if (!vista) {
+        var it = findCatalogItem(codeU);
+        if (it) vista = it.vista;
+      }
+      if (document.getElementById("feVistaTitulo")) {
+        document.getElementById("feVistaTitulo").textContent = "Perfil de facturación — " + codeU;
+      }
+      if (vista) {
+        var ente = document.getElementById("feVistaEnte");
+        var res = document.getElementById("feVistaResumen");
+        var indep = document.getElementById("feVistaIndependencia");
+        if (ente) ente.textContent = vista.ente_fiscal || "";
+        if (res) res.textContent = vista.resumen_operativo || "";
+        if (indep) indep.textContent = vista.nota_independencia || "";
+        var firmaCard = document.getElementById("feFirmaCard");
+        if (firmaCard) {
+          firmaCard.classList.toggle("is-hidden", codeU !== "CO");
+        }
+        var dianConfigCard = document.getElementById("feDianConfigCard");
+        if (dianConfigCard) {
+          dianConfigCard.classList.toggle("is-hidden", codeU !== "CO");
+        }
+        var dianDocumentosCard = document.getElementById("feDianDocumentosCard");
+        if (dianDocumentosCard) {
+          dianDocumentosCard.classList.toggle("is-hidden", codeU !== "CO");
+        }
+		var contingenciaCard = document.getElementById("feContingenciaCard");
+		if (contingenciaCard) {
+		  contingenciaCard.classList.toggle("is-hidden", codeU !== "CO");
+		}
+        if (vista.label_identificador) {
+          var li = document.getElementById("labelIdentificador");
+          if (li) li.textContent = vista.label_identificador;
+        }
+        if (vista.label_prefijo) {
+          var lp = document.getElementById("labelPrefijo");
+          if (lp) lp.textContent = vista.label_prefijo;
+        }
+        if (vista.label_resolucion) {
+          var lr = document.getElementById("labelResolucion");
+          if (lr) lr.textContent = vista.label_resolucion;
+        }
+        var rz = document.getElementById("razon_social");
+        if (rz && vista.placeholder_razon_social) rz.setAttribute("placeholder", vista.placeholder_razon_social);
+      }
+      var ec = document.getElementById("feEstructuradoEC");
+      var pa = document.getElementById("feEstructuradoPA");
+      var cr = document.getElementById("feEstructuradoCR");
+      var ar = document.getElementById("feEstructuradoAR");
+      var ve = document.getElementById("feEstructuradoVE");
+      if (ec) ec.classList.toggle("is-hidden", codeU !== "EC");
+      if (pa) pa.classList.toggle("is-hidden", codeU !== "PA");
+      if (cr) cr.classList.toggle("is-hidden", codeU !== "CR");
+      if (ar) ar.classList.toggle("is-hidden", codeU !== "AR");
+      if (ve) ve.classList.toggle("is-hidden", codeU !== "VE");
+      fillCountryHint(codeU);
+      defaultMonedaForPais(codeU);
+      installFacturacionFieldHelp();
+    }
+
+    function defaultMonedaForPais(codeU) {
+      var c = (codeU || "").toUpperCase();
+      var m = document.getElementById("moneda_codigo");
+      var autoCurrencies = { COP: true, USD: true, PAB: true, CRC: true, ARS: true, VES: true };
+      function setAutoCurrency(input, value) {
+        if (!input) return;
+        var current = txt(input.value).toUpperCase();
+        if (!current || autoCurrencies[current]) input.value = value;
+      }
+      if (c === "EC") {
+        setAutoCurrency(m, "USD");
+      } else if (c === "PA") {
+        setAutoCurrency(m, "PAB");
+      } else if (c === "CR") {
+        setAutoCurrency(m, "CRC");
+      } else if (c === "AR") {
+        setAutoCurrency(m, "ARS");
+      } else if (c === "VE") {
+        setAutoCurrency(m, "VES");
+      } else if (c === "CO") {
+        setAutoCurrency(m, "COP");
+      }
+    }
+
+    function setDianConfigMessage(text, isError) {
+      var el = document.getElementById("feDianConfigMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function setDianConfigResult(data) {
+      var box = document.getElementById("feDianConfigResultado");
+      if (!box) return;
+      if (!data) {
+        box.innerHTML = "";
+        box.classList.add("is-empty");
+        return;
+      }
+      box.classList.remove("is-empty");
+      box.innerHTML = buildDianReadableResult(data) || '<details class="dian-readable-detail" open><summary>Detalle técnico</summary><pre>' + escapeHTML(stringifyDianResult(data)) + '</pre></details>';
+    }
+
+    function dianFieldValue(id) {
+      var el = document.getElementById(id);
+      return el ? txt(el.value) : "";
+    }
+
+    function setDianRutPdfMessage(text, isError) {
+      var el = document.getElementById("dianRutPdfMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function renderDianRutPdfResult(data) {
+      var box = document.getElementById("dianRutPdfResultado");
+      var applyBtn = document.getElementById("btnDianRutAplicar");
+      if (!box) return;
+      var fields = data && (data.campos_detectados || data.valores_configuracion);
+      state.dianRutImport = fields || null;
+      if (applyBtn) applyBtn.disabled = !fields;
+      if (!fields) {
+        box.innerHTML = "";
+        box.classList.add("is-empty");
+        return;
+      }
+      var responsibilities = responsabilidadesRUTCodesFromJSON(fields.responsabilidades_rut_json);
+      var rows = [
+        ["NIT", fields.nit],
+        ["DV", fields.dv || fields.digito_verificacion],
+        ["Nombre legal", fields.razon_social],
+        ["Tipo de persona", fields.tipo_persona_fiscal === "persona_natural" ? "Persona natural" : (fields.tipo_persona_fiscal === "persona_juridica" ? "Persona juridica" : fields.tipo_persona_fiscal)],
+        ["Ubicacion", [fields.departamento, fields.municipio].filter(Boolean).join(" / ")],
+        ["Codigos DANE", [fields.departamento_codigo_dane, fields.municipio_codigo_dane].filter(Boolean).join(" / ")],
+        ["Responsabilidades RUT", responsibilities.join(", ")],
+        ["Responsabilidad FE", fields.responsabilidad_tributaria],
+        ["Concepto del RUT", fields.concepto],
+        ["Fecha del documento", fields.fecha_generacion]
+      ];
+      var html = '<div class="dian-readable-grid">';
+      rows.forEach(function(row) {
+        if (!txt(row[1])) return;
+        html += '<div><strong>' + escapeHTML(row[0]) + '</strong><span>' + escapeHTML(row[1]) + '</span></div>';
+      });
+      html += "</div>";
+      if (Array.isArray(data.advertencias) && data.advertencias.length) {
+        html += '<p class="form-help error">' + escapeHTML(data.advertencias.join(" ")) + "</p>";
+      }
+      box.classList.remove("is-empty");
+      box.innerHTML = html;
+    }
+
+    function applyDianRutPdfValues() {
+      var fields = state.dianRutImport || {};
+      if (!Object.keys(fields).length) {
+        setDianRutPdfMessage("Primero carga el PDF del RUT de esta empresa.", true);
+        return;
+      }
+      function setReviewedValue(id, value) {
+        if (!txt(value)) return;
+        setInputValue(id, value);
+      }
+      setReviewedValue("dian_nit", fields.nit);
+      setReviewedValue("dian_dv", fields.dv || fields.digito_verificacion);
+      setReviewedValue("dian_razon_social", fields.razon_social);
+      setReviewedValue("adv_tipo_documento_emisor", fields.tipo_documento_emisor || (fields.nit ? "NIT" : ""));
+      setReviewedValue("adv_nit", fields.nit);
+      setReviewedValue("adv_digito_verificacion", fields.dv || fields.digito_verificacion);
+      setReviewedValue("adv_razon_social", fields.razon_social);
+      setReviewedValue("adv_nombre_comercial", fields.nombre_comercial);
+      setReviewedValue("adv_tipo_persona_fiscal", fields.tipo_persona_fiscal);
+      setReviewedValue("adv_regimen_tributario_colombia", fields.regimen_tributario_colombia);
+      setReviewedValue("adv_regimen_fiscal", fields.regimen_tributario_colombia);
+      setReviewedValue("adv_iva_responsabilidad", fields.iva_responsabilidad);
+      setReviewedValue("adv_responsabilidad_tributaria", fields.responsabilidad_tributaria);
+      setReviewedValue("adv_responsabilidades_rut_codigos", responsabilidadesRUTCodesFromJSON(fields.responsabilidades_rut_json).join(", "));
+      setReviewedValue("adv_email_facturacion", fields.email_facturacion);
+      setReviewedValue("adv_telefono_facturacion", fields.telefono_facturacion);
+      setReviewedValue("adv_direccion_fiscal", fields.direccion_fiscal);
+      setReviewedValue("adv_departamento", fields.departamento);
+      setReviewedValue("adv_departamento_codigo_dane", fields.departamento_codigo_dane);
+      setReviewedValue("adv_municipio", fields.municipio);
+      setReviewedValue("adv_municipio_codigo_dane", fields.municipio_codigo_dane);
+      setReviewedValue("adv_pais_codigo", fields.pais_codigo || "CO");
+      setReviewedValue("adv_codigo_postal", fields.codigo_postal);
+      renderDianSetupProgress();
+      setDianRutPdfMessage("Datos aplicados en pantalla. Revisa y guarda por separado DIAN Colombia y Configuracion avanzada; todavia no se ha modificado la empresa.", false);
+    }
+
+    async function uploadDianRutPdf() {
+      var input = document.getElementById("dianRutPdfInput");
+      if (!input || !input.files || !input.files.length) {
+        setDianRutPdfMessage("Selecciona el PDF del RUT de esta empresa.", true);
+        return null;
+      }
+      var file = input.files[0];
+      if (!/\.pdf$/i.test(file.name || "")) {
+        setDianRutPdfMessage("Solo se permite PDF.", true);
+        return null;
+      }
+      if (file.size > 12 * 1024 * 1024) {
+        setDianRutPdfMessage("El PDF supera el limite de 12 MB.", true);
+        return null;
+      }
+      var formData = new FormData();
+      formData.append("archivo", file);
+      formData.append("empresa_id", String(state.empresaID || ""));
+      var url = "/api/empresa/facturacion_electronica/dian?action=importar_rut_pdf_ia&empresa_id=" + encodeURIComponent(state.empresaID || "");
+      var res = await fetch(url, { method: "POST", credentials: "same-origin", body: formData });
+      var data = await readJSONResponse(res);
+      renderDianRutPdfResult(data);
+      setDianRutPdfMessage("RUT leido. Revisa los valores detectados antes de aplicarlos; el PDF no quedo almacenado.", false);
+      return data;
+    }
+
+    function setDianNumeracionPdfMessage(text, isError) {
+      var el = document.getElementById("dianNumeracionPdfMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function renderDianNumeracionPdfResult(data) {
+      var box = document.getElementById("dianNumeracionPdfResultado");
+      var applyBtn = document.getElementById("btnDianNumeracionAplicar");
+      if (!box) return;
+      var fields = data && (data.campos_detectados || data.valores_configuracion);
+      state.dianNumeracionImport = fields || null;
+      if (applyBtn) applyBtn.disabled = !fields;
+      if (!fields) {
+        box.innerHTML = "";
+        box.classList.add("is-empty");
+        return;
+      }
+      var rows = [
+        ["NIT", fields.nit],
+        ["DV", fields.dv],
+        ["Razon social", fields.razon_social],
+        ["Formulario / resolucion", fields.resolucion_numero || fields.numero_formulario],
+        ["Prefijo", fields.prefijo],
+        ["Rango", (fields.rango_desde || "") + " - " + (fields.rango_hasta || "")],
+        ["Vigencia", (fields.resolucion_fecha_desde || "") + " - " + (fields.resolucion_fecha_hasta || "")],
+        ["Ambiente sugerido", fields.tipo_ambiente]
+      ];
+      var html = '<div class="dian-readable-grid">';
+      rows.forEach(function(row) {
+        if (!txt(row[1])) return;
+        html += '<div><strong>' + row[0] + '</strong><span>' + escapeHTML(row[1]) + '</span></div>';
+      });
+      html += "</div>";
+      if (Array.isArray(data.advertencias) && data.advertencias.length) {
+        html += '<p class="form-help error">' + escapeHTML(data.advertencias.join(" ")) + "</p>";
+      }
+      box.classList.remove("is-empty");
+      box.innerHTML = html;
+    }
+
+    function setInputValue(id, value) {
+      var el = document.getElementById(id);
+      if (!el || value === undefined || value === null || value === "") return;
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function applyDianNumeracionPdfValues() {
+      var fields = state.dianNumeracionImport || {};
+      if (!Object.keys(fields).length) {
+        setDianNumeracionPdfMessage("Primero carga el PDF de autorizacion DIAN.", true);
+        return;
+      }
+      setInputValue("dian_nit", fields.nit);
+      setInputValue("dian_dv", fields.dv);
+      setInputValue("dian_razon_social", fields.razon_social);
+      setInputValue("dian_tipo_ambiente", fields.tipo_ambiente || "produccion");
+      setInputValue("dian_url", fields.url_dian_sugerida || "https://vpfe.dian.gov.co");
+      setInputValue("dian_prefijo", fields.prefijo);
+      setInputValue("dian_resolucion_numero", fields.resolucion_numero || fields.numero_formulario);
+      setInputValue("dian_consecutivo_actual", fields.consecutivo_actual || fields.rango_desde);
+      setInputValue("dian_resolucion_fecha_desde", fields.resolucion_fecha_desde || fields.fecha_formalizacion);
+      setInputValue("dian_resolucion_fecha_hasta", fields.resolucion_fecha_hasta);
+      setInputValue("dian_rango_desde", fields.rango_desde);
+      setInputValue("dian_rango_hasta", fields.rango_hasta);
+      var obs = document.getElementById("dian_observaciones");
+      if (obs && fields.observaciones_sugeridas && obs.value.indexOf(fields.observaciones_sugeridas) === -1) {
+        obs.value = txt(obs.value ? (obs.value + "\n" + fields.observaciones_sugeridas) : fields.observaciones_sugeridas);
+      }
+      renderDianSetupProgress();
+      setDianNumeracionPdfMessage("Valores aplicados. Revisa los datos y pulsa Guardar DIAN Colombia.", false);
+    }
+
+    async function uploadDianNumeracionPdf() {
+      var input = document.getElementById("dianNumeracionPdfInput");
+      if (!input || !input.files || !input.files.length) {
+        setDianNumeracionPdfMessage("Selecciona el PDF del Formulario 1876.", true);
+        return null;
+      }
+      var file = input.files[0];
+      if (!/\.pdf$/i.test(file.name || "")) {
+        setDianNumeracionPdfMessage("Solo se permite PDF.", true);
+        return null;
+      }
+      var formData = new FormData();
+      formData.append("archivo", file);
+      formData.append("empresa_id", String(state.empresaID || ""));
+      var url = "/api/empresa/facturacion_electronica/dian?action=importar_numeracion_pdf_ia&empresa_id=" + encodeURIComponent(state.empresaID || "");
+      var res = await fetch(url, { method: "POST", credentials: "same-origin", body: formData });
+      var data = await readJSONResponse(res);
+      renderDianNumeracionPdfResult(data);
+      setDianNumeracionPdfMessage("PDF leido con IA GPT-5.5. Revisa los valores detectados y aplica si son correctos.", false);
+      return data;
+    }
+
+    function dianNumberValue(id) {
+      var n = Number(dianFieldValue(id));
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function dianSecretConfigured(field, inputID) {
+      return !!(state.dianConfig && asBool(state.dianConfig[field + "_configurado"])) || !!dianFieldValue(inputID);
+    }
+
+    function dianSoftwareProviderIdentityComplete() {
+      var nit = dianFieldValue("dian_software_proveedor_nit");
+      var dv = dianFieldValue("dian_software_proveedor_dv");
+      var legalName = dianFieldValue("dian_software_proveedor_razon_social");
+      var naturalName = dianFieldValue("dian_software_proveedor_primer_apellido") &&
+        dianFieldValue("dian_software_proveedor_segundo_apellido") &&
+        dianFieldValue("dian_software_proveedor_primer_nombre");
+      return /^\d+$/.test(nit) && /^\d$/.test(dv) && !!(legalName || naturalName);
+    }
+
+    function dianSetupChecks() {
+      var ambiente = dianFieldValue("dian_tipo_ambiente").toLowerCase();
+      var softwareCompartido = !!(document.getElementById("dian_usar_software_compartido") && document.getElementById("dian_usar_software_compartido").checked);
+      var rangoDesde = dianNumberValue("dian_rango_desde");
+      var rangoHasta = dianNumberValue("dian_rango_hasta");
+      var consecutivo = dianNumberValue("dian_consecutivo_actual");
+      var testSetRequired = ambiente !== "produccion";
+      var checks = [
+        { group: "Identidad fiscal", label: "NIT", done: !!dianFieldValue("dian_nit") },
+        { group: "Identidad fiscal", label: "DV", done: !!dianFieldValue("dian_dv") },
+        { group: "Identidad fiscal", label: "Razón social", done: !!dianFieldValue("dian_razon_social") },
+        { group: "Ambiente y conexión", label: "Ambiente DIAN", done: !!dianFieldValue("dian_tipo_ambiente") },
+        { group: "Ambiente y conexión", label: "URL DIAN / proveedor", done: !!dianFieldValue("dian_url") },
+        { group: "Ambiente y conexión", label: "TestSetId de habilitación", done: !testSetRequired || dianSecretConfigured("test_set_id", "dian_test_set_id") },
+        { group: "Software", label: "Software ID", done: dianSecretConfigured("software_id", "dian_software_id") },
+        { group: "Software", label: "Software PIN o software compartido SaaS", done: softwareCompartido || dianSecretConfigured("software_pin", "dian_software_pin") },
+        { group: "Software", label: "Identidad del proveedor del software compartido", done: !softwareCompartido || dianSoftwareProviderIdentityComplete() },
+        { group: "Numeración", label: "Prefijo", done: !!dianFieldValue("dian_prefijo") },
+        { group: "Numeración", label: "Resolución", done: !!dianFieldValue("dian_resolucion_numero") },
+        { group: "Numeración", label: "Fechas de resolución", done: !!dianFieldValue("dian_resolucion_fecha_desde") && !!dianFieldValue("dian_resolucion_fecha_hasta") },
+        { group: "Numeración", label: "Rango autorizado", done: rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde },
+        { group: "Numeración", label: "Consecutivo actual válido", done: consecutivo > 0 && (!rangoDesde || consecutivo >= rangoDesde) && (!rangoHasta || consecutivo <= rangoHasta) },
+        { group: "Llave y firma", label: "Llave técnica DIAN", done: dianSecretConfigured("llave_tecnica", "dian_llave_tecnica") },
+        { group: "Llave y firma", label: "Certificado X.509", done: dianSecretConfigured("certificado_url", "dian_certificado_url") },
+        { group: "Llave y firma", label: "Referencia de llave privada", done: dianSecretConfigured("certificado_clave_ref", "dian_certificado_clave_ref") }
+      ];
+      if (!testSetRequired) {
+        checks = checks.map(function(item) {
+          if (item.label === "TestSetId de habilitación") {
+            return { group: item.group, label: "TestSetId no requerido en producción", done: true };
+          }
+          return item;
+        });
+      }
+      return checks;
+    }
+
+    function renderDianSetupProgress() {
+      var percentEl = document.getElementById("feDianSetupPercent");
+      var fillEl = document.getElementById("feDianSetupFill");
+      var trackEl = document.getElementById("feDianSetupTrack");
+      var stageEl = document.getElementById("feDianSetupStage");
+      var stepsEl = document.getElementById("feDianSetupSteps");
+      var missingEl = document.getElementById("feDianSetupMissing");
+      if (!percentEl || !fillEl || !trackEl || !stageEl || !stepsEl || !missingEl) return;
+
+      var checks = dianSetupChecks();
+      var total = checks.length || 1;
+      var done = checks.filter(function(item) { return item.done; }).length;
+      var percent = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+      var missing = checks.filter(function(item) { return !item.done; });
+      percentEl.textContent = percent + "%";
+      fillEl.style.width = percent + "%";
+      trackEl.setAttribute("aria-valuenow", String(percent));
+      stageEl.textContent = missing.length
+        ? ("Faltan " + missing.length + " campo(s) para completar la configuración DIAN Colombia.")
+        : "Configuración DIAN Colombia completa para intentar validación y pruebas.";
+
+      var groups = {};
+      checks.forEach(function(item) {
+        if (!groups[item.group]) groups[item.group] = { total: 0, done: 0 };
+        groups[item.group].total += 1;
+        if (item.done) groups[item.group].done += 1;
+      });
+      stepsEl.innerHTML = "";
+      Object.keys(groups).forEach(function(name) {
+        var div = document.createElement("div");
+        var g = groups[name];
+        div.className = "fe-config-progress-step " + (g.done === g.total ? "done" : "pending");
+        div.textContent = name + " " + g.done + "/" + g.total;
+        stepsEl.appendChild(div);
+      });
+
+      if (!missing.length) {
+        missingEl.innerHTML = "<strong>Sin campos pendientes.</strong> Ya puedes guardar, validar credenciales y continuar con el test DIAN.";
+        updateRequiredFieldHighlights();
+        return;
+      }
+      var html = "<strong>Campos pendientes:</strong><ul>";
+      missing.forEach(function(item) {
+        html += "<li>" + item.label + "</li>";
+      });
+      html += "</ul>";
+      missingEl.innerHTML = html;
+      updateRequiredFieldHighlights();
+    }
+
+    function addRequiredNote(container, text) {
+      if (!container || container.querySelector(".fe-required-note")) return;
+      var note = document.createElement("div");
+      note.className = "fe-required-note";
+      note.innerHTML = '<span class="fe-required-mark">*</span><div><strong>Campos obligatorios:</strong> ' + escapeHTML(text) + '</div>';
+      container.insertBefore(note, container.firstElementChild || null);
+    }
+
+    function markFieldRequired(id) {
+      var input = document.getElementById(id);
+      if (!input) return;
+      var col = input.closest ? input.closest(".form-col") : null;
+      var label = col ? col.querySelector(".form-label") : null;
+      if (label) label.classList.add("is-required");
+    }
+
+    function setFieldMissing(id, missing) {
+      var input = document.getElementById(id);
+      if (!input) return;
+      input.classList.toggle("is-required-missing", !!missing);
+    }
+
+    function updateRequiredFieldHighlights() {
+      var ambiente = dianFieldValue("dian_tipo_ambiente").toLowerCase();
+      var softwareCompartido = !!(document.getElementById("dian_usar_software_compartido") && document.getElementById("dian_usar_software_compartido").checked);
+      var rangoDesde = dianNumberValue("dian_rango_desde");
+      var rangoHasta = dianNumberValue("dian_rango_hasta");
+      var consecutivo = dianNumberValue("dian_consecutivo_actual");
+      var providerNameMissing = softwareCompartido && !dianFieldValue("dian_software_proveedor_razon_social") && !(
+        dianFieldValue("dian_software_proveedor_primer_apellido") &&
+        dianFieldValue("dian_software_proveedor_segundo_apellido") &&
+        dianFieldValue("dian_software_proveedor_primer_nombre")
+      );
+      var dianRequired = {
+        dian_nit: !dianFieldValue("dian_nit"),
+        dian_dv: !dianFieldValue("dian_dv"),
+        dian_razon_social: !dianFieldValue("dian_razon_social"),
+        dian_tipo_ambiente: !dianFieldValue("dian_tipo_ambiente"),
+        dian_url: !dianFieldValue("dian_url"),
+        dian_test_set_id: ambiente !== "produccion" && !dianSecretConfigured("test_set_id", "dian_test_set_id"),
+        dian_software_id: !dianSecretConfigured("software_id", "dian_software_id"),
+        dian_software_pin: !softwareCompartido && !dianSecretConfigured("software_pin", "dian_software_pin"),
+        dian_software_proveedor_nit: softwareCompartido && !/^\d+$/.test(dianFieldValue("dian_software_proveedor_nit")),
+        dian_software_proveedor_dv: softwareCompartido && !/^\d$/.test(dianFieldValue("dian_software_proveedor_dv")),
+        dian_software_proveedor_razon_social: providerNameMissing,
+        dian_software_proveedor_primer_apellido: providerNameMissing,
+        dian_software_proveedor_segundo_apellido: providerNameMissing,
+        dian_software_proveedor_primer_nombre: providerNameMissing,
+        dian_prefijo: !dianFieldValue("dian_prefijo"),
+        dian_resolucion_numero: !dianFieldValue("dian_resolucion_numero"),
+        dian_consecutivo_actual: !(consecutivo > 0 && (!rangoDesde || consecutivo >= rangoDesde) && (!rangoHasta || consecutivo <= rangoHasta)),
+        dian_resolucion_fecha_desde: !dianFieldValue("dian_resolucion_fecha_desde"),
+        dian_resolucion_fecha_hasta: !dianFieldValue("dian_resolucion_fecha_hasta"),
+        dian_rango_desde: !(rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde),
+        dian_rango_hasta: !(rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde),
+        dian_llave_tecnica: !dianSecretConfigured("llave_tecnica", "dian_llave_tecnica"),
+        dian_certificado_url: !dianSecretConfigured("certificado_url", "dian_certificado_url"),
+        dian_certificado_clave_ref: !dianSecretConfigured("certificado_clave_ref", "dian_certificado_clave_ref")
+      };
+      Object.keys(dianRequired).forEach(function(id) {
+        markFieldRequired(id);
+        setFieldMissing(id, dianRequired[id]);
+      });
+
+      var countryRequiredIDs = ["proveedor", "ambiente", "moneda_codigo", "tipo_documento_emisor", "identificador_fiscal", "razon_social", "email_facturacion", "direccion_fiscal"];
+      countryRequiredIDs.forEach(function(id) {
+        markFieldRequired(id);
+        var el = document.getElementById(id);
+        setFieldMissing(id, el && !txt(el.value));
+      });
+    }
+
+    function installRequiredFieldGuides() {
+      addRequiredNote(document.getElementById("feDianConfigForm"), "completa los campos marcados con asterisco. La barra de avance muestra que falta para guardar, validar credenciales y continuar en habilitacion DIAN.");
+      addRequiredNote(document.getElementById("feForm"), "para facturacion electronica completa los campos marcados con asterisco. En Colombia, los datos legales finales se validan en la tarjeta DIAN.");
+      updateRequiredFieldHighlights();
+    }
+
+    function hideDuplicatedElectronicInvoiceEmailOption() {
+      var input = document.getElementById("adv_enviar_factura_electronica_venta");
+      if (!input) return;
+      var wrapper = input.closest ? input.closest(".form-help") : null;
+      if (wrapper) wrapper.style.display = "none";
+      var emailSale = document.getElementById("adv_enviar_email_venta");
+      var col = emailSale && emailSale.closest ? emailSale.closest(".form-col") : null;
+      if (col && !document.getElementById("advFacturaEmailAutoHint")) {
+        var hint = document.createElement("p");
+        hint.id = "advFacturaEmailAutoHint";
+        hint.className = "form-help";
+        hint.textContent = "El envio automatico de factura electronica al correo del cliente se configura una sola vez en la seccion principal de facturacion electronica.";
+        col.appendChild(hint);
+      }
+    }
+
+    function getEnviarFacturaEmailClienteAutoValue() {
+      var principal = document.getElementById("enviar_factura_email_cliente_auto");
+      if (principal) return !!principal.checked;
+      var avanzado = document.getElementById("adv_enviar_factura_electronica_venta");
+      return !!(avanzado && avanzado.checked);
+    }
+
+    function syncAdvancedInvoiceEmailAutoFromMain() {
+      var avanzado = document.getElementById("adv_enviar_factura_electronica_venta");
+      if (avanzado) avanzado.checked = getEnviarFacturaEmailClienteAutoValue();
+    }
+
+    function bindDianSetupProgressInputs() {
+      var ids = [
+        "dian_nit", "dian_dv", "dian_razon_social", "dian_tipo_ambiente",
+        "dian_url", "dian_test_set_id", "dian_software_id", "dian_software_pin",
+        "dian_usar_software_compartido", "dian_software_proveedor_nit", "dian_software_proveedor_dv",
+        "dian_software_proveedor_razon_social", "dian_software_proveedor_primer_apellido",
+        "dian_software_proveedor_segundo_apellido", "dian_software_proveedor_primer_nombre",
+        "dian_software_proveedor_otros_nombres", "dian_prefijo", "dian_resolucion_numero",
+        "dian_consecutivo_actual", "dian_resolucion_fecha_desde",
+        "dian_resolucion_fecha_hasta", "dian_rango_desde", "dian_rango_hasta",
+        "dian_llave_tecnica", "dian_token_emisor_ref", "dian_certificado_url", "dian_certificado_clave_ref"
+      ];
+      ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var refresh = function() {
+          if (dianSecretInputFields[id]) renderDianSecretInputState(id, dianSecretInputFields[id], state.dianConfig);
+          renderDianSetupProgress();
+        };
+        el.addEventListener("input", refresh);
+        el.addEventListener("change", refresh);
+      });
+      renderDianSetupProgress();
+    }
+
+    function bindCountryRequiredInputs() {
+      ["proveedor", "ambiente", "moneda_codigo", "tipo_documento_emisor", "identificador_fiscal", "razon_social", "email_facturacion", "direccion_fiscal"].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("input", updateRequiredFieldHighlights);
+        el.addEventListener("change", updateRequiredFieldHighlights);
+      });
+      var emailAuto = document.getElementById("enviar_factura_email_cliente_auto");
+      if (emailAuto) emailAuto.addEventListener("change", syncAdvancedInvoiceEmailAutoFromMain);
+    }
+
+    function renderFirmaExpiry(info) {
+      var el = document.getElementById("feFirmaExpiryText");
+      if (!el) return;
+      if (!info || !info.configurado) {
+        el.textContent = "No hay certificado registrado todavia.";
+        el.style.color = "";
+        return;
+      }
+      var dias = info.dias_restantes;
+      var texto = (info.fecha_vencimiento ? ("Vence el " + info.fecha_vencimiento) : "Vencimiento no disponible");
+      if (dias !== null && dias !== undefined && dias !== "") {
+        texto += " (" + dias + " dia(s) restantes)";
+      }
+      if (info.vencido) {
+        texto += ". Certificado vencido.";
+        el.style.color = "#ef5350";
+      } else if (info.proximo_a_vencer || info.proximo_vencer) {
+        texto += ". Proximo a vencer.";
+        el.style.color = "#f59e0b";
+      } else {
+        texto += ". Vigente.";
+        el.style.color = "";
+      }
+      if (info.correo_enviado) {
+        texto += " Aviso enviado al administrador.";
+      }
+      el.textContent = texto;
+    }
+
+    function formatFirmaDate(value) {
+      value = txt(value);
+      if (!value) return "";
+      var d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleString("es-CO", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+      return value;
+    }
+
+    function renderFirmaLastUpload(info) {
+      var el = document.getElementById("feFirmaLastUpload");
+      if (!el) return;
+      info = info || {};
+      var loadedAt = info.certificado_ultima_carga_en || info.ultima_carga_en || "";
+      var fileName = info.certificado_archivo_original || info.archivo_original || "";
+      var format = info.certificado_formato || info.formato_detectado || "";
+      var subject = info.certificado_subject || "";
+      var serial = info.certificado_serial || "";
+      var keyStatus = info.certificado_clave_estado || "";
+      if (!loadedAt && !fileName && !format && !subject && !serial) {
+        el.classList.add("is-empty");
+        el.textContent = "Ultima firma cargada: sin registro. Clave: no visible por seguridad.";
+        return;
+      }
+      el.classList.remove("is-empty");
+      var parts = [];
+      parts.push("Ultima firma cargada: " + (formatFirmaDate(loadedAt) || "fecha no disponible"));
+      if (fileName) parts.push("Archivo: " + fileName);
+      if (format) parts.push("Formato: " + format);
+      if (subject) parts.push("Titular: " + subject);
+      if (serial) parts.push("Serial: " + serial);
+      parts.push("Clave: " + (keyStatus || "registrada/no visible por seguridad"));
+      el.textContent = parts.join(" | ");
+    }
+
+    async function verificarDianFirmaVencimiento(notificar) {
+      if (!state.empresaID) return null;
+      if (!state.dianConfig || !Number(state.dianConfig.id)) {
+        var pendiente = { configurado: false, mensaje: "Configura y guarda primero los datos DIAN de esta empresa." };
+        renderFirmaExpiry(pendiente);
+        return pendiente;
+      }
+      var url = "/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado&empresa_id=" + encodeURIComponent(state.empresaID);
+      url += "&notificar=" + (notificar === false ? "0" : "1");
+      var res = await fetch(url, { credentials: "same-origin" });
+      var data = await readJSONResponse(res);
+      renderFirmaExpiry(data || {});
+      return data;
+    }
+
+    function listFromValue(value) {
+      if (Array.isArray(value)) return value.map(function(x) { return txt(x); }).filter(Boolean);
+      if (typeof value === "string") return value.split(",").map(function(x) { return txt(x); }).filter(Boolean);
+      return [];
+    }
+
+    function selectedValues(selector) {
+      return Array.prototype.slice.call(document.querySelectorAll(selector + ":checked"))
+        .map(function(input) { return txt(input.value); })
+        .filter(Boolean);
+    }
+
+    function setDianDocumentosMessage(text, isError) {
+      var el = document.getElementById("feDianDocumentosMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function renderCheckItem(container, item, checked, cssClass) {
+      var label = document.createElement("label");
+      label.className = "form-help";
+      label.style.display = "block";
+      label.style.padding = "8px 0";
+      var input = document.createElement("input");
+      input.type = "checkbox";
+      input.className = cssClass;
+      input.value = item.codigo || "";
+      input.checked = !!checked;
+	  if (Object.prototype.hasOwnProperty.call(item, "disponible_emision") && item.disponible_emision !== true) {
+		input.disabled = true;
+		input.checked = false;
+		label.title = item.observacion || "Emision fiscal no disponible para este tipo documental.";
+	  }
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(" " + (item.titulo || item.codigo || "")));
+      if (item.categoria || item.tipo) {
+        var meta = document.createElement("span");
+        meta.textContent = " - " + (item.categoria || item.tipo);
+        meta.style.opacity = "0.75";
+        label.appendChild(meta);
+      }
+      var small = document.createElement("div");
+      small.className = "form-help";
+      small.textContent = item.alcance || item.descripcion || "";
+      label.appendChild(small);
+      container.appendChild(label);
+    }
+
+    function renderDianCatalog(data) {
+      state.dianCatalogo = data || {};
+      var docsBox = document.getElementById("feDianDocumentosList");
+      var contadorBox = document.getElementById("feDianContadorList");
+      if (!docsBox || !contadorBox) return;
+      docsBox.innerHTML = "";
+      contadorBox.innerHTML = "";
+      var docsActivos = {};
+      listFromValue(data && data.documentos_soportados).forEach(function(code) { docsActivos[code] = true; });
+      var contadorActivos = {};
+      listFromValue(data && data.documentos_contadores_colombia).forEach(function(code) { contadorActivos[code] = true; });
+      (data && data.documentos || []).forEach(function(item) {
+        renderCheckItem(docsBox, item, docsActivos[item.codigo], "fe-dian-doc-check");
+      });
+      (data && data.obligaciones_contador || []).forEach(function(item) {
+        renderCheckItem(contadorBox, item, contadorActivos[item.codigo], "fe-dian-contador-check");
+      });
+      var fuentes = document.getElementById("feDianFuentesList");
+      if (fuentes) {
+        var src = (data && data.fuentes || []).map(function(f) { return f.titulo || f.url || ""; }).filter(Boolean);
+        fuentes.textContent = src.length ? "Fuentes: " + src.join(" | ") : "";
+      }
+      renderDianEssentialDocs(data);
+      syncDianCatalogFromJson();
+    }
+
+    function renderDianEssentialDocs(data) {
+      var box = document.getElementById("feDianEssentialDocs");
+      if (!box) return;
+      var catalog = {};
+      (data && data.documentos || []).forEach(function(item) {
+        catalog[item.codigo] = item;
+      });
+      var essentials = [
+        { title: "Facturacion electronica", codes: ["factura_electronica"], note: "Factura UBL 2.1 de venta." },
+        { title: "Notas credito y debito", codes: ["nota_credito", "nota_debito"], note: "Ajustes electronicos de facturas." },
+        { title: "Documento soporte", codes: ["documento_soporte"], note: "Adquisiciones a no obligados." },
+        { title: "Nomina electronica", codes: ["nomina_electronica"], note: "Documento soporte de pago de nomina." },
+        { title: "Eventos RADIAN", codes: ["eventos_radian_recepcion"], note: "Recepcion, aceptacion, reclamo y trazabilidad." }
+      ];
+      box.innerHTML = "";
+      essentials.forEach(function(item) {
+        var found = item.codes.map(function(code) { return catalog[code]; }).filter(Boolean);
+        var allFound = found.length === item.codes.length;
+        var allOperational = allFound && found.every(isDianEssentialOperational);
+        var partial = allFound && found.some(function(doc) { return doc && doc.disponible_anulacion_total === true; });
+		var blocked = allFound && found.some(function(doc) { return txt(doc && doc.estado_implementacion).toLowerCase() === "bloqueado_contrato"; });
+		var status = allOperational ? "Operativo" : (partial ? "Parcial" : (blocked ? "Bloqueado" : (allFound ? "Catalogado" : "Pendiente")));
+        var card = document.createElement("div");
+        card.className = "dian-essential-card";
+        var title = document.createElement("strong");
+        title.textContent = item.title;
+        var badge = document.createElement("span");
+        badge.className = allOperational ? "ok" : (allFound ? "warn" : "");
+        badge.textContent = status;
+        var note = document.createElement("p");
+		var detail = found.map(function(doc) { return txt(doc && doc.observacion); }).filter(Boolean).join(" ");
+		note.textContent = detail || item.note;
+        card.appendChild(title);
+        card.appendChild(badge);
+        card.appendChild(note);
+        box.appendChild(card);
+      });
+      renderRadianStatus(catalog.eventos_radian_recepcion);
+    }
+
+    function isDianEssentialOperational(doc) {
+	  return !!(doc && doc.disponible_emision === true);
+    }
+
+    function renderRadianStatus(item) {
+      var panel = document.getElementById("feRadianStatus");
+      if (!panel) return;
+      panel.innerHTML = "";
+      if (!item) {
+        panel.classList.add("is-hidden");
+        return;
+      }
+      panel.classList.remove("is-hidden");
+
+      var text = document.createElement("div");
+      var title = document.createElement("strong");
+	  title.textContent = item.disponible_emision === true ? "Eventos RADIAN operativos" : "Eventos RADIAN no disponibles";
+      var note = document.createElement("p");
+      note.textContent = item.observacion || "Registra acuse, recibo, aceptacion o reclamo sobre facturas electronicas existentes en ambiente de pruebas.";
+      text.appendChild(title);
+      text.appendChild(note);
+
+      var link = document.createElement("a");
+      link.className = "btn secondary";
+      link.href = "facturacion_electronica_pruebas_dian.html?empresa_id=" + encodeURIComponent(state.empresaID || "") + "&tipo_documento=eventos_radian_recepcion";
+      link.textContent = "Abrir centro DIAN";
+
+      panel.appendChild(text);
+      panel.appendChild(link);
+    }
+
+    async function loadDianCatalog() {
+      if (!state.empresaID) return;
+      try {
+        var res = await fetch("/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID) + "&action=documentos_dian_colombia", { credentials: "same-origin" });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data && data.error ? data.error : "HTTP " + res.status);
+        renderDianCatalog(data);
+      } catch (e) {
+        setDianDocumentosMessage(e && e.message ? e.message : "No se pudo cargar catalogo DIAN.", true);
+      }
+    }
+
+    function syncDianCatalogFromJson() {
+      var raw = txt(document.getElementById("campos_pais_json") && document.getElementById("campos_pais_json").value);
+      var extra = {};
+      try { if (raw) extra = JSON.parse(raw) || {}; } catch (e) { extra = {}; }
+      var docs = {};
+      listFromValue(extra.documentos_soportados).forEach(function(code) { docs[code] = true; });
+      var contador = {};
+      listFromValue(extra.documentos_contadores_colombia).forEach(function(code) { contador[code] = true; });
+      document.querySelectorAll(".fe-dian-doc-check").forEach(function(input) {
+		if (input.disabled) {
+		  input.checked = false;
+		  return;
+		}
+        input.checked = !!docs[input.value] || (!extra.documentos_soportados && input.checked);
+      });
+      document.querySelectorAll(".fe-dian-contador-check").forEach(function(input) {
+        input.checked = !!contador[input.value] || (!extra.documentos_contadores_colombia && input.checked);
+      });
+    }
+
+    function applyDianCatalogToJson() {
+      var extra = {};
+      try {
+        var raw = txt(document.getElementById("campos_pais_json").value);
+        if (raw) extra = JSON.parse(raw) || {};
+      } catch (e) { extra = {}; }
+      extra.documentos_soportados = selectedValues(".fe-dian-doc-check");
+      extra.documentos_contadores_colombia = selectedValues(".fe-dian-contador-check");
+	  extra.documentos_dian_catalogo_version = "2026-08-21";
+      document.getElementById("campos_pais_json").value = JSON.stringify(extra, null, 2);
+      setDianDocumentosMessage("Seleccion aplicada al JSON. Guarda la configuracion para persistirla.", false);
+    }
+
+    function asBool(v) {
+      if (v === true || v === 1) return true;
+      var s = txt(v).toLowerCase();
+      return s === "1" || s === "true" || s === "si" || s === "yes" || s === "activo";
+    }
+
+    var dianSecretInputFields = {
+      dian_test_set_id: "test_set_id",
+      dian_software_id: "software_id",
+      dian_software_pin: "software_pin",
+      dian_llave_tecnica: "llave_tecnica",
+      dian_token_emisor_ref: "token_emisor_ref",
+      dian_certificado_url: "certificado_url",
+      dian_certificado_clave_ref: "certificado_clave_ref"
+    };
+
+    function renderDianSecretInputState(inputID, field, cfg) {
+      var el = document.getElementById(inputID);
+      var status = document.getElementById(inputID + "_estado");
+      if (!el) return;
+      cfg = cfg || {};
+      var configured = asBool(cfg[field + "_configurado"]);
+      var pending = !el.readOnly && !!txt(el.value);
+      el.setAttribute("data-server-configured", configured ? "true" : "false");
+      if (el.readOnly) {
+        el.placeholder = configured ? "Configurado; referencia no visible" : "Se administra únicamente con Cargar firma";
+      } else if (configured) {
+        el.placeholder = "Configurado; escribe solo para reemplazar";
+      } else {
+        el.placeholder = inputID === "dian_token_emisor_ref" ? "Nuevo valor o referencia PCS_DIAN_*" : "Nuevo valor; el guardado no se vuelve a mostrar";
+      }
+      if (!status) return;
+      status.setAttribute("data-configured", configured ? "true" : "false");
+      if (pending) {
+        status.textContent = configured ? "Configurado; hay un reemplazo pendiente de guardar." : "Nuevo valor pendiente de guardar.";
+      } else if (configured) {
+        status.textContent = "Configurado; el valor no se muestra por seguridad.";
+      } else if (inputID === "dian_token_emisor_ref") {
+        status.textContent = "No configurado (opcional).";
+      } else {
+        status.textContent = "No configurado.";
+      }
+    }
+
+    function resetDianSecretInputs(cfg) {
+      Object.keys(dianSecretInputFields).forEach(function(inputID) {
+        var el = document.getElementById(inputID);
+        if (el) el.value = "";
+        renderDianSecretInputState(inputID, dianSecretInputFields[inputID], cfg);
+      });
+    }
+
+    function dianConfigForUI(raw) {
+      var blocked = {
+        software_id: true,
+        software_pin: true,
+        software_id_compartido_ref: true,
+        software_pin_compartido_ref: true,
+        test_set_id: true,
+        llave_tecnica: true,
+        token_emisor_ref: true,
+        certificado_url: true,
+        certificado_clave_ref: true
+      };
+      var safe = {};
+      Object.keys(raw || {}).forEach(function(key) {
+        if (!blocked[key]) safe[key] = raw[key];
+      });
+      return safe;
+    }
+
+    function setDianConfigFormData(cfg) {
+      cfg = dianConfigForUI(cfg);
+      state.dianConfig = cfg && cfg.id ? cfg : null;
+      var set = function(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.value = txt(value);
+      };
+      set("dian_id", cfg.id || "");
+      set("dian_modo_operacion_descripcion", cfg.modo_operacion_descripcion);
+      set("dian_modo_operacion_fecha_inicio", asDateValue(cfg.modo_operacion_fecha_inicio));
+      set("dian_modo_operacion_fecha_termino", asDateValue(cfg.modo_operacion_fecha_termino));
+      set("dian_set_documentos_requeridos", cfg.set_documentos_requeridos);
+      set("dian_set_facturas_requeridas", cfg.set_facturas_requeridas);
+      set("dian_set_notas_debito_requeridas", cfg.set_notas_debito_requeridas);
+      set("dian_set_notas_credito_requeridas", cfg.set_notas_credito_requeridas);
+      set("dian_set_documentos_aceptados_requeridos", cfg.set_documentos_aceptados_requeridos);
+      set("dian_set_facturas_aceptadas_requeridas", cfg.set_facturas_aceptadas_requeridas);
+      set("dian_set_notas_debito_aceptadas_requeridas", cfg.set_notas_debito_aceptadas_requeridas);
+      set("dian_set_notas_credito_aceptadas_requeridas", cfg.set_notas_credito_aceptadas_requeridas);
+      set("dian_nit", cfg.nit || document.getElementById("adv_nit") && document.getElementById("adv_nit").value || document.getElementById("identificador_fiscal") && document.getElementById("identificador_fiscal").value);
+      set("dian_dv", cfg.digito_verificacion || document.getElementById("adv_digito_verificacion") && document.getElementById("adv_digito_verificacion").value);
+      set("dian_razon_social", cfg.razon_social || document.getElementById("adv_razon_social") && document.getElementById("adv_razon_social").value || document.getElementById("razon_social") && document.getElementById("razon_social").value);
+	  set("dian_software_proveedor_nit", cfg.software_proveedor_nit);
+	  set("dian_software_proveedor_dv", cfg.software_proveedor_dv);
+	  set("dian_software_proveedor_razon_social", cfg.software_proveedor_razon_social);
+	  set("dian_software_proveedor_primer_apellido", cfg.software_proveedor_primer_apellido);
+	  set("dian_software_proveedor_segundo_apellido", cfg.software_proveedor_segundo_apellido);
+	  set("dian_software_proveedor_primer_nombre", cfg.software_proveedor_primer_nombre);
+	  set("dian_software_proveedor_otros_nombres", cfg.software_proveedor_otros_nombres);
+      set("dian_tipo_ambiente", cfg.tipo_ambiente || document.getElementById("adv_ambiente_fe") && document.getElementById("adv_ambiente_fe").value || "habilitacion");
+      set("dian_url", cfg.url_dian || "https://vpfe-hab.dian.gov.co");
+      set("dian_prefijo", cfg.prefijo || document.getElementById("adv_prefijo_factura") && document.getElementById("adv_prefijo_factura").value || document.getElementById("prefijo_factura") && document.getElementById("prefijo_factura").value);
+      set("dian_resolucion_numero", cfg.resolucion_numero || document.getElementById("adv_resolucion_numero") && document.getElementById("adv_resolucion_numero").value || document.getElementById("resolucion_numero") && document.getElementById("resolucion_numero").value);
+      set("dian_resolucion_fecha_desde", asDateValue(cfg.resolucion_fecha_desde || document.getElementById("adv_resolucion_fecha_desde") && document.getElementById("adv_resolucion_fecha_desde").value));
+      set("dian_resolucion_fecha_hasta", asDateValue(cfg.resolucion_fecha_hasta || document.getElementById("adv_resolucion_fecha_hasta") && document.getElementById("adv_resolucion_fecha_hasta").value));
+      set("dian_rango_desde", cfg.rango_desde || document.getElementById("adv_consecutivo_desde") && document.getElementById("adv_consecutivo_desde").value);
+      set("dian_rango_hasta", cfg.rango_hasta || document.getElementById("adv_consecutivo_hasta") && document.getElementById("adv_consecutivo_hasta").value);
+      set("dian_consecutivo_actual", cfg.consecutivo_actual || document.getElementById("adv_proximo_consecutivo") && document.getElementById("adv_proximo_consecutivo").value || 1);
+      set("dian_resolucion_alerta_dias", cfg.resolucion_alerta_dias || 30);
+      resetDianSecretInputs(cfg);
+      set("dian_observaciones", cfg.observaciones);
+      renderFirmaLastUpload(cfg);
+      var shared = document.getElementById("dian_usar_software_compartido");
+      if (shared) shared.checked = asBool(cfg.usar_software_compartido);
+      renderDianSetupProgress();
+    }
+
+    function collectDianConfigPayload() {
+      var id = Number(document.getElementById("dian_id").value || 0);
+      var hiddenValue = function(id) {
+        var el = document.getElementById(id);
+        return el ? txt(el.value) : "";
+      };
+      var hiddenNumber = function(id) {
+        var n = Number(hiddenValue(id) || 0);
+        return Number.isFinite(n) ? n : 0;
+      };
+      var payload = {
+        empresa_id: Number(state.empresaID),
+        nit: txt(document.getElementById("dian_nit").value),
+        digito_verificacion: txt(document.getElementById("dian_dv").value),
+        razon_social: txt(document.getElementById("dian_razon_social").value),
+		software_proveedor_nit: dianFieldValue("dian_software_proveedor_nit"),
+		software_proveedor_dv: dianFieldValue("dian_software_proveedor_dv"),
+		software_proveedor_razon_social: dianFieldValue("dian_software_proveedor_razon_social"),
+		software_proveedor_primer_apellido: dianFieldValue("dian_software_proveedor_primer_apellido"),
+		software_proveedor_segundo_apellido: dianFieldValue("dian_software_proveedor_segundo_apellido"),
+		software_proveedor_primer_nombre: dianFieldValue("dian_software_proveedor_primer_nombre"),
+		software_proveedor_otros_nombres: dianFieldValue("dian_software_proveedor_otros_nombres"),
+        tipo_ambiente: txt(document.getElementById("dian_tipo_ambiente").value) || "habilitacion",
+        usar_software_compartido: !!document.getElementById("dian_usar_software_compartido").checked,
+        modo_operacion_descripcion: hiddenValue("dian_modo_operacion_descripcion"),
+        modo_operacion_fecha_inicio: hiddenValue("dian_modo_operacion_fecha_inicio"),
+        modo_operacion_fecha_termino: hiddenValue("dian_modo_operacion_fecha_termino"),
+        prefijo: txt(document.getElementById("dian_prefijo").value),
+        resolucion_numero: txt(document.getElementById("dian_resolucion_numero").value),
+        resolucion_fecha_desde: txt(document.getElementById("dian_resolucion_fecha_desde").value),
+        resolucion_fecha_hasta: txt(document.getElementById("dian_resolucion_fecha_hasta").value),
+        rango_desde: Number(document.getElementById("dian_rango_desde").value || 0),
+        rango_hasta: Number(document.getElementById("dian_rango_hasta").value || 0),
+        consecutivo_actual: Number(document.getElementById("dian_consecutivo_actual").value || 0),
+        resolucion_alerta_dias: Number(document.getElementById("dian_resolucion_alerta_dias").value || 30),
+        set_documentos_requeridos: hiddenNumber("dian_set_documentos_requeridos"),
+        set_facturas_requeridas: hiddenNumber("dian_set_facturas_requeridas"),
+        set_notas_debito_requeridas: hiddenNumber("dian_set_notas_debito_requeridas"),
+        set_notas_credito_requeridas: hiddenNumber("dian_set_notas_credito_requeridas"),
+        set_documentos_aceptados_requeridos: hiddenNumber("dian_set_documentos_aceptados_requeridos"),
+        set_facturas_aceptadas_requeridas: hiddenNumber("dian_set_facturas_aceptadas_requeridas"),
+        set_notas_debito_aceptadas_requeridas: hiddenNumber("dian_set_notas_debito_aceptadas_requeridas"),
+        set_notas_credito_aceptadas_requeridas: hiddenNumber("dian_set_notas_credito_aceptadas_requeridas"),
+        url_dian: txt(document.getElementById("dian_url").value),
+        observaciones: txt(document.getElementById("dian_observaciones").value),
+        estado: "activo"
+      };
+      [
+        { field: "software_id", inputID: "dian_software_id" },
+        { field: "software_pin", inputID: "dian_software_pin" },
+        { field: "test_set_id", inputID: "dian_test_set_id" },
+        { field: "llave_tecnica", inputID: "dian_llave_tecnica" },
+        { field: "token_emisor_ref", inputID: "dian_token_emisor_ref" }
+      ].forEach(function(secret) {
+        var value = dianFieldValue(secret.inputID);
+        if (value) payload[secret.field] = value;
+      });
+      if (id > 0) payload.id = id;
+      return payload;
+    }
+
+    async function loadDianConfig() {
+      if (!state.empresaID) return null;
+      var res = await fetch("/api/empresa/facturacion_electronica/dian?empresa_id=" + encodeURIComponent(state.empresaID) + "&include_inactive=1&limit=1", { credentials: "same-origin" });
+      await ensureOk(res);
+      var data = await readJSONResponse(res);
+      var item = Array.isArray(data) && data.length ? data[0] : null;
+      setDianConfigFormData(item || {});
+      renderFiscalNumberingConsistency();
+      if (item && item.id) {
+        verificarDianFirmaVencimiento(false).catch(function() {});
+        verificarDianResolucionVencimiento(true).catch(function() {});
+      } else {
+        renderFirmaExpiry({ configurado: false });
+        renderDianResolutionExpiry({ mensaje: "Configura y guarda los datos DIAN antes de verificar la resolución." });
+      }
+      return item;
+    }
+
+    async function saveDianConfig() {
+      var payload = collectDianConfigPayload();
+      if (!payload.empresa_id || !payload.nit || !payload.razon_social || !payload.tipo_ambiente) {
+        throw new Error("NIT, razon social y ambiente DIAN son obligatorios");
+      }
+      var isUpdate = Number(payload.id || 0) > 0;
+      var url = "/api/empresa/facturacion_electronica/dian?empresa_id=" + encodeURIComponent(state.empresaID);
+      if (isUpdate) url += "&id=" + encodeURIComponent(payload.id);
+      var res = await fetch(url, {
+        method: isUpdate ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload)
+      });
+      var data = await readJSONResponse(res);
+      if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
+      if (data && data.item) setDianConfigFormData(data.item);
+      if (data && data.vencimiento_resolucion) renderDianResolutionExpiry(data.vencimiento_resolucion);
+      renderDianSetupProgress();
+      return data;
+    }
+
+    function renderDianResolutionExpiry(info) {
+      var el = document.getElementById("feDianResolutionExpiryText");
+      if (!el) return;
+      info = info || {};
+      var texto = info.mensaje || (info.fecha_vencimiento ? ("Resolucion vence el " + info.fecha_vencimiento) : "Resolucion sin fecha final registrada.");
+      if (info.dias_restantes !== undefined && info.dias_restantes !== null && !info.vencido) {
+        texto += " Dias restantes: " + info.dias_restantes + ".";
+      }
+      if (info.notificacion_enviada) {
+        texto += " Aviso enviado al buzon del panel.";
+      } else if (info.notificacion_omitida) {
+        texto += " Aviso ya enviado hoy.";
+      }
+      el.textContent = texto;
+      el.className = "form-help";
+      if (info.vencido) el.className = "form-help error";
+      else if (info.proximo_a_vencer || info.proximo_vencer) el.className = "form-help warning";
+    }
+
+    async function verificarDianResolucionVencimiento(silent) {
+      if (!state.empresaID) return null;
+      if (!state.dianConfig || !Number(state.dianConfig.id)) {
+        var pendiente = { mensaje: "Configura y guarda primero los datos DIAN de esta empresa." };
+        renderDianResolutionExpiry(pendiente);
+        return pendiente;
+      }
+      var url = "/api/empresa/facturacion_electronica/dian?action=vencimiento_resolucion&empresa_id=" + encodeURIComponent(state.empresaID);
+      if (silent) url += "&notificar=0";
+      var res = await fetch(url, { credentials: "same-origin" });
+      var data = await readJSONResponse(res);
+      if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
+      renderDianResolutionExpiry(data);
+      return data;
+    }
+
+    async function validarDianConfig() {
+      var res = await fetch("/api/empresa/facturacion_electronica/dian?action=validar_credenciales&empresa_id=" + encodeURIComponent(state.empresaID), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(collectDianConfigPayload())
+      });
+      var data = await readJSONResponse(res);
+      if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
+      return data;
+    }
+
+    (function initFirmaUpload() {
+      var btn = document.getElementById("feFirmaUploadBtn");
+      var input = document.getElementById("feFirmaFile");
+      var passwordInput = document.getElementById("feFirmaPassword");
+      var msg = document.getElementById("feFirmaMsg");
+      if (!btn || !input) return;
+
+      function setMsg(text, isErr) {
+        if (!msg) return;
+        msg.textContent = text || "";
+        msg.className = isErr ? "form-help error" : "form-help";
+      }
+
+      btn.addEventListener("click", async function () {
+        try {
+          setMsg("", false);
+          if (!state.empresaID) {
+            setMsg("empresa_id no está listo todavía.", true);
+            return;
+          }
+          var file = input.files && input.files[0];
+          if (!file) {
+            setMsg("Selecciona un archivo de firma .pem, .key, .p12 o .pfx.", true);
+            return;
+          }
+          var hasStoredPrivateKey = !!(state.dianConfig && asBool(state.dianConfig.certificado_clave_ref_configurado));
+          if (hasStoredPrivateKey) {
+            var reemplazar = confirm("Ya existe una firma electronica registrada para esta empresa. Por seguridad, PCS no descarga la llave privada anterior desde el navegador. Si continuas, la nueva firma se cargara y la anterior se eliminara de la carpeta segura de la empresa. Deseas continuar?");
+            if (!reemplazar) {
+              setMsg("Carga cancelada. La firma anterior se conserva.", false);
+              return;
+            }
+          }
+          btn.disabled = true;
+          btn.textContent = "Cargando...";
+
+          var fd = new FormData();
+          fd.append("empresa_id", String(state.empresaID));
+          fd.append("archivo_firma", file, file.name);
+          if (passwordInput && txt(passwordInput.value)) {
+            fd.append("password_firma", txt(passwordInput.value));
+          }
+
+          var res = await fetch("/api/empresa/facturacion_electronica/dian?action=subir_firma&empresa_id=" + encodeURIComponent(state.empresaID), {
+            method: "POST",
+            body: fd,
+            credentials: "same-origin"
+          });
+          var data = null;
+          try { data = await res.json(); } catch (e) { data = null; }
+          if (!res.ok) {
+            var err = (data && (data.error || data.message)) ? String(data.error || data.message) : ("HTTP " + res.status);
+            throw new Error(err);
+          }
+          if (data && data.vencimiento_certificado) {
+            renderFirmaExpiry(data.vencimiento_certificado);
+          }
+          renderFirmaLastUpload(data || {});
+          setMsg("Firma cargada y guardada correctamente. La clave fue usada de forma segura y no se muestra en pantalla.", false);
+          if (typeof loadDianConfig === "function") {
+            loadDianConfig().catch(function() {});
+          }
+        } catch (e) {
+          setMsg(e && e.message ? e.message : "No se pudo cargar la firma.", true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Cargar firma";
+        }
+      });
+    })();
+
+    function mergeEstructuradoToJson() {
+      var code = txt(document.getElementById("pais_codigo").value).toUpperCase();
+      var extra = {};
+      try {
+        var raw = txt(document.getElementById("campos_pais_json").value);
+        if (raw) extra = JSON.parse(raw) || {};
+      } catch (e) { extra = {}; }
+      if (code === "EC") {
+        if (document.getElementById("fe_ec_ruc")) extra.ruc = txt(document.getElementById("fe_ec_ruc").value) || extra.ruc;
+        if (document.getElementById("fe_ec_est")) extra.establecimiento = txt(document.getElementById("fe_ec_est").value) || extra.establecimiento;
+        if (document.getElementById("fe_ec_punto")) extra.punto_emision = txt(document.getElementById("fe_ec_punto").value) || extra.punto_emision;
+        var amb = document.getElementById("fe_ec_ambiente_sri");
+        if (amb && txt(amb.value)) extra.ambiente_sri = txt(amb.value);
+      }
+      if (code === "PA") {
+        if (document.getElementById("fe_pa_ruc")) extra.ruc = txt(document.getElementById("fe_pa_ruc").value) || extra.ruc;
+        if (document.getElementById("fe_pa_dv")) extra.dv = txt(document.getElementById("fe_pa_dv").value) || extra.dv;
+      }
+      if (code === "CR") {
+        if (document.getElementById("fe_cr_cedula")) extra.cedula = txt(document.getElementById("fe_cr_cedula").value) || extra.cedula;
+        if (document.getElementById("fe_cr_tipo_identificacion")) extra.tipo_identificacion = txt(document.getElementById("fe_cr_tipo_identificacion").value) || extra.tipo_identificacion;
+        if (document.getElementById("fe_cr_actividad")) extra.actividad_economica = txt(document.getElementById("fe_cr_actividad").value) || extra.actividad_economica;
+        if (document.getElementById("fe_cr_sucursal")) extra.sucursal = txt(document.getElementById("fe_cr_sucursal").value) || extra.sucursal;
+        if (document.getElementById("fe_cr_terminal")) extra.terminal = txt(document.getElementById("fe_cr_terminal").value) || extra.terminal;
+        if (document.getElementById("fe_cr_version_xml")) extra.version_xml = txt(document.getElementById("fe_cr_version_xml").value) || extra.version_xml;
+      }
+      if (code === "AR") {
+        if (document.getElementById("fe_ar_cuit")) extra.cuit = txt(document.getElementById("fe_ar_cuit").value) || extra.cuit;
+        if (document.getElementById("fe_ar_punto_venta")) extra.punto_venta = txt(document.getElementById("fe_ar_punto_venta").value) || extra.punto_venta;
+        if (document.getElementById("fe_ar_condicion_iva")) extra.condicion_iva = txt(document.getElementById("fe_ar_condicion_iva").value) || extra.condicion_iva;
+        if (document.getElementById("fe_ar_tipo_comprobante")) extra.tipo_comprobante = txt(document.getElementById("fe_ar_tipo_comprobante").value) || extra.tipo_comprobante;
+        if (document.getElementById("fe_ar_ws_servicio")) extra.ws_servicio = txt(document.getElementById("fe_ar_ws_servicio").value) || extra.ws_servicio;
+      }
+      if (code === "VE") {
+        if (document.getElementById("fe_ve_rif")) extra.rif = txt(document.getElementById("fe_ve_rif").value) || extra.rif;
+        if (document.getElementById("fe_ve_serie")) extra.serie = txt(document.getElementById("fe_ve_serie").value) || extra.serie;
+        if (document.getElementById("fe_ve_moneda_ref")) extra.moneda_referencia = txt(document.getElementById("fe_ve_moneda_ref").value) || extra.moneda_referencia;
+        if (document.getElementById("fe_ve_imprenta")) extra.imprenta_digital = txt(document.getElementById("fe_ve_imprenta").value) || extra.imprenta_digital;
+        if (document.getElementById("fe_ve_proveedor")) extra.proveedor_homologado = txt(document.getElementById("fe_ve_proveedor").value) || extra.proveedor_homologado;
+      }
+      if (code === "CO") {
+        var docsSeleccionados = selectedValues(".fe-dian-doc-check");
+        var contadorSeleccionados = selectedValues(".fe-dian-contador-check");
+        if (docsSeleccionados.length) extra.documentos_soportados = docsSeleccionados;
+        if (contadorSeleccionados.length) extra.documentos_contadores_colombia = contadorSeleccionados;
+		if (docsSeleccionados.length || contadorSeleccionados.length) extra.documentos_dian_catalogo_version = "2026-08-21";
+        delete extra.modo_offline_dian_activo;
+        delete extra.modo_offline_preguntar;
+        delete extra.modo_offline_auto_reintentar;
+        delete extra.dian_contingencia_tipo;
+      }
+      document.getElementById("campos_pais_json").value = JSON.stringify(extra, null, 2);
+    }
+
+    function applyEstructuradoFromJson(raw) {
+      var j = {};
+      try { if (raw) j = JSON.parse(raw) || {}; } catch (e) {}
+      if (document.getElementById("fe_ec_ruc")) {
+        document.getElementById("fe_ec_ruc").value = j.ruc || "";
+        document.getElementById("fe_ec_est").value = j.establecimiento || "";
+        document.getElementById("fe_ec_punto").value = j.punto_emision || "";
+        var as = document.getElementById("fe_ec_ambiente_sri");
+        if (as) {
+          as.value = (j.ambiente_sri != null && j.ambiente_sri !== "") ? String(j.ambiente_sri) : "";
+        }
+      }
+      if (document.getElementById("fe_pa_ruc")) {
+        document.getElementById("fe_pa_ruc").value = j.ruc || "";
+        document.getElementById("fe_pa_dv").value = j.dv || "";
+      }
+      if (document.getElementById("fe_cr_cedula")) {
+        document.getElementById("fe_cr_cedula").value = j.cedula || "";
+        document.getElementById("fe_cr_tipo_identificacion").value = j.tipo_identificacion || "";
+        document.getElementById("fe_cr_actividad").value = j.actividad_economica || "";
+        document.getElementById("fe_cr_sucursal").value = j.sucursal || "";
+        document.getElementById("fe_cr_terminal").value = j.terminal || "";
+        document.getElementById("fe_cr_version_xml").value = j.version_xml || "";
+      }
+      if (document.getElementById("fe_ar_cuit")) {
+        document.getElementById("fe_ar_cuit").value = j.cuit || "";
+        document.getElementById("fe_ar_punto_venta").value = j.punto_venta || "";
+        document.getElementById("fe_ar_condicion_iva").value = j.condicion_iva || "";
+        document.getElementById("fe_ar_tipo_comprobante").value = j.tipo_comprobante || "";
+        document.getElementById("fe_ar_ws_servicio").value = j.ws_servicio || "";
+      }
+      if (document.getElementById("fe_ve_rif")) {
+        document.getElementById("fe_ve_rif").value = j.rif || "";
+        document.getElementById("fe_ve_serie").value = j.serie || "";
+        document.getElementById("fe_ve_moneda_ref").value = j.moneda_referencia || "";
+        document.getElementById("fe_ve_imprenta").value = j.imprenta_digital || "";
+        document.getElementById("fe_ve_proveedor").value = j.proveedor_homologado || "";
+      }
+    }
+
+    function fillCountryHint(code) {
+      const hint = document.getElementById("countryHint");
+      if (!hint) return;
+      const key = (code || "").toUpperCase();
+      if (key === "PA") {
+        hint.textContent = "Complementa con JSON (opcional) para folios, PSE o códigos adicionales. Panamá no usa módulo DIAN Colombia.";
+        return;
+      }
+      if (key === "EC") {
+        hint.textContent = "Use los campos estructurados o JSON con ruc, establecimiento, punto_emision, ambiente_sri. No se mezcla con resolución DIAN.";
+        return;
+      }
+      if (key === "CR") {
+        hint.textContent = "Costa Rica: configure cedula, sucursal, terminal, actividad_economica y version_xml para integracion con Hacienda/API o proveedor.";
+        return;
+      }
+      if (key === "AR") {
+        hint.textContent = "Argentina: configure CUIT, punto_venta, condicion IVA y servicio wsfev1/ARCA. En produccion requiere certificado y autorizacion CAE/CAEA.";
+        return;
+      }
+      if (key === "VE") {
+        hint.textContent = "Venezuela: perfil para RIF, serie fiscal, imprenta digital y proveedor homologado SENIAT. La emision final depende del proveedor autorizado.";
+        return;
+      }
+      if (key !== "CO") {
+        hint.textContent = "Perfil de configuración sin adaptador fiscal implementado. La emisión y la transmisión están bloqueadas hasta contar con un contrato legal y técnico específico para este país.";
+        return;
+      }
+      hint.textContent = "Colombia: extras para proveedor/integración (ej. tipo_operación). Las pruebas DIAN y la emisión documental manual están separadas en su propia página del submenú.";
+    }
+
+    function renderList(items) {
+      const list = document.getElementById("list");
+      const arr = Array.isArray(items) ? items : [];
+      if (!arr.length) {
+        list.textContent = "No hay configuraciones de facturación por país para esta empresa.";
+        return;
+      }
+
+      const table = document.createElement("table");
+      table.className = "table";
+      table.innerHTML = "<thead><tr><th>País</th><th>Proveedor</th><th>Ambiente</th><th>Moneda</th><th>Correo auto</th><th>Estado</th><th>Acciones</th></tr></thead>";
+      const tbody = document.createElement("tbody");
+
+      arr.forEach(function(item) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = "<td>" + (item.bandera_pais || "") + " " + (item.pais_nombre || item.pais_codigo || "") + "</td>" +
+                       "<td>" + (item.proveedor || "manual") + "</td>" +
+                       "<td>" + (item.ambiente || "sandbox") + "</td>" +
+                       "<td>" + (item.moneda_codigo || "") + "</td>" +
+                       "<td>" + (item.enviar_factura_email_cliente_auto ? "Activo" : "Apagado") + "</td>" +
+                       "<td>" + (item.estado || "activo") + "</td>" +
+                       "<td class=\"actions\"><button class=\"btn secondary load-country\" data-country=\"" + (item.pais_codigo || "") + "\">Cargar</button></td>";
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      list.innerHTML = "";
+      list.appendChild(table);
+
+      list.querySelectorAll(".load-country").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const c = btn.getAttribute("data-country");
+          if (c) {
+            document.getElementById("pais_codigo").value = c;
+            state.paisSeleccionado = c;
+            if (openCountryProfileIfNeeded(c)) return;
+            loadCountryConfig(c);
+          }
+        });
+      });
+    }
+
+    function collectPayload() {
+      mergeEstructuradoToJson();
+      return {
+        empresa_id: Number(state.empresaID),
+        pais_codigo: txt(document.getElementById("pais_codigo").value).toUpperCase(),
+        pais_nombre: txt(document.getElementById("pais_nombre").value),
+        proveedor: txt(document.getElementById("proveedor").value),
+        ambiente: txt(document.getElementById("ambiente").value),
+        moneda_codigo: txt(document.getElementById("moneda_codigo").value).toUpperCase(),
+        tipo_documento_emisor: txt(document.getElementById("tipo_documento_emisor").value),
+        identificador_fiscal: txt(document.getElementById("identificador_fiscal").value),
+        razon_social: txt(document.getElementById("razon_social").value),
+        email_facturacion: txt(document.getElementById("email_facturacion").value),
+        enviar_factura_email_cliente_auto: !!document.getElementById("enviar_factura_email_cliente_auto").checked,
+        telefono_facturacion: txt(document.getElementById("telefono_facturacion").value),
+        direccion_fiscal: txt(document.getElementById("direccion_fiscal").value),
+        prefijo_factura: txt(document.getElementById("prefijo_factura").value),
+        resolucion_numero: txt(document.getElementById("resolucion_numero").value),
+        api_base_url: txt(document.getElementById("api_base_url").value),
+        campos_pais_json: txt(document.getElementById("campos_pais_json").value),
+        observaciones: txt(document.getElementById("observaciones").value)
+      };
+    }
+
+    function setFormData(cfg) {
+      ensureCountryOption(cfg);
+      document.getElementById("pais_codigo").value = txt(cfg.pais_codigo || state.paisSeleccionado || "CO");
+      document.getElementById("pais_nombre").value = txt(cfg.pais_nombre) || countryLabel(findCatalogItem(document.getElementById("pais_codigo").value));
+      document.getElementById("proveedor").value = txt(cfg.proveedor) || "manual";
+      document.getElementById("ambiente").value = txt(cfg.ambiente) || "sandbox";
+      document.getElementById("moneda_codigo").value = txt(cfg.moneda_codigo);
+      document.getElementById("tipo_documento_emisor").value = txt(cfg.tipo_documento_emisor);
+      document.getElementById("identificador_fiscal").value = txt(cfg.identificador_fiscal);
+      document.getElementById("razon_social").value = txt(cfg.razon_social);
+      document.getElementById("email_facturacion").value = txt(cfg.email_facturacion);
+      document.getElementById("enviar_factura_email_cliente_auto").checked = cfg.enviar_factura_email_cliente_auto === true;
+      syncAdvancedInvoiceEmailAutoFromMain();
+      document.getElementById("telefono_facturacion").value = txt(cfg.telefono_facturacion);
+      document.getElementById("direccion_fiscal").value = txt(cfg.direccion_fiscal);
+      document.getElementById("prefijo_factura").value = txt(cfg.prefijo_factura);
+      document.getElementById("resolucion_numero").value = txt(cfg.resolucion_numero);
+      document.getElementById("api_base_url").value = txt(cfg.api_base_url);
+      document.getElementById("campos_pais_json").value = txt(cfg.campos_pais_json) || "{}";
+      document.getElementById("observaciones").value = txt(cfg.observaciones);
+      applyEstructuradoFromJson(document.getElementById("campos_pais_json").value);
+      applyVistaForPais(document.getElementById("pais_codigo").value, null);
+      updateSelectedCountryHeader(document.getElementById("pais_codigo").value, "Configuración guardada por empresa");
+      if (txt(document.getElementById("pais_codigo").value).toUpperCase() === "CO") {
+        loadDianCatalog();
+      }
+      updateRequiredFieldHighlights();
+    }
+
+    async function loadCountryConfig(countryCode) {
+      const code = txt(countryCode).toUpperCase() || txt(document.getElementById("pais_codigo").value).toUpperCase();
+      if (!code) return;
+      const url = "/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID) + "&pais_codigo=" + encodeURIComponent(code);
+      const res = await fetch(url);
+      await ensureOk(res);
+      const cfg = await res.json();
+      state.paisSeleccionado = code;
+      setFormData(cfg || { pais_codigo: code });
+      updateSelectedCountryHeader(code, "Configuración cargada por empresa");
+    }
+
+    async function detectCountry() {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const lang = navigator.language || "";
+      const url = "/api/empresa/facturacion_electronica/pais_detectado?empresa_id=" + encodeURIComponent(state.empresaID) + "&tz=" + encodeURIComponent(tz) + "&lang=" + encodeURIComponent(lang);
+      const res = await fetch(url);
+      await ensureOk(res);
+      const info = await res.json();
+      const label = (info.bandera || "") + " " + (info.pais_nombre || info.pais_codigo || "");
+      updateSelectedCountryHeader(info.pais_codigo || "", "Fuente: " + (info.source || "desconocida"), label);
+      if (info.pais_codigo) {
+        state.paisSeleccionado = String(info.pais_codigo).toUpperCase();
+        document.getElementById("pais_codigo").value = state.paisSeleccionado;
+        applyVistaForPais(state.paisSeleccionado, info.vista);
+      }
+      return info;
+    }
+
+    async function loadCountries() {
+      const res = await fetch("/api/empresa/facturacion_electronica/paises_disponibles?empresa_id=" + encodeURIComponent(state.empresaID));
+      await ensureOk(res);
+      const data = await res.json();
+      state.catalog = Array.isArray(data.items) ? data.items : [];
+      state.paises = state.catalog;
+      const sel = document.getElementById("pais_codigo");
+      sel.innerHTML = "";
+      state.catalog.forEach(function(item) {
+        const opt = document.createElement("option");
+        opt.value = item.codigo;
+        opt.textContent = countryLabel(item);
+        sel.appendChild(opt);
+      });
+      if (!state.catalog.length) {
+        const opt = document.createElement("option");
+        opt.value = "CO";
+        opt.textContent = "Colombia (CO)";
+        sel.appendChild(opt);
+      }
+    }
+
+    async function loadList() {
+      const res = await fetch("/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID) + "&incluir_inactivas=1");
+      await ensureOk(res);
+      const data = await res.json();
+      const items = data.items || [];
+      items.forEach(ensureCountryOption);
+      renderList(items);
+    }
+
+    function setNewCountryMessage(message, isError) {
+      const el = document.getElementById("newCountryMsg");
+      if (!el) return;
+      el.textContent = message || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    var addCountryBtn = document.getElementById("addCountryBtn");
+    if (addCountryBtn) {
+      addCountryBtn.addEventListener("click", async function() {
+        const code = txt(document.getElementById("new_country_code").value).toUpperCase();
+        const name = txt(document.getElementById("pais_nombre").value).replace(/\s+/g, " ").trim();
+        const currency = txt(document.getElementById("new_country_currency").value).toUpperCase();
+        if (!/^[A-Z]{2}$/.test(code)) {
+          setNewCountryMessage("Usa un código de país de dos letras mayúsculas (por ejemplo, PE).", true);
+          return;
+        }
+        if (name.length < 2 || name.length > 120) {
+          setNewCountryMessage("Indica el nombre del país (entre 2 y 120 caracteres).", true);
+          return;
+        }
+        if (currency && !/^[A-Z]{3}$/.test(currency)) {
+          setNewCountryMessage("La moneda es opcional; si la indicas debe usar tres letras mayúsculas.", true);
+          return;
+        }
+        const payload = {
+          empresa_id: Number(state.empresaID),
+          pais_codigo: code,
+          pais_nombre: name,
+          moneda_codigo: currency,
+          proveedor: "manual",
+          ambiente: "sandbox",
+          estado: "inactivo",
+          enviar_factura_email_cliente_auto: false,
+          campos_pais_json: JSON.stringify({
+            perfil_configuracion: true,
+            integracion: "pendiente_adaptador_fiscal",
+            emision_habilitada: false
+          }),
+          observaciones: "Perfil creado sin habilitar emisión; requiere adaptador fiscal específico validado."
+        };
+        addCountryBtn.disabled = true;
+        try {
+          const res = await fetch("/api/empresa/facturacion_electronica?action=config_pais&empresa_id=" + encodeURIComponent(state.empresaID), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          await ensureOk(res);
+          const response = await res.json();
+          const cfg = response && response.configuracion ? response.configuracion : payload;
+          ensureCountryOption(cfg);
+          document.getElementById("pais_codigo").value = code;
+          state.paisSeleccionado = code;
+          await loadCountryConfig(code);
+          await loadList();
+          setNewCountryMessage("Perfil " + code + " agregado en modo seguro: inactivo, sandbox y sin transmisión fiscal.", false);
+          setMessage("País agregado sin habilitar emisión", false);
+        } catch (err) {
+          setNewCountryMessage(err && err.message ? err.message : "No se pudo agregar el país", true);
+        } finally {
+          addCountryBtn.disabled = false;
+        }
+      });
+    }
+
+    document.getElementById("pais_codigo").addEventListener("change", function() {
+      const code = txt(document.getElementById("pais_codigo").value).toUpperCase();
+      if (code) {
+        updateSelectedCountryHeader(code, "Selección manual");
+        if (openCountryProfileIfNeeded(code)) return;
+        loadCountryConfig(code).catch(function(err) {
+          setMessage(err.message || "No se pudo cargar configuración de país", true);
+        });
+        if (code === "CO") {
+          loadDianConfig().catch(function(err) {
+            setDianConfigMessage(err && err.message ? err.message : "No se pudo cargar DIAN Colombia", true);
+          });
+          loadDianCatalog();
+        }
+      } else {
+        applyVistaForPais("", null);
+      }
+    });
+
+    document.getElementById("detectBtn").addEventListener("click", function() {
+      detectCountry().then(function(info) {
+        if (info && info.pais_codigo) {
+          if (openCountryProfileIfNeeded(info.pais_codigo)) return null;
+          return loadCountryConfig(info.pais_codigo).then(function() {
+            if (String(info.pais_codigo).toUpperCase() === "CO") {
+              return loadDianConfig();
+            }
+            return null;
+          });
+        }
+      }).catch(function(err) {
+        setMessage(err.message || "No se pudo detectar el país", true);
+      });
+    });
+
+    var openSelectedCountryBtn = document.getElementById("openSelectedCountryBtn");
+    if (openSelectedCountryBtn) {
+      openSelectedCountryBtn.addEventListener("click", function() {
+        const code = txt(document.getElementById("pais_codigo").value).toUpperCase();
+        if (!code) {
+          setMessage("Selecciona un país para cargar su configuración", true);
+          return;
+        }
+        if (openCountryProfileIfNeeded(code)) return;
+        loadCountryConfig(code).then(function() {
+          if (code === "CO") return loadDianConfig();
+          return null;
+        }).then(function() {
+          setMessage("Configuración de país cargada", false);
+        }).catch(function(err) {
+          setMessage(err.message || "No se pudo cargar el país", true);
+        });
+      });
+    }
+
+    document.getElementById("reloadBtn").addEventListener("click", function() {
+      loadCountryConfig(document.getElementById("pais_codigo").value).then(function() {
+        setMessage("Configuración recargada", false);
+      }).catch(function(err) {
+        setMessage(err.message || "No se pudo recargar", true);
+      });
+    });
+
+    var dianConfigForm = document.getElementById("feDianConfigForm");
+    if (dianConfigForm) {
+      dianConfigForm.addEventListener("submit", function(ev) {
+        ev.preventDefault();
+        setDianConfigMessage("Guardando configuración DIAN Colombia...", false);
+        setDianConfigResult(null);
+        saveDianConfig().then(function(data) {
+          setDianConfigResult(data);
+          setDianConfigMessage("Configuración DIAN guardada. Ejecuta validar checklist para revisar faltantes.", false);
+        }).catch(function(err) {
+          setDianConfigMessage(err && err.message ? err.message : "No se pudo guardar DIAN Colombia", true);
+        });
+      });
+    }
+
+    var btnDianRutPdf = document.getElementById("btnDianRutPdf");
+    if (btnDianRutPdf) {
+      btnDianRutPdf.addEventListener("click", function() {
+        btnDianRutPdf.disabled = true;
+        btnDianRutPdf.textContent = "Leyendo RUT con IA...";
+        uploadDianRutPdf().catch(function(err) {
+          renderDianRutPdfResult(null);
+          setDianRutPdfMessage(err && err.message ? err.message : "No se pudo leer el RUT PDF.", true);
+        }).finally(function() {
+          btnDianRutPdf.disabled = false;
+          btnDianRutPdf.textContent = "Cargar RUT con IA GPT-5.5";
+        });
+      });
+    }
+
+    var btnDianRutAplicar = document.getElementById("btnDianRutAplicar");
+    if (btnDianRutAplicar) {
+      btnDianRutAplicar.addEventListener("click", applyDianRutPdfValues);
+    }
+
+    var btnDianNumeracionPdf = document.getElementById("btnDianNumeracionPdf");
+    if (btnDianNumeracionPdf) {
+      btnDianNumeracionPdf.addEventListener("click", function() {
+        btnDianNumeracionPdf.disabled = true;
+        btnDianNumeracionPdf.textContent = "Leyendo con IA...";
+        uploadDianNumeracionPdf().catch(function(err) {
+          renderDianNumeracionPdfResult(null);
+          setDianNumeracionPdfMessage(err && err.message ? err.message : "No se pudo leer el PDF DIAN.", true);
+        }).finally(function() {
+          btnDianNumeracionPdf.disabled = false;
+          btnDianNumeracionPdf.textContent = "Cargar PDF con IA GPT-5.5";
+        });
+      });
+    }
+
+    function setContingenciaMessage(message, isError) {
+      var el = document.getElementById("feContingenciaMsg");
+      if (!el) return;
+      el.textContent = message || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setContingenciaConfig(config) {
+      config = config || {};
+      var values = {
+        cont_prefijo: config.prefijo || "",
+        cont_resolucion: config.resolucion_numero || "",
+        cont_estado: config.estado || "configurando",
+        cont_fecha_desde: config.fecha_desde || "",
+        cont_fecha_hasta: config.fecha_hasta || "",
+        cont_rango_desde: config.rango_desde || "",
+        cont_rango_hasta: config.rango_hasta || "",
+        cont_proximo: config.proximo_numero || ""
+      };
+      Object.keys(values).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = values[id];
+      });
+    }
+
+    function renderContingencias(data) {
+      setContingenciaConfig(data && data.configuracion_talonario);
+      var box = document.getElementById("feContingenciaList");
+      if (!box) return;
+      var items = Array.isArray(data && data.contingencias) ? data.contingencias : [];
+      box.innerHTML = "";
+      if (!items.length) {
+        box.classList.add("is-empty");
+        box.textContent = "No hay contingencias fiscales declaradas para esta empresa.";
+        return;
+      }
+      box.classList.remove("is-empty");
+      var table = document.createElement("table");
+      table.className = "table";
+      table.innerHTML = "<thead><tr><th>Tipo</th><th>Estado</th><th>Inicio</th><th>Límite operativo</th><th>Pendientes</th><th>Acción</th></tr></thead>";
+      var tbody = document.createElement("tbody");
+      items.forEach(function(item) {
+        var tr = document.createElement("tr");
+        [item.tipo, item.estado, item.fecha_inicio, item.fecha_limite_transmision || "—", String(item.documentos_pendientes || 0)].forEach(function(value) {
+          var td = document.createElement("td");
+          td.textContent = value || "—";
+          tr.appendChild(td);
+        });
+        var actionCell = document.createElement("td");
+        if (item.estado === "activa") {
+          var recover = document.createElement("button");
+          recover.type = "button";
+          recover.className = "btn secondary";
+          recover.textContent = "Marcar recuperada";
+          recover.addEventListener("click", function() { mutateContingencia("recuperar", item.id); });
+          actionCell.appendChild(recover);
+        } else if (item.estado === "recuperada") {
+          var close = document.createElement("button");
+          close.type = "button";
+          close.className = "btn secondary";
+          close.textContent = "Cerrar sin pendientes";
+          close.addEventListener("click", function() { mutateContingencia("cerrar", item.id); });
+          actionCell.appendChild(close);
+        } else {
+          actionCell.textContent = "Cerrada";
+        }
+        tr.appendChild(actionCell);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      box.appendChild(table);
+
+	  var documents = Array.isArray(data && data.documentos) ? data.documentos : [];
+	  var documentsTitle = document.createElement("h3");
+	  documentsTitle.textContent = "Documentos vinculados";
+	  box.appendChild(documentsTitle);
+	  if (!documents.length) {
+		var emptyDocuments = document.createElement("p");
+		emptyDocuments.className = "form-help";
+		emptyDocuments.textContent = "No hay documentos vinculados a contingencias de esta empresa.";
+		box.appendChild(emptyDocuments);
+		return;
+	  }
+	  var documentsTable = document.createElement("table");
+	  documentsTable.className = "table";
+	  documentsTable.innerHTML = "<thead><tr><th>Incidente</th><th>Documento</th><th>Papel</th><th>Estado</th><th>Actualizado</th></tr></thead>";
+	  var documentsBody = document.createElement("tbody");
+	  documents.forEach(function(item) {
+		var row = document.createElement("tr");
+		[
+		  String(item.contingencia_id || "—"),
+		  item.documento_codigo || "—",
+		  item.numero_papel || "—",
+		  item.estado_transmision || "—",
+		  item.fecha_actualizacion || "—"
+		].forEach(function(value) {
+		  var cell = document.createElement("td");
+		  cell.textContent = value;
+		  row.appendChild(cell);
+		});
+		documentsBody.appendChild(row);
+	  });
+	  documentsTable.appendChild(documentsBody);
+	  box.appendChild(documentsTable);
+    }
+
+    async function loadContingencias() {
+      if (!state.empresaID) return null;
+      var res = await fetch("/api/empresa/facturacion_electronica/contingencias?empresa_id=" + encodeURIComponent(state.empresaID), { credentials: "same-origin" });
+      var data = await readJSONResponse(res);
+      renderContingencias(data || {});
+      return data;
+    }
+
+    async function postContingencia(payload) {
+      payload.empresa_id = state.empresaID;
+      var res = await fetch("/api/empresa/facturacion_electronica/contingencias", {
+        method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+      });
+      var data = await readJSONResponse(res);
+      renderContingencias(data || {});
+      return data;
+    }
+
+    async function mutateContingencia(action, id) {
+      var confirmation = txt(document.getElementById("cont_confirmacion").value);
+      var required = action === "recuperar" ? "RECUPERAR SERVICIO" : "CERRAR CONTINGENCIA";
+      if (confirmation !== required) {
+        document.getElementById("cont_confirmacion").placeholder = required;
+        setContingenciaMessage("Escribe " + required + " exactamente antes de continuar.", true);
+        return;
+      }
+      try {
+        await postContingencia({ action: action, contingencia_id: Number(id), confirmacion: confirmation });
+        document.getElementById("cont_confirmacion").value = "";
+        setContingenciaMessage(action === "recuperar" ? "Servicio marcado como recuperado; empieza el control de 48 horas." : "Contingencia cerrada sin documentos pendientes.", false);
+      } catch (err) {
+        setContingenciaMessage(err && err.message ? err.message : "No se pudo actualizar la contingencia.", true);
+      }
+    }
+
+    var contGuardar = document.getElementById("contGuardarTalonario");
+    if (contGuardar) contGuardar.addEventListener("click", function() {
+      postContingencia({
+        action: "guardar_talonario", pais_codigo: "CO", prefijo: txt(document.getElementById("cont_prefijo").value),
+        resolucion_numero: txt(document.getElementById("cont_resolucion").value), estado: txt(document.getElementById("cont_estado").value),
+        fecha_desde: txt(document.getElementById("cont_fecha_desde").value), fecha_hasta: txt(document.getElementById("cont_fecha_hasta").value),
+        rango_desde: Number(document.getElementById("cont_rango_desde").value || 0), rango_hasta: Number(document.getElementById("cont_rango_hasta").value || 0),
+        proximo_numero: Number(document.getElementById("cont_proximo").value || 0)
+      }).then(function() { setContingenciaMessage("Autorización de talonario guardada sin retroceder el consecutivo.", false); })
+        .catch(function(err) { setContingenciaMessage(err && err.message ? err.message : "No se pudo guardar la autorización.", true); });
+    });
+
+    var contAbrir = document.getElementById("contAbrir");
+    if (contAbrir) contAbrir.addEventListener("click", function() {
+      postContingencia({
+        action: "abrir", tipo: txt(document.getElementById("cont_tipo").value), motivo: txt(document.getElementById("cont_motivo").value),
+        evidencia_referencia: txt(document.getElementById("cont_evidencia").value), confirmacion: txt(document.getElementById("cont_confirmacion").value)
+      }).then(function() {
+        document.getElementById("cont_confirmacion").value = "";
+        setContingenciaMessage("Contingencia declarada y auditada. No sustituye la expedición legal aplicable.", false);
+      }).catch(function(err) { setContingenciaMessage(err && err.message ? err.message : "No se pudo declarar la contingencia.", true); });
+    });
+
+	var contRegistrar = document.getElementById("contRegistrarTalonario");
+	if (contRegistrar) contRegistrar.addEventListener("click", function() {
+	  postContingencia({
+		action: "registrar_talonario", contingencia_id: Number(document.getElementById("cont_reg_incidente").value || 0),
+		carrito_id: Number(document.getElementById("cont_reg_carrito").value || 0), numero_papel: txt(document.getElementById("cont_reg_numero").value),
+		fecha_expedicion_papel: txt(document.getElementById("cont_reg_fecha").value), confirmacion: txt(document.getElementById("cont_reg_confirmacion").value)
+	  }).then(function() {
+		document.getElementById("cont_reg_confirmacion").value = "";
+		setContingenciaMessage("Factura de papel registrada con consecutivo reservado; transmisión electrónica tipo 03 pendiente.", false);
+	  }).catch(function(err) { setContingenciaMessage(err && err.message ? err.message : "No se pudo registrar la factura de papel.", true); });
+	});
+
+    var btnDianNumeracionAplicar = document.getElementById("btnDianNumeracionAplicar");
+    if (btnDianNumeracionAplicar) {
+      btnDianNumeracionAplicar.addEventListener("click", applyDianNumeracionPdfValues);
+    }
+
+    var dianResolutionBtn = document.getElementById("btnDianResolucionVencimiento");
+    if (dianResolutionBtn) {
+      dianResolutionBtn.addEventListener("click", function() {
+        dianResolutionBtn.disabled = true;
+        verificarDianResolucionVencimiento(false).catch(function(err) {
+          setDianConfigMessage(err && err.message ? err.message : "No se pudo verificar vencimiento de resolucion.", true);
+        }).finally(function() {
+          dianResolutionBtn.disabled = false;
+        });
+      });
+    }
+
+    var btnDianSelectAllDocs = document.getElementById("feDianSelectAllDocs");
+    if (btnDianSelectAllDocs) {
+      btnDianSelectAllDocs.addEventListener("click", function() {
+        document.querySelectorAll(".fe-dian-doc-check, .fe-dian-contador-check").forEach(function(input) {
+		  input.checked = !input.disabled;
+        });
+        applyDianCatalogToJson();
+      });
+    }
+
+    var btnDianApplyDocs = document.getElementById("feDianApplyDocs");
+    if (btnDianApplyDocs) {
+      btnDianApplyDocs.addEventListener("click", applyDianCatalogToJson);
+    }
+
+    var btnDianConfigValidar = document.getElementById("btnDianConfigValidar");
+    if (btnDianConfigValidar) {
+      btnDianConfigValidar.addEventListener("click", function() {
+        setDianConfigMessage("Validando credenciales y checklist DIAN...", false);
+        setDianConfigResult(null);
+        validarDianConfig().then(function(data) {
+          setDianConfigResult(data);
+          setDianConfigMessage(data && data.ok ? "Checklist DIAN sin faltantes críticos." : "Checklist DIAN cargado; revisa faltantes e issues.", !(data && data.ok));
+        }).catch(function(err) {
+          setDianConfigResult(err && err.data ? err.data : null);
+          setDianConfigMessage(err && err.message ? err.message : "No se pudo validar DIAN Colombia", true);
+        });
+      });
+    }
+
+    var btnDianConfigRecargar = document.getElementById("btnDianConfigRecargar");
+    if (btnDianConfigRecargar) {
+      btnDianConfigRecargar.addEventListener("click", function() {
+        setDianConfigMessage("Recargando configuración DIAN...", false);
+        loadDianConfig().then(function(data) {
+          setDianConfigResult(data || {});
+          setDianConfigMessage(data ? "Configuración DIAN recargada." : "No hay configuración DIAN todavía; completa el formulario y guarda.", false);
+        }).catch(function(err) {
+          setDianConfigMessage(err && err.message ? err.message : "No se pudo recargar DIAN Colombia", true);
+        });
+      });
+    }
+
+    var btnDianPasarTest = document.getElementById("btnDianPasarTest");
+    if (btnDianPasarTest && state.empresaID) {
+      btnDianPasarTest.href = "/administrar_empresa/facturacion_electronica_pruebas_dian.html?empresa_id=" + encodeURIComponent(state.empresaID);
+    }
+
+    var btnFirmaExpiry = document.getElementById("feFirmaExpiryBtn");
+    if (btnFirmaExpiry) {
+      btnFirmaExpiry.addEventListener("click", function() {
+        btnFirmaExpiry.disabled = true;
+        btnFirmaExpiry.textContent = "Verificando...";
+        verificarDianFirmaVencimiento(true).then(function(data) {
+          setDianConfigResult(data || {});
+        }).catch(function(err) {
+          var el = document.getElementById("feFirmaExpiryText");
+          if (el) {
+            el.textContent = err && err.message ? err.message : "No se pudo verificar el vencimiento.";
+            el.style.color = "#ef5350";
+          }
+        }).finally(function() {
+          btnFirmaExpiry.disabled = false;
+          btnFirmaExpiry.textContent = "Verificar vencimiento";
+        });
+      });
+    }
+
+    document.getElementById("feForm").addEventListener("submit", async function(ev) {
+      ev.preventDefault();
+      const payload = collectPayload();
+      if (!payload.empresa_id || !payload.pais_codigo) {
+        setMessage("empresa_id y pais_codigo son obligatorios", true);
+        return;
+      }
+      const jsonSafe = safeJSON(payload.campos_pais_json);
+      if (jsonSafe === null) {
+        setMessage("campos_pais_json no es JSON válido", true);
+        return;
+      }
+      payload.campos_pais_json = jsonSafe;
+
+      try {
+        const res = await fetch("/api/empresa/facturacion_electronica?action=config_pais&empresa_id=" + encodeURIComponent(state.empresaID), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        await loadCountryConfig(payload.pais_codigo);
+        await loadList();
+        setMessage("Configuración de facturación electrónica guardada", false);
+      } catch (err) {
+        setMessage(err.message || "No se pudo guardar", true);
+      }
+    });
+
+    document.getElementById("advancedConfigForm").addEventListener("submit", async function(ev) {
+      ev.preventDefault();
+      if (!advancedConfigState.allowed) {
+        setAdvancedMessage("No tienes permisos para guardar la configuración avanzada", true);
+        return;
+      }
+      const payload = collectAdvancedPayload();
+      try {
+        const res = await fetch("/api/empresa/configuracion_avanzada?empresa_id=" + encodeURIComponent(state.empresaID), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.status === 401 || res.status === 403) {
+          advancedConfigState.allowed = false;
+          setAdvancedSectionVisibility(false);
+          return;
+        }
+        await ensureOk(res);
+        const out = await res.json();
+        if (out && out.configuracion) {
+          setAdvancedFormData(out.configuracion);
+        }
+        setAdvancedMessage("Configuración avanzada guardada correctamente", false);
+      } catch (err) {
+        setAdvancedMessage(err && err.message ? err.message : "No se pudo guardar la configuración avanzada", true);
+      }
+    });
+
+    document.getElementById("advReloadBtn").addEventListener("click", function() {
+      loadAdvancedConfig().then(function(loaded) {
+        if (loaded) {
+          setAdvancedMessage("Configuración avanzada recargada", false);
+        }
+      }).catch(function(err) {
+        setAdvancedMessage(err && err.message ? err.message : "No se pudo recargar la configuración avanzada", true);
+      });
+    });
+
+    removeFacturacionIntroCards();
+    reorderDianCards();
+    installFacturacionFieldHelp();
+    installRequiredFieldGuides();
+    hideDuplicatedElectronicInvoiceEmailOption();
+    bindDianSetupProgressInputs();
+    bindCountryRequiredInputs();
+
+    (async function init() {
+      const empresaID = Number(q("empresa_id") || 0);
+      if (!empresaID) {
+        setMessage("empresa_id requerido en la URL", true);
+        document.getElementById("feForm").style.display = "none";
+        document.getElementById("advancedConfigForm").style.display = "none";
+        return;
+      }
+
+      state.empresaID = empresaID;
+      document.getElementById("empresa_id").value = String(empresaID);
+      document.getElementById("adv_empresa_id").value = String(empresaID);
+      var providerBtn = document.getElementById("feFirmaProviderBtn");
+      if (providerBtn) {
+        providerBtn.href = "/administrar_empresa/proveedores_firma_digital.html?empresa_id=" + encodeURIComponent(empresaID);
+      }
+      try {
+        localStorage.setItem("active_empresa_id", String(empresaID));
+      } catch (_) {}
+
+      try {
+        await loadCountries();
+        const requestedCountry = txt(q("pais_codigo")).toUpperCase();
+        var info = null;
+        if (requestedCountry) {
+          document.getElementById("pais_codigo").value = requestedCountry;
+          state.paisSeleccionado = requestedCountry;
+          updateSelectedCountryHeader(requestedCountry, "País solicitado desde el menú");
+        } else {
+          info = await detectCountry();
+        }
+        const initialCountry = requestedCountry || (info && info.pais_codigo) || document.getElementById("pais_codigo").value || "CO";
+        if (openCountryProfileIfNeeded(initialCountry)) return;
+        await loadCountryConfig(initialCountry);
+        if (txt(document.getElementById("pais_codigo").value).toUpperCase() === "CO") {
+          await loadDianConfig();
+		  try {
+			await loadContingencias();
+		  } catch (contingenciaErr) {
+			setContingenciaMessage(contingenciaErr && contingenciaErr.message ? contingenciaErr.message : "No se pudo cargar contingencia fiscal.", true);
+		  }
+        }
+        await loadList();
+      } catch (err) {
+        setMessage(err.message || "No se pudo inicializar el módulo", true);
+      }
+
+      try {
+        await loadAdvancedConfig();
+      } catch (err) {
+        setAdvancedMessage(err && err.message ? err.message : "No se pudo cargar la configuración avanzada", true);
+      }
+    })();
+  </script>
+</body>
+</html>

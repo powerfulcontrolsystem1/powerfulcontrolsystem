@@ -1,0 +1,4105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Panel de empresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function(){
+      var allowed = {
+        dark: true,
+        "dark-violet": true,
+        "dark-emerald": true,
+        "dark-corporate": true,
+        "dark-neon": true,
+        "dark-absolute": true,
+        "dark-obsidian": true,
+        light: true,
+        "light-rose": true,
+        "light-gold": true,
+        "light-wood": true
+      };
+      function normalizeTheme(value){
+        var theme = String(value || "").trim().toLowerCase();
+        if (theme === "dark-protect") theme = "dark";
+        return allowed[theme] ? theme : "light";
+      }
+      function readCookieTheme(){
+        var match = String(document.cookie || "").match(/(?:^|;\s*)pcs_theme=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+      }
+      function readStoredTheme(){
+        try {
+          return window.localStorage.getItem("theme") || readCookieTheme();
+        } catch (error) {
+          return readCookieTheme();
+        }
+      }
+      function isLightTheme(theme){
+        return normalizeTheme(theme).indexOf("light") === 0;
+      }
+      var theme = "";
+      try {
+        if (window.parent && window.parent !== window && window.parent.document) {
+          theme = window.parent.document.documentElement.getAttribute("data-theme") || "";
+        }
+      } catch (error) {}
+      try {
+        if (!theme) theme = readStoredTheme();
+        theme = normalizeTheme(theme);
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.classList.toggle("theme-light", isLightTheme(theme));
+        document.documentElement.classList.toggle("theme-dark", !isLightTheme(theme));
+      } catch (error) {}
+    })();
+  </script>
+  <style>
+    :root {
+      --panel-text: color-mix(in srgb, var(--text) 94%, white 6%);
+      --panel-muted: color-mix(in srgb, var(--text) 72%, var(--muted) 28%);
+      --panel-kicker: color-mix(in srgb, var(--text) 66%, var(--muted) 34%);
+      --panel-overlay-strong: color-mix(in srgb, var(--bg) 76%, transparent);
+      --panel-overlay-soft: color-mix(in srgb, var(--bg) 30%, transparent);
+      --panel-overlay-deep: color-mix(in srgb, var(--bg) 88%, transparent);
+      --panel-overlay-medium: color-mix(in srgb, var(--bg) 46%, transparent);
+      --panel-glass-bg: color-mix(in srgb, var(--surface) 72%, transparent);
+      --panel-glass-border: color-mix(in srgb, var(--border) 68%, white 32%);
+      --panel-stat-bg: color-mix(in srgb, var(--surface-soft) 74%, transparent);
+      --panel-icon-bg: color-mix(in srgb, var(--surface-soft) 70%, white 30%);
+      --panel-icon-border: color-mix(in srgb, var(--border) 68%, white 32%);
+      --panel-icon-text: color-mix(in srgb, var(--accent-yellow, #facc15) 82%, var(--text) 18%);
+      --panel-shadow: color-mix(in srgb, var(--bg) 62%, transparent);
+      --panel-card-shadow: color-mix(in srgb, var(--bg) 22%, transparent);
+    }
+
+    body.empresa-home-page {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .empresa-home {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 32px;
+    }
+
+    .empresa-home-hero {
+      position: relative;
+      min-height: 210px;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--panel-glass-border);
+      background-image:
+        linear-gradient(90deg, var(--panel-overlay-strong), var(--panel-overlay-soft)),
+        url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=80");
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 24px 60px var(--panel-shadow);
+      isolation: isolate;
+    }
+
+    .empresa-home-hero.weather-cloudy {
+      background-image:
+        linear-gradient(90deg, var(--panel-overlay-strong), var(--panel-overlay-soft)),
+        url("https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=1800&q=80");
+    }
+
+    .empresa-home-hero.weather-rain {
+      background-image:
+        linear-gradient(90deg, var(--panel-overlay-deep), var(--panel-overlay-medium)),
+        url("https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1800&q=80");
+    }
+
+    .empresa-home-hero.weather-storm {
+      background-image:
+        linear-gradient(90deg, var(--panel-overlay-deep), var(--panel-overlay-medium)),
+        url("https://images.unsplash.com/photo-1500674425229-f692875b0ab7?auto=format&fit=crop&w=1800&q=80");
+    }
+
+    .empresa-home-hero.weather-night {
+      background-image:
+        linear-gradient(90deg, var(--panel-overlay-deep), var(--panel-overlay-medium)),
+        url("https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80");
+    }
+
+    .empresa-home-hero-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 18px;
+      min-height: 210px;
+      padding: 16px 22px;
+      box-sizing: border-box;
+      align-items: end;
+    }
+
+    .empresa-home-copy {
+      max-width: 720px;
+      color: var(--panel-text);
+    }
+
+    .empresa-home-welcome {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .empresa-home-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 68px;
+      width: 68px;
+      height: 68px;
+      margin: 0;
+      border-radius: 8px;
+      border: 1px solid var(--panel-glass-border);
+      background: var(--panel-glass-bg);
+      backdrop-filter: blur(12px);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 12%, transparent);
+    }
+
+    .empresa-home-brand[hidden] {
+      display: none !important;
+    }
+
+    .empresa-home-brand img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .empresa-home-kicker {
+      margin: 0 0 5px;
+      color: var(--panel-kicker);
+      font-size: .8rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-home-title {
+      margin: 0;
+      color: var(--panel-text);
+      font-size: clamp(1.8rem, 3.4vw, 2.35rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .empresa-home-subtitle {
+      margin: 5px 0 0;
+      max-width: 660px;
+      color: var(--panel-muted);
+      font-size: .96rem;
+      line-height: 1.35;
+    }
+
+    .empresa-maintenance-notice {
+      display: none;
+      margin: 14px 0 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, #f59e0b 48%, var(--border));
+      background: color-mix(in srgb, #f59e0b 16%, var(--card));
+      color: var(--text);
+      box-shadow: 0 12px 28px var(--panel-card-shadow);
+    }
+
+    .empresa-maintenance-notice.is-visible {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .empresa-maintenance-icon {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: color-mix(in srgb, #f59e0b 22%, var(--surface));
+      color: color-mix(in srgb, #f59e0b 72%, var(--text));
+      font-weight: 900;
+    }
+
+    .empresa-maintenance-kicker {
+      margin: 0 0 3px;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-maintenance-message {
+      margin: 0;
+      color: var(--text);
+      font-size: .98rem;
+      font-weight: 850;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-maintenance-meta {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+
+    .empresa-weather-panel {
+      align-self: end;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: start;
+      justify-content: stretch;
+      gap: 5px 6px;
+      min-width: 0;
+      max-width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--panel-glass-border);
+      background: var(--panel-glass-bg);
+      backdrop-filter: blur(12px);
+      color: var(--panel-text);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 14%, transparent);
+    }
+
+    .empresa-weather-panel > * {
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .empresa-weather-panel > div:nth-of-type(2) {
+      grid-column: 1;
+    }
+
+    .empresa-weather-head {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .empresa-weather-head > div:first-child {
+      min-width: 0;
+    }
+
+    .empresa-weather-label {
+      color: var(--panel-kicker);
+      font-size: .68rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-weather-place {
+      margin-top: 1px;
+      color: var(--panel-text);
+      font-weight: 800;
+      font-size: .82rem;
+      line-height: 1.12;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-weather-icon {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--panel-icon-bg);
+      border: 1px solid var(--panel-icon-border);
+      color: var(--panel-icon-text);
+      font-size: 1.2rem;
+      line-height: 1;
+      box-shadow: 0 12px 30px var(--panel-card-shadow);
+    }
+
+    .empresa-weather-temp {
+      margin: 0;
+      color: var(--panel-text);
+      max-width: 100%;
+      font-size: clamp(1.26rem, 2.5vw, 1.65rem);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empresa-weather-desc {
+      margin: 1px 0 0;
+      color: var(--panel-muted);
+      font-weight: 700;
+      font-size: .78rem;
+      line-height: 1.08;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-weather-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 3px;
+      min-width: 0;
+    }
+
+    .empresa-weather-control {
+      appearance: none;
+      border: 1px solid var(--panel-glass-border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel-glass-bg) 78%, var(--panel-text) 8%);
+      color: var(--panel-text);
+      cursor: pointer;
+      font: inherit;
+      font-size: .74rem;
+      font-weight: 850;
+      line-height: 1.1;
+      min-height: 24px;
+      padding: 4px 7px;
+      transition: border-color .18s ease, transform .18s ease, background .18s ease;
+    }
+
+    .empresa-weather-control.primary {
+      background: var(--panel-icon-bg);
+      border-color: var(--panel-icon-border);
+      color: var(--panel-icon-text);
+    }
+
+    .empresa-weather-control:hover,
+    .empresa-weather-control:focus-visible {
+      border-color: color-mix(in srgb, var(--panel-icon-text) 55%, var(--panel-glass-border));
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .empresa-weather-control:disabled {
+      cursor: wait;
+      opacity: .68;
+      transform: none;
+    }
+
+    .empresa-weather-location-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 5px;
+      margin-top: 4px;
+      min-width: 0;
+    }
+
+    .empresa-weather-location-form[hidden] {
+      display: none;
+    }
+
+    .empresa-weather-location-form input {
+      min-width: 0;
+      width: 100%;
+      border: 1px solid var(--panel-glass-border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel-glass-bg) 82%, var(--panel-text) 5%);
+      color: var(--panel-text);
+      font: inherit;
+      font-size: .78rem;
+      min-height: 26px;
+      padding: 4px 8px;
+      outline: none;
+    }
+
+    .empresa-weather-location-form input::placeholder {
+      color: var(--panel-muted);
+    }
+
+    .empresa-weather-location-form input:focus {
+      border-color: color-mix(in srgb, var(--panel-icon-text) 58%, var(--panel-glass-border));
+    }
+
+    .empresa-weather-hint {
+      display: none;
+      margin: 3px 0 0;
+      color: var(--panel-muted);
+      font-size: .66rem;
+      font-weight: 700;
+      line-height: 1.18;
+      overflow-wrap: anywhere;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      display: none;
+    }
+
+    .empresa-weather-grid {
+      grid-column: 2;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 3px;
+    }
+
+    .empresa-weather-stat {
+      padding: 4px;
+      border-radius: 8px;
+      background: var(--panel-stat-bg);
+      border: 1px solid var(--panel-glass-border);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .empresa-weather-stat span {
+      display: block;
+      color: var(--panel-kicker);
+      font-size: .58rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .empresa-weather-stat strong {
+      display: block;
+      margin-top: 1px;
+      color: var(--panel-text);
+      font-size: .72rem;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-favorites-panel {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: 0 14px 30px var(--panel-card-shadow);
+    }
+
+    .empresa-favorites-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5px;
+      margin-bottom: 6px;
+    }
+
+    .empresa-favorites-heading {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .empresa-favorites-kicker {
+      margin: 0;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .empresa-favorites-kicker::after {
+      content: "/";
+      margin-left: 8px;
+      color: color-mix(in srgb, var(--muted) 58%, transparent);
+    }
+
+    .empresa-favorites-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 1rem;
+      line-height: 1.12;
+    }
+
+    .empresa-favorites-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent-yellow, #facc15) 20%, var(--surface) 80%);
+      color: var(--text);
+      font-weight: 900;
+      font-size: .84rem;
+    }
+
+    .empresa-favorites-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+      gap: 4px;
+    }
+
+    .empresa-favorite-card {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      min-height: 32px;
+      padding: 5px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--surface-soft), var(--surface));
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      text-decoration: none;
+      box-sizing: border-box;
+      min-width: 0;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: none;
+      transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+
+    .empresa-favorite-card:hover,
+    .empresa-favorite-card:focus-visible {
+      border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+      background: linear-gradient(180deg, var(--focus), var(--surface));
+      color: var(--text);
+      outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
+      outline-offset: 2px;
+      box-shadow: 0 10px 18px color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+
+    .empresa-favorite-card:active {
+      transform: translateY(1px);
+    }
+
+    .empresa-favorite-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+      background: color-mix(in srgb, var(--surface-soft) 78%, var(--surface) 22%);
+      color: var(--text);
+      font-size: .95rem;
+      font-weight: 950;
+      line-height: 1;
+      box-shadow: 0 8px 16px rgba(15,23,42,.12);
+    }
+
+    .empresa-favorite-icon img {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .empresa-favorite-symbol {
+      font-size: 1rem;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .empresa-favorite-text {
+      min-width: 0;
+    }
+
+    .empresa-favorite-text strong {
+      display: block;
+      color: var(--text);
+      font-size: .8rem;
+      line-height: 1.14;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empresa-favorite-text span {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: .64rem;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empresa-favorites-empty {
+      margin: 0;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+      font-size: .92rem;
+      line-height: 1.45;
+    }
+
+    .empresa-mail-notification {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, var(--accent) 12%), var(--card));
+      color: var(--text);
+      box-shadow: 0 12px 28px var(--panel-card-shadow);
+    }
+
+    .empresa-mail-notification[hidden] {
+      display: none;
+    }
+
+    .empresa-mail-notification-icon {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface) 84%);
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 950;
+    }
+
+    .empresa-mail-notification-kicker {
+      margin: 0 0 2px;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-mail-notification-title {
+      margin: 0;
+      color: var(--text);
+      font-size: .9rem;
+      line-height: 1.08;
+    }
+
+    .empresa-mail-notification-meta {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: .76rem;
+      line-height: 1.18;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-mail-notification-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: color-mix(in srgb, #ef4444 22%, var(--surface) 78%);
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 950;
+    }
+
+    .empresa-mail-notification-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface) 84%);
+      color: var(--text);
+      font-size: .78rem;
+      font-weight: 900;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .empresa-mail-notification-action:hover,
+    .empresa-mail-notification-action:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      outline-offset: 2px;
+    }
+
+    .empresa-news-card {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    .empresa-news-card[hidden] {
+      display: none;
+    }
+
+    .empresa-news-link {
+      display: grid;
+      gap: 6px;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .empresa-news-link:hover strong,
+    .empresa-news-link:focus-visible strong {
+      color: var(--accent);
+    }
+
+    .empresa-news-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .empresa-news-title {
+      margin: 0;
+      color: var(--text);
+      font-family: "Montserrat", "Segoe UI", system-ui, sans-serif;
+      font-size: 1.08rem;
+      font-weight: 950;
+      line-height: 1.18;
+    }
+
+    .empresa-news-summary {
+      margin: 0;
+      color: var(--muted);
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      font-size: .9rem;
+      line-height: 1.5;
+    }
+
+    .empresa-news-footer {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: fit-content;
+      margin-top: 2px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      font-size: .78rem;
+      font-weight: 900;
+    }
+
+    .empresa-news-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .empresa-news-hide-btn {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface) 90%);
+      color: var(--text);
+      font: inherit;
+      font-size: .78rem;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .empresa-news-hide-btn:hover,
+    .empresa-news-hide-btn:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 24%, transparent);
+      outline-offset: 2px;
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface) 84%);
+    }
+
+    .empresa-buzon-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .empresa-buzon-grid.buzon-only {
+      grid-template-columns: minmax(0, 1fr);
+      justify-content: stretch;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .empresa-buzon-card,
+    .empresa-chat-card {
+      min-width: 0;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 14px 30px var(--panel-card-shadow);
+    }
+
+    .empresa-chat-card[hidden] {
+      display: none !important;
+    }
+
+    .empresa-home-top-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+      gap: 8px;
+      align-items: stretch;
+      margin-top: 18px;
+    }
+
+    .empresa-home-top-cards .empresa-favorites-panel,
+    .empresa-home-top-cards .empresa-mail-notification,
+    .empresa-home-top-cards .empresa-email-panel {
+      margin-top: 0;
+      min-height: 100%;
+      box-sizing: border-box;
+    }
+
+    .empresa-buzon-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .empresa-buzon-head h2 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .empresa-buzon-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+
+    .empresa-buzon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: color-mix(in srgb, #ef4444 22%, var(--surface) 78%);
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 950;
+    }
+
+    .empresa-buzon-list,
+    .empresa-chat-list {
+      display: grid;
+      gap: 6px;
+      max-height: 300px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .empresa-buzon-item,
+    .empresa-chat-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: var(--surface);
+    }
+
+    .empresa-buzon-item {
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .empresa-buzon-item.is-unread {
+      border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+      background: color-mix(in srgb, var(--accent) 9%, var(--surface) 91%);
+    }
+
+    .empresa-buzon-item.is-task {
+      border-left: 4px solid #2563eb;
+    }
+
+    .empresa-buzon-item strong,
+    .empresa-chat-item strong {
+      display: block;
+      color: var(--text);
+      font-size: .88rem;
+      line-height: 1.25;
+    }
+
+    .empresa-buzon-item p,
+    .empresa-chat-item p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .8rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-buzon-item .empresa-buzon-thread-meta {
+      color: color-mix(in srgb, var(--accent) 62%, var(--muted) 38%);
+      font-size: .76rem;
+      font-weight: 850;
+    }
+
+    .empresa-buzon-attachments {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 7px;
+    }
+
+    .empresa-buzon-attachments a {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: var(--content-soft-bg);
+      font-size: .76rem;
+      text-decoration: none;
+    }
+
+    .empresa-task-panel {
+      display: none;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, #2563eb 35%, var(--border));
+      background: color-mix(in srgb, #2563eb 8%, var(--surface) 92%);
+    }
+
+    .empresa-task-panel.is-visible {
+      display: grid;
+    }
+
+    .empresa-task-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+      justify-content: flex-end;
+    }
+
+    .empresa-buzon-form {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .empresa-buzon-form-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(170px, .95fr) minmax(150px, .85fr);
+      gap: 8px;
+      align-items: end;
+    }
+
+    .empresa-buzon-form-row + .empresa-buzon-form-row {
+      grid-template-columns: minmax(170px, .7fr) minmax(0, 1.3fr);
+    }
+
+    .empresa-buzon-form textarea,
+    .empresa-chat-form textarea {
+      min-height: 74px;
+      resize: vertical;
+    }
+
+    .empresa-buzon-form-actions,
+    .empresa-chat-form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .empresa-storage-warning {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, #f59e0b 38%, var(--border));
+      background: color-mix(in srgb, #f59e0b 12%, var(--surface) 88%);
+      color: var(--text);
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+
+    .empresa-email-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 8px 18px var(--panel-card-shadow);
+      color-scheme: light;
+    }
+
+    .empresa-email-panel[data-mail-theme="dark"] {
+      color-scheme: dark;
+      background: color-mix(in srgb, var(--card) 90%, #020617 10%);
+      border-color: color-mix(in srgb, var(--border) 72%, #38bdf8 28%);
+    }
+
+    .empresa-email-panel[hidden] {
+      display: none;
+    }
+
+    .empresa-email-kicker {
+      margin: 0 0 2px;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-email-title {
+      margin: 0;
+      font-size: .92rem;
+      line-height: 1.15;
+    }
+
+    .empresa-email-meta {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .empresa-email-diagnostics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .empresa-email-diagnostic {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
+    }
+
+    .empresa-email-diagnostic span {
+      display: block;
+      color: var(--muted);
+      font-size: .7rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-email-diagnostic strong {
+      display: block;
+      margin-top: 2px;
+      color: var(--text);
+      font-size: .9rem;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-email-alert {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--warning, #f59e0b) 45%, var(--border));
+      background: color-mix(in srgb, var(--warning, #f59e0b) 12%, var(--surface) 88%);
+      color: var(--text);
+      font-size: .84rem;
+      line-height: 1.4;
+    }
+
+    .empresa-email-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .empresa-email-identity {
+      min-width: 0;
+    }
+
+    .empresa-email-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .empresa-email-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 30px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 48%, var(--border));
+      background: color-mix(in srgb, var(--accent, #2563eb) 18%, var(--surface) 82%);
+      color: var(--text);
+      font-weight: 900;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .empresa-email-button.secondary {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .empresa-email-button.is-disabled {
+      opacity: .58;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .empresa-email-button:hover,
+    .empresa-email-button:focus-visible {
+      border-color: color-mix(in srgb, var(--accent, #2563eb) 64%, var(--border));
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .empresa-email-embed {
+      position: relative;
+      overflow: hidden;
+      min-height: 70px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
+    }
+
+    .empresa-email-panel[data-mail-theme="dark"] .empresa-email-embed {
+      background: #07111f;
+      border-color: color-mix(in srgb, var(--border) 68%, #38bdf8 32%);
+    }
+
+    .empresa-email-embed.is-hidden {
+      display: none;
+    }
+
+    .empresa-email-placeholder {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 70px;
+      padding: 10px;
+      color: var(--muted);
+      font-size: .86rem;
+      line-height: 1.4;
+    }
+
+    .empresa-email-placeholder[hidden],
+    .empresa-email-frame[hidden] {
+      display: none !important;
+    }
+
+    .empresa-email-frame {
+      display: block;
+      width: 100%;
+      height: 280px;
+      border: 0;
+      background: #f8fafc;
+    }
+
+    .empresa-email-panel[data-mail-theme="dark"] .empresa-email-frame {
+      background: #07111f;
+    }
+
+    .empresa-email-frame-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: .78rem;
+      line-height: 1.35;
+    }
+
+    .empresa-home-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .empresa-home-action {
+      display: flex;
+      align-items: center;
+      min-height: 78px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      text-decoration: none;
+      box-shadow: 0 10px 24px var(--panel-card-shadow);
+    }
+
+    .empresa-home-action:hover,
+    .empresa-home-action:focus-visible {
+      border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+      transform: translateY(-1px);
+    }
+
+    .empresa-home-action strong {
+      display: block;
+      font-size: .98rem;
+    }
+
+    .empresa-home-action span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .84rem;
+      line-height: 1.35;
+    }
+
+    .empresa-home-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .empresa-home-status {
+      color: var(--muted);
+    }
+
+    .empresa-home-status.error {
+      color: var(--danger);
+    }
+
+    .empresa-guided-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 28px 14px;
+      background: color-mix(in srgb, var(--bg) 76%, transparent);
+      overflow-y: auto;
+    }
+
+    .empresa-guided-overlay.is-visible {
+      display: flex;
+    }
+
+    .empresa-guided-dialog {
+      width: min(920px, 100%);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: .78rem;
+      box-shadow: 0 24px 70px var(--panel-shadow);
+    }
+
+    .empresa-guided-head,
+    .empresa-guided-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .empresa-guided-actions {
+      border-top: 1px solid var(--border);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .empresa-guided-title {
+      margin: 0;
+      font-size: 1.08rem;
+    }
+
+    .empresa-guided-description,
+    .empresa-guided-status {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .78rem;
+      line-height: 1.35;
+    }
+
+    .empresa-guided-body {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .empresa-guided-field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .empresa-guided-field.is-wide {
+      grid-column: 1 / -1;
+    }
+
+    .empresa-guided-label {
+      font-weight: 700;
+      font-size: .92rem;
+    }
+
+    .empresa-guided-prompt {
+      color: var(--muted);
+      font-size: .72rem;
+      line-height: 1.32;
+    }
+
+    .empresa-guided-input {
+      min-height: 40px;
+    }
+
+    @media (max-width: 760px) {
+      .empresa-guided-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .empresa-home {
+        width: min(100% - 20px, 720px);
+        padding-top: 10px;
+      }
+
+      .empresa-home-top-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .empresa-home-hero-inner {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        padding: 22px;
+      }
+
+      .empresa-home-copy {
+        align-self: end;
+      }
+
+      .empresa-home-welcome {
+        align-items: flex-start;
+      }
+
+      .empresa-home-title {
+        font-size: 2.1rem;
+      }
+
+      .empresa-weather-panel {
+        align-self: auto;
+      }
+
+      .empresa-home-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .empresa-email-head {
+        flex-direction: column;
+      }
+
+      .empresa-email-actions {
+        justify-content: flex-start;
+        width: 100%;
+      }
+
+      .empresa-email-diagnostics {
+        grid-template-columns: 1fr;
+      }
+
+      .empresa-buzon-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .empresa-email-embed,
+      .empresa-email-frame {
+        min-height: 96px;
+        height: 540px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body.empresa-home-page {
+        min-height: 100dvh;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+
+      .empresa-home {
+        width: calc(100% - 12px);
+        min-height: 100dvh;
+        height: auto;
+        padding: 6px 0;
+        display: grid;
+        grid-template-rows: auto auto auto auto auto;
+        gap: 6px;
+        box-sizing: border-box;
+        overflow: visible;
+      }
+
+      .empresa-home-hero {
+        min-height: 0;
+        border-radius: 7px;
+        box-shadow: 0 10px 22px var(--panel-shadow);
+      }
+
+      .empresa-home-hero-inner {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .empresa-home-welcome {
+        gap: 9px;
+      }
+
+      .empresa-home-brand {
+        flex-basis: 54px;
+        width: 54px;
+        height: 54px;
+      }
+
+      .empresa-home-kicker {
+        margin-bottom: 3px;
+        font-size: .72rem;
+        line-height: 1.1;
+      }
+
+      .empresa-home-brand {
+        width: 54px;
+        height: 54px;
+        margin-bottom: 5px;
+      }
+
+      .empresa-home-brand img {
+        padding: 6px;
+      }
+
+      .empresa-home-title {
+        font-size: clamp(1.05rem, 7vw, 1.55rem);
+        line-height: 1.05;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .empresa-email-panel {
+        margin-top: 0;
+        padding: 10px;
+        gap: 9px;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .empresa-email-title {
+        font-size: .98rem;
+        overflow-wrap: anywhere;
+      }
+
+      .empresa-email-meta,
+      .empresa-email-frame-note {
+        font-size: .76rem;
+      }
+
+      .empresa-email-button {
+        flex: 1 1 140px;
+        min-height: 36px;
+        padding: 8px 10px;
+        font-size: .82rem;
+      }
+
+      .empresa-email-embed,
+      .empresa-email-frame {
+        min-height: min(520px, 70dvh);
+        height: min(620px, 72dvh);
+      }
+
+      .empresa-email-embed {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .empresa-email-frame {
+        min-width: 320px;
+      }
+
+      .empresa-home-subtitle {
+        margin-top: 4px;
+        font-size: .82rem;
+        line-height: 1.22;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .empresa-weather-panel {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(64px, auto);
+        gap: 4px 6px;
+        padding: 6px;
+        border-radius: 7px;
+        overflow: hidden;
+      }
+
+      .empresa-weather-head {
+        gap: 5px;
+        overflow: hidden;
+      }
+
+      .empresa-weather-label {
+        font-size: .64rem;
+      }
+
+      .empresa-weather-place {
+        margin-top: 1px;
+        font-size: .78rem;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 52vw;
+      }
+
+      .empresa-weather-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 1.05rem;
+      }
+
+      .empresa-weather-temp {
+        font-size: clamp(.96rem, 4.7vw, 1.34rem);
+        text-align: right;
+        max-width: 30vw;
+      }
+
+      .empresa-weather-desc {
+        margin-top: 1px;
+        font-size: clamp(.64rem, 2.7vw, .72rem);
+        line-height: 1.05;
+        text-align: right;
+        max-width: 30vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .empresa-weather-grid {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 2px;
+      }
+
+      .empresa-weather-stat {
+        padding: 3px;
+        border-radius: 6px;
+      }
+
+      .empresa-weather-stat span {
+        font-size: .56rem;
+        line-height: 1;
+      }
+
+      .empresa-weather-stat strong {
+        margin-top: 1px;
+        font-size: clamp(.64rem, 2.7vw, .74rem);
+        line-height: 1.05;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .empresa-favorites-panel {
+        margin-top: 0;
+        padding: 7px;
+        border-radius: 7px;
+        box-shadow: 0 8px 18px var(--panel-card-shadow);
+        overflow: hidden;
+      }
+
+      .empresa-favorites-head {
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      .empresa-favorites-heading {
+        gap: 5px;
+        flex-wrap: nowrap;
+      }
+
+      .empresa-favorites-kicker {
+        display: inline-flex;
+        font-size: .66rem;
+        line-height: 1.08;
+      }
+
+      .empresa-favorites-kicker::after {
+        margin-left: 5px;
+      }
+
+      .empresa-favorites-title {
+        font-size: .9rem;
+        line-height: 1.08;
+        white-space: nowrap;
+      }
+
+      .empresa-favorites-count {
+        min-width: 28px;
+        height: 22px;
+        padding: 0 7px;
+        font-size: .72rem;
+      }
+
+      .empresa-favorites-grid {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .empresa-favorite-card {
+        min-height: 42px;
+        padding: 9px 12px;
+        gap: 8px;
+        border-radius: 9px;
+      }
+
+      .empresa-favorite-icon {
+        width: 26px;
+        height: 26px;
+        font-size: .82rem;
+      }
+
+      .empresa-favorite-text strong {
+        font-size: .86rem;
+        line-height: 1.12;
+      }
+
+      .empresa-favorite-text span {
+        display: none;
+      }
+
+      .empresa-favorites-empty {
+        padding: 7px;
+        font-size: .74rem;
+        line-height: 1.16;
+      }
+
+      .empresa-email-panel {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 10px;
+        margin-top: 8px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .empresa-email-button {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .empresa-email-embed,
+      .empresa-email-frame {
+        min-height: min(500px, 68dvh);
+        height: min(600px, 70dvh);
+      }
+
+      .empresa-home-actions {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+        margin-top: 0;
+      }
+
+      .empresa-home-action {
+        min-height: 50px;
+        padding: 6px 4px;
+        justify-content: center;
+        text-align: center;
+        border-radius: 7px;
+        box-shadow: 0 6px 14px var(--panel-card-shadow);
+      }
+
+      .empresa-home-action strong {
+        font-size: .72rem;
+        line-height: 1.08;
+        overflow-wrap: anywhere;
+      }
+
+      .empresa-home-action span {
+        display: none;
+      }
+
+      .empresa-home-footer {
+        margin-top: 0;
+        flex-direction: row;
+        gap: 6px;
+        font-size: .7rem;
+        line-height: 1.14;
+        min-width: 0;
+      }
+
+      .empresa-home-footer > * {
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    @media (max-width: 380px), (max-height: 700px) {
+      .empresa-home {
+        gap: 4px;
+        padding: 4px 0;
+      }
+
+      .empresa-home-hero-inner,
+      .empresa-weather-panel,
+      .empresa-favorites-panel {
+        padding: 5px;
+      }
+
+      .empresa-home-subtitle {
+        -webkit-line-clamp: 1;
+      }
+
+      .empresa-home-brand {
+        width: 44px;
+        height: 44px;
+        margin-bottom: 3px;
+      }
+
+      .empresa-weather-grid {
+        gap: 3px;
+      }
+
+      .empresa-weather-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .empresa-favorites-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .empresa-weather-stat {
+        padding: 4px 3px;
+      }
+
+      .empresa-weather-stat span {
+        font-size: .58rem;
+      }
+
+      .empresa-weather-stat strong {
+        font-size: .72rem;
+      }
+
+      .empresa-home-action {
+        min-height: 42px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .empresa-home {
+        width: 100%;
+        padding: 6px;
+      }
+
+      .empresa-home-hero {
+        overflow: visible;
+      }
+
+      .empresa-home-title,
+      .empresa-home-subtitle {
+        display: block;
+        overflow: visible;
+        -webkit-line-clamp: unset;
+        -webkit-box-orient: unset;
+        text-overflow: clip;
+      }
+
+      .empresa-home-title {
+        font-size: clamp(1.28rem, 7vw, 1.72rem);
+        overflow-wrap: anywhere;
+      }
+
+      .empresa-home-subtitle {
+        font-size: .86rem;
+        line-height: 1.28;
+      }
+
+      .empresa-weather-panel {
+        grid-template-columns: minmax(0, 1fr);
+        overflow: visible;
+      }
+
+      .empresa-weather-head {
+        align-items: flex-start;
+      }
+
+      .empresa-weather-place,
+      .empresa-weather-temp,
+      .empresa-weather-desc,
+      .empresa-weather-stat strong {
+        max-width: 100%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+
+      .empresa-weather-temp,
+      .empresa-weather-desc {
+        text-align: left;
+      }
+
+      .empresa-weather-grid {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .empresa-favorites-panel {
+        overflow: visible;
+      }
+
+      .empresa-mail-notification {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+
+      .empresa-mail-notification-action {
+        grid-column: 1 / -1;
+        justify-self: stretch;
+      }
+
+      .empresa-home-footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .empresa-home-footer > * {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+    }
+  </style>
+</head>
+<body class="empresa-home-page">
+  <main class="empresa-home">
+<section id="homeHero" class="empresa-home-hero weather-clear">
+      <div class="empresa-home-hero-inner">
+        <div class="empresa-home-copy">
+          <div class="empresa-home-welcome">
+            <div id="empresaLogoPanelWrap" class="empresa-home-brand" hidden>
+              <img id="empresaLogoPanel" alt="Logo de la empresa">
+            </div>
+            <div class="empresa-home-welcome-copy">
+              <p id="homeKicker" class="empresa-home-kicker">Centro operativo</p>
+              <h1 id="homeTitle" class="empresa-home-title">Bienvenido</h1>
+              <p id="homeSubtitle" class="empresa-home-subtitle">Preparando el contexto de la empresa y el clima actual.</p>
+            </div>
+          </div>
+        </div>
+
+        <aside class="empresa-weather-panel" aria-label="Estado del tiempo">
+      <div class="empresa-weather-head">
+            <div>
+              <div class="empresa-weather-label">Clima actual</div>
+              <div id="weatherPlace" class="empresa-weather-place">Consultando...</div>
+            </div>
+            <div id="weatherIcon" class="empresa-weather-icon" aria-hidden="true">&#9728;</div>
+          </div>
+
+          <div>
+            <p id="weatherTemp" class="empresa-weather-temp">--&deg;</p>
+            <p id="weatherDesc" class="empresa-weather-desc">Conectando con el servicio del clima.</p>
+            <div class="empresa-weather-actions" aria-label="Ajustar ubicacion del clima">
+              <button id="weatherGpsBtn" class="empresa-weather-control primary" type="button">Usar GPS</button>
+              <button id="weatherManualToggle" class="empresa-weather-control" type="button">Cambiar ciudad</button>
+            </div>
+            <form id="weatherManualForm" class="empresa-weather-location-form" hidden>
+              <input id="weatherManualInput" type="text" autocomplete="address-level2" placeholder="Ciudad, pais">
+              <button class="empresa-weather-control" type="submit">Aplicar</button>
+            </form>
+            <p id="weatherLocationHint" class="empresa-weather-hint">Si la ciudad no coincide, activa GPS o escribe tu ciudad.</p>
+          </div>
+
+          <div class="empresa-weather-grid">
+            <div class="empresa-weather-stat">
+              <span>Sensaci&oacute;n</span>
+              <strong id="weatherFeels">--</strong>
+            </div>
+            <div class="empresa-weather-stat">
+              <span>Humedad</span>
+              <strong id="weatherHumidity">--</strong>
+            </div>
+            <div class="empresa-weather-stat">
+              <span>Viento</span>
+              <strong id="weatherWind">--</strong>
+            </div>
+            <div class="empresa-weather-stat">
+              <span>Nubes</span>
+              <strong id="weatherClouds">--</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+    <section id="maintenanceNotice" class="empresa-maintenance-notice" aria-live="polite" aria-label="Mantenimiento programado">
+      <div class="empresa-maintenance-icon" aria-hidden="true">!</div>
+      <div>
+        <p class="empresa-maintenance-kicker">Aviso del sistema</p>
+        <p id="maintenanceNoticeMessage" class="empresa-maintenance-message"></p>
+        <p id="maintenanceNoticeMeta" class="empresa-maintenance-meta"></p>
+      </div>
+    </section>
+    <div class="empresa-home-top-cards">
+    <section id="empresaFavoritesPanel" class="empresa-favorites-panel" aria-labelledby="empresaFavoritesTitle">
+      <div class="empresa-favorites-head">
+        <div class="empresa-favorites-heading">
+          <p class="empresa-favorites-kicker">Accesos r&aacute;pidos</p>
+          <h2 id="empresaFavoritesTitle" class="empresa-favorites-title">Favoritos</h2>
+        </div>
+        <span id="empresaFavoritesCount" class="empresa-favorites-count">0</span>
+      </div>
+      <div id="empresaFavoritesList" class="empresa-favorites-grid" aria-live="polite">
+        <p class="empresa-favorites-empty">Marca cualquier p&aacute;gina con la estrella para verla aqu&iacute;.</p>
+      </div>
+    </section>
+
+    <section id="empresaEmailPanel" class="empresa-email-panel" aria-labelledby="empresaEmailTitle">
+      <div class="empresa-email-head">
+        <div class="empresa-email-identity">
+          <p class="empresa-email-kicker">Email corporativo</p>
+          <h2 id="empresaEmailTitle" class="empresa-email-title">Notificaciones del correo</h2>
+          <p id="empresaEmailMeta" class="empresa-email-meta">Consultando buzon corporativo...</p>
+        </div>
+        <div class="empresa-email-actions">
+          <a id="empresaEmailOpenBtn" class="empresa-email-button" href="/administrar_empresa/email_corporativo.html" target="_blank" rel="noopener">Abrir</a>
+          <a id="empresaEmailConfigBtn" class="empresa-email-button secondary" href="/administrar_empresa/configuracion/email_corporativo.html" target="_blank" rel="noopener">Configurar</a>
+        </div>
+      </div>
+      <div class="empresa-email-diagnostics" aria-label="Estado del correo corporativo">
+        <div class="empresa-email-diagnostic"><span>Mensajes</span><strong id="empresaEmailMessages">--</strong></div>
+        <div class="empresa-email-diagnostic"><span>No leidos</span><strong id="empresaEmailUnread">--</strong></div>
+        <div class="empresa-email-diagnostic"><span>Estado</span><strong id="empresaEmailStatus">--</strong></div>
+      </div>
+      <p id="empresaEmailAlert" class="empresa-email-alert" hidden></p>
+    </section>
+
+    </div>
+
+    <section id="empresaNoticiasCard" class="empresa-news-card" aria-labelledby="empresaNoticiasTitle" hidden>
+      <div class="empresa-favorites-head">
+        <div class="empresa-favorites-heading">
+          <p class="empresa-favorites-kicker">Noticias</p>
+          <h2 id="empresaNoticiasTitle" class="empresa-favorites-title">Ultima noticia</h2>
+        </div>
+      </div>
+      <a id="empresaNoticiasLink" class="empresa-news-link" href="/administrar_empresa/noticias.html">
+        <span id="empresaNoticiasMeta" class="empresa-news-meta"></span>
+        <strong id="empresaNoticiasHeadline" class="empresa-news-title">Cargando noticia...</strong>
+        <p id="empresaNoticiasSummary" class="empresa-news-summary"></p>
+        <span class="empresa-news-footer">Ver todas las noticias</span>
+      </a>
+      <div class="empresa-news-actions">
+        <button id="empresaNoticiasHideBtn" class="empresa-news-hide-btn" type="button">Ocultar noticia</button>
+      </div>
+    </section>
+
+    <section class="empresa-buzon-grid" aria-label="Buzon y chat interno">
+      <article class="empresa-buzon-card" aria-labelledby="empresaBuzonTitle">
+        <div class="empresa-buzon-head">
+          <div>
+            <p class="empresa-favorites-kicker">Mensajes internos</p>
+            <h2 id="empresaBuzonTitle">Buzon de usuario</h2>
+            <p>Recibe avisos operativos, traslados de bodega y tareas asignadas.</p>
+          </div>
+          <span id="empresaBuzonUnreadBadge" class="empresa-buzon-badge">0</span>
+        </div>
+        <div id="empresaBuzonStorage" class="empresa-storage-warning" hidden></div>
+        <div id="empresaBuzonList" class="empresa-buzon-list" aria-live="polite">
+          <p class="empresa-favorites-empty">Cargando mensajes...</p>
+        </div>
+        <form id="empresaBuzonForm" class="empresa-buzon-form">
+          <div class="empresa-buzon-form-row">
+            <label class="sr-only" for="empresaBuzonMode">Tipo de envio</label>
+            <select id="empresaBuzonMode" class="form-input">
+              <option value="mensaje">Enviar mensaje</option>
+              <option value="tarea">Asignar tarea</option>
+            </select>
+            <label class="sr-only" for="empresaBuzonRecipient">Destinatario</label>
+            <select id="empresaBuzonRecipient" class="form-input" required>
+              <option value="">Seleccionar usuario</option>
+            </select>
+          </div>
+          <input id="empresaBuzonTitleInput" class="form-input" type="text" maxlength="180" placeholder="Titulo">
+          <textarea id="empresaBuzonMessageInput" class="form-input" maxlength="3000" placeholder="Mensaje"></textarea>
+          <div id="empresaTaskAssignPanel" class="empresa-task-panel" aria-label="Datos de la tarea">
+            <div class="empresa-buzon-form-row">
+              <select id="empresaTaskPriority" class="form-input">
+                <option value="normal">Prioridad normal</option>
+                <option value="alta">Prioridad alta</option>
+                <option value="baja">Prioridad baja</option>
+              </select>
+              <input id="empresaTaskDue" class="form-input" type="datetime-local" aria-label="Fecha limite de la tarea">
+            </div>
+            <p class="empresa-favorites-empty">La tarea quedara en el buzon del usuario asignado y podra cerrarse con descripcion y evidencias.</p>
+          </div>
+          <input id="empresaBuzonFileInput" class="form-input" type="file" accept="image/*,audio/*,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp">
+          <div class="empresa-buzon-form-actions">
+            <span id="empresaBuzonAudioStatus" class="empresa-favorites-empty"></span>
+            <button id="empresaBuzonRecordBtn" class="btn secondary" type="button">Grabar audio</button>
+            <button id="empresaBuzonSendBtn" class="btn" type="submit">Enviar</button>
+          </div>
+        </form>
+        <div id="empresaTaskCompletePanel" class="empresa-task-panel" aria-label="Finalizar tarea">
+          <strong id="empresaTaskCompleteTitle">Finalizar tarea</strong>
+          <textarea id="empresaTaskCompleteDescription" class="form-input" maxlength="3000" placeholder="Describe que se hizo y el resultado"></textarea>
+          <input id="empresaTaskEvidenceInput" class="form-input" type="file" accept="image/*,audio/*,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
+          <div class="empresa-task-actions">
+            <button id="empresaTaskCompleteCancel" class="btn secondary" type="button">Cancelar</button>
+            <button id="empresaTaskCompleteSave" class="btn" type="button">Finalizar tarea</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="empresa-chat-card" aria-labelledby="empresaChatTitle">
+        <div class="empresa-buzon-head">
+          <div>
+            <p class="empresa-favorites-kicker">Comunicacion interna</p>
+            <h2 id="empresaChatTitle">Chat de la empresa</h2>
+            <p>Conversacion rapida entre usuarios registrados de esta empresa.</p>
+          </div>
+        </div>
+        <div id="empresaChatList" class="empresa-chat-list" aria-live="polite">
+          <p class="empresa-favorites-empty">Cargando chat...</p>
+        </div>
+        <form id="empresaChatForm" class="empresa-chat-form empresa-buzon-form">
+          <textarea id="empresaChatMessageInput" class="form-input" maxlength="2000" placeholder="Escribe un mensaje para el equipo"></textarea>
+          <div class="empresa-chat-form-actions">
+            <button id="empresaChatSendBtn" class="btn" type="submit">Enviar al chat</button>
+          </div>
+        </form>
+      </article>
+    </section>
+
+    <div class="empresa-home-footer">
+      <span id="homeDate"></span>
+      <span id="homeStatus" class="empresa-home-status">Clima por Open-Meteo.</span>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var hero = document.getElementById("homeHero");
+      var statusEl = document.getElementById("homeStatus");
+      var maintenanceNoticeEl = document.getElementById("maintenanceNotice");
+      var maintenanceNoticeMessageEl = document.getElementById("maintenanceNoticeMessage");
+      var maintenanceNoticeMetaEl = document.getElementById("maintenanceNoticeMeta");
+      var favoritesListEl = document.getElementById("empresaFavoritesList");
+      var favoritesCountEl = document.getElementById("empresaFavoritesCount");
+      var empresaFavoritesPanelEl = document.getElementById("empresaFavoritesPanel");
+      var empresaNoticiasCardEl = document.getElementById("empresaNoticiasCard");
+      var empresaNoticiasLinkEl = document.getElementById("empresaNoticiasLink");
+      var empresaNoticiasMetaEl = document.getElementById("empresaNoticiasMeta");
+      var empresaNoticiasHeadlineEl = document.getElementById("empresaNoticiasHeadline");
+      var empresaNoticiasSummaryEl = document.getElementById("empresaNoticiasSummary");
+      var empresaNoticiasHideBtnEl = document.getElementById("empresaNoticiasHideBtn");
+      var empresaBuzonGridEl = document.querySelector(".empresa-buzon-grid");
+      var empresaBuzonCardEl = document.querySelector(".empresa-buzon-card");
+      var empresaChatCardEl = document.querySelector(".empresa-chat-card");
+      var empresaEmailPanelEl = document.getElementById("empresaEmailPanel");
+      var empresaEmailMetaEl = document.getElementById("empresaEmailMeta");
+      var empresaEmailMessagesEl = document.getElementById("empresaEmailMessages");
+      var empresaEmailUnreadEl = document.getElementById("empresaEmailUnread");
+      var empresaEmailStatusEl = document.getElementById("empresaEmailStatus");
+      var empresaEmailAlertEl = document.getElementById("empresaEmailAlert");
+      var empresaEmailOpenBtnEl = document.getElementById("empresaEmailOpenBtn");
+      var empresaEmailConfigBtnEl = document.getElementById("empresaEmailConfigBtn");
+      var empresaBuzonListEl = document.getElementById("empresaBuzonList");
+      var empresaBuzonUnreadBadgeEl = document.getElementById("empresaBuzonUnreadBadge");
+      var empresaBuzonStorageEl = document.getElementById("empresaBuzonStorage");
+      var empresaBuzonFormEl = document.getElementById("empresaBuzonForm");
+      var empresaBuzonModeEl = document.getElementById("empresaBuzonMode");
+      var empresaBuzonRecipientEl = document.getElementById("empresaBuzonRecipient");
+      var empresaBuzonTitleInputEl = document.getElementById("empresaBuzonTitleInput");
+      var empresaBuzonMessageInputEl = document.getElementById("empresaBuzonMessageInput");
+      var empresaBuzonFileInputEl = document.getElementById("empresaBuzonFileInput");
+      var empresaBuzonRecordBtnEl = document.getElementById("empresaBuzonRecordBtn");
+      var empresaBuzonAudioStatusEl = document.getElementById("empresaBuzonAudioStatus");
+      var empresaTaskAssignPanelEl = document.getElementById("empresaTaskAssignPanel");
+      var empresaTaskPriorityEl = document.getElementById("empresaTaskPriority");
+      var empresaTaskDueEl = document.getElementById("empresaTaskDue");
+      var empresaTaskCompletePanelEl = document.getElementById("empresaTaskCompletePanel");
+      var empresaTaskCompleteTitleEl = document.getElementById("empresaTaskCompleteTitle");
+      var empresaTaskCompleteDescriptionEl = document.getElementById("empresaTaskCompleteDescription");
+      var empresaTaskEvidenceInputEl = document.getElementById("empresaTaskEvidenceInput");
+      var empresaTaskCompleteCancelEl = document.getElementById("empresaTaskCompleteCancel");
+      var empresaTaskCompleteSaveEl = document.getElementById("empresaTaskCompleteSave");
+      var empresaChatListEl = document.getElementById("empresaChatList");
+      var empresaChatFormEl = document.getElementById("empresaChatForm");
+      var empresaChatMessageInputEl = document.getElementById("empresaChatMessageInput");
+      var weatherGpsBtn = document.getElementById("weatherGpsBtn");
+      var weatherManualToggle = document.getElementById("weatherManualToggle");
+      var weatherManualForm = document.getElementById("weatherManualForm");
+      var weatherManualInput = document.getElementById("weatherManualInput");
+      var weatherLocationHint = document.getElementById("weatherLocationHint");
+      var empresaId = getQueryParam("empresa_id") || getQueryParam("id") || readEmpresaId();
+      var detectedLocation = null;
+      var empresaBuzonAudioBlob = null;
+      var empresaBuzonAudioName = "";
+      var empresaBuzonRecorder = null;
+      var empresaBuzonRecordingChunks = [];
+      var empresaSelectedTask = null;
+      var empresaPanelConfig = {
+        favoritos_enabled: true,
+        email_enabled: true,
+        noticias_enabled: true,
+        buzon_enabled: true,
+        chat_enabled: true
+      };
+      var empresaBuzonInterval = null;
+      var empresaCurrentNewsKey = "";
+      var weatherCodeMap = {
+        0: ["Soleado", "clear", "\u2600"],
+        1: ["Mayormente despejado", "clear", "\u2600"],
+        2: ["Parcialmente nublado", "cloudy", "\u2601"],
+        3: ["Nublado", "cloudy", "\u2601"],
+        45: ["Niebla", "cloudy", "\u2601"],
+        48: ["Niebla con escarcha", "cloudy", "\u2601"],
+        51: ["Llovizna ligera", "rain", "\u2602"],
+        53: ["Llovizna", "rain", "\u2602"],
+        55: ["Llovizna intensa", "rain", "\u2602"],
+        61: ["Lluvia ligera", "rain", "\u2602"],
+        63: ["Lluvia", "rain", "\u2602"],
+        65: ["Lluvia intensa", "rain", "\u2602"],
+        80: ["Lluvia pasajera", "rain", "\u2602"],
+        81: ["Chubascos", "rain", "\u2602"],
+        82: ["Chubascos fuertes", "rain", "\u2602"],
+        95: ["Tormenta", "storm", "\u26a1"],
+        96: ["Tormenta con granizo", "storm", "\u26a1"],
+        99: ["Tormenta fuerte", "storm", "\u26a1"]
+      };
+
+      var countryCurrencyMap = {
+        AR: "ARS", BO: "BOB", BR: "BRL", CA: "CAD", CL: "CLP", CO: "COP", CR: "CRC",
+        DO: "DOP", EC: "USD", ES: "EUR", GT: "GTQ", HN: "HNL", MX: "MXN", NI: "NIO",
+        PA: "USD", PE: "PEN", PR: "USD", PY: "PYG", SV: "USD", US: "USD", UY: "UYU",
+        VE: "VES"
+      };
+      var countryNameCodeMap = {
+        "argentina": "AR", "bolivia": "BO", "brasil": "BR", "brazil": "BR", "canada": "CA",
+        "chile": "CL", "colombia": "CO", "costa rica": "CR", "ecuador": "EC", "espana": "ES",
+        "spain": "ES", "estados unidos": "US", "united states": "US", "guatemala": "GT",
+        "honduras": "HN", "mexico": "MX", "nicaragua": "NI", "panama": "PA", "paraguay": "PY",
+        "peru": "PE", "puerto rico": "PR", "republica dominicana": "DO", "el salvador": "SV",
+        "uruguay": "UY", "venezuela": "VE"
+      };
+
+      function getQueryParam(name) {
+        try {
+          return new URLSearchParams(window.location.search || "").get(name) || "";
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function readEmpresaId() {
+        var stores = [];
+        try { stores.push(window.sessionStorage); } catch (e) {}
+        try { stores.push(window.localStorage); } catch (e) {}
+        for (var i = 0; i < stores.length; i += 1) {
+          var store = stores[i];
+          if (!store) continue;
+          var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+          for (var k = 0; k < keys.length; k += 1) {
+            var value = "";
+            try { value = store.getItem(keys[k]) || ""; } catch (e) {}
+            if (/^[1-9]\d*$/.test(value)) return value;
+          }
+        }
+        return "";
+      }
+
+      function weatherLocationCacheKey() {
+        return "pcs_empresa_panel_weather_location_" + (empresaId || "general");
+      }
+
+      function readCookieValue(name) {
+        var prefix = String(name || "") + "=";
+        var parts = String(document.cookie || "").split(";");
+        for (var index = 0; index < parts.length; index += 1) {
+          var value = parts[index].trim();
+          if (value.indexOf(prefix) === 0) {
+            return decodeURIComponent(value.slice(prefix.length));
+          }
+        }
+        return "";
+      }
+
+      function fetchJSON(url, options) {
+        options = options && typeof options === "object" ? Object.assign({}, options) : {};
+        if (!options.credentials) {
+          options.credentials = url.indexOf(window.location.origin) === 0 || url.charAt(0) === "/" ? "same-origin" : "omit";
+        }
+        var method = String(options.method || "GET").toUpperCase();
+        if (["POST", "PUT", "PATCH", "DELETE"].indexOf(method) !== -1 && options.credentials === "same-origin") {
+          var token = readCookieValue("pcs_csrf");
+          if (token) {
+            options.headers = new Headers(options.headers || {});
+            if (!options.headers.has("X-CSRF-Token")) options.headers.set("X-CSRF-Token", token);
+          }
+        }
+        if (method === "GET" && options.credentials === "same-origin") {
+          try {
+            var parentCache = window.parent && window.parent !== window ? window.parent.PCSRequestCache : null;
+            var targetURL = new URL(url, window.location.href);
+            if (parentCache && typeof parentCache.getJSON === "function" && targetURL.origin === window.location.origin) {
+              var ttlMs = targetURL.pathname === "/me" ? 30000 : (targetURL.searchParams.get("action") === "resumen" ? 2000 : 5000);
+              return parentCache.getJSON(targetURL.pathname + targetURL.search, {
+                credentials: "same-origin",
+                ttlMs: ttlMs
+              }).then(function (result) {
+                if (!result || !result.ok) throw new Error("No se pudo completar la operacion.");
+                return result.data || {};
+              });
+            }
+          } catch (error) {}
+        }
+        return fetch(url, options)
+          .then(function (res) {
+            if (!res.ok) throw new Error("No se pudo completar la operacion.");
+            return res.status === 204 ? {} : res.json();
+          });
+      }
+
+      function empresaBuzonURL(action) {
+        return "/api/empresa/buzon?empresa_id=" + encodeURIComponent(String(empresaId || "")) + "&action=" + encodeURIComponent(action || "resumen");
+      }
+
+      function panelConfigURL() {
+        return "/api/empresa/panel_configuracion?empresa_id=" + encodeURIComponent(String(empresaId || ""));
+      }
+
+      function emailCorporativoPanelURL() {
+        return "/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(String(empresaId || "")) + "&check_unread=1";
+      }
+
+      function setEmpresaEmailAlert(message, isError) {
+        if (!empresaEmailAlertEl) return;
+        empresaEmailAlertEl.textContent = message || "";
+        empresaEmailAlertEl.hidden = !message;
+        empresaEmailAlertEl.style.borderColor = isError ? "color-mix(in srgb, #ef4444 44%, var(--border))" : "";
+      }
+
+      function updateEmpresaEmailLinks() {
+        if (!empresaId) return;
+        if (empresaEmailOpenBtnEl) empresaEmailOpenBtnEl.href = "/administrar_empresa/email_corporativo.html?empresa_id=" + encodeURIComponent(String(empresaId));
+        if (empresaEmailConfigBtnEl) empresaEmailConfigBtnEl.href = "/administrar_empresa/configuracion/email_corporativo.html?empresa_id=" + encodeURIComponent(String(empresaId));
+      }
+
+      function updateEmpresaNoticiasLink() {
+        if (!empresaNoticiasLinkEl) return;
+        var url = "/administrar_empresa/noticias.html";
+        if (empresaId) url += "?empresa_id=" + encodeURIComponent(String(empresaId));
+        empresaNoticiasLinkEl.href = url;
+        empresaNoticiasLinkEl.removeAttribute("target");
+        empresaNoticiasLinkEl.removeAttribute("rel");
+      }
+
+      function normalizeNewsKeyPart(value) {
+        return text(value).toLowerCase().replace(/\s+/g, " ").slice(0, 160);
+      }
+
+      function buildEmpresaNewsKey(item) {
+        var parts = [
+          item && (item.id || item.uuid || item.codigo || ""),
+          item && item.fecha,
+          item && item.pais,
+          item && item.categoria,
+          item && item.titulo
+        ].map(normalizeNewsKeyPart).filter(Boolean);
+        return parts.length ? parts.join("|") : "";
+      }
+
+      function empresaNewsSeenStorageKey(newsKey) {
+        return "pcs_panel_noticia_leida:" + String(empresaId || "sin_empresa") + ":" + newsKey;
+      }
+
+      function isEmpresaNewsSeen(newsKey) {
+        if (!newsKey) return false;
+        try {
+          return window.localStorage.getItem(empresaNewsSeenStorageKey(newsKey)) === "1";
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function markEmpresaNewsSeen(newsKey) {
+        if (!newsKey) return;
+        try {
+          window.localStorage.setItem(empresaNewsSeenStorageKey(newsKey), "1");
+        } catch (error) {}
+      }
+
+      function hideCurrentEmpresaNews() {
+        if (!empresaCurrentNewsKey) return;
+        markEmpresaNewsSeen(empresaCurrentNewsKey);
+        if (empresaNoticiasHideBtnEl) {
+          empresaNoticiasHideBtnEl.disabled = true;
+          empresaNoticiasHideBtnEl.textContent = "Noticia leida";
+        }
+        if (empresaNoticiasCardEl) empresaNoticiasCardEl.hidden = true;
+      }
+
+      function renderEmpresaEmailPanel(data) {
+        if (!empresaEmailPanelEl) return;
+        data = data || {};
+        var account = data.account || {};
+        var unread = data.unread || {};
+        var enabled = data.enabled !== false;
+        var email = account.email || "";
+        var messages = Number(unread.messages || 0);
+        var unseen = Number(unread.unseen || 0);
+        if (empresaEmailMessagesEl) empresaEmailMessagesEl.textContent = unread.checked ? String(messages) : "--";
+        if (empresaEmailUnreadEl) empresaEmailUnreadEl.textContent = unread.checked ? String(unseen) : "--";
+        if (empresaEmailStatusEl) empresaEmailStatusEl.textContent = enabled && email ? "Activo" : (enabled ? "Sin buzon" : "Apagado");
+        if (empresaEmailMetaEl) {
+          empresaEmailMetaEl.textContent = email ? email : (enabled ? "Correo corporativo disponible para configurar." : "Correo corporativo global desactivado.");
+        }
+        if (empresaEmailOpenBtnEl) empresaEmailOpenBtnEl.classList.toggle("is-disabled", !enabled || !email);
+        if (unread && unread.ok === false) {
+          setEmpresaEmailAlert("", false);
+          if (empresaEmailStatusEl && enabled && email) empresaEmailStatusEl.textContent = "Activo";
+        } else {
+          setEmpresaEmailAlert(unread && unread.message ? unread.message : "", false);
+        }
+      }
+
+      function loadEmpresaEmailPanel() {
+        if (!empresaId || !empresaEmailPanelEl || !empresaPanelConfig.email_enabled) return Promise.resolve();
+        updateEmpresaEmailLinks();
+        return fetchJSON(emailCorporativoPanelURL())
+          .then(renderEmpresaEmailPanel)
+          .catch(function () {
+            if (empresaEmailStatusEl) empresaEmailStatusEl.textContent = "Sin conexion";
+            if (empresaEmailMetaEl) empresaEmailMetaEl.textContent = "No se pudo consultar el correo corporativo.";
+            setEmpresaEmailAlert("Revisa la configuracion de email corporativo si esta tarjeta permanece sin datos.", true);
+          });
+      }
+
+      function normalizePanelConfig(data) {
+        data = data || {};
+        return {
+          favoritos_enabled: data.favoritos_enabled !== false,
+          email_enabled: data.email_enabled !== false,
+          noticias_enabled: data.noticias_enabled !== false,
+          buzon_enabled: data.buzon_enabled !== false,
+          chat_enabled: data.chat_enabled === true
+        };
+      }
+
+      function applyPanelConfig(config) {
+        empresaPanelConfig = normalizePanelConfig(config);
+        if (empresaFavoritesPanelEl) empresaFavoritesPanelEl.hidden = !empresaPanelConfig.favoritos_enabled;
+        if (empresaEmailPanelEl) empresaEmailPanelEl.hidden = !empresaPanelConfig.email_enabled;
+        if (empresaNoticiasCardEl && !empresaPanelConfig.noticias_enabled) {
+          empresaNoticiasCardEl.hidden = true;
+        }
+        if (empresaBuzonCardEl) empresaBuzonCardEl.hidden = !empresaPanelConfig.buzon_enabled;
+        if (empresaChatCardEl) empresaChatCardEl.hidden = !empresaPanelConfig.chat_enabled;
+        if (empresaBuzonGridEl) {
+          empresaBuzonGridEl.hidden = !empresaPanelConfig.buzon_enabled && !empresaPanelConfig.chat_enabled;
+          empresaBuzonGridEl.classList.toggle("buzon-only", !!empresaPanelConfig.buzon_enabled && !empresaPanelConfig.chat_enabled);
+        }
+      }
+
+      function loadPanelConfig() {
+        if (!empresaId) {
+          applyPanelConfig(null);
+          return Promise.resolve(empresaPanelConfig);
+        }
+        return fetchJSON(panelConfigURL())
+          .then(function (data) {
+            applyPanelConfig(data);
+            return empresaPanelConfig;
+          })
+          .catch(function () {
+            applyPanelConfig(null);
+            return empresaPanelConfig;
+          });
+      }
+
+      function renderEmpresaBuzonStorage(storage) {
+        if (!empresaBuzonStorageEl) return;
+        if (!empresaPanelConfig.buzon_enabled) {
+          empresaBuzonStorageEl.hidden = true;
+          return;
+        }
+        if (!storage || !storage.quota_enabled) {
+          empresaBuzonStorageEl.hidden = true;
+          return;
+        }
+        var pct = Number(storage.usage_percent || 0);
+        var msg = storage.message || "";
+        if (!msg && pct >= 70) msg = "Almacenamiento usado: " + pct.toFixed(1) + "% de " + (storage.limit_mb || 0) + " MB.";
+        empresaBuzonStorageEl.textContent = msg;
+        empresaBuzonStorageEl.hidden = !msg;
+      }
+
+      function formatEmpresaBuzonMeta(item) {
+        var parts = [];
+        if (item && item.tipo === "tarea") {
+          parts.push("Tarea " + (item.tarea_estado || "pendiente"));
+          if (item.tarea_vence_en) parts.push("vence: " + item.tarea_vence_en);
+        }
+        if (item && item.remitente_nombre) parts.push("de " + item.remitente_nombre);
+        if (item && item.fecha_creacion) parts.push(item.fecha_creacion);
+        return parts.join(" - ");
+      }
+
+      function renderEmpresaBuzonMessages(items, unread) {
+        if (!empresaPanelConfig.buzon_enabled) return;
+        if (empresaBuzonUnreadBadgeEl) empresaBuzonUnreadBadgeEl.textContent = String(unread || 0);
+        if (!empresaBuzonListEl) return;
+        empresaBuzonListEl.innerHTML = "";
+        items = Array.isArray(items) ? items : [];
+        if (!items.length) {
+          var empty = document.createElement("p");
+          empty.className = "empresa-favorites-empty";
+          empty.textContent = "No tienes mensajes pendientes.";
+          empresaBuzonListEl.appendChild(empty);
+          return;
+        }
+        items.forEach(function (item) {
+          var button = document.createElement("button");
+          button.type = "button";
+          button.className = "empresa-buzon-item" + (Number(item.leido || 0) ? "" : " is-unread") + (item.tipo === "tarea" ? " is-task" : "");
+          button.dataset.id = String(item.id || "");
+          var title = document.createElement("strong");
+          title.textContent = (item.tipo === "tarea" ? "[Tarea] " : "") + (item.titulo || "Mensaje");
+          var msg = document.createElement("p");
+          msg.textContent = item.mensaje || "";
+          var meta = document.createElement("p");
+          meta.className = "empresa-buzon-thread-meta";
+          meta.textContent = formatEmpresaBuzonMeta(item);
+          button.appendChild(title);
+          button.appendChild(msg);
+          button.appendChild(meta);
+          if (Array.isArray(item.adjuntos) && item.adjuntos.length) {
+            var files = document.createElement("div");
+            files.className = "empresa-buzon-attachments";
+            item.adjuntos.forEach(function (file) {
+              var a = document.createElement("a");
+              a.href = file.file_url || "#";
+              a.target = "_blank";
+              a.rel = "noopener";
+              a.textContent = file.tipo_archivo === "audio" ? "Audio" : (file.nombre_archivo || "Adjunto");
+              files.appendChild(a);
+            });
+            button.appendChild(files);
+          }
+          if (item.tipo === "tarea" && item.tarea_estado !== "finalizada") {
+            var taskActions = document.createElement("div");
+            taskActions.className = "empresa-task-actions";
+            var finish = document.createElement("span");
+            finish.className = "btn secondary";
+            finish.textContent = "Finalizar tarea";
+            taskActions.appendChild(finish);
+            button.appendChild(taskActions);
+          }
+          button.addEventListener("click", function () {
+            openEmpresaBuzonMessage(item);
+          });
+          empresaBuzonListEl.appendChild(button);
+        });
+      }
+
+      function renderEmpresaChat(items) {
+        if (!empresaPanelConfig.chat_enabled) return;
+        if (!empresaChatListEl) return;
+        empresaChatListEl.innerHTML = "";
+        items = Array.isArray(items) ? items : [];
+        if (!items.length) {
+          var empty = document.createElement("p");
+          empty.className = "empresa-favorites-empty";
+          empty.textContent = "Aun no hay mensajes en el chat de la empresa.";
+          empresaChatListEl.appendChild(empty);
+          return;
+        }
+        items.forEach(function (item) {
+          var row = document.createElement("div");
+          row.className = "empresa-chat-item";
+          var author = document.createElement("strong");
+          author.textContent = item.remitente_nombre || item.remitente_email || "Usuario";
+          var body = document.createElement("p");
+          body.textContent = item.mensaje || "";
+          var date = document.createElement("p");
+          date.textContent = item.fecha_creacion || "";
+          row.appendChild(author);
+          row.appendChild(body);
+          row.appendChild(date);
+          empresaChatListEl.appendChild(row);
+        });
+        empresaChatListEl.scrollTop = empresaChatListEl.scrollHeight;
+      }
+
+      function loadEmpresaBuzon() {
+        if (!empresaId || (!empresaPanelConfig.buzon_enabled && !empresaPanelConfig.chat_enabled)) return Promise.resolve();
+        return fetchJSON(empresaBuzonURL("resumen"))
+          .then(function (data) {
+            if (empresaPanelConfig.buzon_enabled) {
+              renderEmpresaBuzonMessages(data.mensajes || [], data.unread || 0);
+              renderEmpresaBuzonStorage(data.storage || null);
+            }
+            if (empresaPanelConfig.chat_enabled) {
+              renderEmpresaChat(data.chat || []);
+            }
+          })
+          .catch(function () {
+            if (empresaPanelConfig.buzon_enabled && empresaBuzonListEl) empresaBuzonListEl.innerHTML = '<p class="empresa-favorites-empty">No se pudo cargar el buzon.</p>';
+            if (empresaPanelConfig.chat_enabled && empresaChatListEl) empresaChatListEl.innerHTML = '<p class="empresa-favorites-empty">No se pudo cargar el chat.</p>';
+          });
+      }
+
+      function loadEmpresaBuzonUsuarios() {
+        if (!empresaPanelConfig.buzon_enabled || !empresaId || !empresaBuzonRecipientEl) return Promise.resolve();
+        empresaBuzonRecipientEl.innerHTML = '<option value="">Cargando usuarios...</option>';
+        return fetchJSON(empresaBuzonURL("usuarios"))
+          .then(function (data) {
+            empresaBuzonRecipientEl.innerHTML = '<option value="">Seleccionar usuario</option>';
+            var users = Array.isArray(data.usuarios) ? data.usuarios : [];
+            if (!users.length) {
+              var emptyOpt = document.createElement("option");
+              emptyOpt.value = "";
+              emptyOpt.textContent = "No hay usuarios activos en esta empresa";
+              empresaBuzonRecipientEl.appendChild(emptyOpt);
+              return;
+            }
+            users.forEach(function (user) {
+              var opt = document.createElement("option");
+              var nombre = user.nombre || user.email || ("Usuario " + user.id);
+              var rol = user.rol || (user.tipo === "admin" ? "administrador" : "usuario");
+              var email = user.email || "";
+              var estado = user.estado && user.estado !== "activo" ? user.estado : "";
+              opt.value = String(user.value || user.ref || user.id || user.email || "");
+              opt.textContent = [nombre, rol, estado, email].filter(Boolean).join(" | ");
+              opt.dataset.email = user.email || "";
+              opt.dataset.tipo = user.tipo || "";
+              opt.title = opt.textContent;
+              empresaBuzonRecipientEl.appendChild(opt);
+            });
+          })
+          .catch(function () {
+            empresaBuzonRecipientEl.innerHTML = '<option value="">No se pudieron cargar usuarios</option>';
+          });
+      }
+
+      function syncEmpresaTaskMode() {
+        var isTask = empresaBuzonModeEl && empresaBuzonModeEl.value === "tarea";
+        if (empresaTaskAssignPanelEl) empresaTaskAssignPanelEl.classList.toggle("is-visible", !!isTask);
+        if (empresaBuzonTitleInputEl && !empresaBuzonTitleInputEl.value) {
+          empresaBuzonTitleInputEl.placeholder = isTask ? "Titulo de la tarea" : "Titulo";
+        }
+        if (empresaBuzonMessageInputEl) {
+          empresaBuzonMessageInputEl.placeholder = isTask ? "Describe la tarea que debe realizar el usuario" : "Mensaje";
+        }
+      }
+
+      function openEmpresaBuzonMessage(item) {
+        if (!item || !item.id) return;
+        fetch(empresaBuzonURL("leer"), {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: item.id })
+        }).catch(function () {}).then(loadEmpresaBuzon);
+        if (item.tipo === "tarea" && item.tarea_estado !== "finalizada") {
+          empresaSelectedTask = item;
+          if (empresaTaskCompleteTitleEl) empresaTaskCompleteTitleEl.textContent = "Finalizar tarea: " + (item.titulo || item.id);
+          if (empresaTaskCompleteDescriptionEl) empresaTaskCompleteDescriptionEl.value = "";
+          if (empresaTaskEvidenceInputEl) empresaTaskEvidenceInputEl.value = "";
+          if (empresaTaskCompletePanelEl) empresaTaskCompletePanelEl.classList.add("is-visible");
+          return;
+        }
+        if (item.enlace_url) window.location.href = item.enlace_url;
+      }
+
+      function sendEmpresaBuzonPayload(event) {
+        if (event) event.preventDefault();
+        if (!empresaPanelConfig.buzon_enabled) return;
+        if (!empresaId || !empresaBuzonRecipientEl) return;
+        var mode = empresaBuzonModeEl && empresaBuzonModeEl.value === "tarea" ? "tarea" : "mensaje";
+        var recipient = empresaBuzonRecipientEl.value || "";
+        var title = text(empresaBuzonTitleInputEl && empresaBuzonTitleInputEl.value) || (mode === "tarea" ? "Nueva tarea asignada" : "Nuevo mensaje");
+        var message = text(empresaBuzonMessageInputEl && empresaBuzonMessageInputEl.value);
+        if (!recipient || !message) {
+          setStatus("Selecciona destinatario y escribe el mensaje.", true);
+          return;
+        }
+        var file = empresaBuzonFileInputEl && empresaBuzonFileInputEl.files && empresaBuzonFileInputEl.files[0] ? empresaBuzonFileInputEl.files[0] : null;
+        var audioFile = empresaBuzonAudioBlob ? new File([empresaBuzonAudioBlob], empresaBuzonAudioName || "nota_voz.webm", { type: empresaBuzonAudioBlob.type || "audio/webm" }) : null;
+        if (file || audioFile) {
+          var form = new FormData();
+          form.append("empresa_id", empresaId);
+          form.append("destinatario_ref", recipient);
+          form.append("titulo", title);
+          form.append("mensaje", message);
+          form.append("tipo", mode === "tarea" ? "tarea" : "interno");
+          form.append("prioridad", empresaTaskPriorityEl ? empresaTaskPriorityEl.value : "normal");
+          form.append("tarea_vence_en", empresaTaskDueEl ? empresaTaskDueEl.value : "");
+          form.append("archivo", file || audioFile, (file && file.name) || audioFile.name);
+          return fetch(empresaBuzonURL("adjunto"), { method: "POST", credentials: "same-origin", body: form })
+            .then(function (res) { if (!res.ok) throw new Error("No se pudo enviar el adjunto"); return res.json(); })
+            .then(afterEmpresaBuzonSent)
+            .catch(function (err) { setStatus(err.message || "No se pudo enviar el mensaje.", true); });
+        }
+        var payload = {
+          destinatario_ref: recipient,
+          titulo: title,
+          mensaje: message,
+          tipo: mode === "tarea" ? "tarea" : "interno",
+          prioridad: empresaTaskPriorityEl ? empresaTaskPriorityEl.value : "normal",
+          tarea_vence_en: empresaTaskDueEl ? empresaTaskDueEl.value : ""
+        };
+        return fetch(empresaBuzonURL("mensaje"), {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function (res) { if (!res.ok) throw new Error("No se pudo enviar el mensaje"); return res.json(); })
+          .then(afterEmpresaBuzonSent)
+          .catch(function (err) { setStatus(err.message || "No se pudo enviar el mensaje.", true); });
+      }
+
+      function afterEmpresaBuzonSent() {
+        if (empresaBuzonTitleInputEl) empresaBuzonTitleInputEl.value = "";
+        if (empresaBuzonMessageInputEl) empresaBuzonMessageInputEl.value = "";
+        if (empresaBuzonFileInputEl) empresaBuzonFileInputEl.value = "";
+        empresaBuzonAudioBlob = null;
+        empresaBuzonAudioName = "";
+        if (empresaBuzonAudioStatusEl) empresaBuzonAudioStatusEl.textContent = "";
+        setStatus("Mensaje enviado.", false);
+        return loadEmpresaBuzon();
+      }
+
+      function toggleEmpresaBuzonRecording() {
+        if (!empresaPanelConfig.buzon_enabled) return;
+        if (empresaBuzonRecorder && empresaBuzonRecorder.state === "recording") {
+          empresaBuzonRecorder.stop();
+          return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
+          setStatus("Este navegador no permite grabar audio desde el buzon.", true);
+          return;
+        }
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+          empresaBuzonRecordingChunks = [];
+          empresaBuzonRecorder = new MediaRecorder(stream);
+          empresaBuzonRecorder.ondataavailable = function (event) {
+            if (event.data && event.data.size) empresaBuzonRecordingChunks.push(event.data);
+          };
+          empresaBuzonRecorder.onstop = function () {
+            stream.getTracks().forEach(function (track) { track.stop(); });
+            empresaBuzonAudioBlob = new Blob(empresaBuzonRecordingChunks, { type: "audio/webm" });
+            empresaBuzonAudioName = "nota_voz_" + Date.now() + ".webm";
+            if (empresaBuzonRecordBtnEl) empresaBuzonRecordBtnEl.textContent = "Grabar audio";
+            if (empresaBuzonAudioStatusEl) empresaBuzonAudioStatusEl.textContent = "Audio listo para enviar.";
+          };
+          empresaBuzonRecorder.start();
+          if (empresaBuzonRecordBtnEl) empresaBuzonRecordBtnEl.textContent = "Detener audio";
+          if (empresaBuzonAudioStatusEl) empresaBuzonAudioStatusEl.textContent = "Grabando...";
+        }).catch(function () {
+          setStatus("No se pudo abrir el microfono.", true);
+        });
+      }
+
+      function completeEmpresaSelectedTask() {
+        if (!empresaPanelConfig.buzon_enabled) return;
+        if (!empresaSelectedTask || !empresaSelectedTask.id) return;
+        var desc = text(empresaTaskCompleteDescriptionEl && empresaTaskCompleteDescriptionEl.value);
+        if (!desc) {
+          setStatus("Describe la evidencia o resultado antes de finalizar la tarea.", true);
+          return;
+        }
+        var evidence = empresaTaskEvidenceInputEl && empresaTaskEvidenceInputEl.files && empresaTaskEvidenceInputEl.files[0] ? empresaTaskEvidenceInputEl.files[0] : null;
+        var uploadEvidence = Promise.resolve();
+        if (evidence) {
+          var form = new FormData();
+          form.append("empresa_id", empresaId);
+          form.append("mensaje_id", empresaSelectedTask.id);
+          form.append("tipo_archivo", "archivo");
+          form.append("archivo", evidence, evidence.name);
+          uploadEvidence = fetch(empresaBuzonURL("adjunto"), { method: "POST", credentials: "same-origin", body: form })
+            .then(function (res) { if (!res.ok) throw new Error("No se pudo adjuntar la evidencia"); return res.json(); });
+        }
+        uploadEvidence.then(function () {
+          return fetch(empresaBuzonURL("finalizar_tarea"), {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: empresaSelectedTask.id, descripcion: desc })
+          });
+        }).then(function (res) {
+          if (!res.ok) throw new Error("No se pudo finalizar la tarea");
+          return res.json();
+        }).then(function () {
+          empresaSelectedTask = null;
+          if (empresaTaskCompletePanelEl) empresaTaskCompletePanelEl.classList.remove("is-visible");
+          setStatus("Tarea finalizada con evidencia.", false);
+          return loadEmpresaBuzon();
+        }).catch(function (err) {
+          setStatus(err.message || "No se pudo finalizar la tarea.", true);
+        });
+      }
+
+      function sendEmpresaChat(event) {
+        if (event) event.preventDefault();
+        if (!empresaPanelConfig.chat_enabled) return;
+        var message = text(empresaChatMessageInputEl && empresaChatMessageInputEl.value);
+        if (!message) return;
+        fetch(empresaBuzonURL("chat"), {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mensaje: message })
+        }).then(function (res) {
+          if (!res.ok) throw new Error("No se pudo enviar al chat");
+          return res.json();
+        }).then(function () {
+          if (empresaChatMessageInputEl) empresaChatMessageInputEl.value = "";
+          return loadEmpresaBuzon();
+        }).catch(function (err) {
+          setStatus(err.message || "No se pudo enviar al chat.", true);
+        });
+      }
+
+      function setupEmpresaBuzonControls() {
+        if (empresaBuzonModeEl) empresaBuzonModeEl.addEventListener("change", syncEmpresaTaskMode);
+        if (empresaBuzonFormEl) empresaBuzonFormEl.addEventListener("submit", sendEmpresaBuzonPayload);
+        if (empresaBuzonRecordBtnEl) empresaBuzonRecordBtnEl.addEventListener("click", toggleEmpresaBuzonRecording);
+        if (empresaChatFormEl) empresaChatFormEl.addEventListener("submit", sendEmpresaChat);
+        if (empresaNoticiasHideBtnEl) empresaNoticiasHideBtnEl.addEventListener("click", hideCurrentEmpresaNews);
+        if (empresaTaskCompleteCancelEl) empresaTaskCompleteCancelEl.addEventListener("click", function () {
+          empresaSelectedTask = null;
+          if (empresaTaskCompletePanelEl) empresaTaskCompletePanelEl.classList.remove("is-visible");
+        });
+        if (empresaTaskCompleteSaveEl) empresaTaskCompleteSaveEl.addEventListener("click", completeEmpresaSelectedTask);
+        syncEmpresaTaskMode();
+      }
+
+      function renderMaintenanceNotice(data) {
+        if (!maintenanceNoticeEl || !maintenanceNoticeMessageEl || !maintenanceNoticeMetaEl) return;
+        var payload = data || {};
+        var message = text(payload.mensaje_publico);
+        if (!payload.visible || !message) {
+          maintenanceNoticeEl.classList.remove("is-visible");
+          maintenanceNoticeMessageEl.textContent = "";
+          maintenanceNoticeMetaEl.textContent = "";
+          return;
+        }
+        maintenanceNoticeMessageEl.textContent = message;
+        var meta = [];
+        if (text(payload.zona_horaria)) meta.push("Hora " + text(payload.zona_horaria));
+        if (payload.mantenimiento_activo) meta.push("Modo mantenimiento activo");
+        maintenanceNoticeMetaEl.textContent = meta.join(" - ");
+        maintenanceNoticeEl.classList.add("is-visible");
+      }
+
+      function loadMaintenanceNotice() {
+        if (!empresaId) return Promise.resolve();
+        return fetchJSON("/api/empresa/mantenimiento_programado?empresa_id=" + encodeURIComponent(empresaId))
+          .then(renderMaintenanceNotice)
+          .catch(function () {
+            renderMaintenanceNotice(null);
+          });
+      }
+
+      function loadLatestSystemNews() {
+        if (!empresaPanelConfig.noticias_enabled) {
+          if (empresaNoticiasCardEl) empresaNoticiasCardEl.hidden = true;
+          return Promise.resolve();
+        }
+        if (!empresaNoticiasCardEl) return Promise.resolve();
+        return fetchJSON("/api/public/noticias")
+          .then(function (data) {
+            var cfg = data && data.config ? data.config : {};
+            var news = Array.isArray(cfg.noticias) ? cfg.noticias.filter(function (item) {
+              return item && item.activa !== false;
+            }) : [];
+            if (!news.length) {
+              empresaNoticiasCardEl.hidden = true;
+              return;
+            }
+            var item = news[0];
+            var newsKey = buildEmpresaNewsKey(item);
+            empresaCurrentNewsKey = newsKey;
+            if (isEmpresaNewsSeen(newsKey)) {
+              empresaNoticiasCardEl.hidden = true;
+              return;
+            }
+            if (empresaNoticiasHeadlineEl) empresaNoticiasHeadlineEl.textContent = text(item.titulo) || "Noticia del sistema";
+            if (empresaNoticiasSummaryEl) empresaNoticiasSummaryEl.textContent = text(item.resumen || item.contenido) || "Consulta la noticia completa en la pagina del sistema.";
+            if (empresaNoticiasMetaEl) {
+              var meta = [];
+              if (text(item.categoria)) meta.push(text(item.categoria));
+              if (text(item.fecha)) meta.push(text(item.fecha));
+              empresaNoticiasMetaEl.textContent = meta.join(" / ");
+            }
+            if (empresaNoticiasLinkEl) {
+              updateEmpresaNoticiasLink();
+            }
+            if (empresaNoticiasHideBtnEl) {
+              empresaNoticiasHideBtnEl.disabled = false;
+              empresaNoticiasHideBtnEl.textContent = "Ocultar noticia";
+            }
+            empresaNoticiasCardEl.hidden = false;
+          })
+          .catch(function () {
+            empresaNoticiasCardEl.hidden = true;
+          });
+      }
+
+      function weatherConfigURL() {
+        return "/api/empresa/configuracion_general?empresa_id=" + encodeURIComponent(String(empresaId || ""));
+      }
+
+      function text(value) {
+        return String(value == null ? "" : value).trim();
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+        });
+      }
+
+      function escapeAttr(value) {
+        return escapeHTML(value);
+      }
+
+      function firstName(fullName, email) {
+        var raw = text(fullName);
+        if (!raw) raw = text(email).split("@")[0];
+        return raw ? raw.split(/\s+/)[0] : "administrador";
+      }
+
+      function greetingByHour() {
+        var hour = new Date().getHours();
+        if (hour < 12) return "Buenos dias";
+        if (hour < 19) return "Buenas tardes";
+        return "Buenas noches";
+      }
+
+      function setDateText() {
+        var el = document.getElementById("homeDate");
+        if (!el) return;
+        try {
+          el.textContent = new Intl.DateTimeFormat("es-CO", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          }).format(new Date());
+        } catch (e) {
+          el.textContent = new Date().toLocaleString();
+        }
+      }
+
+      function setStatus(message, isError) {
+        if (!statusEl) return;
+        statusEl.textContent = message || "";
+        statusEl.classList.toggle("error", !!isError);
+      }
+
+      function setWeatherHint(message) {
+        if (!weatherLocationHint) return;
+        weatherLocationHint.textContent = message || "";
+      }
+
+      function setWeatherGPSBusy(isBusy) {
+        if (!weatherGpsBtn) return;
+        weatherGpsBtn.disabled = !!isBusy;
+        weatherGpsBtn.textContent = isBusy ? "Solicitando GPS..." : "Usar GPS";
+      }
+
+      function applyEmpresaLinks() {
+        if (!empresaId) return;
+        Array.prototype.forEach.call(document.querySelectorAll(".empresa-home-action"), function (link) {
+          try {
+            var url = new URL(link.getAttribute("href"), window.location.origin);
+            url.searchParams.set("empresa_id", empresaId);
+            link.setAttribute("href", url.pathname + url.search);
+          } catch (e) {}
+        });
+      }
+
+      function favoritesStorageKey() {
+        return "admin_empresa:favorites:" + String(empresaId || "global");
+      }
+
+      function isAllowedAdminHref(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          return url.pathname.indexOf("/administrar_empresa/") === 0;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function favoriteHrefWithEmpresa(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          if (empresaId) url.searchParams.set("empresa_id", empresaId);
+          return url.pathname + url.search;
+        } catch (e) {
+          return href || "#";
+        }
+      }
+
+      function favoritePageName(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          var name = url.pathname.split("/").pop().replace(/\.html?$/i, "").replace(/[_-]+/g, " ");
+          return name ? name.charAt(0).toUpperCase() + name.slice(1) : "Pagina";
+        } catch (e) {
+          return "Pagina";
+        }
+      }
+
+      function stripEmpresaParam(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          url.searchParams.delete("empresa_id");
+          url.searchParams.delete("id");
+          return url.pathname + url.search;
+        } catch (e) {
+          return String(href || "").split("?")[0];
+        }
+      }
+
+      function menuMatchHref(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          url.searchParams.delete("empresa_id");
+          url.searchParams.delete("id");
+          var params = [];
+          url.searchParams.forEach(function (value, key) {
+            params.push([key, value]);
+          });
+          params.sort(function (a, b) {
+            if (a[0] === b[0]) return a[1] < b[1] ? -1 : (a[1] > b[1] ? 1 : 0);
+            return a[0] < b[0] ? -1 : 1;
+          });
+          var query = params.map(function (pair) {
+            return encodeURIComponent(pair[0]) + "=" + encodeURIComponent(pair[1]);
+          }).join("&");
+          return url.pathname + (query ? "?" + query : "");
+        } catch (e) {
+          return stripEmpresaParam(href);
+        }
+      }
+
+      function resolveFavoriteMenuLink(href) {
+        var target = menuMatchHref(href);
+        if (!target) return null;
+        try {
+          var parentDoc = window.parent && window.parent !== window ? window.parent.document : null;
+          if (!parentDoc) return null;
+          var links = parentDoc.querySelectorAll('a[href*="/administrar_empresa/"]');
+          for (var i = 0; i < links.length; i += 1) {
+            var link = links[i];
+            if (menuMatchHref(link.getAttribute("href") || "") === target) {
+              return link;
+            }
+          }
+        } catch (e) {}
+        return null;
+      }
+
+      function favoriteIconData(favorite, href) {
+        var stored = favorite && favorite.icon && typeof favorite.icon === "object" ? favorite.icon : null;
+        if (stored && (stored.src || stored.symbol)) {
+          return stored;
+        }
+        var link = resolveFavoriteMenuLink(href);
+        if (link) {
+          var img = link.querySelector("img.icon");
+          if (img && img.getAttribute("src")) {
+            return { type: "img", src: img.getAttribute("src") };
+          }
+          var symbol = link.querySelector(".menu-symbol-icon,.icon");
+          if (symbol && String(symbol.textContent || "").trim()) {
+            return { type: "symbol", symbol: String(symbol.textContent || "").trim() };
+          }
+        }
+        return { type: "img", src: "/img/analytics-color.svg" };
+      }
+
+      function renderFavoriteIcon(container, favorite, href) {
+        var icon = favoriteIconData(favorite, href);
+        container.textContent = "";
+        if (icon && icon.src) {
+          var img = document.createElement("img");
+          img.src = icon.src;
+          img.alt = "";
+          container.appendChild(img);
+          return;
+        }
+        var span = document.createElement("span");
+        span.className = "empresa-favorite-symbol";
+        span.textContent = icon && icon.symbol ? icon.symbol : "•";
+        container.appendChild(span);
+      }
+
+      function readFavorites() {
+        try {
+          var raw = window.localStorage.getItem(favoritesStorageKey()) || "[]";
+          var parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed.filter(function (item) {
+            return item && isAllowedAdminHref(item.href);
+          }) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function renderFavorites() {
+        if (!favoritesListEl) return;
+        var favorites = readFavorites().slice(0, 8);
+        if (favoritesCountEl) favoritesCountEl.textContent = String(favorites.length);
+        favoritesListEl.innerHTML = "";
+        if (!favorites.length) {
+          var empty = document.createElement("p");
+          empty.className = "empresa-favorites-empty";
+          empty.textContent = "Marca cualquier pagina con la estrella para verla aqui.";
+          favoritesListEl.appendChild(empty);
+          return;
+        }
+        favorites.forEach(function (favorite) {
+          var link = document.createElement("a");
+          var href = favoriteHrefWithEmpresa(favorite.href);
+          link.className = "empresa-favorite-card";
+          link.href = href;
+          link.innerHTML =
+            '<span class="empresa-favorite-icon" aria-hidden="true"></span>' +
+            '<span class="empresa-favorite-text"><strong></strong><span></span></span>';
+          renderFavoriteIcon(link.querySelector(".empresa-favorite-icon"), favorite, href);
+          link.querySelector("strong").textContent = text(favorite.title) || favoritePageName(href);
+          link.querySelector(".empresa-favorite-text span").textContent = favoritePageName(href);
+          link.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            window.location.href = href;
+          });
+          favoritesListEl.appendChild(link);
+        });
+      }
+
+      function resolveWeatherLocation(admin) {
+        var ciudad = text(admin && (admin.ciudad || admin.Ciudad));
+        var pais = text(admin && (admin.pais || admin.Pais));
+        if (ciudad && pais) return ciudad + ", " + pais;
+        if (ciudad) return ciudad;
+        try {
+          var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+          var cityFromTZ = tz.split("/").pop().replace(/_/g, " ");
+          if (cityFromTZ) return cityFromTZ;
+        } catch (e) {}
+        return "Bogota, Colombia";
+      }
+
+      function normalizeCode(value) {
+        return text(value).toUpperCase().slice(0, 2);
+      }
+
+      function normalizeCurrency(value) {
+        var currency = text(value).toUpperCase().replace(/[^A-Z]/g, "");
+        return currency.length === 3 ? currency : "";
+      }
+
+      function countryCodeFromName(name) {
+        var raw = text(name).toLowerCase();
+        try {
+          raw = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        } catch (e) {}
+        return countryNameCodeMap[raw] || "";
+      }
+
+      function currencyForCountry(countryCode, fallback) {
+        var code = normalizeCode(countryCode);
+        return normalizeCurrency(countryCurrencyMap[code]) || normalizeCurrency(fallback) || "USD";
+      }
+
+      function buildLocation(parts) {
+        parts = parts || {};
+        var countryCode = normalizeCode(parts.countryCode) || countryCodeFromName(parts.country);
+        var city = text(parts.city) || text(parts.locality) || (parts.strictCity ? "" : text(parts.region));
+        var country = text(parts.country);
+        var displayName = text(parts.displayName) || [city, text(parts.region), country].filter(Boolean).join(", ");
+        return {
+          city: city,
+          region: text(parts.region),
+          country: country,
+          countryCode: countryCode,
+          currency: currencyForCountry(countryCode, parts.currency),
+          latitude: Number(parts.latitude || 0),
+          longitude: Number(parts.longitude || 0),
+          displayName: displayName || resolveWeatherLocation(parts.admin || {}),
+          source: text(parts.source) || "fallback"
+        };
+      }
+
+      function locationFromSavedWeatherConfig(rawConfig) {
+        var cfg = rawConfig && rawConfig.clima && typeof rawConfig.clima === "object" ? rawConfig.clima : rawConfig;
+        if (!cfg || typeof cfg !== "object") return null;
+        var latitude = Number(cfg.latitud || cfg.latitude || cfg.clima_latitud || 0);
+        var longitude = Number(cfg.longitud || cfg.longitude || cfg.clima_longitud || 0);
+        var displayName = text(cfg.nombre || cfg.displayName || cfg.display_name || cfg.clima_nombre);
+        var city = text(cfg.ciudad || cfg.city || cfg.clima_ciudad);
+        var country = text(cfg.pais || cfg.country || cfg.clima_pais);
+        if (!city && !displayName && (!latitude || !longitude)) return null;
+        return buildLocation({
+          city: city,
+          region: cfg.region || cfg.clima_region,
+          country: country,
+          countryCode: cfg.pais_codigo || cfg.countryCode || cfg.country_code || cfg.clima_pais_codigo,
+          currency: cfg.moneda || cfg.currency || cfg.clima_moneda,
+          latitude: latitude,
+          longitude: longitude,
+          displayName: displayName || [city, country].filter(Boolean).join(", "),
+          source: cfg.fuente || cfg.source || cfg.clima_fuente || "manual"
+        });
+      }
+
+      function loadSavedWeatherLocation() {
+        if (!empresaId) return Promise.resolve(null);
+        return fetchJSON(weatherConfigURL()).then(function (data) {
+          return locationFromSavedWeatherConfig((data && data.configuracion) || data || {});
+        }).catch(function () {
+          return null;
+        });
+      }
+
+      function saveWeatherLocationToServer(location) {
+        if (!empresaId || !isTrustedCachedLocation(location)) return Promise.resolve(false);
+        var payload = {
+          empresa_id: Number(empresaId) || empresaId,
+          clima: {
+            ciudad: text(location.city),
+            region: text(location.region),
+            pais: text(location.country),
+            pais_codigo: normalizeCode(location.countryCode),
+            moneda: normalizeCurrency(location.currency),
+            latitud: Number(location.latitude || 0),
+            longitud: Number(location.longitude || 0),
+            nombre: text(location.displayName) || [text(location.city), text(location.country)].filter(Boolean).join(", "),
+            fuente: text(location.source) || "manual"
+          }
+        };
+        return fetch(weatherConfigURL(), {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        }).then(function () {
+          return true;
+        });
+      }
+
+      function pickBigDataCloudCity(data) {
+        if (!data) return "";
+        var direct = text(data.city) || text(data.locality);
+        if (direct) return direct;
+        var levels = data.localityInfo && Array.isArray(data.localityInfo.administrative)
+          ? data.localityInfo.administrative
+          : [];
+        var preferredLevels = ["city", "municipality", "town", "village", "locality", "county"];
+        for (var p = 0; p < preferredLevels.length; p += 1) {
+          for (var i = 0; i < levels.length; i += 1) {
+            var level = levels[i] || {};
+            var label = text(level.description || level.adminLevelName || level.order);
+            if (label.toLowerCase().indexOf(preferredLevels[p]) >= 0 && text(level.name)) {
+              return text(level.name);
+            }
+          }
+        }
+        return "";
+      }
+
+      function reverseGeocodeLocationFallback(latitude, longitude) {
+        var url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" +
+          encodeURIComponent(latitude) + "&lon=" + encodeURIComponent(longitude) +
+          "&zoom=10&accept-language=es";
+        return fetchJSON(url).then(function (data) {
+          var address = data && data.address ? data.address : {};
+          return buildLocation({
+            city: address.city || address.town || address.village || address.municipality || address.county,
+            region: address.state || address.region,
+            country: address.country,
+            countryCode: address.country_code,
+            latitude: latitude,
+            longitude: longitude,
+            strictCity: true,
+            displayName: data && data.display_name,
+            source: "gps"
+          });
+        });
+      }
+
+      function fallbackLocationFromAdmin(admin) {
+        var locationName = resolveWeatherLocation(admin);
+        var pais = text(admin && (admin.pais || admin.Pais));
+        var ciudad = text(admin && (admin.ciudad || admin.Ciudad));
+        var countryCode = normalizeCode(admin && (admin.countryCode || admin.pais_codigo || admin.country_code)) || countryCodeFromName(pais);
+        var currency = normalizeCurrency(admin && (admin.currency || admin.moneda));
+        return buildLocation({
+          city: ciudad || locationName.split(",")[0],
+          country: pais || "Colombia",
+          countryCode: countryCode || "CO",
+          currency: currency || currencyForCountry(countryCode || "CO"),
+          displayName: locationName,
+          admin: admin,
+          source: "perfil"
+        });
+      }
+
+      function clearCachedLocation() {
+        try {
+          window.localStorage.removeItem(weatherLocationCacheKey());
+        } catch (e) {}
+      }
+
+      function profileCountryCode(profileLocation) {
+        if (!profileLocation) return "";
+        return normalizeCode(profileLocation.countryCode || profileLocation.pais_codigo || profileLocation.country_code) ||
+          countryCodeFromName(profileLocation.pais || profileLocation.Pais || profileLocation.country);
+      }
+
+      function locationConflictsWithProfile(location, profileLocation) {
+        var profileCode = profileCountryCode(profileLocation);
+        if (!profileCode) return false;
+        var locationCode = normalizeCode(location && (location.countryCode || location.country_code)) ||
+          countryCodeFromName(location && location.country);
+        return !!locationCode && locationCode !== profileCode;
+      }
+
+      function preferRegisteredLocation(profileLocation, statusMessage) {
+        clearCachedLocation();
+        var fallback = fallbackLocationFromAdmin(profileLocation);
+        if (statusMessage) setStatus(statusMessage, true);
+        return fallback;
+      }
+
+      function acceptAutomaticLocation(location, profileLocation, sourceName) {
+        var source = text(sourceName || (location && location.source));
+        if (source !== "ip" && locationConflictsWithProfile(location, profileLocation)) {
+          return preferRegisteredLocation(
+            profileLocation,
+            "La ubicacion automatica no coincide con el pais registrado; se uso la ciudad registrada."
+          );
+        }
+        if (location) {
+          location.source = location.source || source || "navegador";
+        }
+        return location;
+      }
+
+      function registeredLocationProfile(admin, empresa) {
+        admin = admin || {};
+        empresa = empresa || {};
+        var ciudad = text(admin.ciudad || admin.Ciudad || admin.city || admin.City || empresa.ciudad || empresa.Ciudad || empresa.city || empresa.City);
+        var pais = text(admin.pais || admin.Pais || admin.country || admin.Country || empresa.pais || empresa.Pais || empresa.country || empresa.Country);
+        var region = text(admin.departamento || admin.region || admin.Region || empresa.departamento || empresa.region || empresa.Region);
+        var countryCode = normalizeCode(admin.pais_codigo || admin.country_code || empresa.pais_codigo || empresa.country_code) || countryCodeFromName(pais);
+        if (!ciudad && !pais) return null;
+        return {
+          ciudad: ciudad,
+          Ciudad: ciudad,
+          pais: pais,
+          Pais: pais,
+          region: region,
+          countryCode: countryCode,
+          currency: normalizeCurrency(admin.moneda || empresa.moneda || empresa.currency)
+        };
+      }
+
+      function hasRegisteredLocation(admin) {
+        var ciudad = text(admin && (admin.ciudad || admin.Ciudad));
+        var pais = text(admin && (admin.pais || admin.Pais));
+        return ciudad.length >= 2 && pais.length >= 2;
+      }
+
+      function getGeolocationPermissionState() {
+        if (!navigator.permissions || !navigator.permissions.query) {
+          return Promise.resolve("");
+        }
+        return navigator.permissions.query({ name: "geolocation" }).then(function (permission) {
+          return permission && permission.state ? String(permission.state) : "";
+        }).catch(function () {
+          return "";
+        });
+      }
+
+      function getBrowserLocation() {
+        return new Promise(function (resolve, reject) {
+          if (!navigator.geolocation) {
+            reject(new Error("geolocation unavailable"));
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 600000
+          });
+        });
+      }
+
+      function readCachedLocation() {
+        try {
+          var raw = window.localStorage.getItem(weatherLocationCacheKey());
+          if (!raw) return null;
+          var parsed = JSON.parse(raw);
+          if (!parsed || !parsed.savedAt || (Date.now() - Number(parsed.savedAt)) > 24 * 60 * 60 * 1000) return null;
+          return buildLocation(parsed);
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function saveCachedLocation(location) {
+        if (!location || (!location.city && !location.displayName)) return;
+        if (location.source === "ip" || location.source === "navegador" || location.source === "perfil") return;
+        try {
+          window.localStorage.setItem(weatherLocationCacheKey(), JSON.stringify({
+            city: location.city,
+            region: location.region,
+            country: location.country,
+            countryCode: location.countryCode,
+            currency: location.currency,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            displayName: location.displayName,
+            source: location.source,
+            savedAt: Date.now()
+          }));
+        } catch (e) {}
+      }
+
+      function persistTrustedWeatherLocation(location) {
+        saveCachedLocation(location);
+        return saveWeatherLocationToServer(location).then(function (saved) {
+          if (saved) {
+            setWeatherHint(location.source === "gps"
+              ? "Ubicacion GPS guardada para esta empresa."
+              : "Ciudad del clima guardada para esta empresa.");
+          }
+          return saved;
+        }).catch(function () {
+          setWeatherHint("El clima se actualizo, pero no se pudo guardar la ubicacion en la base de datos.");
+          return false;
+        });
+      }
+
+      function reverseGeocodeLocation(latitude, longitude) {
+        var url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" +
+          encodeURIComponent(latitude) + "&longitude=" + encodeURIComponent(longitude) + "&localityLanguage=es";
+        return fetchJSON(url).then(function (data) {
+          var city = pickBigDataCloudCity(data);
+          if (!city) return reverseGeocodeLocationFallback(latitude, longitude);
+          return buildLocation({
+            city: city,
+            region: data && data.principalSubdivision,
+            country: data && data.countryName,
+            countryCode: data && data.countryCode,
+            latitude: latitude,
+            longitude: longitude,
+            strictCity: true,
+            source: "gps"
+          });
+        }).then(function (location) {
+          if (location && (location.city || location.displayName)) return location;
+          return reverseGeocodeLocationFallback(latitude, longitude);
+        }).catch(function () {
+          return reverseGeocodeLocationFallback(latitude, longitude);
+        });
+      }
+
+      function detectLocationByIP() {
+        var providers = [
+      {
+            url: "https://ipapi.co/json/",
+            map: function (data) {
+              if (!data || data.error) throw new Error("ipapi location unavailable");
+              return {
+                city: data.city,
+                region: data.region,
+                country: data.country_name,
+                countryCode: data.country_code,
+                currency: data.currency,
+                latitude: data.latitude,
+                longitude: data.longitude
+              };
+            }
+          },
+          {
+            url: "https://ipinfo.io/json",
+            map: function (data) {
+              if (!data || (!data.city && !data.loc)) throw new Error("ipinfo location unavailable");
+              var coords = text(data.loc).split(",");
+              return {
+                city: data.city,
+                region: data.region,
+                countryCode: data.country,
+                latitude: Number(coords[0] || 0),
+                longitude: Number(coords[1] || 0)
+              };
+            }
+          }
+        ];
+        var attempt = function (index) {
+          if (index >= providers.length) return Promise.reject(new Error("ip location unavailable"));
+          var provider = providers[index];
+          return fetchJSON(provider.url).then(function (data) {
+            var mapped = provider.map(data);
+            mapped.source = "ip";
+            return buildLocation(mapped);
+          }).catch(function () {
+            return attempt(index + 1);
+          });
+        };
+        return attempt(0);
+      }
+
+      function detectLocationByTimezone() {
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+        var cityFromTZ = tz.split("/").pop().replace(/_/g, " ");
+        if (!cityFromTZ) throw new Error("timezone city unavailable");
+        return buildLocation({
+          city: cityFromTZ,
+          displayName: cityFromTZ,
+          source: "navegador"
+        });
+      }
+
+      function detectLocationByGPS() {
+        return getBrowserLocation().then(function (pos) {
+          var coords = pos && pos.coords ? pos.coords : {};
+          var latitude = Number(coords.latitude || 0);
+          var longitude = Number(coords.longitude || 0);
+          if (!latitude || !longitude) throw new Error("gps coords unavailable");
+          return reverseGeocodeLocation(latitude, longitude).catch(function () {
+            return buildLocation({
+              city: "",
+              country: "",
+              latitude: latitude,
+              longitude: longitude,
+              displayName: "Ubicacion autorizada por el navegador",
+              source: "gps"
+            });
+          });
+        });
+      }
+
+      function detectLocationByBrowser() {
+        return detectLocationByIP().catch(function () {
+          try {
+            return Promise.resolve(detectLocationByTimezone());
+          } catch (e) {
+            throw new Error("browser location unavailable");
+          }
+        });
+      }
+
+      function isTrustedCachedLocation(location) {
+        var source = text(location && location.source);
+        return source === "gps" || source === "manual";
+      }
+
+      function isManualWeatherLocation(location) {
+        return text(location && location.source) === "manual";
+      }
+
+      function isGPSWeatherLocation(location) {
+        return text(location && location.source) === "gps";
+      }
+
+      function detectLocation(admin, empresa, savedLocation) {
+        var profileLocation = registeredLocationProfile(admin, empresa);
+        if (isManualWeatherLocation(savedLocation)) {
+          detectedLocation = savedLocation;
+          saveCachedLocation(savedLocation);
+          setWeatherHint("Usando la ciudad guardada manualmente en la base de datos.");
+          return Promise.resolve(savedLocation);
+        }
+        var cached = readCachedLocation();
+        if (isManualWeatherLocation(cached)) {
+          detectedLocation = cached;
+          setWeatherHint("Usando la ciudad guardada manualmente. Puedes cambiarla cuando lo necesites.");
+          return Promise.resolve(cached);
+        }
+        return detectLocationByIP()
+          .then(function (location) {
+            setWeatherHint("Ciudad detectada por IP. Puedes usar GPS o escribir otra ciudad si no coincide.");
+            return acceptAutomaticLocation(location, profileLocation, "ip");
+          })
+          .catch(function () {
+            if (isGPSWeatherLocation(savedLocation)) {
+              setWeatherHint("No se pudo detectar la ciudad por IP; usando GPS guardado.");
+              return savedLocation;
+            }
+            if (isGPSWeatherLocation(cached)) {
+              setWeatherHint("No se pudo detectar la ciudad por IP; usando GPS guardado localmente.");
+              return cached;
+            }
+            return getGeolocationPermissionState().then(function (state) {
+              if (state === "granted") {
+                return detectLocationByGPS().then(function (location) {
+                  setWeatherHint("No se pudo detectar la ciudad por IP; usando GPS autorizado.");
+                  return acceptAutomaticLocation(location, profileLocation, "gps");
+                });
+              }
+              if (hasRegisteredLocation(profileLocation)) {
+                setWeatherHint(state === "denied"
+                  ? "No se pudo detectar por IP y el GPS esta bloqueado; se uso la ciudad registrada."
+                  : "No se pudo detectar por IP; se uso la ciudad registrada.");
+                return fallbackLocationFromAdmin(profileLocation);
+              }
+              try {
+                var tzLocation = detectLocationByTimezone();
+                setWeatherHint("No se pudo detectar por IP; usando zona horaria del navegador.");
+                return acceptAutomaticLocation(tzLocation, profileLocation, "navegador");
+              } catch (e) {
+                return fallbackLocationFromAdmin(admin);
+              }
+            });
+          })
+          .then(function (location) {
+            detectedLocation = location || fallbackLocationFromAdmin(profileLocation || admin);
+            saveCachedLocation(detectedLocation);
+            return detectedLocation;
+          });
+      }
+
+      function weatherInfo(code, isDay) {
+        var item = weatherCodeMap[Number(code)] || ["Clima variable", "cloudy", "\u2601"];
+        if (!isDay && item[1] === "clear") {
+          return ["Noche despejada", "night", "\u263e"];
+        }
+        if (!isDay && item[1] === "cloudy") {
+          return [item[0], "night", item[2]];
+        }
+        return item;
+      }
+
+      function setHeroWeather(type) {
+        if (!hero) return;
+        hero.classList.remove("weather-clear", "weather-cloudy", "weather-rain", "weather-storm", "weather-night");
+        hero.classList.add("weather-" + (type || "clear"));
+      }
+
+      function renderWeather(place, forecast) {
+        var current = forecast && forecast.current ? forecast.current : {};
+        var info = weatherInfo(current.weather_code, Number(current.is_day) !== 0);
+        setHeroWeather(info[1]);
+        document.getElementById("weatherPlace").textContent = place;
+        document.getElementById("weatherIcon").textContent = info[2];
+        document.getElementById("weatherTemp").textContent = Math.round(Number(current.temperature_2m || 0)) + "\u00b0";
+        document.getElementById("weatherDesc").textContent = info[0];
+        document.getElementById("weatherFeels").textContent = Math.round(Number(current.apparent_temperature || current.temperature_2m || 0)) + "\u00b0";
+        document.getElementById("weatherHumidity").textContent = Number(current.relative_humidity_2m || 0) + "%";
+        document.getElementById("weatherWind").textContent = Math.round(Number(current.wind_speed_10m || 0)) + " km/h";
+        document.getElementById("weatherClouds").textContent = Number(current.cloud_cover || 0) + "%";
+        setStatus("Clima actualizado desde internet con Open-Meteo.", false);
+      }
+
+      function weatherStatusForSource(source) {
+        source = text(source);
+        if (source === "perfil") return "Clima basado en la ciudad registrada en tu perfil.";
+        if (source === "gps") return "Clima basado en la ubicacion autorizada por el navegador.";
+        if (source === "manual") return "Clima basado en la ciudad seleccionada manualmente.";
+        if (source === "navegador" || source === "ip") return "Clima basado en deteccion automatica del navegador.";
+        return "Clima actualizado desde internet con Open-Meteo.";
+      }
+
+      function loadWeather(location) {
+        var loc = location || detectedLocation || fallbackLocationFromAdmin({});
+        var locationName = loc.displayName || [loc.city, loc.country].filter(Boolean).join(", ") || "Ubicacion actual";
+        document.getElementById("weatherPlace").textContent = locationName;
+
+        function forecastByCoords(latitude, longitude, place, source) {
+          var forecastURL = "https://api.open-meteo.com/v1/forecast?latitude=" +
+            encodeURIComponent(latitude) + "&longitude=" + encodeURIComponent(longitude) +
+            "&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,is_day&timezone=auto";
+          return fetchJSON(forecastURL).then(function (forecast) {
+            renderWeather(place || locationName, forecast);
+            setStatus(weatherStatusForSource(source || loc.source), false);
+          });
+        }
+
+        if (Number(loc.latitude) && Number(loc.longitude)) {
+          return forecastByCoords(loc.latitude, loc.longitude, locationName, loc.source).catch(function () {
+            setHeroWeather("clear");
+            document.getElementById("weatherDesc").textContent = "No se pudo consultar el clima en este momento.";
+            setStatus("No se pudo obtener el clima desde internet. La pagina sigue disponible.", true);
+          });
+        }
+
+        var geocodeURL = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+          encodeURIComponent(locationName) + "&count=1&language=es&format=json";
+        return fetchJSON(geocodeURL)
+          .then(function (geo) {
+            var item = geo && Array.isArray(geo.results) ? geo.results[0] : null;
+            if (!item) throw new Error("ubicacion no encontrada");
+            var place = [item.name, item.admin1, item.country].filter(Boolean).join(", ");
+            loc.latitude = Number(item.latitude || 0);
+            loc.longitude = Number(item.longitude || 0);
+            loc.city = item.name || loc.city;
+            loc.region = item.admin1 || loc.region;
+            loc.country = item.country || loc.country;
+            loc.countryCode = item.country_code || loc.countryCode;
+            loc.displayName = place || locationName;
+            loc.currency = currencyForCountry(loc.countryCode, loc.currency);
+            saveCachedLocation(loc);
+            saveWeatherLocationToServer(loc).catch(function () {});
+            return forecastByCoords(item.latitude, item.longitude, place || locationName, loc.source);
+          })
+          .catch(function () {
+            setHeroWeather("clear");
+            document.getElementById("weatherDesc").textContent = "No se pudo consultar el clima en este momento.";
+            setStatus("No se pudo obtener el clima desde internet. La pagina sigue disponible.", true);
+          });
+      }
+
+      function renderWelcome(admin, empresa) {
+        var adminName = firstName(admin && (admin.name || admin.Name), admin && (admin.email || admin.Email));
+        var empresaName = text(empresa && (empresa.nombre || empresa.Nombre)) || "tu empresa";
+        var tipo = text(empresa && (empresa.tipo_nombre || empresa.TipoNombre));
+        document.getElementById("homeTitle").textContent = greetingByHour() + ", " + adminName + ".";
+        document.getElementById("homeKicker").textContent = "Centro operativo";
+        document.getElementById("homeSubtitle").textContent = tipo
+          ? "Bienvenido al centro operativo de " + empresaName + "."
+          : "Bienvenido al centro operativo de " + empresaName + ".";
+      }
+
+      function normalizeEmpresaLogoURL(value) {
+        var raw = text(value);
+        if (!raw) return "";
+        if (raw.charAt(0) === "/") {
+          return /^\/(uploads|img)\//.test(raw) ? raw : "";
+        }
+        try {
+          var url = new URL(raw);
+          return (url.protocol === "https:" || url.protocol === "http:") ? raw : "";
+        } catch (_) {
+          return "";
+        }
+      }
+
+      function applyEmpresaLogo(config) {
+        var wrap = document.getElementById("empresaLogoPanelWrap");
+        var img = document.getElementById("empresaLogoPanel");
+        if (!wrap || !img) return;
+        var cfg = config && typeof config === "object" ? config : {};
+        var showLogo = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
+        var logoURL = showLogo ? normalizeEmpresaLogoURL(cfg.logo_url) : "";
+        wrap.hidden = !logoURL;
+        img.src = logoURL || "";
+      }
+
+      function refreshWeatherLocation(location) {
+        detectedLocation = location;
+        persistTrustedWeatherLocation(location);
+        return loadWeather(location);
+      }
+
+      function requestGPSWeather() {
+        setWeatherGPSBusy(true);
+        setStatus("Solicitando permiso GPS del navegador.", false);
+        setWeatherHint("Acepta el permiso de ubicacion del navegador para usar tu ciudad exacta.");
+        return detectLocationByGPS()
+          .then(function (location) {
+            location.source = "gps";
+            setWeatherHint("GPS actualizado correctamente.");
+            return refreshWeatherLocation(location);
+          })
+          .catch(function () {
+            setWeatherHint("No se pudo leer el GPS. Revisa el permiso del navegador o escribe tu ciudad.");
+            setStatus("No se pudo obtener GPS del navegador.", true);
+          })
+          .then(function () {
+            setWeatherGPSBusy(false);
+          });
+      }
+
+      function setupWeatherControls() {
+        if (weatherGpsBtn) {
+          weatherGpsBtn.addEventListener("click", function () {
+            requestGPSWeather();
+          });
+        }
+        if (weatherManualToggle && weatherManualForm) {
+          weatherManualToggle.addEventListener("click", function () {
+            var willShow = !!weatherManualForm.hidden;
+            weatherManualForm.hidden = !willShow;
+            weatherManualToggle.textContent = willShow ? "Ocultar ciudad" : "Cambiar ciudad";
+            if (willShow && weatherManualInput) weatherManualInput.focus();
+          });
+        }
+        if (weatherManualForm) {
+          weatherManualForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            var raw = text(weatherManualInput && weatherManualInput.value);
+            if (!raw) {
+              setWeatherHint("Escribe la ciudad y el pais para mejorar la precision.");
+              return;
+            }
+            var location = buildLocation({
+              city: raw.split(",")[0],
+              displayName: raw,
+              source: "manual"
+            });
+            setWeatherHint("Actualizando clima para " + raw + ".");
+            refreshWeatherLocation(location);
+          });
+        }
+      }
+
+      function guidedPendingKey() {
+        return "pcs_config_assistant_pending_" + String(empresaId || "");
+      }
+
+      function guidedDismissedKey() {
+        return "pcs_config_assistant_dismissed_" + String(empresaId || "");
+      }
+
+      function guidedDismissedKeys() {
+        var id = String(empresaId || "");
+        return [
+          guidedDismissedKey(),
+          "pcs_guided_setup_dismissed_" + id,
+          "pcs_empresa_configuracion_guiada_oculta_" + id,
+          "pcs_config_assistant_dismissed"
+        ];
+      }
+
+      function hasGuidedPendingFlag() {
+        if (!empresaId) return false;
+        try {
+          return !!(window.localStorage.getItem(guidedPendingKey()) || window.sessionStorage.getItem(guidedPendingKey()));
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function clearGuidedPendingFlag() {
+        if (!empresaId) return;
+        try { window.localStorage.removeItem(guidedPendingKey()); } catch (e) {}
+        try { window.sessionStorage.removeItem(guidedPendingKey()); } catch (e) {}
+      }
+
+      function hasGuidedDismissedFlag() {
+        return false;
+      }
+
+      function setGuidedDismissedFlag() {
+        if (!empresaId) return;
+        clearGuidedPendingFlag();
+        guidedDismissedKeys().forEach(function (key) {
+          try { window.localStorage.removeItem(key); } catch (e) {}
+          try { window.sessionStorage.removeItem(key); } catch (e) {}
+        });
+      }
+
+      function renderGuidedInput(question) {
+        var type = String(question.type || "text").toLowerCase();
+        var value = question.default_value == null ? "" : String(question.default_value);
+        if (type === "boolean") {
+          return '<select class="form-input empresa-guided-input" data-guided-answer="' + escapeAttr(question.id) + '">' +
+            '<option value="si"' + (value === "si" || value === "true" ? " selected" : "") + '>Si</option>' +
+            '<option value="no"' + (value === "no" || value === "false" ? " selected" : "") + '>No</option>' +
+            '</select>';
+        }
+        if (type === "select" && Array.isArray(question.options)) {
+          return '<select class="form-input empresa-guided-input" data-guided-answer="' + escapeAttr(question.id) + '">' +
+            question.options.map(function (option) {
+              option = String(option || "");
+              return '<option value="' + escapeAttr(option) + '"' + (option === value ? " selected" : "") + '>' + escapeHTML(option) + '</option>';
+            }).join("") +
+            '</select>';
+        }
+        if (type === "textarea") {
+          return '<textarea class="form-input empresa-guided-input" rows="3" data-guided-answer="' + escapeAttr(question.id) + '" placeholder="' + escapeAttr(question.placeholder || "") + '">' + escapeHTML(value) + '</textarea>';
+        }
+        return '<input class="form-input empresa-guided-input" data-guided-answer="' + escapeAttr(question.id) + '" type="' + (type === "number" ? "number" : "text") + '" value="' + escapeAttr(value) + '" placeholder="' + escapeAttr(question.placeholder || "") + '">';
+      }
+
+      function isGuidedSetupDismissed(configData) {
+        var resumen = configData && configData.resumen ? configData.resumen : null;
+        var estado = configData && configData.estado ? configData.estado : {};
+        var anterior = estado && estado.resumen_anterior ? estado.resumen_anterior : null;
+        var meta = resumen || anterior || {};
+        var rawEstado = String(meta.estado || "").toLowerCase();
+        var noMostrar = String(meta.no_mostrar_mas || "").toLowerCase();
+        var pospuesta = String(meta.pospuesta || "").toLowerCase();
+        return !!(
+          meta.no_mostrar_mas === true ||
+          meta.pospuesta === true ||
+          noMostrar === "1" ||
+          noMostrar === "true" ||
+          pospuesta === "1" ||
+          pospuesta === "true" ||
+          rawEstado === "pospuesta" ||
+          rawEstado === "no_mostrar_mas" ||
+          rawEstado === "oculta" ||
+          rawEstado === "oculto"
+        );
+      }
+
+      function openGuidedSetupModal(configData) {
+        if (!empresaId || !configData || !configData.wizard) return;
+        if (configData.auto_abrir === false || configData.oculta_por_usuario === true) {
+          clearGuidedPendingFlag();
+          return;
+        }
+        if (hasGuidedDismissedFlag()) {
+          clearGuidedPendingFlag();
+          return;
+        }
+        var estado = configData.estado || {};
+        var dismissed = isGuidedSetupDismissed(configData);
+        if (dismissed) {
+          clearGuidedPendingFlag();
+          return;
+        }
+        var shouldOpen = configData.auto_abrir === true || hasGuidedPendingFlag() || !estado.configurada_anterior;
+        if (!shouldOpen) return;
+        var wizard = configData.wizard || {};
+        var questions = Array.isArray(wizard.questions) ? wizard.questions : [];
+        if (!questions.length) return;
+        var existing = document.getElementById("empresaGuidedOverlay");
+        if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+        var overlay = document.createElement("div");
+        overlay.id = "empresaGuidedOverlay";
+        overlay.className = "empresa-guided-overlay is-visible";
+        overlay.innerHTML =
+          '<section class="empresa-guided-dialog" role="dialog" aria-modal="true" aria-labelledby="empresaGuidedTitle">' +
+            '<div class="empresa-guided-head">' +
+              '<div><h2 id="empresaGuidedTitle" class="empresa-guided-title">' + escapeHTML(wizard.title || "Configuracion guiada inicial") + '</h2>' +
+              '<p class="empresa-guided-description">' + escapeHTML(wizard.description || "Responde estas preguntas para dejar la empresa lista para operar.") + '</p></div>' +
+              '<button id="empresaGuidedClose" class="btn secondary" type="button">No volver a mostrar</button>' +
+            '</div>' +
+            '<form id="empresaGuidedForm">' +
+              '<div class="empresa-guided-body">' +
+                questions.map(function (question) {
+                  var wide = String(question.type || "").toLowerCase() === "textarea" || String(question.prompt || "").length > 120;
+                  return '<label class="empresa-guided-field' + (wide ? " is-wide" : "") + '">' +
+                    '<span class="empresa-guided-label">' + escapeHTML(question.label || question.id || "Pregunta") + (question.required ? " *" : "") + '</span>' +
+                    '<span class="empresa-guided-prompt">' + escapeHTML(question.prompt || "") + '</span>' +
+                    renderGuidedInput(question || {}) +
+                    (question.help ? '<span class="empresa-guided-prompt">' + escapeHTML(question.help) + '</span>' : '') +
+                  '</label>';
+                }).join("") +
+              '</div>' +
+              '<div class="empresa-guided-actions">' +
+                '<p id="empresaGuidedStatus" class="empresa-guided-status" aria-live="polite"></p>' +
+                '<label class="empresa-guided-status" style="display:flex;align-items:center;gap:8px;margin-right:auto;"><input id="empresaGuidedNoMostrarMas" type="checkbox"> No volver a mostrar</label>' +
+                '<button id="empresaGuidedApply" class="btn" type="submit">Aplicar configuracion</button>' +
+              '</div>' +
+            '</form>' +
+          '</section>';
+        document.body.appendChild(overlay);
+        var dismissingGuidedSetup = false;
+        function dismissGuidedSetupPermanently(source) {
+          if (dismissingGuidedSetup) return;
+          dismissingGuidedSetup = true;
+          var closeBtn = document.getElementById("empresaGuidedClose");
+          var status = document.getElementById("empresaGuidedStatus");
+          var noMostrarMas = document.getElementById("empresaGuidedNoMostrarMas");
+          var apply = document.getElementById("empresaGuidedApply");
+          var action = "no_mostrar_mas";
+          if (noMostrarMas) noMostrarMas.checked = true;
+          if (closeBtn) closeBtn.disabled = true;
+          if (apply) apply.disabled = true;
+          if (status) status.textContent = "Guardando decision...";
+          fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId) + "&action=" + encodeURIComponent(action), {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-PCS-Source": "empresa_panel_guided_setup_later" },
+            body: JSON.stringify({ answers: {}, decision: action, source: source || "panel" })
+          }).then(function () {
+            setGuidedDismissedFlag();
+            overlay.classList.remove("is-visible");
+            overlay.setAttribute("hidden", "hidden");
+            if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          }).catch(function (err) {
+            dismissingGuidedSetup = false;
+            if (closeBtn) closeBtn.disabled = false;
+            if (apply) apply.disabled = false;
+            if (noMostrarMas) noMostrarMas.checked = false;
+            if (status) status.textContent = err && err.message ? "No se pudo guardar. Intenta de nuevo." : "No se pudo guardar. Intenta de nuevo.";
+          });
+        }
+        document.getElementById("empresaGuidedClose").addEventListener("click", function () {
+          dismissGuidedSetupPermanently("boton_no_volver_a_mostrar");
+        });
+        document.getElementById("empresaGuidedNoMostrarMas").addEventListener("change", function (event) {
+          if (event && event.target && event.target.checked) {
+            dismissGuidedSetupPermanently("check_no_volver_a_mostrar");
+          }
+        });
+        document.getElementById("empresaGuidedForm").addEventListener("submit", function (event) {
+          event.preventDefault();
+          var answers = {};
+          Array.prototype.forEach.call(overlay.querySelectorAll("[data-guided-answer]"), function (input) {
+            answers[input.getAttribute("data-guided-answer")] = input.value;
+          });
+          var status = document.getElementById("empresaGuidedStatus");
+          var apply = document.getElementById("empresaGuidedApply");
+          if (status) status.textContent = "Aplicando configuracion...";
+          if (apply) apply.disabled = true;
+          fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId) + "&action=aplicar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-PCS-Source": "empresa_panel_guided_setup" },
+            body: JSON.stringify({ answers: answers })
+          }).then(function (data) {
+            var result = data && data.resultado ? data.resultado : {};
+            if (status) status.textContent = result.mensaje || "Configuracion aplicada.";
+            clearGuidedPendingFlag();
+            window.setTimeout(function () {
+              overlay.classList.remove("is-visible");
+            }, 900);
+          }).catch(function (err) {
+            if (status) status.textContent = err && err.message ? err.message : "No se pudo aplicar la configuracion.";
+          }).finally(function () {
+            if (apply) apply.disabled = false;
+          });
+        });
+      }
+
+      function init() {
+        setDateText();
+        applyEmpresaLinks();
+        renderFavorites();
+        setupWeatherControls();
+        setupEmpresaBuzonControls();
+        loadMaintenanceNotice();
+        loadPanelConfig().then(function () {
+          if (empresaPanelConfig.email_enabled) loadEmpresaEmailPanel();
+          if (empresaPanelConfig.buzon_enabled) loadEmpresaBuzonUsuarios();
+          if (empresaPanelConfig.buzon_enabled || empresaPanelConfig.chat_enabled) {
+            loadEmpresaBuzon();
+            if (empresaBuzonInterval) window.clearInterval(empresaBuzonInterval);
+            empresaBuzonInterval = window.setInterval(loadEmpresaBuzon, 60000);
+          }
+          if (empresaPanelConfig.noticias_enabled) loadLatestSystemNews();
+        });
+        var adminPromise = fetchJSON("/me").catch(function () { return {}; });
+        var guidedConfigPromise = empresaId
+          ? fetchJSON("/api/empresa/configuracion_guiada?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
+          : Promise.resolve({});
+        var empresaPromise = guidedConfigPromise.then(function (data) {
+              var estado = data && data.estado && typeof data.estado === "object" ? data.estado : data;
+              return {
+                nombre: estado && (estado.empresa_nombre || estado.nombre || ""),
+                tipo_nombre: estado && (estado.tipo_empresa_nombre || "")
+              };
+            }).catch(function () { return {}; });
+        var weatherConfigPromise = loadSavedWeatherLocation();
+        var identidadPromise = empresaId
+          ? fetchJSON("/api/empresa/configuracion_avanzada?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
+          : Promise.resolve({});
+        var permisosPromise = empresaId
+          ? fetchJSON("/api/empresa/permisos_contexto?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
+          : Promise.resolve({});
+        Promise.all([adminPromise, empresaPromise, weatherConfigPromise, identidadPromise, permisosPromise, guidedConfigPromise]).then(function (values) {
+          var admin = values[0] || {};
+          var empresa = values[1] || {};
+          var savedLocation = values[2] || null;
+          var identidad = values[3] || {};
+          var permissionContext = values[4] || {};
+          var guidedConfig = values[5] || {};
+          renderWelcome(admin, empresa);
+          applyEmpresaLogo(identidad);
+          openGuidedSetupModal(guidedConfig);
+          return detectLocation(admin, empresa, savedLocation).then(function (location) {
+            return loadWeather(location);
+          });
+        });
+      }
+
+      window.addEventListener("storage", function (event) {
+        if (event && event.key === favoritesStorageKey()) {
+          renderFavorites();
+        }
+      });
+
+      window.addEventListener("message", function (event) {
+        if (event.origin !== window.location.origin) return;
+        var data = event.data || {};
+        if (data.type === "pcs-admin-favorites-changed") {
+          renderFavorites();
+        }
+      });
+
+      init();
+    })();
+  </script>
+</body>
+</html>

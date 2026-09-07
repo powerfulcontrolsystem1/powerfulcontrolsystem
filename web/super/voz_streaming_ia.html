@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Voz IA streaming</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .voice-status-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:14px 0; }
+    .voice-status-item { border:1px solid var(--content-soft-border); border-radius:8px; background:var(--content-soft-bg); padding:12px; }
+    .voice-status-item strong { display:block; color:var(--text); margin-bottom:4px; }
+    .voice-status-item span { color:var(--muted); font-size:.92rem; }
+    .voice-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .voice-message-error { color:#fca5a5; }
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Voz IA streaming</h1>
+      <p class="form-help">Configura la voz de la IA. La voz rápida del computador usa el navegador y responde casi al instante; la voz natural usa Piper en el VPS y puede tardar mas en cargar.</p>
+    </div>
+
+    <section class="card form advanced-card" data-brand="ai">
+      <h2>Motor de voz de la IA</h2>
+      <p class="form-help">Si seleccionas voz rápida del computador, el sistema desactiva el servicio natural del VPS y ejecuta <code>systemctl stop pcs-voice-stream</code> como mejor esfuerzo para liberar memoria.</p>
+
+      <div class="voice-status-grid">
+        <div class="voice-status-item">
+          <strong>Configuración</strong>
+          <span id="voiceConfigState">Cargando...</span>
+        </div>
+        <div class="voice-status-item">
+          <strong>Modo activo</strong>
+          <span id="voiceModeState">Cargando...</span>
+        </div>
+        <div class="voice-status-item">
+          <strong>Servicio VPS</strong>
+          <span id="voiceServiceState">Sin comprobar</span>
+        </div>
+        <div class="voice-status-item">
+          <strong>Fallback</strong>
+          <span>Si el servicio falla, el chat usa voz del navegador o continua en texto.</span>
+        </div>
+        <div class="voice-status-item">
+          <strong>Credencial</strong>
+          <span id="voiceAuthState">Sin comprobar</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Voz rapida del computador</label>
+          <label class="mode-switch-row" for="voiceComputerMode">
+            <span class="mode-label">Off</span>
+            <input id="voiceComputerMode" type="checkbox" role="switch" aria-label="Usar voz rápida del computador">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Usa la síntesis de voz del navegador. Es menos natural, pero inicia mucho más rápido y no consume memoria en el VPS.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Voz natural del VPS</label>
+          <label class="mode-switch-row" for="voiceNaturalMode">
+            <span class="mode-label">Off</span>
+            <input id="voiceNaturalMode" type="checkbox" role="switch" aria-label="Usar voz natural del VPS">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Usa Piper/FastAPI en el VPS. Cuando esta activo puede consumir memoria mientras el servicio esta levantado.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar / desactivar voz natural</label>
+          <label class="mode-switch-row" for="voiceStreamEnabled">
+            <span class="mode-label">Off</span>
+            <input id="voiceStreamEnabled" type="checkbox" role="switch" aria-label="Activar servidor de voz IA">
+            <span class="mode-label">On</span>
+          </label>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="voiceComputerGender">Voz de computador</label>
+          <select id="voiceComputerGender" class="form-input">
+            <option value="female">Femenina rapida</option>
+            <option value="male">Masculina rapida</option>
+          </select>
+          <div class="form-help">La voz exacta depende del navegador y del sistema operativo, pero se prioriza el genero elegido.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamProvider">Proveedor abierto natural</label>
+          <input id="voiceStreamProvider" class="form-input" type="text" value="piper" placeholder="piper">
+          <div class="form-help">Piper TTS convierte texto a voz natural sin depender de servicios cerrados.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamBaseURL">URL del servidor VPS</label>
+          <input id="voiceStreamBaseURL" class="form-input" type="url" placeholder="http://127.0.0.1:8097">
+          <div class="form-help">Usa una URL interna si backend y voz corren en el mismo VPS. Si es remoto, usa HTTPS y firewall.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamVoice">Voz / idioma</label>
+          <input id="voiceStreamVoice" class="form-input" type="text" placeholder="es-CO">
+          <div class="form-help">La voz real depende del modelo Piper configurado en el servidor.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamTimeoutMS">Timeout del proxy (ms)</label>
+          <input id="voiceStreamTimeoutMS" class="form-input" type="number" min="1000" max="60000" step="500" value="12000">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Comandos VPS</label>
+          <div class="form-help">Instalador incluido: <code>scripts/install_voice_stream_server_vps.sh</code>. Servicio systemd: <code>pcs-voice-stream</code>.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamAuthHeader">Header de autenticacion</label>
+          <input id="voiceStreamAuthHeader" class="form-input" type="text" value="X-PCS-Voice-Token" placeholder="X-PCS-Voice-Token">
+          <div class="form-help">Debe coincidir con <code>VOICE_STREAM_AUTH_HEADER</code> del servicio VPS.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="voiceStreamAuthToken">Token secreto</label>
+          <input id="voiceStreamAuthToken" class="form-input" type="password" placeholder="********">
+          <label class="form-help"><input id="voiceStreamGenerateToken" type="checkbox"> Generar y registrar token nuevo al guardar.</label>
+          <div class="form-help">Se guarda cifrado en la base de datos de super administrador. Si no escribes nada, se conserva el token actual.</div>
+        </div>
+      </div>
+
+      <div class="voice-actions">
+        <button id="editVoiceStreamConfig" type="button" class="btn secondary">Editar</button>
+        <button id="saveVoiceStreamConfig" type="button" class="btn primary">Guardar</button>
+        <button id="cancelVoiceStreamConfig" type="button" class="btn secondary" style="display:none;">Cancelar</button>
+        <button id="activateTestVoiceStreamConfig" type="button" class="btn">Activar y probar</button>
+        <button id="testVoiceStreamConfig" type="button" class="btn secondary">Probar servicio</button>
+        <span id="voiceStreamMessage" class="form-help"></span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var enabled = document.getElementById('voiceStreamEnabled');
+      var baseURL = document.getElementById('voiceStreamBaseURL');
+      var provider = document.getElementById('voiceStreamProvider');
+      var voice = document.getElementById('voiceStreamVoice');
+      var computerMode = document.getElementById('voiceComputerMode');
+      var naturalMode = document.getElementById('voiceNaturalMode');
+      var computerGender = document.getElementById('voiceComputerGender');
+      var timeoutMS = document.getElementById('voiceStreamTimeoutMS');
+      var authHeader = document.getElementById('voiceStreamAuthHeader');
+      var authToken = document.getElementById('voiceStreamAuthToken');
+      var generateToken = document.getElementById('voiceStreamGenerateToken');
+      var msg = document.getElementById('voiceStreamMessage');
+      var configState = document.getElementById('voiceConfigState');
+      var modeState = document.getElementById('voiceModeState');
+      var serviceState = document.getElementById('voiceServiceState');
+      var authState = document.getElementById('voiceAuthState');
+      var currentMode = 'computer';
+      var editable = true;
+      var editableIds = [
+        'voiceComputerMode',
+        'voiceNaturalMode',
+        'voiceStreamEnabled',
+        'voiceComputerGender',
+        'voiceStreamProvider',
+        'voiceStreamBaseURL',
+        'voiceStreamVoice',
+        'voiceStreamTimeoutMS',
+        'voiceStreamAuthHeader',
+        'voiceStreamAuthToken',
+        'voiceStreamGenerateToken'
+      ];
+
+      function auditVoiceEvent(action) {
+        try {
+          fetch('/super/api/auditoria?action=ui_event&scope=super_panel', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              accion: action || 'interaccion_voz_ia',
+              modulo: 'super_config_voz_ia',
+              recurso: 'voz_streaming_ia',
+              endpoint: window.location.pathname,
+              observaciones: 'interaccion visual sobre credenciales de voz IA',
+              metadata: { pagina: 'voz_streaming_ia' }
+            })
+          }).catch(function(){});
+        } catch (e) {}
+      }
+
+      function setEditMode(isEditing) {
+        editable = !!isEditing;
+        editableIds.forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.disabled = !editable;
+        });
+        if (currentMode === 'computer') enabled.disabled = true;
+        document.getElementById('saveVoiceStreamConfig').style.display = editable ? '' : 'none';
+        document.getElementById('editVoiceStreamConfig').style.display = editable ? 'none' : '';
+        document.getElementById('cancelVoiceStreamConfig').style.display = editable ? '' : 'none';
+      }
+
+      function setMessage(text, error) {
+        msg.textContent = text || '';
+        msg.classList.toggle('voice-message-error', !!error);
+      }
+
+      function applyConfig(config) {
+        currentMode = (config.mode === 'natural') ? 'natural' : 'computer';
+        computerMode.checked = currentMode === 'computer';
+        naturalMode.checked = currentMode === 'natural';
+        enabled.checked = currentMode === 'natural' && !!config.enabled;
+        enabled.disabled = currentMode === 'computer';
+        baseURL.value = config.base_url || '';
+        provider.value = config.provider || 'piper';
+        voice.value = config.voice || 'es-CO';
+        computerGender.value = config.computer_gender === 'male' ? 'male' : 'female';
+        timeoutMS.value = config.timeout_ms || 12000;
+        authHeader.value = config.auth_header || 'X-PCS-Voice-Token';
+        authToken.value = '';
+        generateToken.checked = false;
+        modeState.textContent = currentMode === 'computer' ? 'Voz rapida del computador' : 'Voz natural VPS';
+        configState.textContent = currentMode === 'computer'
+          ? 'Voz rapida activa; servidor natural apagado'
+          : (config.enabled ? 'Voz natural activa en backend' : 'Voz natural configurada pero desactivada');
+        authState.textContent = config.auth_configured
+          ? ('Token registrado' + (config.auth_encrypted ? ' y cifrado' : ' sin cifrar'))
+          : 'Token no registrado';
+        if (config.encryption_available === false) {
+          authState.textContent = 'Cifrado no disponible: configura CONFIG_ENC_KEY';
+        }
+        setEditMode(!config.auth_configured);
+      }
+
+      function setVoiceMode(mode) {
+        currentMode = mode === 'natural' ? 'natural' : 'computer';
+        computerMode.checked = currentMode === 'computer';
+        naturalMode.checked = currentMode === 'natural';
+        enabled.disabled = currentMode === 'computer';
+        if (currentMode === 'computer') enabled.checked = false;
+        modeState.textContent = currentMode === 'computer' ? 'Voz rapida del computador' : 'Voz natural VPS';
+      }
+
+      async function loadConfig() {
+        setMessage('Cargando configuración...');
+        try {
+          var res = await fetch('/super/api/config/voice_stream', { credentials: 'same-origin' });
+          var data = await res.json();
+          if (!res.ok || !data.ok) throw new Error(data.error || res.status);
+          applyConfig(data.config || {});
+          setMessage('');
+        } catch (err) {
+          setMessage('No se pudo cargar: ' + err.message, true);
+        }
+      }
+
+      async function saveConfig() {
+        auditVoiceEvent('guardar_configuracion');
+        setMessage('Guardando...');
+        try {
+          var payload = {
+            mode: currentMode,
+            enabled: currentMode === 'natural' && enabled.checked,
+            base_url: baseURL.value.trim(),
+            provider: provider.value.trim() || 'piper',
+            voice: voice.value.trim() || 'es-CO',
+            computer_gender: computerGender.value === 'male' ? 'male' : 'female',
+            timeout_ms: Number(timeoutMS.value || 12000),
+            auth_header: authHeader.value.trim() || 'X-PCS-Voice-Token'
+          };
+          var tokenValue = authToken.value.trim();
+          if (tokenValue) payload.auth_token = tokenValue;
+          if (generateToken.checked) payload.generate_auth_token = true;
+          var res = await fetch('/super/api/config/voice_stream', {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          var text = await res.text();
+          var data = {};
+          try { data = JSON.parse(text); } catch (e) {}
+          if (!res.ok) throw new Error(text || res.status);
+          applyConfig(data.config || payload);
+          var serviceMsg = data.service_control && data.service_control.action
+            ? (' Servicio VPS: ' + data.service_control.action + ' ' + (data.service_control.ok ? 'OK.' : 'no confirmado.'))
+            : '';
+          setMessage('Configuración guardada.' + serviceMsg);
+        } catch (err) {
+          setMessage('No se pudo guardar: ' + err.message, true);
+        }
+      }
+
+      async function testConfig() {
+        auditVoiceEvent('probar_voz_ia');
+        if (currentMode === 'computer') {
+          serviceState.textContent = 'No requerido: usa voz del navegador';
+          setMessage('Voz rapida lista. No se consulta el servicio natural del VPS.');
+          return;
+        }
+        setMessage('Probando servicio...');
+        serviceState.textContent = 'Comprobando...';
+        try {
+          var res = await fetch('/super/api/config/voice_stream?action=test', {
+            method: 'POST',
+            credentials: 'same-origin'
+          });
+          var text = await res.text();
+          var data = {};
+          try { data = JSON.parse(text); } catch (e) {}
+          if (!res.ok || !data.ok) throw new Error(data.error || data.status || text || res.status);
+          serviceState.textContent = 'Disponible (' + data.status + ')';
+          setMessage('Servicio disponible.');
+        } catch (err) {
+          serviceState.textContent = 'No disponible';
+          setMessage('Prueba fallida: ' + err.message, true);
+        }
+      }
+
+      async function activateAndTestConfig() {
+        auditVoiceEvent('activar_prueba_voz_ia');
+        setVoiceMode('natural');
+        enabled.checked = true;
+        setMessage('Activando y registrando credencial...');
+        serviceState.textContent = 'Comprobando...';
+        try {
+          var res = await fetch('/super/api/config/voice_stream?action=activate_test', {
+            method: 'POST',
+            credentials: 'same-origin'
+          });
+          var text = await res.text();
+          var data = {};
+          try { data = JSON.parse(text); } catch (e) {}
+          if (data.config) applyConfig(data.config);
+          if (!res.ok || !data.ok) {
+            var status = data.status || {};
+            throw new Error(status.error || status.status || text || res.status);
+          }
+          serviceState.textContent = 'Disponible (' + ((data.status && data.status.status) || 'OK') + ')';
+          setMessage('Servicio activo, credencial registrada y VPS disponible.');
+        } catch (err) {
+          serviceState.textContent = 'No disponible';
+          setMessage('Activado/configurado, pero la prueba falló: ' + err.message, true);
+        }
+      }
+
+      document.getElementById('editVoiceStreamConfig').addEventListener('click', function () {
+        setEditMode(true);
+        auditVoiceEvent('habilitar_edicion_configuracion');
+        setMessage('Modo edicion activo para voz IA. Los secretos no se guardan en auditoria.');
+      });
+      document.getElementById('cancelVoiceStreamConfig').addEventListener('click', function () {
+        auditVoiceEvent('cancelar_edicion_configuracion');
+        loadConfig();
+      });
+      document.getElementById('saveVoiceStreamConfig').addEventListener('click', saveConfig);
+      document.getElementById('activateTestVoiceStreamConfig').addEventListener('click', activateAndTestConfig);
+      document.getElementById('testVoiceStreamConfig').addEventListener('click', testConfig);
+      computerMode.addEventListener('change', function () {
+        if (computerMode.checked) setVoiceMode('computer');
+        else setVoiceMode('natural');
+      });
+      naturalMode.addEventListener('change', function () {
+        if (naturalMode.checked) setVoiceMode('natural');
+        else setVoiceMode('computer');
+      });
+      loadConfig();
+    })();
+  </script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

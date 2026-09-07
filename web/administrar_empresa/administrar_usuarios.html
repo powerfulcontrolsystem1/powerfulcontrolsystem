@@ -1,0 +1,1301 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar usuarios</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .usuario-photo-field{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;align-items:center}
+    .usuario-photo{width:64px;height:64px;border-radius:8px;border:1px solid var(--border);background:var(--surface-soft);display:grid;place-items:center;overflow:hidden;font-weight:800;color:var(--muted)}
+    .usuario-photo img{width:100%;height:100%;object-fit:cover}
+    .usuario-photo.small{width:42px;height:42px;font-size:.78rem}
+    .station-access-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px}
+    .station-access-check{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--surface-soft)}
+    .station-access-check input{width:18px;height:18px}
+    .station-access-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .roles-catalog{display:grid;gap:8px;margin-top:10px;max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface-soft)}
+    .role-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:9px 10px}
+    .role-row strong{display:block;color:var(--text)}
+    .role-row small{display:block;color:var(--muted);line-height:1.35;margin-top:2px}
+    .role-row.is-selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent)}
+    .role-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .role-actions .btn{padding:7px 10px}
+    .role-editor-grid{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr) auto;gap:10px;align-items:end}
+    .role-editor-current{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;margin-top:10px;color:var(--text)}
+    .role-editor-current strong{display:block}
+    .role-editor-current small{display:block;color:var(--muted);line-height:1.4;margin-top:3px}
+    .custom-role-grid{display:grid;grid-template-columns:minmax(160px,1fr) minmax(180px,1fr) minmax(180px,1fr);gap:10px;align-items:end}
+    .custom-role-list{display:grid;gap:8px;margin-top:12px}
+    .custom-role-badge{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:2px 7px;margin-left:6px;font-size:.72rem;color:var(--muted);background:var(--surface-soft);font-weight:700}
+    .usuarios-global-msg{display:none;margin:12px 0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);font-weight:700}
+    .usuarios-global-msg.is-visible{display:block}
+    .usuarios-global-msg.value-negative{border-color:var(--danger,#ef4444);color:var(--danger,#ef4444)}
+    .usuario-row-highlight{outline:2px solid var(--accent);outline-offset:-2px;background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+    .usuario-row-highlight td{font-weight:700}
+    body.usuarios-page{background:var(--bg);color:var(--text)}
+    .usuarios-page .container{display:grid;gap:14px}
+    .usuarios-page #form{
+      width:100%;
+      max-width:none;
+      margin:0;
+      background:var(--card);
+      border:1px solid var(--border);
+      color:var(--text);
+      box-shadow:none;
+      backdrop-filter:none;
+    }
+    .usuarios-page #form .form-row{align-items:flex-start}
+    .usuarios-page #form .form-label{color:var(--text)}
+    .usuarios-page #form .form-help{color:var(--muted)}
+    .usuarios-page #form .form-input,
+    .usuarios-page #form .form-textarea,
+    .usuarios-page #form select.form-input{
+      background:var(--form-input-bg);
+      border-color:var(--form-border);
+      color:var(--text);
+    }
+    .usuarios-page #form .form-input::placeholder,
+    .usuarios-page #form .form-textarea::placeholder{
+      color:color-mix(in srgb,var(--muted) 72%,transparent);
+    }
+    .usuarios-page .roles-catalog,
+    .usuarios-page .usuario-photo,
+    .usuarios-page .role-editor-current,
+    .usuarios-page .station-access-check{
+      background:var(--surface-soft);
+      border-color:var(--border);
+      color:var(--text);
+    }
+    .usuarios-page .role-row{
+      background:var(--surface);
+      border-color:var(--border);
+      color:var(--text);
+    }
+    .usuarios-page .role-row.is-selected{
+      border-color:var(--accent);
+      box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 20%,transparent);
+    }
+    html.theme-light .usuarios-page #form,
+    html[data-theme^="light"] .usuarios-page #form{
+      background:var(--card);
+      border-color:var(--border);
+      color:var(--text);
+    }
+    html.theme-light .usuarios-page #form::before,
+    html[data-theme^="light"] .usuarios-page #form::before{
+      background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    }
+    @media(max-width:760px){.role-editor-grid,.custom-role-grid{grid-template-columns:1fr}}
+    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}.role-row{grid-template-columns:1fr}.role-actions{justify-content:flex-start}}
+  </style>
+</head>
+<body class="super-page usuarios-page">
+  <div class="container">
+<div class="page-header">
+      <div>
+        <h1 id="pageTitle">Administrar usuarios</h1>
+</div>
+      <button id="addBtn" class="btn add">Agregar</button>
+    </div>
+
+    <form id="form" class="form">
+      <input type="hidden" id="itemId">
+      <input type="hidden" id="empresa_id">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Correo</label>
+          <input id="email" type="email" class="form-input" required placeholder="usuario@dominio.com">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre</label>
+          <input id="nombre" class="form-input" required placeholder="Nombre completo">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Documento de identidad</label>
+          <input id="documento_identidad" class="form-input" placeholder="CC / NIT / Pasaporte">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Rol</label>
+          <select id="rol_usuario_id" class="form-input" required></select>
+          <div class="form-help">Elige un rol operativo base o un rol personalizado de esta empresa. Los perfiles especializados se crean como roles propios para no mezclar verticales ajenos.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col" style="flex:1 1 100%;">
+          <label class="form-label">Roles disponibles</label>
+          <div id="rolesCatalog" class="roles-catalog"></div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Foto del usuario</label>
+          <div class="usuario-photo-field">
+            <div id="fotoPreview" class="usuario-photo">Sin foto</div>
+            <div>
+              <input id="foto_usuario" type="file" class="form-input" accept="image/png,image/jpeg,image/gif,image/webp">
+              <div class="form-help">Se guarda en la carpeta de imagenes de esta empresa.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Control de aseo</label>
+          <label class="form-help" style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+            <input id="control_aseo_estaciones" type="checkbox">
+            Activar reporte de aseo de estaciones
+          </label>
+        </div>
+      </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Mensaje de invitación (opcional)</label>
+            <textarea id="mensaje_invitacion" class="form-textarea" placeholder="Mensaje personalizado que recibirá el usuario en el correo"></textarea>
+          </div>
+        </div>
+
+      <div class="form-actions">
+        <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <section class="card empresa-section" id="roleEditorPanel" style="margin-top:16px;">
+      <h2>Editar rol de usuario</h2>
+      <p class="form-help">Cambia el rol operativo de un usuario de esta empresa. El sistema valida la empresa y el usuario en backend antes de actualizar.</p>
+      <div class="role-editor-grid">
+        <label class="form-label">Usuario
+          <select id="roleEditorUser" class="form-input"></select>
+        </label>
+        <label class="form-label">Nuevo rol
+          <select id="roleEditorRole" class="form-input"></select>
+        </label>
+        <button type="button" id="roleEditorSave" class="btn">Guardar rol</button>
+      </div>
+      <div id="roleEditorCurrent" class="role-editor-current"></div>
+      <div id="roleEditorMsg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section" id="customRolePanel" style="margin-top:16px;">
+      <h2>Roles personalizados de esta empresa</h2>
+      <p class="form-help">Crea roles propios para esta empresa tomando como base un rol operativo existente. El rol propio queda aislado por empresa y puede asignarse a los usuarios desde esta misma pantalla.</p>
+      <input type="hidden" id="customRoleId">
+      <div class="custom-role-grid">
+        <label class="form-label">Nombre del rol
+          <input id="customRoleName" class="form-input" placeholder="Ej: Cajero nocturno">
+        </label>
+        <label class="form-label">Rol base
+          <select id="customRoleBase" class="form-input"></select>
+        </label>
+        <div class="form-actions" style="margin:0;">
+          <button type="button" id="customRoleSave" class="btn">Guardar rol</button>
+          <button type="button" id="customRoleCancel" class="btn secondary">Cancelar</button>
+        </div>
+      </div>
+      <label class="form-label" style="display:block;margin-top:10px;">Descripcion
+        <textarea id="customRoleDescription" class="form-textarea" placeholder="Explica para que se usa este rol dentro de la empresa"></textarea>
+      </label>
+      <div id="customRoleMsg" class="form-help"></div>
+      <div id="customRolesList" class="custom-role-list"></div>
+    </section>
+
+    <div id="globalMsg" class="usuarios-global-msg" role="status" aria-live="polite"></div>
+    <div id="list">Cargando...</div>
+
+    <section class="card empresa-section" id="stationAccessPanel" style="margin-top:16px;">
+      <h2>Acceso a estaciones por cajero</h2>
+      <p class="form-help">Activa esta regla cuando tengas dos o mas cajeros en simultaneo y quieras que cada usuario vea y opere solo sus estaciones asignadas. Caja y corte siguen siendo independientes por usuario.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+            <input id="stationAccessEnabled" type="checkbox">
+            Activar control de estaciones por cajero
+          </label>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="stationAccessUser">Usuario cajero</label>
+          <select id="stationAccessUser" class="form-input"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+            <input id="stationAccessLimit" type="checkbox">
+            Este usuario solo puede ver las estaciones marcadas
+          </label>
+        </div>
+        <div class="form-col">
+          <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+            <input id="stationAccessCaja" type="checkbox">
+            Ver estacion Caja y corte de turno
+          </label>
+        </div>
+      </div>
+      <div id="stationAccessChecks" class="station-access-grid"></div>
+      <div class="station-access-actions">
+        <button type="button" id="stationAccessAll" class="btn secondary">Marcar todas</button>
+        <button type="button" id="stationAccessNone" class="btn secondary">Quitar todas</button>
+        <button type="button" id="stationAccessSave" class="btn">Guardar acceso</button>
+      </div>
+      <div id="stationAccessMsg" class="form-help"></div>
+    </section>
+  </div>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script>
+    const state = {
+      empresaID: 0,
+      roles: [],
+      users: [],
+      stationConfig: null,
+      stationAccess: { habilitado: false, caja_por_cajero: true, usuarios: {} },
+      highlightUserID: 0,
+      highlightUserEmail: '',
+      currentUserPhotoURL: '',
+      customRoleEditingID: 0
+    };
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function setMessage(text, isError) {
+      ['msg', 'globalMsg'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || '';
+        el.classList.remove('value-negative');
+        if (id === 'globalMsg') {
+          el.classList.toggle('is-visible', !!text);
+        }
+        if (isError) {
+          el.classList.add('value-negative');
+        }
+      });
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      const t = await res.text();
+      let message = t || ('HTTP ' + res.status);
+      let body = null;
+      try {
+        body = JSON.parse(t);
+        if (body && body.error) {
+          message = body.error;
+        } else if (body && body.message) {
+          message = body.message;
+        }
+      } catch (_) {}
+      if (res.status === 409 && /usuario con ese correo|ese correo ya esta|ese correo ya est[aá]|ya existe un usuario/i.test(message)) {
+        message = 'Ya existe un usuario de esta empresa con ese correo. Revisa la lista de usuarios; si la cuenta esta pendiente de confirmacion, usa el boton Reenviar confirmacion para enviarle nuevamente la invitacion por correo electronico.';
+      }
+      const err = new Error(message);
+      err.status = res.status;
+      err.payload = body;
+      err.rawText = t;
+      throw err;
+    }
+
+    function normalizeEmailForCompare(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function markUserForHighlight(user) {
+      state.highlightUserID = Number(user && user.id || 0);
+      state.highlightUserEmail = normalizeEmailForCompare(user && user.email);
+    }
+
+    function scrollHighlightedUserIntoView() {
+      const row = document.querySelector('.usuario-row-highlight');
+      if (!row) return;
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function handleDuplicateUserError(err, attemptedEmail) {
+      const payload = err && err.payload ? err.payload : {};
+      const existing = payload.usuario_existente || null;
+      markUserForHighlight(existing || { email: attemptedEmail });
+      try {
+        await loadUsers();
+      } catch (_) {}
+      const email = normalizeEmailForCompare((existing && existing.email) || attemptedEmail);
+      const inList = state.users.some(function(item) {
+        return Number(item.id || 0) === state.highlightUserID || normalizeEmailForCompare(item.email) === email;
+      });
+      if (inList) {
+        setMessage((payload.message || err.message || 'Ya existe un usuario con ese correo.') + ' El registro fue resaltado en la lista para que puedas reenviar la confirmacion.', true);
+      } else {
+        setMessage(payload.message || err.message || 'Ese correo ya existe, pero no se encontro en la lista de esta empresa. Recarga la pagina o pide revision al super administrador.', true);
+      }
+    }
+
+    const operationalRoleKeys = new Set([
+      'admin_empresa', 'supervisor_sucursal', 'cajero', 'vendedor', 'recepcion',
+      'portero', 'servicio_limpieza', 'inventario', 'compras', 'recursos_humanos',
+      'contador', 'empresario', 'auditor', 'operacion', 'mesero', 'tecnico_solar'
+    ]);
+
+    function fillRolesSelect(selected) {
+      const select = document.getElementById('rol_usuario_id');
+      select.innerHTML = '<option value="">-- Seleccionar --</option>';
+      selectableRoles(selected).forEach(function(role) {
+        const opt = document.createElement('option');
+        opt.value = role.id;
+        opt.textContent = roleLabel(role);
+        select.appendChild(opt);
+      });
+      if (selected) select.value = String(selected);
+      renderRolesCatalog();
+      renderCustomRolesPanel();
+    }
+
+    function isCustomRole(role) {
+      return Number(role && role.empresa_id || 0) > 0 || !!(role && role.personalizado) || String(role && role.origen || '').toLowerCase() === 'empresa';
+    }
+
+    function roleLabel(role) {
+      const name = String(role && role.nombre || 'Rol sin nombre').trim();
+      const names = {
+        admin_empresa: 'Administrador',
+        supervisor_sucursal: 'Supervisor',
+        cajero: 'Cajero',
+        vendedor: 'Vendedor',
+        recepcion: 'Recepcion',
+        portero: 'Portero',
+        servicio_limpieza: 'Camarera / aseo',
+        inventario: 'Inventario y bodega',
+        compras: 'Compras',
+        recursos_humanos: 'Talento humano',
+        contador: 'Contador',
+        empresario: 'Propietario / gerencia',
+        auditor: 'Auditor',
+        operacion: 'Operaciones',
+        mesero: 'Mesero',
+        tecnico_solar: 'Tecnico especializado'
+      };
+      const display = isCustomRole(role) ? name : (names[canonicalRoleKey(name)] || name);
+      return isCustomRole(role) ? (display + ' (personalizado)') : display;
+    }
+
+    function normalizeRoleKey(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+
+    function canonicalRoleKey(value) {
+      let key = normalizeRoleKey(value);
+      const aliases = {
+        administrador: 'admin_empresa',
+        administrador_de_empresa: 'admin_empresa',
+        administrador_empresa: 'admin_empresa',
+        admin: 'admin_empresa',
+        supervisor: 'supervisor_sucursal',
+        caja: 'cajero',
+        caja_turno: 'cajero',
+        caja_principal: 'cajero',
+        caja_hotel: 'cajero',
+        caja_bar: 'cajero',
+        caja_salon: 'cajero',
+        caja_restaurante: 'cajero',
+        caja_pyme: 'cajero',
+        servicio_de_limpieza: 'servicio_limpieza',
+        limpieza: 'servicio_limpieza',
+        aseadora: 'servicio_limpieza',
+        jefe_de_bodega: 'jefe_bodega',
+        responsable_de_bodega: 'responsable_bodega',
+        responsable_bodega: 'responsable_bodega',
+        bodega: 'responsable_bodega',
+        bodeguero: 'responsable_bodega',
+        almacenista: 'responsable_bodega',
+        recursos_humanos: 'recursos_humanos',
+        talento_humano: 'recursos_humanos',
+        rrhh: 'recursos_humanos',
+        tecnico_solar: 'tecnico_solar',
+        tecnico: 'tecnico_solar',
+        contabilidad: 'contador',
+        jefe_bodega: 'inventario',
+        responsable_bodega: 'inventario',
+        dueno: 'empresario',
+        propietario: 'empresario'
+      };
+      return aliases[key] || key;
+    }
+
+    function selectableRoles(selectedID) {
+      const selected = String(selectedID || '');
+      return state.roles.filter(function(role) {
+        if (role.estado && role.estado !== 'activo') return false;
+        if (String(role.id || '') === selected) return true;
+        return isCustomRole(role) || operationalRoleKeys.has(canonicalRoleKey(role && role.nombre));
+      });
+    }
+
+    function roleHelpAnchor(role) {
+      const key = canonicalRoleKey(role && role.nombre);
+      return key ? ('/ayuda/ayuda.html#rol-' + encodeURIComponent(key)) : '/ayuda/ayuda.html#roles';
+    }
+
+    function roleDescription(role) {
+      const explicit = String(role && role.descripcion || '').trim();
+      if (explicit) return explicit;
+      const key = canonicalRoleKey(role && role.nombre);
+      const map = {
+        administrador: 'Administra la empresa, usuarios, permisos, configuracion, ventas, caja, inventario, reportes e integraciones.',
+        admin_empresa: 'Administra la empresa, usuarios, permisos, configuracion, ventas, caja, inventario, reportes e integraciones.',
+        administrador_total: 'Acceso empresarial total sobre empresas autorizadas, con supervision, configuracion y operacion.',
+        supervisor: 'Supervisa operacion diaria, estaciones, ventas, caja, personal y reportes.',
+        supervisor_sucursal: 'Supervisa operacion diaria, estaciones, ventas, caja, personal y reportes.',
+        cajero: 'Opera ventas, carritos, cobros, facturacion operativa, caja y cierre de turno de su usuario.',
+        vendedor: 'Atiende clientes, cotiza, registra ventas operativas y consulta inventario disponible.',
+        recepcion: 'Atiende clientes, estaciones, reservas, ingresos y salidas segun la operacion de la empresa.',
+        portero: 'Ve estaciones y puede activar estaciones disponibles sin entrar al carrito ni cobrar.',
+        servicio_limpieza: 'Ve estaciones y cambia estado de sucia a limpia, registrando tiempos de aseo.',
+        inventario: 'Gestiona productos, servicios, bodegas, traslados, existencias y procesos de inventario.',
+        jefe_bodega: 'Administra bodegas, existencias, traslados y control de stock.',
+        responsable_bodega: 'Gestiona la bodega asignada, existencias, traslados y control de stock.',
+        compras: 'Gestiona proveedores, compras, recepcion de mercancia y abastecimiento.',
+        recursos_humanos: 'Gestiona horarios, asistencia, novedades y nomina operativa del personal.',
+        tecnico_solar: 'Consulta estado, lecturas, eventos y alertas del sistema de energia solar.',
+        contabilidad: 'Gestiona procesos contables, financieros, tributarios y reportes autorizados.',
+        contador: 'Consulta finanzas e impuestos de la empresa en modo lectura.',
+        empresario: 'Consulta resultados y reportes ejecutivos sin operar ventas, caja, inventario ni configuracion.',
+        auditor: 'Consulta trazabilidad, auditoria, reportes y cumplimiento sin ejecutar operacion diaria.'
+      };
+      return map[key] || 'Rol operativo configurable por empresa; sus permisos efectivos dependen de la matriz de modulos y paginas.';
+    }
+
+    function renderRolesCatalog() {
+      const box = document.getElementById('rolesCatalog');
+      const select = document.getElementById('rol_usuario_id');
+      if (!box || !select) return;
+      const selected = String(select.value || '');
+      const roles = selectableRoles(selected);
+      if (!roles.length) {
+        box.innerHTML = '<div class="form-help">No hay roles activos disponibles.</div>';
+        return;
+      }
+      box.innerHTML = '';
+      roles.forEach(function(role) {
+        const row = document.createElement('div');
+        row.className = 'role-row' + (String(role.id) === selected ? ' is-selected' : '');
+        row.innerHTML =
+          '<div><strong></strong><small></small></div>' +
+          '<div class="role-actions">' +
+            '<button type="button" class="btn secondary role-select">Seleccionar</button>' +
+            '<a class="btn secondary role-help" target="_blank" rel="noopener">Saber mas</a>' +
+          '</div>';
+        row.querySelector('strong').textContent = roleLabel(role).replace(' (personalizado)', '');
+        if (isCustomRole(role)) {
+          const badge = document.createElement('span');
+          badge.className = 'custom-role-badge';
+          badge.textContent = 'Empresa';
+          row.querySelector('strong').appendChild(badge);
+        }
+        row.querySelector('small').textContent = roleDescription(role);
+        row.querySelector('.role-help').href = roleHelpAnchor(role);
+        row.querySelector('.role-select').onclick = function() {
+          select.value = String(role.id);
+          renderRolesCatalog();
+        };
+        box.appendChild(row);
+      });
+    }
+
+    function rolNombreById(id, fallback) {
+      const role = state.roles.find(function(r) { return Number(r.id) === Number(id); });
+      if (role && role.nombre) return role.nombre;
+      return fallback || 'N/A';
+    }
+
+    function dedupeRoles(roles) {
+      const seen = new Set();
+      const out = [];
+      (Array.isArray(roles) ? roles : []).forEach(function(role) {
+        const key = isCustomRole(role) ? ('empresa:' + String(role && role.id || role && role.nombre || '')) : ('global:' + canonicalRoleKey(role && role.nombre));
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        out.push(role);
+      });
+      return out;
+    }
+
+    function baseRoles() {
+      return selectableRoles('').filter(function(role) { return !isCustomRole(role); });
+    }
+
+    function customRoles() {
+      return state.roles.filter(function(role) { return isCustomRole(role); });
+    }
+
+    function setCustomRoleMessage(text, isError) {
+      const el = document.getElementById('customRoleMsg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.remove('value-negative');
+      if (isError) el.classList.add('value-negative');
+    }
+
+    function resetCustomRoleForm() {
+      state.customRoleEditingID = 0;
+      document.getElementById('customRoleId').value = '';
+      document.getElementById('customRoleName').value = '';
+      document.getElementById('customRoleDescription').value = '';
+      document.getElementById('customRoleBase').value = '';
+      document.getElementById('customRoleSave').textContent = 'Guardar rol';
+      setCustomRoleMessage('', false);
+    }
+
+    function renderCustomRolesPanel() {
+      const baseSelect = document.getElementById('customRoleBase');
+      const list = document.getElementById('customRolesList');
+      if (!baseSelect || !list) return;
+      const selectedBase = baseSelect.value;
+      baseSelect.innerHTML = '<option value="">-- Seleccionar rol base --</option>';
+      baseRoles().forEach(function(role) {
+        const opt = document.createElement('option');
+        opt.value = String(role.id);
+        opt.textContent = role.nombre || ('Rol #' + role.id);
+        baseSelect.appendChild(opt);
+      });
+      if (selectedBase) baseSelect.value = selectedBase;
+
+      const items = customRoles();
+      if (!items.length) {
+        list.innerHTML = '<div class="form-help">Esta empresa todavia no tiene roles personalizados.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      items.forEach(function(role) {
+        const base = state.roles.find(function(item) { return Number(item.id) === Number(role.rol_base_id || 0); });
+        const row = document.createElement('div');
+        row.className = 'role-row';
+        row.innerHTML =
+          '<div><strong></strong><small></small></div>' +
+          '<div class="role-actions">' +
+            '<button type="button" class="btn secondary custom-role-edit">Editar</button>' +
+            '<button type="button" class="btn custom-role-toggle"></button>' +
+          '</div>';
+        row.querySelector('strong').textContent = role.nombre || 'Rol personalizado';
+        row.querySelector('small').textContent = (role.descripcion || 'Sin descripcion') + ' Base: ' + ((base && base.nombre) || 'No definida') + '. Estado: ' + (role.estado || 'activo') + '.';
+        row.querySelector('.custom-role-edit').onclick = function() {
+          state.customRoleEditingID = Number(role.id || 0);
+          document.getElementById('customRoleId').value = String(role.id || '');
+          document.getElementById('customRoleName').value = role.nombre || '';
+          document.getElementById('customRoleDescription').value = role.descripcion || '';
+          document.getElementById('customRoleBase').value = String(role.rol_base_id || '');
+          document.getElementById('customRoleSave').textContent = 'Actualizar rol';
+          setCustomRoleMessage('', false);
+          document.getElementById('customRoleName').focus();
+        };
+        const isActive = !role.estado || role.estado === 'activo';
+        const toggle = row.querySelector('.custom-role-toggle');
+        toggle.textContent = isActive ? 'Desactivar' : 'Activar';
+        toggle.classList.toggle('secondary', !isActive);
+        toggle.onclick = async function() {
+          const action = isActive ? 'desactivar' : 'activar';
+          if (!confirm(action.charAt(0).toUpperCase() + action.slice(1) + ' este rol personalizado?')) return;
+          try {
+            const res = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(role.id) + '&action=activar&activo=' + (isActive ? '0' : '1') + '&aprobado_por=administrador_empresa&codigo_aprobacion=roles_empresa&motivo_aprobacion=' + encodeURIComponent('Cambio de estado de rol personalizado'), { method: 'PUT' });
+            await ensureOk(res);
+            await loadRoles();
+            renderRoleEditor();
+            setCustomRoleMessage('Estado del rol actualizado', false);
+          } catch (err) {
+            setCustomRoleMessage(err.message || 'No se pudo cambiar el estado del rol', true);
+          }
+        };
+        list.appendChild(row);
+      });
+    }
+
+    function escapeHTML(value) {
+      return String(value || '').replace(/[&<>"']/g, function(ch) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+      });
+    }
+
+    function promptDownloadPreviousAsset(url, label) {
+      const clean = String(url || '').trim();
+      if (!clean) return;
+      const shouldDownload = confirm('Este registro ya tiene ' + (label || 'un archivo') + ' cargado. Al subir uno nuevo, el anterior se eliminara del sistema. Deseas descargar el archivo anterior antes de reemplazarlo?');
+      if (!shouldDownload) return;
+      const a = document.createElement('a');
+      a.href = clean;
+      a.download = '';
+      a.target = '_blank';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function userInitials(item) {
+      const name = String((item && item.nombre) || (item && item.name) || '').trim();
+      const email = String((item && item.email) || '').trim();
+      const source = name || email || 'U';
+      return source.split(/\s+/).slice(0, 2).map(function(part) { return part.charAt(0).toUpperCase(); }).join('') || 'U';
+    }
+
+    function photoHTML(item, small) {
+      const url = String((item && item.foto_url) || '').trim();
+      const cls = 'usuario-photo' + (small ? ' small' : '');
+      if (!url) return '<div class="' + cls + '">' + escapeHTML(userInitials(item)) + '</div>';
+      return '<div class="' + cls + '"><img src="' + escapeHTML(url) + '" alt="Foto de usuario"></div>';
+    }
+
+    function setStationAccessMessage(text, isError) {
+      const el = document.getElementById('stationAccessMsg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.remove('value-negative');
+      if (isError) el.classList.add('value-negative');
+    }
+
+    function setRoleEditorMessage(text, isError) {
+      const el = document.getElementById('roleEditorMsg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.remove('value-negative');
+      if (isError) el.classList.add('value-negative');
+    }
+
+    function parseStationConfigValue(raw) {
+      let current = raw;
+      for (let i = 0; i < 8; i += 1) {
+        if (typeof current !== 'string') break;
+        const trimmed = current.trim();
+        if (!trimmed) return null;
+        try { current = JSON.parse(trimmed); } catch (_) { return null; }
+      }
+      return current && typeof current === 'object' ? current : null;
+    }
+
+    function normalizeStationAccess(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const users = src.usuarios && typeof src.usuarios === 'object' ? src.usuarios : {};
+      return {
+        habilitado: !!src.habilitado,
+        caja_por_cajero: src.caja_por_cajero === undefined ? true : !!src.caja_por_cajero,
+        usuarios: Object.assign({}, users)
+      };
+    }
+
+    function stationRowsFromConfig() {
+      const cfg = state.stationConfig && typeof state.stationConfig === 'object' ? state.stationConfig : {};
+      const cantidad = Math.max(1, Math.min(500, Number(cfg.cantidad || (Array.isArray(cfg.estaciones) ? cfg.estaciones.length : 1) || 1)));
+      const rows = [];
+      const estaciones = Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
+      for (let i = 0; i < cantidad; i += 1) {
+        const item = estaciones[i] || {};
+        rows.push({ id: i + 1, nombre: String(item.nombre || ('Estacion ' + (i + 1))).trim() });
+      }
+      return rows;
+    }
+
+    async function loadStationAccessConfig() {
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID));
+      await ensureOk(res);
+      const data = await res.json();
+      const prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+      const pref = prefs.find(function(p) { return p && Number(p.estacion_id || 0) === 0 && String(p.clave || '') === 'estaciones_config'; });
+      const parsed = pref && pref.valor ? parseStationConfigValue(pref.valor) : null;
+      state.stationConfig = parsed || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estacion 1' }] };
+      state.stationAccess = normalizeStationAccess(state.stationConfig.acceso_estaciones_cajeros || state.stationConfig.acceso_estaciones_por_cajero);
+      renderStationAccessPanel();
+    }
+
+    async function saveStationAccessConfig() {
+      const cfg = state.stationConfig && typeof state.stationConfig === 'object' ? state.stationConfig : {};
+      cfg.acceso_estaciones_cajeros = normalizeStationAccess(state.stationAccess);
+      delete cfg.acceso_estaciones_por_cajero;
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estacion_id: 0, clave: 'estaciones_config', valor: JSON.stringify(cfg) })
+      });
+      await ensureOk(res);
+      state.stationConfig = cfg;
+    }
+
+    function selectedStationAccessUserEmail() {
+      const select = document.getElementById('stationAccessUser');
+      return String(select && select.value || '').trim().toLowerCase();
+    }
+
+    function currentStationAccessEntry() {
+      const email = selectedStationAccessUserEmail();
+      if (!email) return { limitar_estaciones: false, estaciones: [], ver_caja: true };
+      const users = state.stationAccess.usuarios || {};
+      const entry = users[email] && typeof users[email] === 'object' ? users[email] : {};
+      return {
+        limitar_estaciones: !!entry.limitar_estaciones,
+        estaciones: Array.isArray(entry.estaciones) ? entry.estaciones.map(Number).filter(Boolean) : [],
+        ver_caja: entry.ver_caja === undefined ? true : !!entry.ver_caja
+      };
+    }
+
+    function renderStationAccessPanel() {
+      const enabled = document.getElementById('stationAccessEnabled');
+      const select = document.getElementById('stationAccessUser');
+      const limit = document.getElementById('stationAccessLimit');
+      const caja = document.getElementById('stationAccessCaja');
+      const checks = document.getElementById('stationAccessChecks');
+      if (!enabled || !select || !limit || !caja || !checks) return;
+
+      enabled.checked = !!state.stationAccess.habilitado;
+      const previous = select.value;
+      select.innerHTML = '<option value="">-- Seleccionar usuario --</option>';
+      state.users.forEach(function(user) {
+        const email = String(user.email || '').trim();
+        if (!email || user.estado === 'inactivo') return;
+        const opt = document.createElement('option');
+        opt.value = email.toLowerCase();
+        opt.textContent = (user.nombre ? user.nombre + ' - ' : '') + email;
+        select.appendChild(opt);
+      });
+      if (previous) select.value = previous;
+
+      const entry = currentStationAccessEntry();
+      limit.checked = !!entry.limitar_estaciones;
+      caja.checked = !!entry.ver_caja;
+      const allowed = new Set(entry.estaciones.map(String));
+      checks.innerHTML = stationRowsFromConfig().map(function(st) {
+        const id = String(st.id);
+        return '<label class="station-access-check"><input type="checkbox" class="stationAccessStation" value="' + id + '"' + (allowed.has(id) ? ' checked' : '') + '> <span>' + escapeHTML(st.nombre) + '</span></label>';
+      }).join('');
+    }
+
+    function renderRoleEditor() {
+      const userSelect = document.getElementById('roleEditorUser');
+      const roleSelect = document.getElementById('roleEditorRole');
+      const current = document.getElementById('roleEditorCurrent');
+      if (!userSelect || !roleSelect || !current) return;
+
+      const previousUser = userSelect.value;
+      const previousRole = roleSelect.value;
+
+      userSelect.innerHTML = '<option value="">-- Seleccionar usuario --</option>';
+      state.users.forEach(function(user) {
+        const opt = document.createElement('option');
+        opt.value = String(user.id);
+        opt.textContent = (user.nombre ? user.nombre + ' - ' : '') + (user.email || ('Usuario #' + user.id));
+        userSelect.appendChild(opt);
+      });
+      if (previousUser) userSelect.value = previousUser;
+
+      const user = state.users.find(function(item) { return String(item.id) === String(userSelect.value || ''); });
+      const roleToPreserve = previousRole || (user && user.rol_usuario_id);
+      roleSelect.innerHTML = '<option value="">-- Seleccionar nuevo rol --</option>';
+      selectableRoles(roleToPreserve).forEach(function(role) {
+        const opt = document.createElement('option');
+        opt.value = String(role.id);
+        opt.textContent = roleLabel(role);
+        roleSelect.appendChild(opt);
+      });
+      if (previousRole) roleSelect.value = previousRole;
+
+      if (!user) {
+        current.innerHTML = '<strong>Sin usuario seleccionado</strong><small>Selecciona un usuario para ver su rol actual y asignar uno nuevo.</small>';
+        return;
+      }
+
+      if (!roleSelect.value) {
+        roleSelect.value = String(user.rol_usuario_id || '');
+      }
+      const roleName = rolNombreById(user.rol_usuario_id, user.rol_nombre);
+      current.innerHTML =
+        '<strong>Rol actual: ' + escapeHTML(roleName) + '</strong>' +
+        '<small>' + escapeHTML(roleDescription({ nombre: roleName })) + '</small>';
+    }
+
+    function focusRoleEditorForUser(userID) {
+      const userSelect = document.getElementById('roleEditorUser');
+      const panel = document.getElementById('roleEditorPanel');
+      if (!userSelect || !panel) return;
+      userSelect.value = String(userID || '');
+      renderRoleEditor();
+      setRoleEditorMessage('', false);
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function collectStationAccessForm() {
+      const email = selectedStationAccessUserEmail();
+      if (!email) throw new Error('Selecciona un usuario');
+      const stations = Array.from(document.querySelectorAll('.stationAccessStation:checked')).map(function(input) {
+        return Number(input.value || 0);
+      }).filter(Boolean);
+      return {
+        email: email,
+        entry: {
+          limitar_estaciones: !!document.getElementById('stationAccessLimit').checked,
+          estaciones: stations,
+          ver_caja: !!document.getElementById('stationAccessCaja').checked
+        }
+      };
+    }
+
+    function setPhotoPreview(url, item) {
+      const box = document.getElementById('fotoPreview');
+      const value = String(url || '').trim();
+      if (!value) {
+        box.innerHTML = escapeHTML(userInitials(item));
+        return;
+      }
+      box.innerHTML = '<img src="' + escapeHTML(value) + '" alt="Foto de usuario">';
+    }
+
+    function resetForm(hide) {
+      document.getElementById('itemId').value = '';
+      document.getElementById('email').value = '';
+      document.getElementById('nombre').value = '';
+      document.getElementById('documento_identidad').value = '';
+      document.getElementById('observaciones').value = '';
+      document.getElementById('foto_usuario').value = '';
+      state.currentUserPhotoURL = '';
+      setPhotoPreview('', null);
+      document.getElementById('control_aseo_estaciones').checked = false;
+        document.getElementById('mensaje_invitacion').value = '';
+      fillRolesSelect('');
+      document.getElementById('saveBtn').textContent = 'Guardar';
+      document.getElementById('cancelBtn').style.display = 'none';
+      setMessage('', false);
+
+      if (hide) {
+        document.getElementById('form').style.display = 'none';
+        document.getElementById('addBtn').style.display = '';
+      }
+    }
+
+    function renderList() {
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>ID</th>' +
+        '<th>Foto</th>' +
+        '<th>Correo</th>' +
+        '<th>Nombre</th>' +
+        '<th>Documento</th>' +
+        '<th>Rol</th>' +
+        '<th>Aseo</th>' +
+        '<th>Confirmación</th>' +
+        '<th>Estado</th>' +
+        '<th>Acciones</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.users.forEach(function(item) {
+        const tr = document.createElement('tr');
+        const activo = item.estado === 'activo' ? 1 : 0;
+        const toggleLabel = activo === 1 ? 'Desactivar' : 'Activar';
+        const confirmado = Number(item.email_confirmado || 0) === 1;
+        const highlighted = (state.highlightUserID && Number(item.id || 0) === state.highlightUserID) ||
+          (state.highlightUserEmail && normalizeEmailForCompare(item.email) === state.highlightUserEmail);
+        if (highlighted) {
+          tr.className = 'usuario-row-highlight';
+        }
+
+        tr.innerHTML = '<td>' + item.id + '</td>' +
+          '<td>' + photoHTML(item, true) + '</td>' +
+          '<td>' + escapeHTML(item.email || '') + '</td>' +
+          '<td>' + escapeHTML(item.nombre || '') + '</td>' +
+          '<td>' + escapeHTML(item.documento_identidad || '') + '</td>' +
+          '<td>' + escapeHTML(rolNombreById(item.rol_usuario_id, item.rol_nombre)) + '</td>' +
+          '<td>' + (Number(item.control_aseo_estaciones || 0) === 1 ? 'Activo' : 'Inactivo') + '</td>' +
+          '<td>' + (confirmado ? 'Confirmado' : 'Pendiente') + '</td>' +
+          '<td>' + (item.estado || '') + '</td>' +
+          '<td class="actions">' +
+            '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
+            '<button data-id="' + item.id + '" class="role-change btn secondary">Cambiar rol</button> ' +
+            '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button> ' +
+            '<button data-id="' + item.id + '" data-activo="' + activo + '" class="toggle btn">' + toggleLabel + '</button> ' +
+            (confirmado ? '' : '<button data-id="' + item.id + '" class="resend btn">Reenviar confirmación</button>') +
+          '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      list.appendChild(table);
+      if (state.highlightUserID || state.highlightUserEmail) {
+        window.setTimeout(scrollHighlightedUserIntoView, 80);
+      }
+
+      document.querySelectorAll('.edit').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.users.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+
+          document.getElementById('form').style.display = '';
+          document.getElementById('addBtn').style.display = 'none';
+
+          document.getElementById('itemId').value = String(item.id);
+          document.getElementById('email').value = item.email || '';
+          document.getElementById('nombre').value = item.nombre || '';
+          document.getElementById('documento_identidad').value = item.documento_identidad || '';
+          document.getElementById('observaciones').value = item.observaciones || '';
+          document.getElementById('foto_usuario').value = '';
+          state.currentUserPhotoURL = item.foto_url || '';
+          setPhotoPreview(item.foto_url || '', item);
+          document.getElementById('control_aseo_estaciones').checked = Number(item.control_aseo_estaciones || 0) === 1;
+          fillRolesSelect(item.rol_usuario_id);
+
+          document.getElementById('saveBtn').textContent = 'Actualizar';
+          document.getElementById('cancelBtn').style.display = '';
+          setMessage('', false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+      });
+
+      document.querySelectorAll('.role-change').forEach(function(btn) {
+        btn.onclick = function() {
+          focusRoleEditorForUser(Number(btn.getAttribute('data-id') || 0));
+        };
+      });
+
+      document.querySelectorAll('.del').forEach(function(btn) {
+        btn.onclick = async function() {
+          if (!confirm('Eliminar usuario?')) return;
+          const id = Number(btn.getAttribute('data-id'));
+          try {
+            const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id), { method: 'DELETE' });
+            await ensureOk(res);
+            await loadData();
+          } catch (err) {
+            setMessage(err.message || 'Error eliminando usuario', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.toggle').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const activo = btn.getAttribute('data-activo') === '1' ? '0' : '1';
+          const texto = activo === '1' ? 'Activar' : 'Desactivar';
+          if (!confirm(texto + ' usuario?')) return;
+          try {
+            const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=activar&activo=' + activo, { method: 'PUT' });
+            await ensureOk(res);
+            await loadData();
+          } catch (err) {
+            setMessage(err.message || 'Error cambiando estado', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.resend').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          try {
+            const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=reenviar_confirmacion', { method: 'PUT' });
+            await ensureOk(res);
+            const body = await res.json();
+            if (body && body.email_sent) {
+              setMessage('Correo de confirmación reenviado', false);
+            } else {
+              setMessage((body && body.email_error) ? ('No se pudo enviar correo: ' + body.email_error) : 'No se pudo enviar correo de confirmación', true);
+            }
+          } catch (err) {
+            setMessage(err.message || 'Error reenviando confirmación', true);
+          }
+        };
+      });
+    }
+
+    async function loadRoles() {
+      const res = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1');
+      await ensureOk(res);
+      state.roles = dedupeRoles(await res.json());
+      fillRolesSelect('');
+      renderCustomRolesPanel();
+    }
+
+    async function loadEmpresaTitle() {
+      try {
+        const res = await fetch('/super/api/empresas?id=' + encodeURIComponent(state.empresaID));
+        if (!res.ok) return;
+        const empresa = await res.json();
+        if (empresa && empresa.nombre) {
+          document.getElementById('pageTitle').textContent = 'Administrar usuarios — ' + empresa.nombre;
+        }
+      } catch (_) {}
+    }
+
+    async function loadUsers() {
+      const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1');
+      await ensureOk(res);
+      state.users = await res.json();
+      renderList();
+      renderRoleEditor();
+    }
+
+    async function loadData() {
+      await Promise.all([loadRoles(), loadUsers()]);
+      renderRoleEditor();
+      try {
+        await loadStationAccessConfig();
+      } catch (err) {
+        setStationAccessMessage(err.message || 'No se pudo cargar acceso por estaciones', true);
+      }
+    }
+
+    async function uploadUserPhoto(userId) {
+      const input = document.getElementById('foto_usuario');
+      if (!input.files || !input.files[0]) return null;
+      promptDownloadPreviousAsset(state.currentUserPhotoURL, 'foto del usuario');
+      const form = new FormData();
+      form.append('usuario_id', String(userId));
+      form.append('foto', input.files[0]);
+      const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=foto', {
+        method: 'POST',
+        body: form
+      });
+      await ensureOk(res);
+      return await res.json();
+    }
+
+    document.getElementById('form').onsubmit = async function(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('itemId').value;
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        email: document.getElementById('email').value.trim(),
+        nombre: document.getElementById('nombre').value.trim(),
+        documento_identidad: document.getElementById('documento_identidad').value.trim(),
+        rol_usuario_id: Number(document.getElementById('rol_usuario_id').value || 0),
+        control_aseo_estaciones: document.getElementById('control_aseo_estaciones').checked ? 1 : 0,
+        observaciones: document.getElementById('observaciones').value.trim(),
+        mensaje_invitacion: document.getElementById('mensaje_invitacion').value.trim()
+      };
+
+      if (!payload.empresa_id || !payload.email || !payload.nombre || !payload.rol_usuario_id) {
+        setMessage('Correo, nombre y rol son obligatorios', true);
+        return;
+      }
+
+      try {
+        const isEdit = !!id;
+        const method = isEdit ? 'PUT' : 'POST';
+        const url = '/api/empresa/usuarios' + (isEdit ? ('?id=' + encodeURIComponent(id)) : '');
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+
+        let body = null;
+        try { body = await res.json(); } catch (_) {}
+        const savedID = isEdit ? Number(id) : Number((body && body.id) || 0);
+        let photoUploaded = false;
+        if (savedID > 0 && document.getElementById('foto_usuario').files && document.getElementById('foto_usuario').files[0]) {
+          const photoResult = await uploadUserPhoto(savedID);
+          photoUploaded = !!(photoResult && photoResult.foto_url);
+        }
+
+        if (body && body.email_confirmation_required && body.email_sent === false) {
+          setMessage('Usuario creado, pero no se pudo enviar correo: ' + (body.email_error || 'error desconocido'), true);
+        } else if (body && body.email_reconfirmation_needed && body.email_sent === false) {
+          setMessage('Usuario actualizado, pero no se pudo reenviar correo: ' + (body.email_error || 'error desconocido'), true);
+        } else if (body && body.email_confirmation_required) {
+          setMessage('Usuario creado y correo de confirmación enviado', false);
+        } else if (body && body.email_reconfirmation_needed) {
+          setMessage('Usuario actualizado y se envió nueva confirmación', false);
+        } else {
+          setMessage((isEdit ? 'Usuario actualizado' : 'Usuario creado') + (photoUploaded ? ' con foto' : ''), false);
+        }
+
+        resetForm(true);
+        await loadData();
+      } catch (err) {
+        if (!id && Number(err && err.status || 0) === 409) {
+          await handleDuplicateUserError(err, payload.email);
+          return;
+        }
+        setMessage(err.message || 'Error guardando usuario', true);
+      }
+    };
+
+    document.getElementById('addBtn').onclick = function() {
+      document.getElementById('form').style.display = '';
+      document.getElementById('addBtn').style.display = 'none';
+      resetForm(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    document.getElementById('cancelBtn').onclick = function() {
+      resetForm(true);
+    };
+
+    document.getElementById('rol_usuario_id').addEventListener('change', function() {
+      renderRolesCatalog();
+    });
+
+    document.getElementById('foto_usuario').addEventListener('change', function() {
+      const input = document.getElementById('foto_usuario');
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        setPhotoPreview(String(ev.target && ev.target.result || ''), null);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('stationAccessUser').addEventListener('change', function() {
+      renderStationAccessPanel();
+    });
+
+    document.getElementById('roleEditorUser').addEventListener('change', function() {
+      renderRoleEditor();
+      setRoleEditorMessage('', false);
+    });
+
+    document.getElementById('roleEditorRole').addEventListener('change', function() {
+      setRoleEditorMessage('', false);
+    });
+
+    document.getElementById('roleEditorSave').addEventListener('click', async function() {
+      const userID = Number(document.getElementById('roleEditorUser').value || 0);
+      const roleID = Number(document.getElementById('roleEditorRole').value || 0);
+      const user = state.users.find(function(item) { return Number(item.id) === userID; });
+      if (!user) {
+        setRoleEditorMessage('Selecciona un usuario', true);
+        return;
+      }
+      if (!roleID) {
+        setRoleEditorMessage('Selecciona el nuevo rol', true);
+        return;
+      }
+      if (Number(user.rol_usuario_id || 0) === roleID) {
+        setRoleEditorMessage('Ese usuario ya tiene ese rol asignado', false);
+        return;
+      }
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        email: String(user.email || '').trim(),
+        nombre: String(user.nombre || '').trim(),
+        documento_identidad: String(user.documento_identidad || '').trim(),
+        rol_usuario_id: roleID,
+        control_aseo_estaciones: Number(user.control_aseo_estaciones || 0) === 1 ? 1 : 0,
+        observaciones: String(user.observaciones || '').trim(),
+        motivo_aprobacion: 'Cambio de rol desde Administrar usuarios'
+      };
+      try {
+        const res = await fetch('/api/empresa/usuarios?id=' + encodeURIComponent(user.id), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        await loadData();
+        focusRoleEditorForUser(user.id);
+        setRoleEditorMessage('Rol actualizado correctamente', false);
+      } catch (err) {
+        setRoleEditorMessage(err.message || 'No se pudo actualizar el rol', true);
+      }
+    });
+
+    document.getElementById('customRoleSave').addEventListener('click', async function() {
+      const id = Number(document.getElementById('customRoleId').value || state.customRoleEditingID || 0);
+      const payload = {
+        nombre: document.getElementById('customRoleName').value.trim(),
+        descripcion: document.getElementById('customRoleDescription').value.trim(),
+        rol_base_id: Number(document.getElementById('customRoleBase').value || 0),
+        aprobado_por: 'administrador_empresa',
+        codigo_aprobacion: 'roles_empresa',
+        motivo_aprobacion: id ? 'Actualizacion de rol personalizado de empresa' : 'Creacion de rol personalizado de empresa'
+      };
+      if (!payload.nombre || !payload.rol_base_id) {
+        setCustomRoleMessage('Nombre del rol y rol base son obligatorios', true);
+        return;
+      }
+      try {
+        const url = '/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + (id ? ('&id=' + encodeURIComponent(id)) : '');
+        const res = await fetch(url, {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        resetCustomRoleForm();
+        await loadRoles();
+        renderRoleEditor();
+        setCustomRoleMessage(id ? 'Rol personalizado actualizado' : 'Rol personalizado creado', false);
+      } catch (err) {
+        setCustomRoleMessage(err.message || 'No se pudo guardar el rol personalizado', true);
+      }
+    });
+
+    document.getElementById('customRoleCancel').addEventListener('click', function() {
+      resetCustomRoleForm();
+    });
+
+    document.getElementById('stationAccessAll').addEventListener('click', function() {
+      document.querySelectorAll('.stationAccessStation').forEach(function(input) { input.checked = true; });
+    });
+
+    document.getElementById('stationAccessNone').addEventListener('click', function() {
+      document.querySelectorAll('.stationAccessStation').forEach(function(input) { input.checked = false; });
+    });
+
+    document.getElementById('stationAccessSave').addEventListener('click', async function() {
+      try {
+        const access = collectStationAccessForm();
+        state.stationAccess.habilitado = !!document.getElementById('stationAccessEnabled').checked;
+        if (!state.stationAccess.usuarios || typeof state.stationAccess.usuarios !== 'object') {
+          state.stationAccess.usuarios = {};
+        }
+        state.stationAccess.usuarios[access.email] = access.entry;
+        await saveStationAccessConfig();
+        setStationAccessMessage('Acceso de estaciones guardado para el usuario seleccionado', false);
+      } catch (err) {
+        setStationAccessMessage(err.message || 'No se pudo guardar acceso por estaciones', true);
+      }
+    });
+
+    (async function init() {
+      const empresaID = Number(getQueryParam('empresa_id') || 0);
+      if (!empresaID) {
+        document.getElementById('list').textContent = 'empresa_id requerido en la URL';
+        document.getElementById('addBtn').disabled = true;
+        return;
+      }
+      state.empresaID = empresaID;
+      document.getElementById('empresa_id').value = String(empresaID);
+      document.getElementById('form').style.display = 'none';
+      document.getElementById('cancelBtn').style.display = 'none';
+
+      await loadEmpresaTitle();
+      try {
+        await loadData();
+      } catch (err) {
+        document.getElementById('list').textContent = 'Error cargando usuarios';
+        setMessage(err.message || 'Error cargando datos', true);
+      }
+    })();
+  </script>
+</body>
+</html>

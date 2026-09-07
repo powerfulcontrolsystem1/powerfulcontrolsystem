@@ -1,0 +1,24 @@
+---
+description: Reglas de dependencias Go (stdlib primero) y autorizacion previa
+alwaysApply: true
+---
+
+# Dependencias Go: stdlib primero
+
+- Usar **Go puro (stdlib)** cuando sea razonable para este proyecto.
+- Antes de **proponer o agregar** cualquier dependencia externa (editar `go.mod`, nuevos `import` externos, instalar binarios), **pedir autorización explícita** al usuario.
+
+## Si se propone una dependencia externa
+
+La propuesta debe incluir:
+
+- motivo técnico
+- alternativa en Go puro (si existe)
+- impacto estimado (código, runtime, seguridad, mantenimiento)
+- referencia a `documentos/historial_de_cambios`
+
+## Si el usuario autoriza
+
+- aplicar el cambio
+- registrar la decisión en `documentos/historial_de_cambios` con fecha, archivos afectados y justificación
+

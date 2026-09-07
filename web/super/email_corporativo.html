@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Email corporativo Mailu</title>
+  <style>
+    :root {
+      --mail-bg: var(--page-bg, #f5f7fb);
+      --mail-card: var(--card-bg, #ffffff);
+      --mail-text: var(--text, #172033);
+      --mail-muted: var(--muted, #5f6b7a);
+      --mail-border: var(--border, #dbe2ee);
+      --mail-input: var(--input-bg, #ffffff);
+      --mail-soft: #edf2f8;
+      --mail-soft-text: #172033;
+      --mail-primary: #1f6feb;
+    }
+    body[data-theme="dark"], .theme-dark, html[data-theme="dark"] {
+      --mail-bg: #0d1117;
+      --mail-card: #161b22;
+      --mail-text: #e6edf3;
+      --mail-muted: #9aa7b4;
+      --mail-border: #30363d;
+      --mail-input: #0d1117;
+      --mail-soft: #21262d;
+      --mail-soft-text: #e6edf3;
+      --mail-primary: #58a6ff;
+    }
+    body { margin: 0; font-family: Inter, Arial, sans-serif; background: var(--mail-bg); color: var(--mail-text); }
+    .page { max-width: 1180px; margin: 0 auto; padding: 22px; }
+    .hero { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 16px; }
+    .hero h1 { margin: 0 0 6px; font-size: clamp(1.45rem, 2.2vw, 2rem); }
+    .hero p { margin: 0; max-width: 760px; color: var(--mail-muted); line-height: 1.45; }
+    .grid { display: grid; grid-template-columns: minmax(340px, .85fr) minmax(0, 1.45fr); gap: 14px; align-items: start; }
+    .card { min-width: 0; background: var(--mail-card); border: 1px solid var(--mail-border); border-radius: 8px; padding: 16px; box-shadow: none; }
+    .card h2 { margin: 0 0 12px; font-size: 1.06rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    label { display: grid; gap: 6px; font-size: .84rem; font-weight: 700; color: var(--mail-text); }
+    input, select { width: 100%; box-sizing: border-box; min-height: 38px; border: 1px solid var(--mail-border); border-radius: 6px; padding: 8px 10px; background: var(--mail-input); color: var(--mail-text); }
+    .check-row { display: flex; gap: 10px; align-items: center; min-height: 38px; padding: 8px 0; }
+    .check-row input { width: auto; min-height: auto; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    button, .btn { border: 0; border-radius: 7px; padding: 10px 14px; font-weight: 800; cursor: pointer; background: var(--mail-primary); color: #fff; text-decoration: none; }
+    td button { padding: 8px 10px; font-size: .82rem; white-space: nowrap; }
+    button.secondary { background: var(--mail-soft); color: var(--mail-soft-text); border: 1px solid var(--mail-border); }
+    button.danger { background: #9b1c31; }
+    button:disabled { cursor: not-allowed; opacity: .62; }
+    .diagnostics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .metric { border: 1px solid var(--mail-border); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--mail-card) 88%, var(--mail-primary) 12%); }
+    .metric span { display: block; color: var(--mail-muted); font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .metric strong { display: block; margin-top: 5px; color: var(--mail-text); font-size: .95rem; overflow-wrap: anywhere; }
+    .alert { margin: 0 0 14px; border: 1px solid #f59e0b; border-left-width: 4px; border-radius: 8px; padding: 10px 12px; background: #fffbeb; color: #78350f; font-weight: 700; line-height: 1.4; }
+    .alert.ok { border-color: #16a34a; background: #f0fdf4; color: #14532d; }
+    .alert.error { border-color: #dc2626; background: #fef2f2; color: #7f1d1d; }
+    .hint { margin-top: 10px; color: var(--mail-muted); font-size: .88rem; line-height: 1.45; }
+    .status { margin: 0 0 12px; min-height: 20px; font-weight: 700; color: #0f766e; }
+    .status.error { color: #b42318; }
+    .test-send-row { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 10px; align-items: end; margin-top: 12px; max-width: 620px; }
+    .sender-brand { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; align-items: center; margin-top: 14px; padding: 12px; border: 1px solid var(--mail-border); border-radius: 8px; background: color-mix(in srgb, var(--mail-card) 92%, var(--mail-primary) 8%); }
+    .sender-brand img { width: 72px; height: 72px; object-fit: contain; border-radius: 50%; background: #fff; border: 1px solid var(--mail-border); }
+    .sender-brand strong { display: block; margin-bottom: 4px; color: var(--mail-text); }
+    .sender-brand p { margin: 0; color: var(--mail-muted); font-size: .84rem; line-height: 1.45; }
+    .logo-preview-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 10px; align-items: end; }
+    .logo-preview { width: 96px; height: 76px; border: 1px solid var(--mail-border); border-radius: 8px; background: var(--mail-input); display: grid; place-items: center; overflow: hidden; }
+    .logo-preview img { max-width: 84px; max-height: 64px; display: block; }
+    .table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--mail-border); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; min-width: 640px; }
+    th, td { padding: 9px; border-bottom: 1px solid var(--mail-border); text-align: left; font-size: .86rem; vertical-align: top; overflow-wrap: anywhere; }
+    th { background: rgba(31, 111, 235, .08); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+    tr:last-child td { border-bottom: 0; }
+    .badge { display: inline-flex; align-items: center; min-height: 22px; border-radius: 999px; padding: 2px 8px; font-size: .76rem; font-weight: 800; background: #eef2ff; color: #3730a3; }
+    .badge.ok { background: #dcfce7; color: #166534; }
+    .badge.warn { background: #fef3c7; color: #92400e; }
+    .badge.err { background: #fee2e2; color: #991b1b; }
+    @media (max-width: 860px) {
+      .page { padding: 14px; }
+      .hero { display: block; }
+      .grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .diagnostics { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 520px) {
+      .page { padding-bottom: 88px; }
+      .diagnostics { grid-template-columns: 1fr; }
+      .test-send-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <h1>Email corporativo Mailu</h1>
+        <p>Activa el correo empresarial por empresa, define el dominio y controla el aprovisionamiento con Mailu, un servidor de correo open source en Docker con webmail integrado.</p>
+      </div>
+      <a class="btn" href="/super_administrador.html">Panel super</a>
+    </header>
+
+    <p id="status" class="status"></p>
+
+    <section class="card">
+      <h2>Diagnostico del servicio</h2>
+      <p id="diagnosticAlert" class="alert">Cargando diagnostico...</p>
+      <div class="diagnostics">
+        <div class="metric"><span>Modulo</span><strong id="diagModulo">-</strong></div>
+        <div class="metric"><span>Mailu</span><strong id="diagMailu">-</strong></div>
+        <div class="metric"><span>Webmail</span><strong id="diagWebmail">-</strong></div>
+        <div class="metric"><span>Cuentas</span><strong id="diagCuentas">-</strong></div>
+      </div>
+      <div class="actions">
+        <button id="testMailuBtn" type="button" class="secondary">Probar Mailu</button>
+        <button id="provisionSystemBtn" type="button" class="secondary">Provisionar ventas/soporte</button>
+      </div>
+      <div class="test-send-row">
+        <label>Destinatario de prueba
+          <input id="testRecipient" type="email" placeholder="soporte@powerfulcontrolsystem.com" autocomplete="off">
+        </label>
+        <button id="testSendBtn" type="button" aria-label="Enviar correo de prueba">Probar envio</button>
+      </div>
+      <p class="hint">Estas pruebas validan Mailu, crean o actualizan los buzones del sistema y envian un correo real desde el dominio propio. No muestra ni imprime claves.</p>
+      <div class="sender-brand" aria-label="Identidad visual del remitente">
+        <img src="/img/bimi-pcs.svg" alt="Icono oficial del computador PCS para BIMI">
+        <div>
+          <strong>Avatar del remitente: icono oficial PCS</strong>
+          <p>El correo incluye el logo oficial dentro del mensaje. El avatar circular usa BIMI para todo el dominio; Gmail solo reemplaza la inicial por este icono cuando el dominio dispone además de un certificado VMC o CMC vigente.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Configuracion global</h2>
+        <form id="configForm">
+          <div class="check-row">
+            <input id="enabled" type="checkbox">
+            <label for="enabled">Activar email corporativo para empresas</label>
+          </div>
+          <div class="check-row">
+            <input id="autoCreate" type="checkbox">
+            <label for="autoCreate">Crear email automaticamente al registrar empresa</label>
+          </div>
+          <div class="form-grid">
+            <label>Dominio
+              <input id="domain" placeholder="powerfulcontrolsystem.com" autocomplete="off">
+            </label>
+            <label>Webmail
+              <input id="webmailURL" placeholder="https://mail.powerfulcontrolsystem.com/webmail/" autocomplete="off">
+            </label>
+            <div class="logo-preview-row">
+              <label>Logo para correos
+                <input id="logoURL" placeholder="/img/Logo pcs 1.png" autocomplete="off">
+              </label>
+              <div class="logo-preview" aria-label="Vista previa del logo de correo">
+                <img id="logoPreview" src="/img/Logo pcs 1.png" alt="Logo correo">
+              </div>
+            </div>
+            <label>Modo de provision
+              <select id="provisionMode">
+                <option value="manual">Manual / pendiente</option>
+                <option value="mailu_api">Mailu API interna</option>
+                <option value="mailu_direct">Mailu directo VPS</option>
+              </select>
+            </label>
+            <label>Cuota por buzon (MB)
+              <input id="quotaMB" type="number" min="0" step="1">
+            </label>
+            <label>Maximo cuentas por empresa
+              <input id="maxAccountsPerEmpresa" type="number" min="1" step="1">
+            </label>
+            <label>URL API Mailu
+              <input id="apiBaseURL" placeholder="https://mail.powerfulcontrolsystem.com/api" autocomplete="off">
+            </label>
+            <label>Administrador Mailu
+              <input id="apiAdmin" placeholder="postmaster@powerfulcontrolsystem.com" autocomplete="off">
+            </label>
+            <label>Token API Mailu
+              <input id="apiPassword" type="password" placeholder="Dejar vacio para conservar" autocomplete="new-password">
+            </label>
+            <label>Comando directo Mailu
+              <input id="directCommand" placeholder="/root/powerfulcontrolsystem/deploy/scripts/vps-provision-mailu-mailbox.sh" autocomplete="off">
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit" aria-label="Guardar configuración de correo corporativo">Guardar configuracion</button>
+            <button id="syncBtn" type="button" class="secondary">Sincronizar empresas existentes</button>
+          </div>
+          <p class="hint">Para crear buzones automaticamente se usa el comando directo de VPS, que crea o actualiza el usuario en Mailu sin imprimir claves.</p>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Cuentas por empresa</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th>Webmail</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="accountsBody">
+              <tr><td colspan="5">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var statusEl = document.getElementById("status");
+      var accountsBody = document.getElementById("accountsBody");
+      var diagnosticAlert = document.getElementById("diagnosticAlert");
+      var diagModulo = document.getElementById("diagModulo");
+      var diagMailu = document.getElementById("diagMailu");
+      var diagWebmail = document.getElementById("diagWebmail");
+      var diagCuentas = document.getElementById("diagCuentas");
+      var apiProvisionEnabled = false;
+      var fields = {
+        enabled: document.getElementById("enabled"),
+        autoCreate: document.getElementById("autoCreate"),
+        domain: document.getElementById("domain"),
+        webmailURL: document.getElementById("webmailURL"),
+        logoURL: document.getElementById("logoURL"),
+        logoPreview: document.getElementById("logoPreview"),
+        provisionMode: document.getElementById("provisionMode"),
+        apiBaseURL: document.getElementById("apiBaseURL"),
+        apiAdmin: document.getElementById("apiAdmin"),
+        apiPassword: document.getElementById("apiPassword"),
+        quotaMB: document.getElementById("quotaMB"),
+        maxAccountsPerEmpresa: document.getElementById("maxAccountsPerEmpresa"),
+        directCommand: document.getElementById("directCommand")
+      };
+
+      function setStatus(text, error) {
+        statusEl.textContent = text || "";
+        statusEl.className = "status" + (error ? " error" : "");
+      }
+
+      function readCSRFCookie() {
+        var match = String(document.cookie || "").match(/(?:^|;\s*)pcs_csrf=([^;]+)/);
+        if (!match) return "";
+        try { return decodeURIComponent(match[1] || ""); } catch (_) { return match[1] || ""; }
+      }
+
+      function requestJSON(url, options) {
+        var requestOptions = Object.assign({ credentials: "same-origin" }, options || {});
+        var method = String(requestOptions.method || "GET").toUpperCase();
+        if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+          var token = readCSRFCookie();
+          var headers = new Headers(requestOptions.headers || {});
+          if (token && !headers.has("X-CSRF-Token")) headers.set("X-CSRF-Token", token);
+          requestOptions.headers = headers;
+        }
+        return fetch(url, requestOptions).then(function (res) {
+          return res.text().then(function (text) {
+            var data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch (e) {}
+            if (!res.ok) throw new Error((data && data.error) || text || ("HTTP " + res.status));
+            return data;
+          });
+        });
+      }
+
+      function renderConfig(config) {
+        config = config || {};
+        fields.enabled.checked = !!config.enabled;
+        fields.autoCreate.checked = config.auto_create !== false;
+        fields.domain.value = config.domain || "powerfulcontrolsystem.com";
+        fields.webmailURL.value = config.webmail_url || "https://mail.powerfulcontrolsystem.com/webmail/";
+        fields.logoURL.value = config.logo_url || "/img/Logo pcs 1.png";
+        updateLogoPreview();
+        fields.provisionMode.value = config.provision_mode || "manual";
+        fields.apiBaseURL.value = config.mailu_api_base_url || "";
+        fields.apiAdmin.value = config.mailu_admin || "";
+        fields.quotaMB.value = String(config.quota_mb || 1024);
+        fields.maxAccountsPerEmpresa.value = String(config.max_accounts_per_empresa || 5);
+        fields.directCommand.value = config.direct_provision_command || "";
+        fields.apiPassword.placeholder = config.mailu_api_token_set ? "Token guardado, dejar vacio para conservar" : "Token API Mailu";
+      }
+
+      function badgeClass(status) {
+        status = String(status || "").toLowerCase();
+        if (status === "provisionado") return "badge ok";
+        if (status.indexOf("error") >= 0) return "badge err";
+        return "badge warn";
+      }
+
+      function cleanProvisionError(value) {
+        var text = String(value || "").trim();
+        if (!text) return "";
+        var jsonStart = text.indexOf("{");
+        if (jsonStart >= 0) {
+          try {
+            var parsed = JSON.parse(text.slice(jsonStart));
+            var message = parsed.error || parsed._msg || parsed.message || "";
+            if (message) {
+              var prefix = text.slice(0, jsonStart).replace(/\s*:\s*$/, "").trim();
+              return prefix ? (prefix + ": " + message) : message;
+            }
+          } catch (e) {}
+        }
+        return text.length > 180 ? text.slice(0, 177) + "..." : text;
+      }
+
+      function renderDiagnostics(data) {
+        var diagnostics = data && data.diagnostics ? data.diagnostics : {};
+        var config = data && data.config ? data.config : {};
+        var webmail = diagnostics.webmail || {};
+        var accounts = diagnostics.accounts || {};
+        var directReady = diagnostics.provision_mode === "mailu_direct" && apiProvisionEnabled;
+        diagModulo.textContent = diagnostics.enabled ? "Activo" : "Desactivado";
+        diagMailu.textContent = diagnostics.provision_mode === "mailu_api"
+          ? (apiProvisionEnabled ? "API interna" : "API incompleta")
+          : (diagnostics.provision_mode === "mailu_direct"
+            ? (directReady ? "Directo VPS" : "Directo incompleto")
+            : "Manual");
+        diagWebmail.textContent = webmail.checked
+          ? ((webmail.status ? ("HTTP " + webmail.status + " - ") : "") + (webmail.message || "Consultado"))
+          : (webmail.message || "Sin verificar");
+        diagCuentas.textContent = (accounts.total || 0) + " total, " + (accounts.provisionado || 0) + " activas, " + (accounts.error || 0) + " con error - cupo " + (config.max_accounts_per_empresa || 5) + " por empresa";
+        diagnosticAlert.textContent = diagnostics.recommended_action || "Revisa la configuracion del servicio.";
+        diagnosticAlert.className = "alert" + (accounts.error > 0 || !directReady && diagnostics.provision_mode === "mailu_direct" ? " error" : (webmail.ok && diagnostics.enabled ? " ok" : ""));
+      }
+
+      function renderAccounts(accounts) {
+        accounts = Array.isArray(accounts) ? accounts : [];
+        accountsBody.innerHTML = "";
+        if (!accounts.length) {
+          accountsBody.innerHTML = '<tr><td colspan="5">No hay cuentas generadas todavia.</td></tr>';
+          return;
+        }
+        accounts.forEach(function (item) {
+          var tr = document.createElement("tr");
+          var status = item.estado_provision || "pendiente";
+          tr.innerHTML =
+            "<td><strong></strong><br><small></small></td>" +
+            "<td></td>" +
+            "<td><span></span><br><small></small></td>" +
+            "<td></td>" +
+            "<td><button type=\"button\" class=\"secondary\">Provisionar</button></td>";
+          tr.querySelector("strong").textContent = item.empresa_nombre || ("Empresa " + item.empresa_id);
+          tr.querySelector("small").textContent = "ID " + item.empresa_id;
+          tr.children[1].textContent = item.email || "";
+          tr.querySelector("span").className = badgeClass(status);
+          tr.querySelector("span").textContent = status;
+          tr.children[2].querySelector("small").textContent = cleanProvisionError(item.ultimo_error);
+          if (item.webmail_url) {
+            var link = document.createElement("a");
+            link.href = item.webmail_url;
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.textContent = "Abrir webmail";
+            tr.children[3].appendChild(link);
+          }
+          var provisionBtn = tr.querySelector("button");
+          provisionBtn.disabled = !apiProvisionEnabled;
+          provisionBtn.textContent = apiProvisionEnabled ? "Provisionar" : "Manual";
+          provisionBtn.title = apiProvisionEnabled ? "Crear o reintentar el buzon real" : "Activa un modo de provision automatica para crear el buzon real";
+          provisionBtn.addEventListener("click", function () {
+            provision(item.empresa_id);
+          });
+          accountsBody.appendChild(tr);
+        });
+      }
+
+      function load() {
+        setStatus("Cargando modulo...");
+        return requestJSON("/super/api/email_corporativo")
+          .then(function (data) {
+            renderConfig(data.config || {});
+            apiProvisionEnabled = !!data.mailu_direct_enabled;
+            renderDiagnostics(data);
+            renderAccounts(data.accounts || []);
+            setStatus("");
+          })
+          .catch(function (err) {
+            setStatus(err.message || String(err), true);
+          });
+      }
+
+      function save(event) {
+        event.preventDefault();
+        setStatus("Guardando...");
+        var payload = {
+          enabled: !!fields.enabled.checked,
+          auto_create: !!fields.autoCreate.checked,
+          domain: fields.domain.value,
+          webmail_url: fields.webmailURL.value,
+          logo_url: fields.logoURL.value,
+          provision_mode: fields.provisionMode.value,
+          mailu_api_base_url: fields.apiBaseURL.value,
+          mailu_admin: fields.apiAdmin.value,
+          mailu_api_token: fields.apiPassword.value,
+          quota_mb: Number(fields.quotaMB.value || 0),
+          max_accounts_per_empresa: Number(fields.maxAccountsPerEmpresa.value || 5),
+          direct_provision_command: fields.directCommand.value
+        };
+        requestJSON("/super/api/email_corporativo", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function () {
+          fields.apiPassword.value = "";
+          setStatus("Configuracion guardada.");
+          return load();
+        }).catch(function (err) {
+          setStatus(err.message || String(err), true);
+        });
+      }
+
+      function sync() {
+        setStatus("Sincronizando empresas...");
+        requestJSON("/super/api/email_corporativo?action=sync", { method: "POST" })
+          .then(function (data) {
+            setStatus("Empresas sincronizadas: " + (data.created || 0));
+            return load();
+          })
+          .catch(function (err) { setStatus(err.message || String(err), true); });
+      }
+
+      function testMailu() {
+        setStatus("Probando Mailu...");
+        requestJSON("/super/api/email_corporativo?action=test_mailu", { method: "POST" })
+          .then(function (data) {
+            return load().then(function () {
+              if (data && data.ok) {
+                setStatus("Mailu esta listo para provision directa.");
+              } else {
+                setStatus("Mailu no esta listo: " + cleanProvisionError((data && data.error) || (data && data.status) || "validacion fallida"), true);
+              }
+            });
+          })
+          .catch(function (err) {
+            return load().then(function () {
+              setStatus("Mailu no esta listo: " + (err.message || String(err)), true);
+            });
+          });
+      }
+
+      function provision(empresaId) {
+        setStatus("Provisionando cuenta...");
+        requestJSON("/super/api/email_corporativo?action=provision&empresa_id=" + encodeURIComponent(empresaId), { method: "POST" })
+          .then(function (data) {
+            return load().then(function () {
+              if (data && data.ok) {
+                setStatus("Cuenta provisionada.");
+              } else {
+                setStatus("No se pudo provisionar: " + cleanProvisionError((data && data.error) || (data && data.status) || "validacion fallida"), true);
+              }
+            });
+          })
+          .catch(function (err) {
+            return load().then(function () {
+              setStatus(err.message || String(err), true);
+            });
+          });
+      }
+
+      function provisionSystemMailboxes() {
+        setStatus("Provisionando ventas@ y soporte@...");
+        requestJSON("/super/api/email_corporativo?action=provision_system", { method: "POST" })
+          .then(function (data) {
+            return load().then(function () {
+              if (data && data.ok) {
+                setStatus("Buzones ventas@ y soporte@ provisionados.");
+              } else {
+                var detail = (data && data.results || []).map(function (item) {
+                  return item.email + ": " + (item.error || item.status || "fallo");
+                }).join(" | ");
+                setStatus("Hay buzones pendientes: " + (detail || "validacion fallida"), true);
+              }
+            });
+          })
+          .catch(function (err) {
+            return load().then(function () {
+              setStatus("No se pudieron provisionar buzones del sistema: " + (err.message || String(err)), true);
+            });
+          });
+      }
+
+      function testSend() {
+        var input = document.getElementById("testRecipient");
+        var recipient = input ? input.value : "";
+        setStatus("Enviando correo de prueba...");
+        requestJSON("/super/api/email_corporativo?action=test_send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to: recipient })
+        }).then(function (data) {
+          setStatus("Correo de prueba enviado a " + ((data && data.recipient) || recipient || "destinatario configurado") + ".");
+        }).catch(function (err) {
+          setStatus(err.message || String(err), true);
+        });
+      }
+
+      document.getElementById("configForm").addEventListener("submit", save);
+      fields.logoURL.addEventListener("input", updateLogoPreview);
+      document.getElementById("syncBtn").addEventListener("click", sync);
+      document.getElementById("testMailuBtn").addEventListener("click", testMailu);
+      document.getElementById("provisionSystemBtn").addEventListener("click", provisionSystemMailboxes);
+      document.getElementById("testSendBtn").addEventListener("click", testSend);
+      load();
+
+      function updateLogoPreview() {
+        var value = String(fields.logoURL.value || "").trim() || "/img/Logo pcs 1.png";
+        if (fields.logoPreview) {
+          fields.logoPreview.src = value;
+        }
+      }
+    })();
+  </script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

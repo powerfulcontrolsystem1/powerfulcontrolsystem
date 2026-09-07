@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Registro de vehículos</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+<div class="page-header">
+      <div>
+        <h1 id="pageTitle">Registro de vehículos</h1>
+</div>
+      <button id="addBtn" class="btn add" type="button">Agregar registro</button>
+    </div>
+
+    <p class="form-help" style="margin:0 0 12px 0;">Registra la patente y el control de ingreso/salida de vehículos por empresa.</p>
+
+    <section class="form" data-pcs-submenu-section="configuracion" style="margin-bottom:14px;">
+      <h2 style="margin:0 0 8px 0;">Configuración de placa/patente por país</h2>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label">País</label>
+          <select id="cfg_pais_codigo" class="form-input">
+            <option value="CO">CO - Colombia</option>
+            <option value="MX">MX - Mexico</option>
+            <option value="AR">AR - Argentina</option>
+            <option value="CL">CL - Chile</option>
+            <option value="OT">OT - Otro</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Regex de placa (opcional)</label>
+          <input id="cfg_patente_regex" class="form-input" placeholder="Ej: ^[A-Z0-9]{6,7}$">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Descripción formato</label>
+          <input id="cfg_patente_descripcion" class="form-input" placeholder="Descripción del formato esperado">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col" style="display:flex;align-items:center;gap:8px;max-width:360px;">
+          <input id="cfg_evitar_duplicado" type="checkbox" checked>
+          <label class="form-label" for="cfg_evitar_duplicado" style="margin:0;">Evitar duplicidad activa en patio/empresa</label>
+        </div>
+        <div class="form-col" style="display:flex;align-items:flex-end;gap:8px;max-width:300px;">
+          <button id="cfgGuardarBtn" class="btn secondary" type="button" style="flex:1;">Guardar configuración</button>
+          <button id="cfgRecargarBtn" class="btn secondary" type="button" style="flex:1;">Recargar</button>
+        </div>
+      </div>
+      <div id="cfgMsg" class="form-help"></div>
+    </section>
+
+    <form id="form" class="form" data-pcs-submenu-section="registro">
+      <input type="hidden" id="itemId">
+      <input type="hidden" id="empresa_id">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Patente</label>
+          <input id="patente" class="form-input" required placeholder="Ej: ABC123, XYZ-789">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Tipo de vehículo</label>
+          <select id="tipo_vehiculo" class="form-input">
+            <option value="automovil">Automóvil</option>
+            <option value="moto">Moto</option>
+            <option value="camion">Camion</option>
+            <option value="camioneta">Camioneta</option>
+            <option value="bus">Bus</option>
+            <option value="van">Van</option>
+            <option value="bicicleta">Bicicleta</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado registro</label>
+          <select id="estado_registro" class="form-input">
+            <option value="en_empresa">En empresa</option>
+            <option value="retirado">Retirado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Marca</label>
+          <input id="marca" class="form-input" placeholder="Ej: Toyota">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Modelo</label>
+          <input id="modelo" class="form-input" placeholder="Ej: Corolla 2024">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Color</label>
+          <input id="color" class="form-input" placeholder="Ej: Blanco">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Conductor</label>
+          <input id="conductor_nombre" class="form-input" placeholder="Nombre conductor">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Documento conductor</label>
+          <input id="conductor_documento" class="form-input" placeholder="Documento conductor">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Referencia externa</label>
+          <input id="referencia_externa" class="form-input" placeholder="Ej: visitante, proveedor, OT-123">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Propietario</label>
+          <input id="propietario_nombre" class="form-input" placeholder="Nombre propietario">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Documento propietario</label>
+          <input id="propietario_documento" class="form-input" placeholder="Documento propietario">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Fecha ingreso</label>
+          <input id="fecha_ingreso" type="datetime-local" class="form-input">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Fecha salida</label>
+          <input id="fecha_salida" type="datetime-local" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Usuario salida</label>
+          <input id="usuario_salida" class="form-input" placeholder="Usuario que registra salida">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Motivo de ingreso</label>
+          <input id="motivo_ingreso" class="form-input" placeholder="Ej: visita comercial, entrega, mantenimiento">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <div class="form" data-pcs-submenu-section="consulta">
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Buscar</label>
+          <input id="buscar" class="form-input" placeholder="Patente, conductor, propietario, motivo o referencia">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Patente</label>
+          <input id="filtro_patente" class="form-input" placeholder="Filtro exacto o parcial">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado registro</label>
+          <select id="filtro_estado_registro" class="form-input">
+            <option value="">Todos</option>
+            <option value="en_empresa">En empresa</option>
+            <option value="retirado">Retirado</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Desde</label>
+          <input id="filtro_desde" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hasta</label>
+          <input id="filtro_hasta" type="date" class="form-input">
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;gap:8px;">
+          <button id="filtrarBtn" class="btn secondary" type="button" style="flex:1;">Filtrar</button>
+          <button id="limpiarBtn" class="btn secondary" type="button" style="flex:1;">Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="form" data-pcs-submenu-section="reportes">
+      <h2 style="margin:0 0 8px 0;">Reporte de permanencia y tiempos de estancia</h2>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label">Formato exportación</label>
+          <select id="reporteFormato" class="form-input">
+            <option value="pdf">PDF</option>
+            <option value="xls">Excel (XLS)</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+        </div>
+        <div class="form-col" style="display:flex;align-items:flex-end;gap:8px;max-width:360px;">
+          <button id="reporteVerBtn" class="btn secondary" type="button" style="flex:1;">Ver permanencia</button>
+          <button id="reporteDescargarBtn" class="btn secondary" type="button" style="flex:1;">Descargar reporte</button>
+        </div>
+      </div>
+      <div id="reporteMsg" class="form-help"></div>
+      <div id="permanenciaResumen" class="form-help" >Sin reporte de permanencia cargado.</div>
+      <div id="permanenciaList" class="form-help" >Usa "Ver permanencia" para consultar detalles.</div>
+    </section>
+
+    <div id="list" data-pcs-submenu-section="consulta">Cargando...</div>
+  </div>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script>
+    const state = {
+      empresaID: 0,
+      items: [],
+      q: '',
+      patente: '',
+      desde: '',
+      hasta: '',
+      estadoRegistro: '',
+      permanenciaRows: []
+    };
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function normalize(value) {
+      return (value == null ? '' : String(value)).trim();
+    }
+
+    function esc(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setScopedMessage(id, text, isError) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    function toNumber(value, fallback) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : (Number(fallback) || 0);
+    }
+
+    function asBool(value, fallback) {
+      if (typeof value === 'boolean') return value;
+      if (value == null) return Boolean(fallback);
+      const raw = normalize(value).toLowerCase();
+      if (!raw) return Boolean(fallback);
+      if (raw === '0' || raw === 'false' || raw === 'no') return false;
+      return true;
+    }
+
+    function normalizePaisCodigo(value) {
+      const raw = normalize(value).toUpperCase();
+      if (!raw) return 'CO';
+      if (['CO', 'MX', 'AR', 'CL', 'OT'].indexOf(raw) >= 0) return raw;
+      return 'OT';
+    }
+
+    function setMessage(text, isError) {
+      setScopedMessage('msg', text, isError);
+    }
+
+    async function ensureOk(resp) {
+      if (resp.ok) return;
+      const text = await resp.text();
+      throw new Error(text || ('HTTP ' + resp.status));
+    }
+
+    function pad2(v) {
+      return String(v).padStart(2, '0');
+    }
+
+    function nowDateTimeLocal() {
+      const dt = new Date();
+      return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate()) + 'T' + pad2(dt.getHours()) + ':' + pad2(dt.getMinutes());
+    }
+
+    function dateOnlyToday() {
+      const dt = new Date();
+      return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+    }
+
+    function toInputDateTime(raw) {
+      const value = normalize(raw);
+      if (!value) return '';
+      const candidate = value.replace(' ', 'T');
+      if (candidate.length >= 16) {
+        return candidate.slice(0, 16);
+      }
+      return candidate;
+    }
+
+    function defaultDates() {
+      const today = dateOnlyToday();
+      const first = today.slice(0, 8) + '01';
+      document.getElementById('fecha_ingreso').value = nowDateTimeLocal();
+      document.getElementById('filtro_desde').value = first;
+      document.getElementById('filtro_hasta').value = today;
+      state.desde = first;
+      state.hasta = today;
+    }
+
+    function buildPayloadFromForm() {
+      return {
+        id: Number(document.getElementById('itemId').value || 0),
+        empresa_id: Number(state.empresaID),
+        patente: normalize(document.getElementById('patente').value),
+        tipo_vehiculo: normalize(document.getElementById('tipo_vehiculo').value),
+        marca: normalize(document.getElementById('marca').value),
+        modelo: normalize(document.getElementById('modelo').value),
+        color: normalize(document.getElementById('color').value),
+        propietario_nombre: normalize(document.getElementById('propietario_nombre').value),
+        propietario_documento: normalize(document.getElementById('propietario_documento').value),
+        conductor_nombre: normalize(document.getElementById('conductor_nombre').value),
+        conductor_documento: normalize(document.getElementById('conductor_documento').value),
+        motivo_ingreso: normalize(document.getElementById('motivo_ingreso').value),
+        referencia_externa: normalize(document.getElementById('referencia_externa').value),
+        fecha_ingreso: normalize(document.getElementById('fecha_ingreso').value),
+        fecha_salida: normalize(document.getElementById('fecha_salida').value),
+        estado_registro: normalize(document.getElementById('estado_registro').value),
+        usuario_salida: normalize(document.getElementById('usuario_salida').value),
+        observaciones: normalize(document.getElementById('observaciones').value)
+      };
+    }
+
+    function resetForm() {
+      document.getElementById('itemId').value = '';
+      document.getElementById('patente').value = '';
+      document.getElementById('tipo_vehiculo').value = 'automovil';
+      document.getElementById('estado_registro').value = 'en_empresa';
+      document.getElementById('marca').value = '';
+      document.getElementById('modelo').value = '';
+      document.getElementById('color').value = '';
+      document.getElementById('propietario_nombre').value = '';
+      document.getElementById('propietario_documento').value = '';
+      document.getElementById('conductor_nombre').value = '';
+      document.getElementById('conductor_documento').value = '';
+      document.getElementById('motivo_ingreso').value = '';
+      document.getElementById('referencia_externa').value = '';
+      document.getElementById('fecha_ingreso').value = nowDateTimeLocal();
+      document.getElementById('fecha_salida').value = '';
+      document.getElementById('usuario_salida').value = '';
+      document.getElementById('observaciones').value = '';
+      setMessage('', false);
+    }
+
+    function applyFilters() {
+      state.q = normalize(document.getElementById('buscar').value);
+      state.patente = normalize(document.getElementById('filtro_patente').value);
+      state.desde = normalize(document.getElementById('filtro_desde').value);
+      state.hasta = normalize(document.getElementById('filtro_hasta').value);
+      state.estadoRegistro = normalize(document.getElementById('filtro_estado_registro').value);
+    }
+
+    function fillConfiguracionForm(cfg) {
+      const item = cfg || {};
+      document.getElementById('cfg_pais_codigo').value = normalizePaisCodigo(item.pais_codigo);
+      document.getElementById('cfg_patente_regex').value = normalize(item.patente_regex);
+      document.getElementById('cfg_patente_descripcion').value = normalize(item.patente_descripcion);
+      document.getElementById('cfg_evitar_duplicado').checked = asBool(item.evitar_duplicado_activo, true);
+    }
+
+    function buildConfiguracionPayload() {
+      return {
+        empresa_id: Number(state.empresaID),
+        pais_codigo: normalizePaisCodigo(document.getElementById('cfg_pais_codigo').value),
+        patente_regex: normalize(document.getElementById('cfg_patente_regex').value),
+        patente_descripcion: normalize(document.getElementById('cfg_patente_descripcion').value),
+        evitar_duplicado_activo: Boolean(document.getElementById('cfg_evitar_duplicado').checked)
+      };
+    }
+
+    async function loadConfiguracionVehiculos(options) {
+      const silent = Boolean(options && options.silent);
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('action', 'config');
+      const resp = await fetch('/api/empresa/vehiculos_registro?' + params.toString(), { credentials: 'same-origin' });
+      await ensureOk(resp);
+      const cfg = await resp.json();
+      fillConfiguracionForm(cfg || {});
+      if (!silent) {
+        setScopedMessage('cfgMsg', 'Configuracion de patente cargada.', false);
+      }
+    }
+
+    async function saveConfiguracionVehiculos() {
+      const payload = buildConfiguracionPayload();
+      const params = new URLSearchParams();
+      params.set('action', 'config');
+      params.set('empresa_id', String(state.empresaID));
+
+      const resp = await fetch('/api/empresa/vehiculos_registro?' + params.toString(), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(resp);
+
+      const result = await resp.json();
+      if (result && result.configuracion) {
+        fillConfiguracionForm(result.configuracion);
+      }
+      setScopedMessage('cfgMsg', 'Configuracion guardada correctamente.', false);
+    }
+
+    function buildPermanenciaDatasetParams(action) {
+      applyFilters();
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('action', action);
+      params.set('dataset', 'operativo_vehiculos_permanencia');
+      params.set('include_inactive', '1');
+      params.set('max_rows', '500');
+      if (state.desde) params.set('desde', state.desde);
+      if (state.hasta) params.set('hasta', state.hasta);
+      return params;
+    }
+
+    function renderPermanenciaResumen(summary, rowsCount) {
+      const s = summary || {};
+      const total = Number(s.registros_total || rowsCount || 0);
+      const listados = Number(s.registros_listados || rowsCount || 0);
+      const enEmpresa = Number(s.vehiculos_en_empresa || 0);
+      const retirados = Number(s.vehiculos_retirados || 0);
+      const promedioHoras = toNumber(s.promedio_horas_estadia, 0).toFixed(2);
+      const maxHoras = (toNumber(s.maximo_minutos_estadia, 0) / 60).toFixed(2);
+      const totalHoras = toNumber(s.horas_estadia_total, 0).toFixed(2);
+
+      document.getElementById('permanenciaResumen').textContent =
+        'Total: ' + total +
+        ' | Listados: ' + listados +
+        ' | En empresa: ' + enEmpresa +
+        ' | Retirados: ' + retirados +
+        ' | Promedio horas: ' + promedioHoras +
+        ' | Max horas: ' + maxHoras +
+        ' | Horas acumuladas: ' + totalHoras;
+    }
+
+    function renderPermanenciaRows(rows) {
+      const root = document.getElementById('permanenciaList');
+      if (!Array.isArray(rows) || !rows.length) {
+        root.innerHTML = '<p class="form-help">No hay registros de permanencia para el rango seleccionado.</p>';
+        return;
+      }
+
+      const html = rows.map(function(row) {
+        const patente = normalize(row.patente);
+        const tipo = normalize(row.tipo_vehiculo);
+        const conductor = normalize(row.conductor_nombre);
+        const propietario = normalize(row.propietario_nombre);
+        const ingreso = normalize(row.fecha_ingreso);
+        const salida = normalize(row.fecha_salida) || '-';
+        const estadoRegistro = normalize(row.estado_registro) || 'en_empresa';
+        const estado = normalize(row.estado) || 'activo';
+        const horas = toNumber(row.horas_estadia, 0).toFixed(2);
+        const dias = toNumber(row.dias_estadia, 0).toFixed(2);
+
+        return '<tr>' +
+          '<td><strong>' + esc(patente || '-') + '</strong><br><small>' + esc(tipo) + '</small></td>' +
+          '<td>' + esc(conductor || '-') + '</td>' +
+          '<td>' + esc(propietario || '-') + '</td>' +
+          '<td>' + esc(ingreso || '-') + '</td>' +
+          '<td>' + esc(salida) + '</td>' +
+          '<td>' + esc(estadoRegistro) + '</td>' +
+          '<td>' + esc(estado) + '</td>' +
+          '<td style="text-align:right;">' + esc(horas) + '</td>' +
+          '<td style="text-align:right;">' + esc(dias) + '</td>' +
+        '</tr>';
+      }).join('');
+
+      root.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
+        '<th>Patente</th>' +
+        '<th>Conductor</th>' +
+        '<th>Propietario</th>' +
+        '<th>Ingreso</th>' +
+        '<th>Salida</th>' +
+        '<th>Estado registro</th>' +
+        '<th>Estado</th>' +
+        '<th>Horas</th>' +
+        '<th>Días</th>' +
+      '</tr></thead><tbody>' + html + '</tbody></table></div>';
+    }
+
+    async function loadPermanenciaDataset() {
+      const params = buildPermanenciaDatasetParams('dataset');
+      const resp = await fetch('/api/empresa/reportes?' + params.toString(), { credentials: 'same-origin' });
+      await ensureOk(resp);
+      const ds = await resp.json();
+      const rows = Array.isArray(ds && ds.rows) ? ds.rows : [];
+      const summary = ds && typeof ds.summary === 'object' ? ds.summary : {};
+      state.permanenciaRows = rows;
+      renderPermanenciaRows(rows);
+      renderPermanenciaResumen(summary, rows.length);
+      setScopedMessage('reporteMsg', 'Reporte de permanencia actualizado.', false);
+    }
+
+    function extractFileNameFromResponse(resp, fallback) {
+      const contentDisposition = String(resp.headers.get('content-disposition') || '');
+      const match = contentDisposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+      if (match && match[1]) return match[1];
+      return fallback;
+    }
+
+    async function exportPermanenciaDataset() {
+      const formato = normalize(document.getElementById('reporteFormato').value).toLowerCase() || 'pdf';
+      if (['pdf', 'xls', 'csv', 'json', 'txt'].indexOf(formato) < 0) {
+        throw new Error('Formato de exportacion no soportado.');
+      }
+
+      const params = buildPermanenciaDatasetParams('export');
+      params.set('format', formato);
+
+      const resp = await fetch('/api/empresa/reportes?' + params.toString(), { credentials: 'same-origin' });
+      await ensureOk(resp);
+
+      const blob = await resp.blob();
+      const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+      const fallback = 'vehiculos_permanencia_empresa_' + state.empresaID + '_' + stamp + '.' + formato;
+      const fileName = extractFileNameFromResponse(resp, fallback);
+      const href = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function() { URL.revokeObjectURL(href); }, 0);
+    }
+
+    async function loadItems() {
+      applyFilters();
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('include_inactive', '1');
+      params.set('limit', '500');
+      if (state.q) params.set('q', state.q);
+      if (state.patente) params.set('patente', state.patente);
+      if (state.desde) params.set('desde', state.desde);
+      if (state.hasta) params.set('hasta', state.hasta);
+      if (state.estadoRegistro) params.set('estado_registro', state.estadoRegistro);
+
+      const resp = await fetch('/api/empresa/vehiculos_registro?' + params.toString(), { credentials: 'same-origin' });
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.items = Array.isArray(rows) ? rows : [];
+      renderList();
+    }
+
+    function renderList() {
+      const root = document.getElementById('list');
+      if (!Array.isArray(state.items) || !state.items.length) {
+        root.innerHTML = '<p class="form-help">No hay registros de vehiculos para los filtros seleccionados.</p>';
+        return;
+      }
+
+      const html = state.items.map(function(item) {
+        const id = Number(item.id || 0);
+        const estado = normalize(item.estado || 'activo').toLowerCase();
+        const nextAction = estado === 'activo' ? 'desactivar' : 'activar';
+        const nextLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const rowData = esc(JSON.stringify(item));
+
+        return '<tr>' +
+          '<td><strong>' + esc(item.patente || '-') + '</strong><br><small>' + esc(item.tipo_vehiculo || '') + '</small></td>' +
+          '<td>' + esc(item.conductor_nombre || '-') + '<br><small>' + esc(item.conductor_documento || '') + '</small></td>' +
+          '<td>' + esc(item.propietario_nombre || '-') + '</td>' +
+          '<td>' + esc(item.motivo_ingreso || '-') + '</td>' +
+          '<td>' + esc(item.fecha_ingreso || '-') + '</td>' +
+          '<td>' + esc(item.fecha_salida || '-') + '</td>' +
+          '<td>' + esc(item.estado_registro || 'en_empresa') + '</td>' +
+          '<td>' + esc(estado) + '</td>' +
+          '<td>' +
+            '<button class="btn secondary" type="button" data-action="edit" data-item="' + rowData + '">Editar</button> ' +
+            '<button class="btn secondary" type="button" data-action="salida" data-id="' + id + '">Marcar salida</button> ' +
+            '<button class="btn secondary" type="button" data-action="toggle" data-id="' + id + '" data-next="' + nextAction + '">' + nextLabel + '</button> ' +
+            '<button class="btn danger" type="button" data-action="delete" data-id="' + id + '">Eliminar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+
+      root.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
+        '<th>Patente</th>' +
+        '<th>Conductor</th>' +
+        '<th>Propietario</th>' +
+        '<th>Motivo</th>' +
+        '<th>Ingreso</th>' +
+        '<th>Salida</th>' +
+        '<th>Estado vehiculo</th>' +
+        '<th>Estado registro</th>' +
+        '<th>Acciones</th>' +
+      '</tr></thead><tbody>' + html + '</tbody></table></div>';
+    }
+
+    async function saveForm(ev) {
+      ev.preventDefault();
+      try {
+        const payload = buildPayloadFromForm();
+        if (!payload.empresa_id) throw new Error('empresa_id es obligatorio');
+        if (!payload.patente) throw new Error('patente es obligatoria');
+
+        const method = payload.id > 0 ? 'PUT' : 'POST';
+        const resp = await fetch('/api/empresa/vehiculos_registro', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+
+        resetForm();
+        await loadItems();
+        setMessage(method === 'POST' ? 'Registro de vehiculo creado.' : 'Registro de vehiculo actualizado.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo guardar el registro.', true);
+      }
+    }
+
+    function fillForm(item) {
+      document.getElementById('itemId').value = Number(item.id || 0);
+      document.getElementById('empresa_id').value = Number(item.empresa_id || state.empresaID);
+      document.getElementById('patente').value = normalize(item.patente);
+      document.getElementById('tipo_vehiculo').value = normalize(item.tipo_vehiculo) || 'automovil';
+      document.getElementById('estado_registro').value = normalize(item.estado_registro) || 'en_empresa';
+      document.getElementById('marca').value = normalize(item.marca);
+      document.getElementById('modelo').value = normalize(item.modelo);
+      document.getElementById('color').value = normalize(item.color);
+      document.getElementById('propietario_nombre').value = normalize(item.propietario_nombre);
+      document.getElementById('propietario_documento').value = normalize(item.propietario_documento);
+      document.getElementById('conductor_nombre').value = normalize(item.conductor_nombre);
+      document.getElementById('conductor_documento').value = normalize(item.conductor_documento);
+      document.getElementById('motivo_ingreso').value = normalize(item.motivo_ingreso);
+      document.getElementById('referencia_externa').value = normalize(item.referencia_externa);
+      document.getElementById('fecha_ingreso').value = toInputDateTime(item.fecha_ingreso);
+      document.getElementById('fecha_salida').value = toInputDateTime(item.fecha_salida);
+      document.getElementById('usuario_salida').value = normalize(item.usuario_salida);
+      document.getElementById('observaciones').value = normalize(item.observaciones);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function markSalida(id) {
+      const fechaSalida = prompt('Fecha/hora salida (opcional, formato YYYY-MM-DD HH:MM:SS). Deja vacio para usar la hora actual:', '');
+      if (fechaSalida === null) return;
+      const observaciones = prompt('Observaciones de salida (opcional):', '');
+
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        id: Number(id || 0),
+        fecha_salida: normalize(fechaSalida),
+        observaciones: normalize(observaciones)
+      };
+
+      try {
+        const resp = await fetch('/api/empresa/vehiculos_registro?action=marcar_salida', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        await loadItems();
+        setMessage('Salida de vehiculo registrada.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo marcar salida.', true);
+      }
+    }
+
+    async function toggleEstado(id, nextAction) {
+      try {
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('id', String(id));
+        params.set('action', nextAction);
+        const resp = await fetch('/api/empresa/vehiculos_registro?' + params.toString(), {
+          method: 'PUT',
+          credentials: 'same-origin'
+        });
+        await ensureOk(resp);
+        await loadItems();
+      } catch (err) {
+        setMessage(err.message || 'No se pudo actualizar el estado.', true);
+      }
+    }
+
+    async function removeItem(id) {
+      if (!confirm('¿Eliminar este registro de vehiculo?')) return;
+      try {
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('id', String(id));
+        const resp = await fetch('/api/empresa/vehiculos_registro?' + params.toString(), {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+        await ensureOk(resp);
+        await loadItems();
+      } catch (err) {
+        setMessage(err.message || 'No se pudo eliminar.', true);
+      }
+    }
+
+    function bindListActions() {
+      const root = document.getElementById('list');
+      root.addEventListener('click', function(ev) {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        if (action === 'edit') {
+          const raw = btn.getAttribute('data-item') || '{}';
+          try {
+            fillForm(JSON.parse(raw));
+          } catch (_) {}
+          return;
+        }
+        const id = Number(btn.getAttribute('data-id') || 0);
+        if (!id) return;
+        if (action === 'salida') {
+          markSalida(id);
+          return;
+        }
+        if (action === 'toggle') {
+          const next = btn.getAttribute('data-next') || 'activar';
+          toggleEstado(id, next);
+          return;
+        }
+        if (action === 'delete') {
+          removeItem(id);
+          return;
+        }
+      });
+    }
+
+    function bindUI() {
+      document.getElementById('form').addEventListener('submit', saveForm);
+      document.getElementById('cancelBtn').addEventListener('click', resetForm);
+      document.getElementById('cfgGuardarBtn').addEventListener('click', function() {
+        saveConfiguracionVehiculos().catch(function(err) {
+          setScopedMessage('cfgMsg', err.message || 'No se pudo guardar la configuracion.', true);
+        });
+      });
+      document.getElementById('cfgRecargarBtn').addEventListener('click', function() {
+        loadConfiguracionVehiculos().catch(function(err) {
+          setScopedMessage('cfgMsg', err.message || 'No se pudo recargar la configuracion.', true);
+        });
+      });
+      document.getElementById('addBtn').addEventListener('click', function() {
+        resetForm();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      document.getElementById('reporteVerBtn').addEventListener('click', function() {
+        loadPermanenciaDataset().catch(function(err) {
+          setScopedMessage('reporteMsg', err.message || 'No se pudo consultar permanencia.', true);
+        });
+      });
+      document.getElementById('reporteDescargarBtn').addEventListener('click', function() {
+        exportPermanenciaDataset()
+          .then(function() {
+            setScopedMessage('reporteMsg', 'Exportacion de permanencia generada correctamente.', false);
+          })
+          .catch(function(err) {
+            setScopedMessage('reporteMsg', err.message || 'No se pudo exportar permanencia.', true);
+          });
+      });
+      document.getElementById('filtrarBtn').addEventListener('click', function() {
+        loadItems().catch(function(err) {
+          setMessage(err.message || 'No se pudo filtrar.', true);
+        });
+      });
+      document.getElementById('limpiarBtn').addEventListener('click', function() {
+        document.getElementById('buscar').value = '';
+        document.getElementById('filtro_patente').value = '';
+        document.getElementById('filtro_estado_registro').value = '';
+        defaultDates();
+        loadItems().catch(function(err) {
+          setMessage(err.message || 'No se pudo recargar.', true);
+        });
+      });
+    }
+
+    async function init() {
+      state.empresaID = Number(getQueryParam('empresa_id') || 0);
+      if (!state.empresaID) {
+        setMessage('empresa_id es obligatorio en la URL.', true);
+        return;
+      }
+      document.getElementById('empresa_id').value = String(state.empresaID);
+      defaultDates();
+      bindUI();
+      bindListActions();
+      resetForm();
+      try {
+        await loadConfiguracionVehiculos({ silent: true });
+      } catch (err) {
+        setScopedMessage('cfgMsg', err.message || 'No se pudo cargar la configuracion de patente.', true);
+      }
+      await loadItems();
+    }
+
+    init().catch(function(err) {
+      setMessage(err.message || 'No se pudo inicializar el modulo.', true);
+    });
+  </script>
+  <script src="/js/personas_activos_submenu.js"></script>
+</body>
+</html>

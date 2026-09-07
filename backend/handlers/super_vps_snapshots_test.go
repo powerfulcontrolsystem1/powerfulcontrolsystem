@@ -1,0 +1,74 @@
+package handlers
+
+import (
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
+)
+
+func TestSanitizeSuperVPSSnapshotRemotePath(t *testing.T) {
+	got := sanitizeSuperVPSSnapshotRemotePath("gdrive:PCS/backups\r\n--delete")
+	if strings.ContainsAny(got, "\r\n") {
+		t.Fatalf("remote path should not contain line breaks: %q", got)
+	}
+	if !strings.Contains(got, "gdrive:PCS/backups") {
+		t.Fatalf("remote path lost expected prefix: %q", got)
+	}
+}
+
+func TestSuperVPSSnapshotDailyScheduleDueOnce(t *testing.T) {
+	loc := time.FixedZone("America/Bogota", -5*60*60)
+	now := time.Date(2026, 7, 21, 3, 5, 0, 0, loc)
+	cfg := superVPSSnapshotConfig{DailyTime: "03:00", IntervalHours: 24}
+	if !superVPSSnapshotAutomaticDue(cfg, now) {
+		t.Fatal("daily backup should be due after configured time")
+	}
+	cfg.LastAutoRun = time.Date(2026, 7, 21, 3, 1, 0, 0, loc).Format(time.RFC3339)
+	if superVPSSnapshotAutomaticDue(cfg, now) {
+		t.Fatal("daily backup must not run twice on the same local day")
+	}
+}
+
+func TestSafeSuperVPSSnapshotPath(t *testing.T) {
+	inside := filepath.Join(superVPSSnapshotDir(), "pcs-vps-snapshot-test.tar.gz")
+	if _, ok := safeSuperVPSSnapshotPath(inside); !ok {
+		t.Fatalf("expected path inside snapshot dir to be accepted")
+	}
+	outside := filepath.Join(resolveProjectRootDir(), "deploy", ".env.platform")
+	if _, ok := safeSuperVPSSnapshotPath(outside); ok {
+		t.Fatalf("expected path outside snapshot dir to be rejected")
+	}
+}
+
+func TestSanitizeSuperVPSSnapshotLogRemovesInternalDiagnostics(t *testing.T) {
+	item := sanitizeSuperVPSSnapshotLog(dbpkg.SuperVPSSnapshotLog{
+		FilePath:     "D:/private/snapshots/backup.tar.gz",
+		ManifestJSON: `{"project_root":"D:/powerfulcontrolsystem"}`,
+		Error:        "rclone failed with credential details",
+		CloudMensaje: "provider diagnostic",
+	})
+	if item.FilePath != "" || item.ManifestJSON != "" || item.Error != "" || item.CloudMensaje != "" {
+		t.Fatalf("snapshot response retained internal diagnostics: %#v", item)
+	}
+}
+
+func TestSuperVPSSnapshotFailureMessageIsGeneric(t *testing.T) {
+	message := superVPSSnapshotFailureMessage()
+	if strings.Contains(strings.ToLower(message), "rclone") || strings.Contains(strings.ToLower(message), "error:") {
+		t.Fatalf("snapshot public error must not expose an internal diagnostic: %q", message)
+	}
+}
+
+func TestNormalizeSuperVPSSnapshotCloudProvider(t *testing.T) {
+	for _, provider := range []string{"google_drive", "mega", "onedrive", "dropbox", "box", "pcloud", "backblaze_b2", "s3", "rclone"} {
+		if got := normalizeSuperVPSSnapshotCloudProvider(provider); got != provider {
+			t.Fatalf("provider %q normalized as %q", provider, got)
+		}
+	}
+	if got := normalizeSuperVPSSnapshotCloudProvider("shell;command"); got != "rclone" {
+		t.Fatalf("unexpected provider must fall back to rclone, got %q", got)
+	}
+}

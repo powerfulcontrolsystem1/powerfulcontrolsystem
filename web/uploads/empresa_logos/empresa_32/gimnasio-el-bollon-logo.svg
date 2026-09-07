@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720" role="img" aria-labelledby="title desc">
+  <title id="title">Gimnasio El Bollon</title>
+  <desc id="desc">Logo con monograma, barra y energia para Gimnasio El Bollon.</desc>
+  <defs>
+    <linearGradient id="gymBg" x1="108" x2="612" y1="108" y2="612" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="0.55" stop-color="#1f2937"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="gymAccent" x1="182" x2="538" y1="240" y2="478" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#facc15"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+    <filter id="gymShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#111827" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="720" height="720" rx="92" fill="#f7faf9"/>
+  <circle cx="360" cy="326" r="238" fill="url(#gymBg)" filter="url(#gymShadow)"/>
+  <path d="M155 340h69v-48h42v146h-42v-52h-69v52h-42V292h42v48Zm409 0v-48h42v146h-42v-52h-69v52h-42V292h42v48h69Z" fill="#e5f7ef"/>
+  <rect x="214" y="346" width="292" height="38" rx="19" fill="url(#gymAccent)"/>
+  <path d="M255 241h130v52h-68v42h60v49h-60v42h70v52H255V241Z" fill="#ffffff"/>
+  <path d="M395 241h78c61 0 100 30 100 79 0 24-11 45-31 58 26 13 40 35 40 64 0 55-42 88-106 88h-81V241Zm60 50v65h18c25 0 40-12 40-33 0-20-15-32-40-32h-18Zm0 112v77h22c28 0 44-14 44-39 0-24-16-38-44-38h-22Z" fill="#ffffff"/>
+  <path d="M238 231l28-42 28 42h-22v45h-68v-45h34Zm236 0 28-42 28 42h-22v45h-68v-45h34Z" fill="#22c55e"/>
+  <text x="360" y="616" text-anchor="middle" font-family="Montserrat, Arial, sans-serif" font-size="52" font-weight="900" letter-spacing="1.5" fill="#111827">GIMNASIO</text>
+  <text x="360" y="674" text-anchor="middle" font-family="Montserrat, Arial, sans-serif" font-size="60" font-weight="900" letter-spacing="2" fill="#0f766e">EL BOLLON</text>
+</svg>

@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial DIAN - Conexión y emisión electrónica</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    html{min-height:100%;height:auto;overflow-y:auto}
+    body.dian-guide-page{min-height:100%;height:auto;overflow-y:auto;padding-bottom:18px}
+    .dian-guide-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .dian-guide-header h1{margin-bottom:6px}
+    .dian-guide-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .dian-guide-actions .btn{display:inline-flex;align-items:center;gap:8px;min-height:40px}
+    .dian-guide-icon{width:18px;height:18px;object-fit:contain}
+    .dian-guide-alert{margin-top:12px;border-left:4px solid var(--accent);border-radius:8px;background:var(--surface-soft);padding:10px 12px;color:var(--muted);font-size:.92rem}
+    .dian-guide-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+    .dian-guide-step{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:14px;min-height:190px}
+    details.dian-guide-step{min-height:0;padding:0;overflow:hidden}
+    details.dian-guide-step summary{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;font-weight:900;color:var(--text);list-style:none}
+    details.dian-guide-step summary::-webkit-details-marker{display:none}
+    details.dian-guide-step summary:after{content:"+";margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)}
+    details.dian-guide-step[open] summary:after{content:"-"}
+    details.dian-guide-step ul,details.dian-guide-step .dian-guide-step-link{margin-left:14px;margin-right:14px}
+    details.dian-guide-step[open]{padding-bottom:12px}
+    .dian-guide-step h2{display:flex;align-items:center;gap:10px;margin:0 0 8px;color:var(--text);font-size:1rem;letter-spacing:0}
+    .dian-guide-number{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:var(--accent);color:#fff;font-weight:900;font-size:.88rem;flex:0 0 auto}
+    .dian-guide-step ul{margin:8px 0 0;padding-left:20px;color:var(--text)}
+    .dian-guide-step li{margin:6px 0;line-height:1.45}
+    .dian-guide-step code{font-size:.86em}
+    .dian-guide-checklist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+    .dian-guide-check{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:9px;color:var(--text);font-size:.88rem;min-height:58px}
+    .dian-guide-check span:first-child{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:color-mix(in srgb,var(--success) 22%,var(--surface));color:var(--success);font-weight:900;flex:0 0 auto}
+    .dian-guide-resources{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+    .dian-guide-resource{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;min-height:150px;display:flex;flex-direction:column;gap:8px}
+    .dian-guide-resource h3{margin:0;color:var(--text);font-size:1rem;letter-spacing:0}
+    .dian-guide-resource p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.45}
+    .dian-guide-resource-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+    .dian-guide-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+    .dian-guide-flow-step{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;min-height:78px}
+    .dian-guide-flow-step strong{display:block;color:var(--text);font-size:.9rem}
+    .dian-guide-flow-step span{display:block;margin-top:5px;color:var(--muted);font-size:.82rem;line-height:1.35}
+    .dian-guide-table{width:100%;border-collapse:collapse;margin-top:12px;color:var(--text)}
+    .dian-guide-table th,.dian-guide-table td{border-bottom:1px solid var(--border);padding:9px 7px;text-align:left;vertical-align:top;font-size:.9rem}
+    .dian-guide-table th{color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.04em}
+    .dian-guide-note{margin-top:12px;color:var(--muted);font-size:.9rem;line-height:1.5}
+    .dian-guide-step-link{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+    .dian-guide-resolve-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+    .dian-guide-resolve-card{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface) 92%,var(--accent) 8%),var(--surface-soft));padding:14px;animation:dianGuideEnter .32s ease both}
+    .dian-guide-resolve-card:before{content:"";position:absolute;inset:auto -24px -34px auto;width:96px;height:96px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,transparent);animation:dianGuidePulse 2.8s ease-in-out infinite}
+    .dian-guide-resolve-card h3{margin:0 0 8px;color:var(--text);font-size:1rem}
+    .dian-guide-resolve-card p{margin:0 0 8px;color:var(--muted);line-height:1.45}
+    .dian-guide-resolve-card ol{margin:8px 0 0;padding-left:20px;color:var(--text)}
+    .dian-guide-resolve-card li{margin:5px 0;line-height:1.4}
+    .dian-guide-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:4px 8px;background:var(--surface);font-weight:800;color:var(--text);font-size:.82rem}
+    .dian-error-code{display:inline-flex;align-items:center;justify-content:center;min-width:82px;border-radius:8px;background:color-mix(in srgb,#dc2626 14%,var(--surface));border:1px solid #dc2626;color:#dc2626;font-weight:950;font-size:1rem;padding:6px 8px}
+    @keyframes dianGuideEnter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes dianGuidePulse{0%,100%{transform:scale(.9);opacity:.45}50%{transform:scale(1.08);opacity:.85}}
+    @media (max-width:900px){.dian-guide-checklist,.dian-guide-resources,.dian-guide-flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:900px){.dian-guide-resolve-grid{grid-template-columns:1fr}}
+    @media (max-width:560px){.dian-guide-actions{width:100%}.dian-guide-actions .btn{width:100%;justify-content:center}.dian-guide-checklist,.dian-guide-resources,.dian-guide-flow{grid-template-columns:1fr}.dian-guide-table{display:block;overflow-x:auto;white-space:nowrap}}
+  </style>
+</head>
+<body class="super-page form-bg-dark dian-guide-page">
+  <div class="container">
+    <div class="page-header dian-guide-header">
+      <div>
+        <h1>Tutorial DIAN</h1>
+        <p class="form-help">Pasos minimos para conectar la empresa con DIAN y emitir documentos electronicos reales en Colombia.</p>
+      </div>
+      <div class="dian-guide-actions" aria-label="Accesos rapidos DIAN">
+        <a class="btn secondary" data-dian-link href="/administrar_empresa/facturacion_electronica.html">
+          <img class="dian-guide-icon" src="/img/settings-color.svg" alt="">
+          Configuracion
+        </a>
+        <a class="btn primary" data-dian-link href="/administrar_empresa/facturacion_electronica_pruebas_dian.html">
+          <img class="dian-guide-icon" src="/img/invoice.svg" alt="">
+          Centro de habilitación DIAN
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Antes de empezar</h2>
+      <p class="form-help">
+        Ten a mano los datos del portal DIAN, la firma digital de la empresa y el acceso de administrador de la empresa en el sistema.
+        No pegues claves, PIN, certificados ni contraseñas en soportes, chats o documentación.
+      </p>
+      <div class="dian-guide-alert">
+        En habilitación, DIAN puede responder primero <strong>Batch en proceso de validación</strong>. Ese mensaje confirma recepción inicial, pero la empresa solo debe pasar a producción local cuando el acuse final quede aceptado.
+      </div>
+    </div>
+
+    <div class="dian-guide-grid">
+      <details class="dian-guide-step">
+        <summary><span class="dian-guide-number">1</span>Registra el modo de operacion</summary>
+        <ul>
+          <li>En el portal DIAN selecciona solamente <strong>Software propio</strong>. Esa es la modalidad usada por Powerful Control System.</li>
+          <li>Copia al sistema el <code>TestSetId</code>, identificación del software, PIN, URL de habilitación, prefijo, resolución y rango de prueba.</li>
+          <li>Verifica que el NIT, DV y razon social coincidan con la empresa que va a emitir.</li>
+        </ul>
+        <p class="dian-guide-step-link"><a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro-y-Seleccion-del-Modo-de-Operacion-Factura-Electronica.pdf" target="_blank" rel="noopener">PDF DIAN: registro y modo de operacion</a></p>
+      </details>
+
+      <details class="dian-guide-step">
+        <summary><span class="dian-guide-number">2</span>Configura DIAN en el sistema</summary>
+        <ul>
+          <li>Abre <strong>Facturación electrónica</strong> y usa el bloque Colombia / DIAN.</li>
+          <li>Guarda ambiente de habilitación, URL oficial DIAN o proveedor, datos del software, rango, resolución y llave técnica.</li>
+          <li>Revisa que la configuración se guarde para el <code>empresa_id</code> actual antes de probar.</li>
+        </ul>
+        <p class="dian-guide-step-link"><a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/instructivo-de-registro-y-habilitacion-en-factura-electronica-dian/" target="_blank" rel="noopener">DIAN: instructivo de registro y habilitacion</a></p>
+      </details>
+
+      <details class="dian-guide-step">
+        <summary><span class="dian-guide-number">3</span>Carga la firma digital</summary>
+        <ul>
+          <li>Sube el certificado <code>.p12</code>, <code>.pfx</code> o PEM desde la tarjeta de firma electrónica.</li>
+          <li>La clave se usa solo para abrir la firma; no debe mostrarse ni quedar escrita en la consola.</li>
+          <li>Confirma titular, serial y vencimiento. Si el certificado está vencido, DIAN rechazará el envío.</li>
+        </ul>
+        <p class="dian-guide-step-link"><a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro-y-Seleccion-del-Modo-de-Operacion-Factura-Electronica.pdf" target="_blank" rel="noopener">PDF DIAN: requisitos y habilitacion</a></p>
+      </details>
+
+      <details class="dian-guide-step">
+        <summary><span class="dian-guide-number">4</span>Valida credenciales y objetivo</summary>
+        <ul>
+          <li>En <strong>Centro de habilitación DIAN</strong> pulsa recargar, validar credenciales y diagnóstico DIAN.</li>
+          <li>Guarda el objetivo exacto asignado por el portal DIAN antes de ejecutar envíos reales.</li>
+          <li>Usa la consola DIAN para revisar HTTP, TrackId, ZipKey, mensajes y errores saneados.</li>
+        </ul>
+        <p class="dian-guide-step-link"><a class="btn secondary" href="https://catalogo-vpfe-hab.dian.gov.co/User/Login" target="_blank" rel="noopener">Portal DIAN de habilitacion</a></p>
+      </details>
+
+      <details class="dian-guide-step">
+        <summary><span class="dian-guide-number">5</span>Ejecuta el set completo</summary>
+        <ul>
+          <li>Guarda el objetivo del portal DIAN: documentos requeridos y minimos aceptados por tipo.</li>
+          <li>Ejecuta el set automático. El sistema puede dividirlo en tandas reales para evitar timeout del proxy.</li>
+          <li>No repitas el set completo sin revisar primero la respuesta y los TrackId generados.</li>
+        </ul>
+        <p class="dian-guide-step-link"><a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/proceso-de-registro-y-habilitacion-como-facturador-electronico/" target="_blank" rel="noopener">DIAN: proceso de registro y habilitacion</a></p>
+      </details>
+
+      <details class="dian-guide-step">
+        <summary><span class="dian-guide-number">6</span>Cierra acuse y activa produccion</summary>
+        <ul>
+          <li>Consulta el estado final con <code>GetStatusZip</code> hasta tener aceptado o rechazado.</li>
+          <li>Si DIAN rechaza, corrige la causa del XML, firma, rango, impuestos o datos de empresa y reenvia.</li>
+          <li>Activa producción local solo cuando DIAN confirme habilitación y el set cumpla los mínimos exigidos.</li>
+        </ul>
+        <p class="dian-guide-step-link"><a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/numeracion-autorizacion/" target="_blank" rel="noopener">DIAN: numeracion y autorizacion</a></p>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>Checklist rapido</h2>
+      <div class="dian-guide-checklist">
+        <div class="dian-guide-check"><span>✓</span><span>Empresa, NIT, DV y regimen fiscal revisados.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>TestSetId, software ID, PIN, URL y llave tecnica guardados.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>Prefijo, resolucion y rango DIAN coinciden con el portal.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>Firma digital cargada, vigente y con llave privada valida.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>Objetivo del portal guardado y validado antes del envío real.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>Set completo enviado y acuse final DIAN consultado.</span></div>
+      </div>
+      <p class="dian-guide-note">
+        La consola de la página de pruebas debe ser la evidencia operativa principal: muestra respuestas DIAN saneadas sin exponer secretos.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Estado real PCS en produccion</h2>
+      <p class="form-help">
+        Powerful Control System ya emite facturas electronicas reales en DIAN produccion con prefijo <strong>1PCS</strong>. Cuando el emisor y el receptor son el mismo NIT, el portal DIAN puede mostrar esas facturas tambien en <strong>Documentos recibidos</strong>.
+      </p>
+      <table class="dian-guide-table">
+        <thead><tr><th>Documento</th><th>Fecha DIAN</th><th>Resultado</th><th>Lectura operativa</th></tr></thead>
+        <tbody>
+          <tr><td><code>1PCS3</code></td><td>18-06-2026</td><td>Aprobado con notificacion</td><td>Factura real aceptada por DIAN por $100. La notificacion <code>RUT01</code> no bloqueo la aceptacion.</td></tr>
+          <tr><td><code>1PCS2</code></td><td>17-06-2026</td><td>Aprobado con notificacion</td><td>Factura real visible en el portal DIAN. Si se reenvia, DIAN puede responder <code>Regla 90</code> porque ya la proceso.</td></tr>
+        </tbody>
+      </table>
+      <p class="dian-guide-note">
+        Antes de reenviar una factura, busca por prefijo y folio en DIAN. Si ya aparece aprobada, conserva el CUFE/acuse y continua con el siguiente consecutivo.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Errores DIAN y como solucionarlos</h2>
+      <p class="form-help">
+        La consola DIAN del centro de habilitacion muestra estos errores en letras grandes y rojas. Si el envio falla, PCS tambien deja una alerta en el buzon del administrador de la empresa.
+      </p>
+      <table class="dian-guide-table">
+        <thead><tr><th>Error</th><th>Que significa</th><th>Solucion operativa</th></tr></thead>
+        <tbody>
+          <tr><td><span class="dian-error-code">FAB05c</span></td><td>El Software ID no corresponde al rango/prefijo informado.</td><td>Asocia en el portal DIAN de produccion el prefijo y rango al software correcto. En PCS valida Software ID, prefijo, resolucion, rango y ambiente.</td></tr>
+          <tr><td><span class="dian-error-code">FAD06</span></td><td>El CUFE calculado no coincide con lo que espera DIAN.</td><td>Consulta la clave tecnica con GetNumberingRange y revisa prefijo, consecutivo, fecha/hora, NIT, cliente, impuestos y totales.</td></tr>
+          <tr><td><span class="dian-error-code">FAD05</span></td><td>Numeracion, prefijo o resolucion no autorizada para el documento.</td><td>Confirma que la resolucion DIAN este vigente, asociada al software y que el consecutivo este dentro del rango autorizado.</td></tr>
+          <tr><td><span class="dian-error-code">FAD10</span></td><td>SoftwareSecurityCode invalido.</td><td>Revisa Software ID, PIN tecnico y numero completo de factura usado en el calculo del codigo de seguridad.</td></tr>
+          <tr><td><span class="dian-error-code">FAK61</span></td><td>Error en datos del cliente o estructura Party del XML.</td><td>Corrige tipo de persona, tipo y numero de documento, municipio, direccion, responsabilidades y regimen fiscal del cliente.</td></tr>
+          <tr><td><span class="dian-error-code">ZE02</span></td><td>Firma digital, digest o certificado invalido.</td><td>Verifica certificado P12/PFX, clave, vigencia, llave privada y que pertenezca al NIT emisor.</td></tr>
+          <tr><td><span class="dian-error-code">Regla 90</span></td><td>Documento procesado anteriormente.</td><td>No equivale por si sola a aceptacion. Busca el documento en DIAN por CUFE o prefijo/folio; si ya esta aprobado, no lo reenvies y continua con el siguiente consecutivo.</td></tr>
+          <tr><td><span class="dian-error-code">RUT01</span></td><td>Notificacion sobre validacion RUT.</td><td>No siempre bloquea. Si el resultado es <strong>Aprobado con notificacion</strong>, la factura quedo aceptada; de todos modos revisa NIT, DV, razon social y datos del adquiriente.</td></tr>
+          <tr><td><span class="dian-error-code">Vencida</span></td><td>Firma digital o resolucion vencida.</td><td>Renueva la firma o solicita nueva autorizacion de numeracion, asociala en DIAN, cargala en PCS y vuelve a consultar clave tecnica.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Documentos oficiales DIAN y descargas</h2>
+      <p class="form-help">
+        Estos enlaces son fuentes oficiales de DIAN o del micrositio oficial del Sistema de Facturación Electrónica. Úsalos para validar el proceso antes de cambiar la empresa a producción.
+      </p>
+      <div class="dian-guide-resources">
+        <article class="dian-guide-resource">
+          <h3>Instructivo de Registro y Habilitación</h3>
+          <p>Documento oficial para registrar el facturador, seleccionar modo de operación y entender el paso a estado habilitado.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro_y_seleccion_modo_de_operacion_Facturacion_Electronica_DIAN.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/como-hacerlo/Paginas/ser-facturador-electronico.aspx" target="_blank" rel="noopener">Ver página DIAN</a>
+          </div>
+        </article>
+        <article class="dian-guide-resource">
+          <h3>Proceso de Registro y Habilitación</h3>
+          <p>Flujo general: registro, pruebas, estado habilitado, fecha de inicio de producción, numeración y asociación de prefijos.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/como-hacerlo/Paginas/ser-facturador-electronico.aspx" target="_blank" rel="noopener">Abrir proceso</a>
+            <a class="btn secondary" href="https://catalogo-vpfe-hab.dian.gov.co/User/Login" target="_blank" rel="noopener">Portal habilitación</a>
+          </div>
+        </article>
+        <article class="dian-guide-resource">
+          <h3>Requerimientos para ser Facturador Electrónico</h3>
+          <p>Requisitos previos: RUT actualizado, correo del RUT, software, firma digital, acceso al portal y datos de modo de operación.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/requerimientos-para-ser-facturador-electronico/" target="_blank" rel="noopener">Ver requerimientos</a>
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro_y_seleccion_modo_de_operacion_Facturacion_Electronica_DIAN.pdf" target="_blank" rel="noopener">PDF relacionado</a>
+          </div>
+        </article>
+        <article class="dian-guide-resource">
+          <h3>Guía de Facturación Gratuita DIAN</h3>
+          <p>Manual oficial para el servicio gratuito DIAN, útil como referencia para registro, habilitación, numeración, prefijos y emisión.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Guia_uso_facturacion_gratuita_DIAN.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/guia-de-facturacion-gratuita-dian/" target="_blank" rel="noopener">Ver guía</a>
+          </div>
+        </article>
+        <article class="dian-guide-resource">
+          <h3>Nueva numeración de facturación</h3>
+          <p>Enlace oficial DIAN para solicitar o renovar la autorización de numeración de facturación. Despues de obtener el Formulario 1876, entra al portal DIAN de produccion y asocia el prefijo/rango al Software ID.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Solicitud-autorizacion-de-numeracion-facturacion.pdf" target="_blank" rel="noopener">Abrir PDF oficial</a>
+            <a class="btn secondary" href="https://youtu.be/QteUmJ2qkn0?si=nSRp_IDMyVMCCKEU" target="_blank" rel="noopener">Ver tutorial en video</a>
+            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/numeracion-autorizacion/" target="_blank" rel="noopener">Ver micrositio DIAN</a>
+            <a class="btn secondary" href="https://catalogo-vpfe.dian.gov.co/User/Login" target="_blank" rel="noopener">Asociar numeracion</a>
+          </div>
+        </article>
+        <article class="dian-guide-resource">
+          <h3>Cómo pasar pruebas de habilitación</h3>
+          <p>Documento y ruta oficial DIAN para registro, modo de operación, pruebas, set de habilitación y paso a producción.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro_y_seleccion_modo_de_operacion_Facturacion_Electronica_DIAN.pdf" target="_blank" rel="noopener">PDF habilitación</a>
+            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/proceso-de-registro-y-habilitacion-como-facturador-electronico/" target="_blank" rel="noopener">Ruta oficial DIAN</a>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Despues de quedar ACEPTADO o HABILITADO</h2>
+      <p class="form-help">
+        Cuando DIAN ya acepta el set de pruebas, no basta con dejar el sistema en pruebas. Completa estos pasos para empezar a facturar en producción.
+      </p>
+      <div class="dian-guide-flow">
+        <div class="dian-guide-flow-step"><strong>1. Reingresar al portal</strong><span>Entra al portal de habilitación y confirma que el estado cambió a habilitado.</span></div>
+        <div class="dian-guide-flow-step"><strong>2. Fecha de producción</strong><span>Registra la fecha de inicio de operación que solicita DIAN.</span></div>
+        <div class="dian-guide-flow-step"><strong>3. RUT responsabilidad 52</strong><span>DIAN actualiza automaticamente el RUT con responsabilidad 52 en la fecha indicada.</span></div>
+        <div class="dian-guide-flow-step"><strong>4. Numeración MUISCA</strong><span>Solicita autorización de numeración para factura electrónica y talonario de contingencia.</span></div>
+        <div class="dian-guide-flow-step"><strong>5. Asociar prefijos</strong><span>Entra a https://catalogo-vpfe.dian.gov.co/User/Login y asocia el prefijo/rango autorizado con el Software ID.</span></div>
+        <div class="dian-guide-flow-step"><strong>6. Configurar PCS</strong><span>Actualiza resolución, prefijo, rango, llave técnica y URL de producción en PCS.</span></div>
+        <div class="dian-guide-flow-step"><strong>7. Activar producción local</strong><span>Marca la confirmación y activa producción local solo con DIAN habilitado.</span></div>
+        <div class="dian-guide-flow-step"><strong>8. Emitir real</strong><span>Empieza a emitir facturas en producción y revisa acuses, numeración y reportes.</span></div>
+      </div>
+      <p class="dian-guide-note">
+        Resumen rápido: Registro -> Pruebas -> Estado habilitado -> Fecha de producción -> RUT 52 -> Solicitar numeración -> Asociar prefijos/rangos en el portal DIAN de producción -> Facturar en producción.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Control diario para no romper DIAN</h2>
+      <div class="dian-guide-checklist">
+        <div class="dian-guide-check"><span>1</span><span>Verifica que el siguiente consecutivo PCS no repita una factura ya aprobada en DIAN.</span></div>
+        <div class="dian-guide-check"><span>2</span><span>Si DIAN responde <code>Regla 90</code>, consulta primero el documento original; no lo marques aceptado solo por esa regla.</span></div>
+        <div class="dian-guide-check"><span>3</span><span>Si aparece <code>Aprobado con notificacion</code>, guarda la evidencia y corrige solo la advertencia indicada.</span></div>
+        <div class="dian-guide-check"><span>4</span><span>No cambies Software ID, PIN, prefijo, resolucion, rango ni llave tecnica sin prueba real posterior.</span></div>
+        <div class="dian-guide-check"><span>5</span><span>Revisa certificado y resolucion antes de vencer; PCS alerta, pero la renovacion requiere accion del administrador.</span></div>
+        <div class="dian-guide-check"><span>6</span><span>Despues de desplegar cambios de facturacion, ejecuta pruebas Go y una validacion controlada contra DIAN o el portal.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Errores frecuentes</h2>
+      <div class="dian-guide-resolve-grid">
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">FAB05c</span> Software no coincide con el rango</h3>
+          <p>DIAN suele devolverlo cuando el prefijo/rango no esta asociado al Software ID que envia la factura.</p>
+          <ol>
+            <li>Entrar al portal de produccion DIAN.</li>
+            <li>Asociar el prefijo autorizado al software Powerful Control System.</li>
+            <li>Verificar en PCS prefijo, resolucion, rango desde/hasta y ambiente produccion.</li>
+            <li>Reenviar la factura desde Ventas con el boton Reenviar DIAN.</li>
+          </ol>
+        </article>
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">FAD06</span> CUFE calculado incorrectamente</h3>
+          <p>Se presenta si DIAN calcula un CUFE diferente al XML recibido.</p>
+          <ol>
+            <li>Confirmar llave tecnica, numero legal sin espacios, fecha/hora, NIT emisor y documento del adquiriente.</li>
+            <li>Revisar que subtotales, IVA y total tengan dos decimales.</li>
+            <li>Si se cargo una nueva resolucion, volver a guardar la configuracion y reenviar.</li>
+          </ol>
+        </article>
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">FAK61</span> Persona natural sin grupo informado</h3>
+          <p>Cuando el cliente es persona natural, el XML debe informar correctamente el bloque de persona y su documento.</p>
+          <ol>
+            <li>En clientes, verificar tipo CC, numero de documento, nombre completo y direccion.</li>
+            <li>Evitar marcarlo como NIT si no es empresa.</li>
+            <li>Generar o reenviar la factura para que PCS emita el bloque de persona natural.</li>
+          </ol>
+        </article>
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">RUT01</span> Notificacion de datos RUT</h3>
+          <p>Normalmente es advertencia; no siempre bloquea la aceptacion, pero conviene corregir datos maestros.</p>
+          <ol>
+            <li>Comparar razon social, NIT/DV y responsabilidades con el RUT.</li>
+            <li>Actualizar empresa y cliente si DIAN reporta diferencias.</li>
+            <li>Guardar trazabilidad del ajuste antes del siguiente envio.</li>
+          </ol>
+        </article>
+        <article class="dian-guide-resolve-card">
+          <h3><span class="dian-guide-pill">Regla 90</span> Documento ya procesado</h3>
+          <p>Es comun cuando se reenvia una factura que DIAN ya recibio. La respuesta sola no prueba aceptacion fiscal.</p>
+          <ol>
+            <li>Buscar el documento en DIAN por prefijo y folio, por ejemplo <code>1PCS3</code>.</li>
+            <li>Si aparece aprobado, conservar la evidencia y no reenviar el mismo numero.</li>
+            <li>Si no aparece, consultar CUFE/acuse original antes de decidir si se debe emitir un nuevo documento.</li>
+          </ol>
+        </article>
+      </div>
+      <p class="dian-guide-note">
+        Esta guia PCS resume causas comunes reportadas por DIAN y por mesas de ayuda de proveedores. No copia contenido privado de terceros: adapta el flujo para operar dentro del sistema y deja los enlaces oficiales abajo para validar cada paso.
+      </p>
+      <table class="dian-guide-table">
+        <thead>
+          <tr><th>Mensaje</th><th>Que revisar</th><th>Accion recomendada</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>InvalidSecurity</code></td>
+            <td>Firma WS-Security, certificado, hora del servidor y endpoint.</td>
+            <td>Recargar configuración, validar credenciales y revisar que la firma cargada sea la vigente.</td>
+          </tr>
+          <tr>
+            <td><code>504 Gateway Time-out</code></td>
+            <td>Solicitud demasiado larga frente al proxy.</td>
+            <td>Ejecutar el set por tandas desde el botón automático y revisar la consola por cada lote.</td>
+          </tr>
+          <tr>
+            <td>Batch en proceso</td>
+            <td>DIAN recibio el ZIP, pero aun no entrego acuse final.</td>
+            <td>Esperar y consultar <code>GetStatusZip</code>; no activar producción local con solo recepción inicial.</td>
+          </tr>
+          <tr>
+            <td>Documento rechazado</td>
+            <td>Detalle del ApplicationResponse: impuestos, CUFE/CUDE, rango, tercero, firma o XML.</td>
+            <td>Corregir el dato indicado, generar nuevo documento y reenviar dentro del set correspondiente.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+      function resolveEmpresaId() {
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var own = Number(params.get('empresa_id') || params.get('id') || 0);
+          if (own > 0) return Math.trunc(own);
+        } catch (_) {}
+        try {
+          var stored = Number(sessionStorage.getItem('active_empresa_id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('active_empresa_id') || localStorage.getItem('empresa_id') || 0);
+          if (stored > 0) return Math.trunc(stored);
+        } catch (_) {}
+        return 0;
+      }
+
+      var empresaId = resolveEmpresaId();
+      Array.prototype.slice.call(document.querySelectorAll('[data-dian-link]')).forEach(function(link) {
+        try {
+          var url = new URL(link.getAttribute('href') || '', window.location.origin);
+          if (empresaId > 0) url.searchParams.set('empresa_id', String(empresaId));
+          link.setAttribute('href', url.pathname + url.search + url.hash);
+        } catch (_) {}
+      });
+    })();
+  </script>
+</body>
+</html>

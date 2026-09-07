@@ -1,0 +1,15 @@
+---
+description: Gobernanza base del repositorio para Cursor
+alwaysApply: true
+---
+
+# Gobernanza Base (Cursor)
+
+- Leer `documentos/descripcion_del_proyecto` antes de cambios funcionales o estructurales.
+- Mantener PostgreSQL como motor canonico. No reintroducir SQLite en runtime, scripts operativos o documentación vigente.
+- Antes de agregar dependencias externas en Go, pedir autorización explícita al usuario y dejar trazabilidad en `documentos/historial_de_cambios`.
+- No imprimir secretos ni valores sensibles en consola o commits.
+- Si se crean archivos nuevos, registrarlos en `documentos/descripcion_de_archivos`.
+- Si se cambian flujos/arquitectura/contratos, registrar trazabilidad en `documentos/historial_de_cambios`.
+- La capa de Cursor vive en `.cursor/` y no reemplaza el sistema de Copilot del repo.
+

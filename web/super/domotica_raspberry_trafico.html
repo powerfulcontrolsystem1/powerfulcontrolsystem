@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Transferencia Raspberry Pi</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    .traffic-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:14px}
+    .traffic-kpi{border:1px solid var(--border-color,#d9e1ea);border-radius:12px;padding:14px;background:var(--surface,#fff)}
+    .traffic-kpi small{display:block;color:var(--text-muted,#667085);margin-bottom:6px}.traffic-kpi strong{font-size:1.35rem}
+    .traffic-status{display:inline-flex;align-items:center;gap:7px;font-weight:700}.traffic-dot{width:10px;height:10px;border-radius:50%;background:#7b8794}.traffic-status.online .traffic-dot{background:#18a957;box-shadow:0 0 0 4px rgba(24,169,87,.14)}
+    .traffic-id{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.78rem;word-break:break-all}
+    .traffic-alert{display:none;margin-top:14px;border:1px solid #e2a327;border-left:5px solid #d97706;border-radius:10px;padding:12px;background:color-mix(in srgb,#f59e0b 12%,var(--surface,#fff));color:var(--text,#182230)}
+    .traffic-alert.show{display:block}.traffic-level{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:.78rem;font-weight:800;background:#e8eef5;color:#344054}.traffic-level.advertencia{background:#fff1c7;color:#8a4b00}.traffic-level.excedido{background:#fee4e2;color:#b42318}
+    .traffic-policy{display:grid;grid-template-columns:minmax(105px,1fr) minmax(90px,.7fr);gap:6px;min-width:240px}.traffic-policy label{font-size:.72rem;color:var(--text-muted,#667085)}.traffic-policy input{width:100%;box-sizing:border-box}.traffic-policy .policy-block{grid-column:1/-1;display:flex;align-items:center;gap:7px}.traffic-policy .policy-block input{width:auto}
+    @media(max-width:900px){.traffic-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.traffic-kpis{grid-template-columns:1fr}.traffic-table th:nth-child(4),.traffic-table td:nth-child(4){display:none}}
+  </style>
+</head>
+<body>
+  <main class="container empresa-module">
+    <section class="card">
+      <div class="empresa-section-header compact">
+        <div>
+          <h1>Transferencia de datos Raspberry Pi</h1>
+          <p class="form-help">Consumo del tunel HTTPS saliente por Raspberry y empresa. RX son datos recibidos por el VPS; TX son datos enviados hacia la Raspberry.</p>
+        </div>
+        <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+      </div>
+      <div id="message" class="form-help" role="status" aria-live="polite"></div>
+      <div class="traffic-kpis">
+        <article class="traffic-kpi"><small>Raspberry registradas</small><strong id="kpiDevices">0</strong></article>
+        <article class="traffic-kpi"><small>Conectadas ahora</small><strong id="kpiOnline">0</strong></article>
+        <article class="traffic-kpi"><small>Empresas en alarma</small><strong id="kpiAlerts">0</strong></article>
+        <article class="traffic-kpi"><small>Transferencia hoy</small><strong id="kpiToday">0 B</strong></article>
+        <article class="traffic-kpi"><small>Transferencia acumulada</small><strong id="kpiTotal">0 B</strong></article>
+      </div>
+      <div id="abuseAlert" class="traffic-alert" role="alert"></div>
+    </section>
+
+    <section class="card">
+      <div class="empresa-section-header compact"><div><h2>Control y alarmas por empresa</h2><p class="form-help">El consumo mensual suma RX y TX de todas las Raspberry de la empresa. Al alcanzar el límite, PCS puede bloquear el túnel hasta el siguiente mes.</p></div></div>
+      <div class="table-responsive">
+        <table class="data-table traffic-table">
+          <thead><tr><th>Empresa</th><th>Raspberry</th><th>Consumo del mes</th><th>Estado</th><th>Límite y protección</th><th></th></tr></thead>
+          <tbody id="companyRows"><tr><td colspan="6">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="empresa-section-header compact">
+        <div>
+          <h2>Detalle por dispositivo</h2>
+          <p id="updatedAt" class="form-help">Sin actualizar.</p>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table traffic-table">
+          <thead><tr><th>Empresa / Raspberry</th><th>Conexión</th><th>Hoy</th><th>Mes actual</th><th>Acumulado</th><th>Última actividad</th><th>Agente</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="7">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script>
+    (function(){
+      'use strict';
+      function $(id){return document.getElementById(id);}
+      function esc(value){return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+      function fmtBytes(value){var n=Number(value||0);var units=['B','KB','MB','GB','TB'];var i=0;while(n>=1024&&i<units.length-1){n/=1024;i++;}return (i===0?n.toFixed(0):n.toFixed(2))+' '+units[i];}
+      function message(text,type){$('message').textContent=text||'';$('message').className='form-help'+(type?' '+type:'');}
+      function levelLabel(level){return level==='excedido'?'Límite excedido':(level==='advertencia'?'Advertencia':'Normal');}
+      function renderCompanies(companies){
+        $('companyRows').innerHTML=companies.length?companies.map(function(item){var policy=item.policy||{};var bandwidth=item.bandwidth||{};var id=Number(item.empresa_id||0);return '<tr data-company-id="'+id+'"><td><strong>'+esc(item.empresa_nombre||('Empresa '+id))+'</strong><br><small>ID '+id+'</small></td><td><strong>'+esc(item.online||0)+' / '+esc(item.devices||0)+'</strong><br><small>conectadas / registradas</small></td><td><strong>'+esc(item.month_human||fmtBytes(item.month_bytes))+'</strong><br><small>'+esc(bandwidth.porcentaje||0)+'% del límite</small></td><td><span class="traffic-level '+esc(bandwidth.nivel||'normal')+'">'+esc(levelLabel(bandwidth.nivel))+'</span>'+(bandwidth.bloqueado?'<br><small class="error">Túnel bloqueado</small>':'')+'</td><td><div class="traffic-policy"><label>Límite mensual MB<input class="form-input policy-limit" type="number" min="50" max="1048576" value="'+esc(policy.limite_mensual_mb||2048)+'"></label><label>Alerta %<input class="form-input policy-warning" type="number" min="10" max="100" value="'+esc(policy.alerta_porcentaje||80)+'"></label><label class="policy-block"><input class="policy-block-enabled" type="checkbox" '+(policy.bloquear_al_superar!==false?'checked':'')+'> Bloquear al superar</label></div></td><td><button class="btn secondary save-policy" type="button">Guardar</button></td></tr>';}).join(''):'<tr><td colspan="6">No hay empresas con Raspberry registradas.</td></tr>';
+      }
+      async function savePolicy(button){var row=button.closest('[data-company-id]');if(!row)return;button.disabled=true;try{var payload={empresa_id:Number(row.getAttribute('data-company-id')||0),limite_mensual_mb:Number(row.querySelector('.policy-limit').value||2048),alerta_porcentaje:Number(row.querySelector('.policy-warning').value||80),bloquear_al_superar:row.querySelector('.policy-block-enabled').checked};var response=await fetch('/super/api/domotica_raspberry_trafico',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var data=await response.json().catch(function(){return {};});if(!response.ok)throw new Error(data.error||'No se pudo guardar el límite.');message('Límite de transferencia guardado.','success');await load();}finally{button.disabled=false;}}
+      async function load(){
+        message('Cargando transferencia...');
+        var response=await fetch('/super/api/domotica_raspberry_trafico',{credentials:'same-origin',cache:'no-store'});
+        var data=await response.json().catch(function(){return {};});
+        if(!response.ok)throw new Error(data.error||'No se pudo cargar el consumo de transferencia.');
+        var summary=data.summary||{};var devices=Array.isArray(data.raspberries)?data.raspberries:[];var companies=Array.isArray(data.companies)?data.companies:[];
+        $('kpiDevices').textContent=String(summary.devices||0);$('kpiOnline').textContent=String(summary.online||0);
+        $('kpiAlerts').textContent=String(summary.alerts||0);var abuse=$('abuseAlert');if(Number(summary.alerts||0)>0){abuse.classList.add('show');abuse.textContent=(summary.alerts===1?'1 empresa requiere atención':'Hay '+summary.alerts+' empresas que requieren atención')+' por consumo del túnel Raspberry.';}else{abuse.classList.remove('show');abuse.textContent='';}
+        $('kpiToday').textContent=summary.today_human||fmtBytes(Number(summary.today_rx||0)+Number(summary.today_tx||0));
+        $('kpiTotal').textContent=summary.total_human||fmtBytes(Number(summary.bytes_rx||0)+Number(summary.bytes_tx||0));
+        $('updatedAt').textContent='Actualizado: '+new Date(data.generated_at||Date.now()).toLocaleString('es-CO');
+        renderCompanies(companies);
+        $('rows').innerHTML=devices.length?devices.map(function(item){
+          var status=item.online?'Conectada':(item.tunnel_enabled?'Desconectada':'Sin provisionar');
+          return '<tr><td><strong>'+esc(item.empresa_nombre||('Empresa '+item.empresa_id))+'</strong><br>'+esc(item.nombre||item.codigo||('Raspberry '+item.raspberry_id))+'<br><span class="traffic-id">'+esc(item.device_uid||'Sin ID unico')+'</span></td>'+
+            '<td><span class="traffic-status '+(item.online?'online':'')+'"><span class="traffic-dot"></span>'+esc(status)+'</span><br><small>'+esc(item.last_ip||'Sin IP reportada')+'</small></td>'+
+            '<td><strong>'+esc(item.today_human||fmtBytes(Number(item.today_bytes_rx||0)+Number(item.today_bytes_tx||0)))+'</strong><br><small>RX '+esc(fmtBytes(item.today_bytes_rx))+' / TX '+esc(fmtBytes(item.today_bytes_tx))+' · '+esc(item.today_requests||0)+' solicitudes</small></td>'+
+            '<td><strong>'+esc(item.month_human||fmtBytes(Number(item.month_bytes_rx||0)+Number(item.month_bytes_tx||0)))+'</strong><br><small>'+esc((item.bandwidth||{}).porcentaje||0)+'% del límite empresarial</small></td>'+
+            '<td><strong>'+esc(item.total_human||fmtBytes(Number(item.bytes_rx||0)+Number(item.bytes_tx||0)))+'</strong><br><small>RX '+esc(fmtBytes(item.bytes_rx))+' / TX '+esc(fmtBytes(item.bytes_tx))+'</small></td>'+
+            '<td>'+esc(item.last_seen||'Nunca')+(item.last_tunnel_error?'<br><small class="error">'+esc(item.last_tunnel_error)+'</small>':'')+'</td><td>'+esc(item.agent_version||'No reportado')+'</td></tr>';
+        }).join(''):'<tr><td colspan="7">No hay Raspberry Pi registradas.</td></tr>';
+        message('');
+      }
+      $('reloadBtn').addEventListener('click',function(){load().catch(function(err){message(err.message,'error');});});
+      document.addEventListener('click',function(ev){if(ev.target&&ev.target.classList.contains('save-policy'))savePolicy(ev.target).catch(function(err){message(err.message,'error');});});
+      load().catch(function(err){message(err.message,'error');});
+      window.setInterval(function(){if(!document.hidden)load().catch(function(){});},30000);
+    }());
+  </script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

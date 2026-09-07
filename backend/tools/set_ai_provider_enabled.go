@@ -1,0 +1,78 @@
+//go:build tools
+// +build tools
+
+package main
+
+import (
+	"database/sql"
+	"flag"
+	"fmt"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"log"
+	"os"
+	"strings"
+
+	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/runtimeconfig"
+)
+
+// rewriteRuntimePostgresDSNForTunnel mirrors the logic used by main.go to rewrite
+// a Postgres DSN when DB_VPS_TUNNEL_ENABLED=1 and DB_VPS_LOCAL_PORT is set.
+func rewriteRuntimePostgresDSNForTunnel(raw string) string {
+	return runtimeconfig.RewritePostgresDSNForTunnel(raw, os.Getenv)
+}
+
+func main() {
+	var dsnFlag string
+	var provider string
+	var enabled string
+	var actor string
+	var apply bool
+	var confirm string
+
+	flag.StringVar(&dsnFlag, "dsn", "", "Postgres DSN for superadmin DB (overrides DB_SUPERADMIN_DSN env)")
+	flag.StringVar(&provider, "provider", "google", "provider slug (google)")
+	flag.StringVar(&enabled, "enabled", "0", "0 or 1")
+	flag.StringVar(&actor, "actor", "cli-helper", "actor name to write in updated_by config")
+	flag.BoolVar(&apply, "apply", false, "aplica el cambio; sin este indicador solo simula")
+	flag.StringVar(&confirm, "confirm", "", "confirmacion requerida para aplicar")
+	flag.Parse()
+	if !apply {
+		fmt.Printf("DRY-RUN: ai.provider.%s.enabled=%s; no se conecto a una base de datos\n", strings.TrimSpace(provider), strings.TrimSpace(enabled))
+		return
+	}
+	if confirm != "SET_AI_PROVIDER_CONFIG" {
+		log.Fatal("para aplicar use -apply -confirm=SET_AI_PROVIDER_CONFIG")
+	}
+
+	dsn := dsnFlag
+	if dsn == "" {
+		dsn = os.Getenv("DB_SUPERADMIN_DSN")
+	}
+	if dsn == "" {
+		log.Fatalf("DB_SUPERADMIN_DSN not set and -dsn not provided")
+	}
+
+	// Optionally rewrite DSN for local tunnel (matches main.go behavior)
+	dsn = rewriteRuntimePostgresDSNForTunnel(dsn)
+
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		log.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+	if err := db.Ping(); err != nil {
+		log.Fatalf("ping db: %v", err)
+	}
+
+	key := fmt.Sprintf("ai.provider.%s.enabled", provider)
+	if err := dbpkg.SetConfigValue(db, key, enabled, false); err != nil {
+		log.Fatalf("SetConfigValue %s: %v", key, err)
+	}
+	updatedByKey := key + ".updated_by"
+	if err := dbpkg.SetConfigValue(db, updatedByKey, actor, false); err != nil {
+		log.Fatalf("SetConfigValue %s: %v", updatedByKey, err)
+	}
+
+	fmt.Printf("OK: set %s=%s (actor=%s)\n", key, enabled, actor)
+}

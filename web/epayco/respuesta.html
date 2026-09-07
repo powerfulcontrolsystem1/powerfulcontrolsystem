@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Respuesta de Epayco</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <div class="login-page">
+    <div class="container">
+      <div class="card epayco-response-card">
+        <h1 class="login-title epayco-response-title">Procesando respuesta de Epayco</h1>
+        <p id="epaycoResponseMessage" class="login-subtitle epayco-response-copy">Estamos validando el resultado del pago para activar tu licencia correctamente.</p>
+        <div class="form-help" id="epaycoResponseHint">Si la redirección no ocurre automáticamente, usa el botón inferior.</div>
+        <div class="form-actions epayco-response-actions">
+          <a id="epaycoContinueLink" class="btn" href="/pagar_licencia.html">Continuar a validar mi pago</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/epayco/respuesta.js?v=20260813-p110-csp"></script>
+</body>
+</html>

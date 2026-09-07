@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ultimos movimientos de caja</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="admin-empresa-shell caja-movements-page">
+  <div class="container">
+    <section class="card">
+      <div class="header">
+        <h1>Ultimos movimientos de caja</h1>
+        <div>
+          <a id="backToStationsLink" class="btn secondary" href="/administrar_empresa/estaciones.html">Regresar a estaciones</a>
+          <button id="reloadBtn" class="btn secondary">Actualizar</button>
+        </div>
+      </div>
+
+      <div id="scopeMessage" class="form-help">Cargando caja actual...</div>
+
+      <div id="productosSection">
+        <h2>Ultimos productos vendidos</h2>
+        <div id="productosLoading" class="form-help">Cargando...</div>
+        <table id="productosTable" class="table table-full is-hidden">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Tipo</th>
+              <th>Origen</th>
+              <th>Referencia</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="facturasSection">
+        <h2>Ultimas facturas</h2>
+        <div id="facturasLoading" class="form-help">Cargando...</div>
+        <table id="facturasTable" class="table table-full is-hidden">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Codigo</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="movimientosSection">
+        <h2>Movimientos financieros</h2>
+        <div id="movimientosLoading" class="form-help">Cargando...</div>
+        <table id="movimientosTable" class="table table-full is-hidden">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Metodo</th>
+              <th>Categoria</th>
+              <th>Usuario</th>
+              <th>Cantidad</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+<script>
+  function parsePositiveInt(raw) {
+    const n = Number(String(raw || '').trim());
+    if (!Number.isFinite(n)) return 0;
+    const v = Math.trunc(n);
+    return v > 0 ? v : 0;
+  }
+
+  function resolveEmpresaId() {
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      const own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+      if (own > 0) return own;
+    } catch (_) {}
+    try {
+      if (window.parent && window.parent !== window) {
+        if (typeof window.parent.__resolveEmpresaIdContext === 'function') {
+          const parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+          if (parentResolved > 0) return parentResolved;
+        }
+        const parentParams = new URLSearchParams(window.parent.location.search || '');
+        const fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
+        if (fromParent > 0) return fromParent;
+      }
+    } catch (_) {}
+    try {
+      const candidates = [
+        sessionStorage.getItem('active_empresa_id'),
+        sessionStorage.getItem('empresa_id'),
+        localStorage.getItem('active_empresa_id'),
+        localStorage.getItem('empresa_id')
+      ];
+      for (let i = 0; i < candidates.length; i++) {
+        const parsed = parsePositiveInt(candidates[i]);
+        if (parsed > 0) return parsed;
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  const empresaId = resolveEmpresaId();
+  const pageParams = new URLSearchParams(window.location.search || '');
+  let currentReportPromise = null;
+
+  function sanitize(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  async function requestJSON(url, options) {
+    const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+    const ct = resp.headers.get('content-type') || '';
+    const data = ct.includes('application/json') ? await resp.json() : await resp.text();
+    if (!resp.ok) {
+      const msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
+      throw new Error(msg || ('HTTP ' + resp.status));
+    }
+    return data;
+  }
+
+  function formatDateTime(raw) {
+    const r = String(raw || '');
+    if (!r) return '';
+    const iso = r.includes('T') ? r : r.replace(' ', 'T');
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return r;
+    return d.toLocaleString('es-CO', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function formatMoney(v) {
+    try {
+      const n = Number(v || 0);
+      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 }).format(n);
+    } catch (_) {
+      return 'COP ' + String(Number(v || 0).toFixed(2));
+    }
+  }
+
+  function buildCajaActualReportURL() {
+    const params = new URLSearchParams();
+    params.set('empresa_id', String(empresaId || 0));
+    params.set('action', 'mi_caja_actual');
+    params.set('solo_usuario_actual', '1');
+    params.set('mi_caja_actual', '1');
+    params.set('reportes', 'ventas,items,movimientos');
+    ['caja_codigo', 'cierre_caja_id', 'turno', 'sucursal_id'].forEach(key => {
+      const value = String(pageParams.get(key) || '').trim();
+      if (value) params.set(key, value);
+    });
+    return '/api/empresa/corte_caja?' + params.toString();
+  }
+
+  function refreshCurrentReport() {
+    currentReportPromise = null;
+    return getCurrentReport();
+  }
+
+  async function getCurrentReport() {
+    if (!empresaId) throw new Error('No se encontro la empresa para cargar los movimientos.');
+    if (!currentReportPromise) {
+      currentReportPromise = requestJSON(buildCajaActualReportURL()).then(payload => {
+        renderScopeMessage(payload || {});
+        return payload || {};
+      });
+    }
+    return currentReportPromise;
+  }
+
+  function renderScopeMessage(payload) {
+    const box = document.getElementById('scopeMessage');
+    if (!box) return;
+    const caja = payload && payload.caja_actual ? payload.caja_actual : {};
+    const resumen = payload && payload.resumen ? payload.resumen : {};
+    const warnings = payload && Array.isArray(payload.advertencias) ? payload.advertencias : [];
+    const parts = [];
+    if (caja.caja_codigo) parts.push('Caja: ' + caja.caja_codigo);
+    if (caja.turno) parts.push('Turno: ' + caja.turno);
+    if (caja.usuario || resumen.usuario_filtro) parts.push('Usuario: ' + (caja.usuario || resumen.usuario_filtro));
+    if (caja.fecha_apertura) parts.push('Apertura: ' + formatDateTime(caja.fecha_apertura));
+    box.textContent = warnings.length ? warnings[0] : ('Mostrando solo movimientos del usuario actual en la caja actual. ' + parts.join(' | '));
+  }
+
+  async function loadProductos() {
+    const loading = document.getElementById('productosLoading');
+    const table = document.getElementById('productosTable');
+    const tbody = table.querySelector('tbody');
+    loading.textContent = 'Cargando...';
+    table.classList.add('is-hidden');
+    tbody.innerHTML = '';
+    try {
+      const report = await getCurrentReport();
+      const rows = Array.isArray(report.productos_vendidos) ? report.productos_vendidos : [];
+      if (!rows.length) {
+        loading.textContent = 'No hay productos vendidos en tu caja actual.';
+        return;
+      }
+      rows.slice(0, 20).forEach(m => {
+        const tr = document.createElement('tr');
+        const referencia = (m.venta_codigo || '') + (m.referencia ? (' / ' + m.referencia) : '');
+        tr.innerHTML = '<td data-label="Fecha">' + sanitize(formatDateTime(m.fecha || '')) + '</td>' +
+                       '<td data-label="Producto">' + sanitize(m.producto || '') + '</td>' +
+                       '<td data-label="Cantidad">' + sanitize(String(Number(m.cantidad || 0).toFixed(2))) + '</td>' +
+                       '<td data-label="Tipo">' + sanitize(m.tipo || '') + '</td>' +
+                       '<td data-label="Origen">' + sanitize('Caja actual') + '</td>' +
+                       '<td data-label="Referencia">' + sanitize(referencia) + '</td>';
+        tbody.appendChild(tr);
+      });
+      loading.textContent = '';
+      table.classList.remove('is-hidden');
+    } catch (err) {
+      loading.textContent = 'Error al cargar productos: ' + (err && err.message ? err.message : String(err));
+    }
+  }
+
+  async function loadFacturas() {
+    const loading = document.getElementById('facturasLoading');
+    const table = document.getElementById('facturasTable');
+    const tbody = table.querySelector('tbody');
+    loading.textContent = 'Cargando...';
+    table.classList.add('is-hidden');
+    tbody.innerHTML = '';
+    try {
+      const report = await getCurrentReport();
+      const items = Array.isArray(report.ventas) ? report.ventas : [];
+      if (!items.length) {
+        loading.textContent = 'No hay facturas recientes en tu caja actual.';
+        return;
+      }
+      items.slice().reverse().slice(0, 20).forEach(it => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td data-label="Fecha">' + sanitize(formatDateTime(it.fecha_pago || '')) + '</td>' +
+                       '<td data-label="Tipo">' + sanitize('Venta') + '</td>' +
+                       '<td data-label="Codigo">' + sanitize(it.codigo || '') + '</td>' +
+                       '<td data-label="Cliente">' + sanitize(it.nombre || '') + '</td>' +
+                       '<td data-label="Total">' + sanitize(formatMoney(it.total_pagado || it.total || 0)) + '</td>' +
+                       '<td data-label="Estado">' + sanitize('Pagada') + '</td>';
+        tbody.appendChild(tr);
+      });
+      loading.textContent = '';
+      table.classList.remove('is-hidden');
+    } catch (err) {
+      loading.textContent = 'Error al cargar facturas: ' + (err && err.message ? err.message : String(err));
+    }
+  }
+
+  async function loadMovimientos() {
+    const loading = document.getElementById('movimientosLoading');
+    const table = document.getElementById('movimientosTable');
+    const tbody = table.querySelector('tbody');
+    loading.textContent = 'Cargando...';
+    table.classList.add('is-hidden');
+    tbody.innerHTML = '';
+    try {
+      const report = await getCurrentReport();
+      const rows = Array.isArray(report.movimientos) ? report.movimientos : [];
+      if (!rows.length) {
+        loading.textContent = 'No hay ingresos o egresos manuales en tu caja actual.';
+        return;
+      }
+      rows.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td data-label="Tipo">' + sanitize(m.tipo || '') + '</td>' +
+                       '<td data-label="Metodo">' + sanitize(m.metodo || '') + '</td>' +
+                       '<td data-label="Categoria">' + sanitize(m.categoria || '') + '</td>' +
+                       '<td data-label="Usuario">' + sanitize(m.usuario || '') + '</td>' +
+                       '<td data-label="Cantidad">' + sanitize(String(m.cantidad || 0)) + '</td>' +
+                       '<td data-label="Total">' + sanitize(formatMoney(m.total || 0)) + '</td>';
+        tbody.appendChild(tr);
+      });
+      loading.textContent = '';
+      table.classList.remove('is-hidden');
+    } catch (err) {
+      loading.textContent = 'Error al cargar movimientos: ' + (err && err.message ? err.message : String(err));
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const backToStations = document.getElementById('backToStationsLink');
+    if (backToStations && empresaId) {
+      backToStations.href = '/administrar_empresa/estaciones.html?empresa_id=' + encodeURIComponent(empresaId);
+    }
+    const reload = document.getElementById('reloadBtn');
+    if (reload) {
+      reload.addEventListener('click', () => {
+        refreshCurrentReport();
+        loadProductos();
+        loadFacturas();
+        loadMovimientos();
+      });
+    }
+    loadProductos();
+    loadFacturas();
+    loadMovimientos();
+  });
+</script>
+</body>
+</html>

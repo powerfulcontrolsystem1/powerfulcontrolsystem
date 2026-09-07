@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Captura inteligente de compras y gastos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root{color-scheme:light dark}
+    body.capture-page{margin:0;min-height:100vh;background:var(--bg,#f3f6fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    html[data-theme^="dark"] body.capture-page{color-scheme:dark}
+    html[data-theme^="light"] body.capture-page{color-scheme:light}
+    .capture-shell{max-width:1480px;margin:0 auto;padding:18px;display:grid;gap:14px}
+    .capture-shell,.capture-shell>*,.capture-panel,.capture-panel>*,.capture-grid>*,.capture-overview>*,.capture-box{min-width:0}
+    .capture-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:16px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--surface,#fff) 94%,var(--accent,#1769e0) 6%),var(--surface,#fff));box-shadow:var(--shadow-sm,0 10px 24px rgba(15,23,42,.08))}
+    .capture-head h1{margin:0;font-size:24px;line-height:1.18;letter-spacing:0}.capture-head p{margin:6px 0 0;color:var(--muted,#65758b);max-width:910px;line-height:1.45}
+    .capture-actions,.capture-row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+    .capture-btn{border:1px solid var(--border,rgba(15,35,64,.16));background:var(--surface,#fff);color:var(--text,#172033);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:750;min-height:38px;box-shadow:0 1px 0 color-mix(in srgb,var(--text,#172033) 8%,transparent);transition:background .16s ease,border-color .16s ease,transform .16s ease}
+    .capture-btn:hover{border-color:color-mix(in srgb,var(--accent,#1769e0) 52%,var(--border,transparent));background:color-mix(in srgb,var(--surface-soft,#f4f7fc) 82%,var(--accent,#1769e0) 18%);transform:translateY(-1px)}
+    .capture-btn.primary{background:linear-gradient(135deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4));color:var(--on-accent,#fff);border-color:color-mix(in srgb,var(--accent,#1769e0) 82%,#fff 18%);box-shadow:0 10px 24px color-mix(in srgb,var(--accent,#1769e0) 22%,transparent)}
+    .capture-btn.danger{color:var(--danger,#c43737);border-color:color-mix(in srgb,var(--danger,#c43737) 42%,var(--border,transparent))}.capture-btn.warn{color:#b45309;border-color:color-mix(in srgb,var(--warning,#f59e0b) 46%,var(--border,transparent))}
+    .capture-btn.small{min-height:32px;padding:6px 9px;font-size:12px}.capture-btn[disabled]{opacity:.58;cursor:not-allowed;transform:none}
+    .capture-kpis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px}.capture-kpi,.capture-box{background:var(--surface,#fff);border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;padding:12px;box-shadow:var(--shadow-sm,0 8px 20px rgba(15,23,42,.06))}
+    .capture-kpi{position:relative;overflow:hidden;min-height:74px}.capture-kpi:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:linear-gradient(180deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4))}
+    .capture-kpi span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.capture-kpi strong{display:block;margin-top:7px;font-size:20px;line-height:1.1;color:var(--text,#172033)}
+    .capture-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 88%,var(--bg,#f3f6fb) 12%);box-shadow:var(--shadow-sm,0 8px 20px rgba(15,23,42,.05))}
+    .capture-tab{border:1px solid transparent;background:transparent;color:var(--muted,#65758b);padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:750;min-height:38px}.capture-tab:hover{color:var(--text,#172033);background:var(--surface-soft,#f4f7fc);border-color:var(--border,rgba(15,35,64,.14))}
+    .capture-tab.is-active{border-color:color-mix(in srgb,var(--accent,#1769e0) 52%,var(--border,transparent));background:color-mix(in srgb,var(--accent,#1769e0) 14%,var(--surface,#fff));color:var(--accent,#1769e0);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent,#1769e0) 18%,transparent)}
+    .capture-panel{display:none}.capture-panel.is-active{display:grid;gap:12px}.capture-grid{display:grid;grid-template-columns:minmax(0,1.28fr) minmax(360px,.72fr);gap:12px;align-items:start}.capture-overview{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(330px,.88fr);gap:12px;align-items:start}
+    .capture-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}.capture-toolbar h2,.capture-box h2{margin:0;font-size:16px;line-height:1.25;letter-spacing:0}.capture-toolbar-actions{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}.capture-toolbar .capture-field{min-width:170px}
+    .capture-form{display:grid;gap:9px}.capture-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.capture-row.three{grid-template-columns:repeat(3,1fr)}.capture-field{display:grid;gap:4px}.capture-field label,.capture-check span{font-size:12px;color:var(--muted,#65758b);font-weight:800}
+    .capture-field input,.capture-field select,.capture-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--form-border,var(--border,rgba(15,35,64,.16)));background:var(--form-input-bg,var(--input-bg,#fff));color:var(--text,#172033);border-radius:8px;padding:9px 10px;min-height:38px;outline:none}
+    .capture-field textarea{min-height:72px;resize:vertical}.capture-field input:focus,.capture-field select:focus,.capture-field textarea:focus{border-color:var(--accent,#1769e0);box-shadow:0 0 0 3px var(--focus,rgba(23,105,224,.18))}
+    .capture-check{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:color-mix(in srgb,var(--surface,#fff) 86%,var(--surface-soft,#f4f7fc) 14%)}.capture-check input{width:18px;height:18px}
+    .capture-table-wrap{min-width:0;max-width:100%;overflow:auto;border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;background:var(--surface,#fff)}.capture-table{width:100%;min-width:920px;border-collapse:collapse;background:var(--surface,#fff);color:var(--text,#172033)}.capture-table th,.capture-table td{text-align:left;border-bottom:1px solid var(--border,rgba(15,35,64,.12));padding:9px;font-size:13px;vertical-align:top}.capture-table th{color:var(--muted,#65758b);font-weight:800;background:var(--surface-soft,#f4f7fc)}.capture-table tbody tr{cursor:pointer}.capture-table tbody tr.is-selected{outline:2px solid var(--accent,#1769e0);outline-offset:-2px;background:color-mix(in srgb,var(--accent,#1769e0) 8%,transparent)}.capture-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+    .capture-muted{color:var(--muted,#65758b)}.capture-empty{border:1px dashed var(--border,rgba(15,35,64,.18));border-radius:8px;padding:14px;color:var(--muted,#65758b);background:color-mix(in srgb,var(--surface,#fff) 84%,var(--surface-soft,#f4f7fc) 16%)}
+    .capture-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,var(--accent,#1769e0) 14%,transparent);color:var(--accent,#1769e0);font-size:12px;font-weight:800;white-space:nowrap}.capture-good{background:color-mix(in srgb,var(--success,#16a34a) 14%,transparent);color:var(--success,#15803d)}.capture-warn{background:color-mix(in srgb,var(--warning,#f59e0b) 16%,transparent);color:#b45309}.capture-bad{background:color-mix(in srgb,var(--danger,#ef4444) 14%,transparent);color:var(--danger,#b91c1c)}
+    .capture-alerts,.capture-stage-grid,.capture-detail-list{display:grid;gap:8px}.capture-stage-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.capture-stage{border:1px solid var(--border,rgba(15,35,64,.14));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--surface,#fff) 90%,var(--surface-soft,#f4f7fc) 10%);min-height:76px}.capture-stage span{display:block;color:var(--muted,#65758b);font-size:12px;font-weight:800}.capture-stage strong{display:block;margin-top:6px;font-size:22px;line-height:1.05}.capture-stage small{display:block;margin-top:4px;color:var(--muted,#65758b)}
+    .capture-alert{border:1px solid color-mix(in srgb,var(--warning,#f59e0b) 42%,var(--border,transparent));border-radius:8px;padding:10px;background:color-mix(in srgb,var(--warning,#f59e0b) 10%,var(--surface,#fff));color:var(--text,#172033)}.capture-alert strong{display:block;font-size:13px}.capture-alert p{margin:4px 0 0;color:var(--muted,#65758b);font-size:12px}.capture-alert.is-danger{border-color:color-mix(in srgb,var(--danger,#c43737) 45%,var(--border,transparent));background:color-mix(in srgb,var(--danger,#c43737) 10%,var(--surface,#fff))}
+    .capture-detail-item{display:grid;grid-template-columns:130px minmax(0,1fr);gap:10px;border-bottom:1px solid var(--border,rgba(15,35,64,.12));padding:8px 0;overflow-wrap:anywhere}.capture-detail-item span{color:var(--muted,#65758b);font-size:12px;font-weight:800}.capture-detail-item strong{font-size:13px;font-weight:750}
+    .capture-progress{height:8px;border-radius:999px;overflow:hidden;background:color-mix(in srgb,var(--border,rgba(15,35,64,.14)) 65%,transparent)}.capture-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent,#1769e0),var(--accent-2,#0ea5a4))}
+    .capture-msg{min-height:24px;color:var(--muted,#65758b);font-size:13px;line-height:1.35}.capture-msg.is-error{color:var(--danger,#c43737)}
+    .capture-dialog{width:min(520px,calc(100vw - 28px));max-height:calc(100vh - 28px);box-sizing:border-box;border:1px solid var(--border,rgba(15,35,64,.18));border-radius:10px;padding:0;background:var(--surface,#fff);color:var(--text,#172033);box-shadow:0 24px 70px rgba(15,23,42,.32)}
+    .capture-dialog::backdrop{background:rgba(8,18,34,.68);backdrop-filter:blur(2px)}.capture-dialog-form{display:grid;gap:14px;padding:18px}.capture-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.capture-dialog-head h2{margin:0;font-size:19px}.capture-dialog-close{border:0;background:transparent;color:var(--muted,#65758b);font-size:24px;line-height:1;cursor:pointer;padding:0 4px}.capture-dialog-message{margin:0;color:var(--muted,#65758b);line-height:1.5}.capture-dialog-error{min-height:20px;margin:0;color:var(--danger,#c43737);font-size:13px;font-weight:750}.capture-dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    html[data-theme^="dark"] .capture-head,html[data-theme^="dark"] .capture-box,html[data-theme^="dark"] .capture-kpi,html[data-theme^="dark"] .capture-tabs,html[data-theme^="dark"] .capture-table-wrap{box-shadow:0 12px 28px rgba(0,0,0,.26)}
+    @media(max-width:1180px){.capture-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.capture-grid,.capture-overview{grid-template-columns:1fr}.capture-head{display:grid}.capture-actions{justify-content:flex-start}.capture-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:720px){.capture-shell{padding:12px}.capture-kpis,.capture-row,.capture-row.three,.capture-stage-grid{grid-template-columns:1fr}.capture-tab{flex:1 1 42%}.capture-table{min-width:760px}.capture-toolbar,.capture-toolbar-actions{display:grid}.capture-actions{display:grid;justify-content:stretch}.capture-detail-item{grid-template-columns:1fr}}
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/ai_button_icons.js?v=20260607"></script>
+</head>
+<body class="capture-page admin-subpage">
+  <main class="capture-shell">
+    <header class="capture-head">
+      <div>
+        <h1>Captura inteligente de compras y gastos</h1>
+        <p>Radica facturas, recibos, cuentas de cobro o XML; valida duplicados, confianza de IA, vencimientos e impacto contable antes de convertir el soporte en cuenta por pagar.</p>
+      </div>
+      <div class="capture-actions">
+        <button class="capture-btn" id="captureRefresh" type="button">Actualizar</button>
+        <button class="capture-btn primary" id="captureExport" type="button">Exportar CSV</button>
+      </div>
+    </header>
+
+    <section class="capture-kpis" aria-label="Indicadores de compras y gastos">
+      <article class="capture-kpi"><span>Pendientes</span><strong id="kpiPendientes">0</strong></article>
+      <article class="capture-kpi"><span>En revision</span><strong id="kpiRevision">0</strong></article>
+      <article class="capture-kpi"><span>Aprobados</span><strong id="kpiAprobados">0</strong></article>
+      <article class="capture-kpi"><span>Contabilizados</span><strong id="kpiContabilizados">0</strong></article>
+      <article class="capture-kpi"><span>Duplicados</span><strong id="kpiDuplicados">0</strong></article>
+      <article class="capture-kpi"><span>Total pendiente</span><strong id="kpiTotalPendiente">$0</strong></article>
+      <article class="capture-kpi"><span>Total aprobado</span><strong id="kpiTotalAprobado">$0</strong></article>
+      <article class="capture-kpi"><span>Confianza IA</span><strong id="kpiConfianza">0%</strong></article>
+    </section>
+
+    <nav class="capture-tabs" aria-label="Secciones de captura inteligente">
+      <button class="capture-tab is-active" data-tab="tablero" type="button">Tablero</button>
+      <button class="capture-tab" data-tab="radicar" type="button">Radicar soporte</button>
+      <button class="capture-tab" data-tab="bandeja" type="button">Bandeja</button>
+      <button class="capture-tab" data-tab="detalle" type="button">Detalle y auditoria</button>
+    </nav>
+    <div id="captureMsg" class="capture-msg"></div>
+
+    <section id="tab-tablero" class="capture-panel is-active">
+      <div class="capture-overview">
+        <div class="capture-box">
+          <div class="capture-toolbar"><h2>Flujo de procesamiento</h2></div>
+          <div id="capturePipeline" class="capture-stage-grid"></div>
+        </div>
+        <aside class="capture-box">
+          <div class="capture-toolbar"><h2>Alertas de control</h2></div>
+          <div id="captureAlerts" class="capture-alerts"></div>
+        </aside>
+      </div>
+      <div class="capture-box">
+        <div class="capture-toolbar"><h2>Soportes recientes</h2></div>
+        <div id="captureRecentTable" class="capture-table-wrap"></div>
+      </div>
+    </section>
+
+    <section id="tab-radicar" class="capture-panel">
+      <div class="capture-grid">
+        <form class="capture-box capture-form" id="formSoporte">
+          <h2>Radicacion controlada</h2>
+          <div class="capture-field"><label for="archivo">Archivo soporte</label><input id="archivo" name="archivo" type="file" accept="image/png,image/jpeg,image/webp,application/pdf,.xml,text/xml"></div>
+          <div class="capture-row">
+            <div class="capture-field"><label for="tipoSoporte">Tipo</label><select id="tipoSoporte" name="tipo_soporte"><option value="gasto">Gasto</option><option value="compra">Compra</option><option value="documento_soporte">Documento soporte</option><option value="servicio">Servicio</option><option value="recibo">Recibo</option></select></div>
+            <div class="capture-field"><label for="documentoTipo">Documento</label><select id="documentoTipo" name="documento_tipo"><option value="factura_compra">Factura de compra</option><option value="documento_soporte">Documento soporte</option><option value="cuenta_cobro">Cuenta de cobro</option><option value="recibo_caja">Recibo de caja</option><option value="gasto">Gasto</option><option value="otro">Otro</option></select></div>
+          </div>
+          <div class="capture-row">
+            <div class="capture-field"><label for="proveedorNombre">Proveedor</label><input id="proveedorNombre" name="proveedor_nombre" autocomplete="off"></div>
+            <div class="capture-field"><label for="proveedorNit">NIT</label><input id="proveedorNit" name="proveedor_nit" autocomplete="off"></div>
+          </div>
+          <div class="capture-row three">
+            <div class="capture-field"><label for="documentoNumero">Numero</label><input id="documentoNumero" name="documento_numero" autocomplete="off"></div>
+            <div class="capture-field"><label for="fechaDocumento">Fecha documento</label><input id="fechaDocumento" name="fecha_documento" type="date"></div>
+            <div class="capture-field"><label for="fechaVencimiento">Fecha vencimiento</label><input id="fechaVencimiento" name="fecha_vencimiento" type="date"></div>
+          </div>
+          <div class="capture-row three">
+            <div class="capture-field"><label for="subtotal">Subtotal</label><input id="subtotal" name="subtotal" type="number" step="0.01" min="0" value="0"></div>
+            <div class="capture-field"><label for="impuestoIVA">IVA</label><input id="impuestoIVA" name="impuesto_iva" type="number" step="0.01" min="0" value="0"></div>
+            <div class="capture-field"><label for="total">Total</label><input id="total" name="total" type="number" step="0.01" min="0" value="0"></div>
+          </div>
+          <div class="capture-row three">
+            <div class="capture-field"><label for="retencionFuente">Rete fuente</label><input id="retencionFuente" name="retencion_fuente" type="number" step="0.01" min="0" value="0"></div>
+            <div class="capture-field"><label for="retencionICA">Rete ICA</label><input id="retencionICA" name="retencion_ica" type="number" step="0.01" min="0" value="0"></div>
+            <div class="capture-field"><label for="retencionIVA">Rete IVA</label><input id="retencionIVA" name="retencion_iva" type="number" step="0.01" min="0" value="0"></div>
+          </div>
+          <div class="capture-row">
+            <div class="capture-field"><label for="categoriaContable">Categoria contable</label><input id="categoriaContable" name="categoria_contable" placeholder="Gastos administrativos"></div>
+            <div class="capture-field"><label for="centroCosto">Centro de costo</label><input id="centroCosto" name="centro_costo" placeholder="Administracion"></div>
+          </div>
+          <label class="capture-check"><input id="impactaInventario" name="impacta_inventario" type="checkbox"><span>Impacta inventario</span></label>
+          <div class="capture-field"><label for="observaciones">Observaciones</label><textarea id="observaciones" name="observaciones"></textarea></div>
+          <div class="capture-row-actions"><button class="capture-btn primary" id="btnRadicar" type="submit">Radicar soporte</button><button class="capture-btn" id="btnLimpiar" type="button">Limpiar</button></div>
+        </form>
+        <aside class="capture-box">
+          <h2>Checklist de validacion</h2>
+          <div id="captureChecklist" class="capture-detail-list"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="tab-bandeja" class="capture-panel">
+      <div class="capture-box">
+        <div class="capture-toolbar">
+          <h2>Bandeja de soportes</h2>
+          <div class="capture-toolbar-actions">
+            <div class="capture-field"><label>Estado</label><select id="estadoFilter"><option value="">Todos</option><option value="radicado">Radicado</option><option value="extraido">Extraido</option><option value="en_revision">En revision</option><option value="aprobado">Aprobado</option><option value="contabilizado">Contabilizado</option><option value="duplicado">Duplicado</option><option value="rechazado">Rechazado</option></select></div>
+            <div class="capture-field"><label>Registro</label><select id="registroFilter"><option value="activo">Activos</option><option value="eliminado">Papelera</option><option value="purga_pendiente">Depuracion pendiente</option><option value="purgado">Depurados</option></select></div>
+            <div class="capture-field"><label>Tipo</label><select id="tipoFilter"><option value="">Todos</option><option value="gasto">Gasto</option><option value="compra">Compra</option><option value="documento_soporte">Documento soporte</option><option value="servicio">Servicio</option><option value="recibo">Recibo</option></select></div>
+            <div class="capture-field"><label>Buscar</label><input id="searchFilter" placeholder="Proveedor, NIT, documento"></div>
+          </div>
+        </div>
+        <div class="capture-row-actions" style="margin-bottom:10px">
+          <button class="capture-btn primary" id="btnExtraer" type="button">Extraer IA</button>
+          <button class="capture-btn" id="btnCancelarIA" type="button">Cancelar IA</button>
+          <button class="capture-btn" id="btnAprobar" type="button">Aprobar</button>
+          <button class="capture-btn danger" id="btnRechazar" type="button">Rechazar</button>
+          <button class="capture-btn warn" id="btnContabilizar" type="button">Contabilizar</button>
+          <button class="capture-btn danger" id="btnEliminar" type="button">Enviar a papelera</button>
+          <button class="capture-btn" id="btnRestaurar" type="button">Recuperar</button>
+          <button class="capture-btn danger" id="btnPurgar" type="button">Depurar archivo</button>
+        </div>
+        <p class="capture-muted">La papelera conserva el archivo y la auditoria. Una depuracion interrumpida queda visible y puede reintentarse; al finalizar elimina definitivamente el archivo, pero conserva la fila y sus eventos. Los soportes contabilizados no pueden eliminarse ni depurarse.</p>
+        <div class="capture-row-actions" style="margin:10px 0">
+          <div class="capture-field"><label for="retencionDias">Retencion de papelera (dias)</label><input id="retencionDias" type="number" min="1" max="3650" value="90"></div>
+          <button class="capture-btn" id="btnRetencionPreview" type="button">Vista previa de retencion</button>
+          <button class="capture-btn" id="btnCuarentenaPreview" type="button">Diagnostico de cuarentena</button>
+          <span class="capture-muted" id="retencionPreviewMsg">No elimina archivos: calcula candidatos y espacio.</span>
+        </div>
+        <div id="captureTable" class="capture-table-wrap"></div>
+      </div>
+    </section>
+
+    <section id="tab-detalle" class="capture-panel">
+      <div class="capture-grid">
+        <div class="capture-box">
+          <div class="capture-toolbar"><h2>Detalle del soporte</h2></div>
+          <div id="captureDetail" class="capture-detail-list"></div>
+        </div>
+        <aside class="capture-box">
+          <div class="capture-toolbar"><h2>Auditoria</h2></div>
+          <div id="captureEvents" class="capture-detail-list"></div>
+        </aside>
+      </div>
+      <form id="formEditarSoporte" class="capture-box capture-form" novalidate>
+        <div class="capture-toolbar"><h2>Revision humana editable</h2><span class="capture-muted">La lectura IA no se contabiliza: guarda, revisa y aprueba por separado.</span></div>
+        <input id="editSoporteId" type="hidden">
+        <div class="capture-row">
+          <div class="capture-field"><label for="editProveedor">Proveedor registrado</label><select id="editProveedor"><option value="">Selecciona antes de contabilizar</option></select></div>
+          <div class="capture-field"><label for="editProveedorNombre">Proveedor leido / manual</label><input id="editProveedorNombre" autocomplete="off"></div>
+          <div class="capture-field"><label for="editProveedorNit">NIT</label><input id="editProveedorNit" autocomplete="off"></div>
+        </div>
+        <div class="capture-row three">
+          <div class="capture-field"><label for="editTipoSoporte">Tipo</label><select id="editTipoSoporte"><option value="gasto">Gasto</option><option value="compra">Compra</option><option value="documento_soporte">Documento soporte</option><option value="servicio">Servicio</option><option value="recibo">Recibo</option></select></div>
+          <div class="capture-field"><label for="editDocumentoTipo">Documento</label><select id="editDocumentoTipo"><option value="factura_compra">Factura de compra</option><option value="documento_soporte">Documento soporte</option><option value="cuenta_cobro">Cuenta de cobro</option><option value="recibo_caja">Recibo de caja</option><option value="gasto">Gasto</option><option value="otro">Otro</option></select></div>
+          <div class="capture-field"><label for="editDocumentoNumero">Numero</label><input id="editDocumentoNumero" autocomplete="off"></div>
+        </div>
+        <div class="capture-row three">
+          <div class="capture-field"><label for="editFechaDocumento">Fecha documento</label><input id="editFechaDocumento" type="date"></div>
+          <div class="capture-field"><label for="editFechaVencimiento">Fecha vencimiento</label><input id="editFechaVencimiento" type="date"></div>
+          <div class="capture-field"><label for="editMoneda">Moneda</label><input id="editMoneda" value="COP" maxlength="3"></div>
+        </div>
+        <div class="capture-row three">
+          <div class="capture-field"><label for="editSubtotal">Subtotal</label><input id="editSubtotal" type="number" min="0" step="0.01"></div>
+          <div class="capture-field"><label for="editIVA">IVA</label><input id="editIVA" type="number" min="0" step="0.01"></div>
+          <div class="capture-field"><label for="editTotal">Total</label><input id="editTotal" type="number" min="0" step="0.01"></div>
+        </div>
+        <div class="capture-row three">
+          <div class="capture-field"><label for="editReteFuente">Rete fuente</label><input id="editReteFuente" type="number" min="0" step="0.01"></div>
+          <div class="capture-field"><label for="editReteICA">Rete ICA</label><input id="editReteICA" type="number" min="0" step="0.01"></div>
+          <div class="capture-field"><label for="editReteIVA">Rete IVA</label><input id="editReteIVA" type="number" min="0" step="0.01"></div>
+        </div>
+        <div class="capture-row"><div class="capture-field"><label for="editCategoria">Categoria contable</label><input id="editCategoria"></div><div class="capture-field"><label for="editCentroCosto">Centro de costo</label><input id="editCentroCosto"></div></div>
+        <label class="capture-check"><input id="editImpactaInventario" type="checkbox"><span>Impacta inventario</span></label>
+        <div class="capture-field"><label for="editObservaciones">Observaciones de revision</label><textarea id="editObservaciones"></textarea></div>
+        <div class="capture-row-actions"><button class="capture-btn primary" id="btnGuardarRevision" type="submit">Guardar revision</button></div>
+      </form>
+    </section>
+  </main>
+  <dialog id="captureActionDialog" class="capture-dialog" aria-labelledby="captureActionTitle" aria-describedby="captureActionMessage">
+    <form id="captureActionForm" class="capture-dialog-form" method="dialog" novalidate>
+      <div class="capture-dialog-head">
+        <h2 id="captureActionTitle">Confirmar acción</h2>
+        <button id="captureActionClose" class="capture-dialog-close" type="button" aria-label="Cerrar diálogo">×</button>
+      </div>
+      <p id="captureActionMessage" class="capture-dialog-message"></p>
+      <div id="captureActionMotivoField" class="capture-field" hidden>
+        <label for="captureActionMotivo">Motivo obligatorio</label>
+        <textarea id="captureActionMotivo" maxlength="500" autocomplete="off"></textarea>
+      </div>
+      <div id="captureActionConfirmacionField" class="capture-field" hidden>
+        <label id="captureActionConfirmacionLabel" for="captureActionConfirmacion">Código de confirmación</label>
+        <input id="captureActionConfirmacion" maxlength="80" autocomplete="off">
+      </div>
+      <p id="captureActionError" class="capture-dialog-error" role="alert"></p>
+      <div class="capture-dialog-actions">
+        <button id="captureActionCancel" class="capture-btn" type="button">Cancelar</button>
+        <button id="captureActionSubmit" class="capture-btn primary" type="submit">Confirmar</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="/js/soportes_compras_ia.js"></script>
+</body>
+</html>

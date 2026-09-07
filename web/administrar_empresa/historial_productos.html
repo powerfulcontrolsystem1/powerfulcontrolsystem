@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Historial de Productos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-module-header">
+      <div>
+        <h1>Historial</h1>
+        <p>Registro de cambios de precios, costos e impuestos.</p>
+      </div>
+      <div class="empresa-inline-actions">
+        <button type="button" class="btn" id="btnRefresh">Actualizar</button>
+        <button type="button" class="btn secondary" data-export-format="csv">CSV</button>
+        <button type="button" class="btn secondary" data-export-format="json">JSON</button>
+        <button type="button" class="btn secondary" data-export-format="html">HTML</button>
+        <button type="button" class="btn secondary" data-export-format="pdf">PDF</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Cambios</h2>
+      <div id="historialList">
+        <p class="empty-state">Cargando historial...</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="/administrar_empresa/historial_productos.js?v=20260813-p110-csp"></script>
+</body>
+</html>

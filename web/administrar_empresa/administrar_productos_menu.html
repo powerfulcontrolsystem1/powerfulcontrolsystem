@@ -1,0 +1,41 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar Productos - Menú</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="admin-empresa-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <h2>Productos</h2>
+      <ul class="nav" id="productosSidebarNav">
+        <li><a id="linkProductosMain" href="/administrar_empresa/administrar_productos.html?view=productos&v=20260501-nuevo-producto-inline" target="productosContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Inventario (Productos)</a></li>
+        <li><a id="linkInventarioAvanzado" href="/administrar_empresa/inventario_avanzado.html" target="productosContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Inventario avanzado</a></li>
+        <li><a id="linkPreciosHistorial" href="/administrar_empresa/historial_productos.html" target="productosContentFrame"><img class="icon" src="/img/price-tag-color.svg" alt="">Historial de productos</a></li>
+        <li><a id="linkBodegas" href="/administrar_empresa/administrar_productos.html?view=bodegas" target="productosContentFrame"><img class="icon" src="/img/warehouse-color.svg" alt="">Bodegas y traslados</a></li>
+        <li><a id="linkCategorias" href="/administrar_empresa/administrar_productos.html?view=categorias" target="productosContentFrame"><img class="icon" src="/img/tags-color.svg" alt="">Categorías</a></li>
+        <li><a id="linkRecetasProductos" href="/administrar_empresa/recetas_productos.html" target="productosContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Recetas</a></li>
+        <li><a id="linkProductosTutorial" href="/administrar_empresa/productos_tutorial.html" target="productosContentFrame"><img class="icon" src="/img/report.svg" alt="">Tutorial</a></li>
+        <li><a id="linkCartaProductosPublica" href="/administrar_empresa/carta_productos_publica.html" target="productosContentFrame"><img class="icon" src="/img/price-tag-color.svg" alt="">Carta publica</a></li>
+        <li><a id="linkGeneradorCodigosBarras" href="/administrar_empresa/generador_codigos_barras.html" target="productosContentFrame"><img class="icon" src="/img/report.svg" alt="">Generador codigos de barras</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="productosSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <iframe name="productosContentFrame" id="productosContentFrame" data-src="/administrar_empresa/administrar_productos.html?view=productos&v=20260501-nuevo-producto-inline" title="Contenido de productos" class="admin-empresa-frame"></iframe>
+    </main>
+  </div>
+    <script src="/administrar_empresa/administrar_productos_menu.js?v=20260826-psi-no-double-frame"></script>
+    <script src="/js/administrar_empresa.js?v=20260826-frame-deferred"></script>
+    <script src="/menu.js"></script>
+</body>
+</html>

@@ -1,0 +1,725 @@
+package handlers
+
+import (
+	"crypto/md5"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
+)
+
+func TestEpaycoDoesNotPersistRawProviderAuthenticationResponses(t *testing.T) {
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("could not resolve payments test location")
+	}
+	for _, name := range []string{"payments_handlers.go", "venta_publica.go"} {
+		body, err := os.ReadFile(filepath.Join(filepath.Dir(thisFile), name))
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		for _, forbidden := range []string{"\"apify_login_raw\"", "\"session_raw\""} {
+			if strings.Contains(string(body), forbidden) {
+				t.Fatalf("%s must not persist provider raw field %s", name, forbidden)
+			}
+		}
+	}
+}
+
+func TestLicenciaFacturaHandlerDoesNotProvisionSystemEmpresa(t *testing.T) {
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("could not resolve payments test location")
+	}
+	body, err := os.ReadFile(filepath.Join(filepath.Dir(thisFile), "payments_handlers.go"))
+	if err != nil {
+		t.Fatalf("read payments handler: %v", err)
+	}
+	source := string(body)
+	start := strings.Index(source, "func issueLicenciaFacturaElectronicaWithOptions")
+	if start < 0 {
+		t.Fatal("license invoice handler not found")
+	}
+	section := source[start:]
+	if strings.Contains(section, "EnsurePowerfulSystemEmpresa(") {
+		t.Fatal("license payment handler must not provision the system issuer")
+	}
+	if !strings.Contains(section, "GetPowerfulSystemEmpresa(") {
+		t.Fatal("license payment handler must read the pre-provisioned system issuer")
+	}
+}
+
+func TestPickEpaycoFieldReadsNestedAliases(t *testing.T) {
+	payload := map[string]interface{}{
+		"data": map[string]interface{}{
+			"auth": map[string]interface{}{
+				"bearerToken": " token-123 ",
+			},
+		},
+	}
+
+	got := pickEpaycoField(payload, "token", "access_token", "bearer_token")
+	if got != "token-123" {
+		t.Fatalf("expected nested bearer token, got %q", got)
+	}
+}
+
+func TestReadCheckoutContextFromRawPayloadPreservesQuantity(t *testing.T) {
+	mode, addons, quantity := readCheckoutContextFromRawPayload(`{"checkout_mode":"","addon_licencia_ids":[2,"3"],"cantidad":5}`)
+	if mode != "" {
+		t.Fatalf("expected individual checkout mode, got %q", mode)
+	}
+	if quantity != 5 {
+		t.Fatalf("expected stored checkout quantity 5, got %d", quantity)
+	}
+	if len(addons) != 2 || addons[0] != 2 || addons[1] != 3 {
+		t.Fatalf("expected normalized addon ids, got %#v", addons)
+	}
+}
+
+func TestReadCheckoutContextFromRawPayloadDefaultsQuantity(t *testing.T) {
+	_, _, quantity := readCheckoutContextFromRawPayload(`{"cantidad":0}`)
+	if quantity != 1 {
+		t.Fatalf("expected a safe default quantity, got %d", quantity)
+	}
+}
+
+func TestPickEpaycoFieldIgnoresNonScalarMatches(t *testing.T) {
+	payload := map[string]interface{}{
+		"data": map[string]interface{}{
+			"session": map[string]interface{}{
+				"id": map[string]interface{}{
+					"value": "not-a-direct-session-id",
+				},
+			},
+			"session_id": "session-456",
+		},
+	}
+
+	got := pickEpaycoField(payload, "sessionId", "session_id", "id")
+	if got != "session-456" {
+		t.Fatalf("expected direct nested session id, got %q", got)
+	}
+}
+
+func TestLicenciaFacturaAmountHonorsZeroAndPositivePaymentPayloads(t *testing.T) {
+	lic := &dbpkg.Licencia{Valor: 60000}
+
+	if amount, found := licenciaFacturaAmountFromPayload(lic, map[string]interface{}{"total_value": 0}); !found || amount != 0 {
+		t.Fatalf("expected explicit zero payment to be honored as zero, got amount=%v found=%v", amount, found)
+	}
+	if amount, found := licenciaFacturaAmountFromPayload(lic, map[string]interface{}{"total_value": 60000}); !found || amount != 60000 {
+		t.Fatalf("expected positive payment to be honored, got amount=%v found=%v", amount, found)
+	}
+	if amount, found := licenciaFacturaAmountFromPayload(lic, map[string]interface{}{}); found || amount != 60000 {
+		t.Fatalf("expected empty payload to fall back to license value without explicit payment flag, got amount=%v found=%v", amount, found)
+	}
+}
+
+func TestBuildEpaycoClassicCheckoutFormUsesSecurePaycoPostAndSignature(t *testing.T) {
+	checkoutKey := "test-only-checkout-key"
+	form := buildEpaycoClassicCheckoutForm(
+		"https://powerfulcontrolsystem.com",
+		"123456",
+		checkoutKey,
+		"EPAYCO-LIC-1",
+		"Premium",
+		11,
+		22,
+		12345.674,
+		"cliente@example.com",
+		"sandbox",
+	)
+
+	if form.Method != "POST" {
+		t.Fatalf("expected POST method, got %q", form.Method)
+	}
+	if form.Action != "https://secure.payco.co/checkout.php" {
+		t.Fatalf("expected secure.payco.co classic checkout action, got %q", form.Action)
+	}
+	if form.Action == "https://checkout.epayco.co/checkout.php" {
+		t.Fatal("classic checkout must not use checkout.epayco.co/checkout.php")
+	}
+
+	fields := form.Fields
+	if fields["p_cust_id_cliente"] != "123456" {
+		t.Fatalf("expected customer id field, got %q", fields["p_cust_id_cliente"])
+	}
+	if fields["p_key"] != checkoutKey {
+		t.Fatalf("expected private key field, got %q", fields["p_key"])
+	}
+	if fields["p_id_invoice"] != "EPAYCO-LIC-1" {
+		t.Fatalf("expected invoice reference, got %q", fields["p_id_invoice"])
+	}
+	if fields["p_amount"] != "12345.67" {
+		t.Fatalf("expected rounded amount, got %q", fields["p_amount"])
+	}
+	if fields["p_currency_code"] != "COP" {
+		t.Fatalf("expected COP currency, got %q", fields["p_currency_code"])
+	}
+	if fields["p_test_request"] != "TRUE" {
+		t.Fatalf("expected sandbox test request, got %q", fields["p_test_request"])
+	}
+	if fields["p_extra1"] != "11" || fields["p_extra2"] != "22" || fields["p_extra3"] != "EPAYCO-LIC-1" {
+		t.Fatalf("expected extra fields with licencia/empresa/reference, got %#v", fields)
+	}
+	if fields["p_url_response"] == "" || fields["p_url_confirmation"] != "https://powerfulcontrolsystem.com/epayco/webhook" {
+		t.Fatalf("expected response and confirmation URLs, got response=%q confirmation=%q", fields["p_url_response"], fields["p_url_confirmation"])
+	}
+
+	expectedSignature := fmt.Sprintf("%x", md5.Sum([]byte("123456^"+checkoutKey+"^EPAYCO-LIC-1^12345.67^COP")))
+	if fields["p_signature"] != expectedSignature {
+		t.Fatalf("expected signature %q, got %q", expectedSignature, fields["p_signature"])
+	}
+}
+
+func TestBuildEpaycoClassicCheckoutFormUsesProductionFlag(t *testing.T) {
+	form := buildEpaycoClassicCheckoutForm(
+		"https://powerfulcontrolsystem.com",
+		"123456",
+		"a1c7200f0e2029d11b62bfd863422d5db10a8397",
+		"EPAYCO-LIC-2",
+		"Premium",
+		11,
+		22,
+		90000,
+		"",
+		"production",
+	)
+
+	if form.Fields["p_test_request"] != "FALSE" {
+		t.Fatalf("expected production checkout to disable test request, got %q", form.Fields["p_test_request"])
+	}
+}
+
+func TestBuildEpaycoClassicCheckoutPayloadUsesOfficialCheckoutJSShape(t *testing.T) {
+	payload := buildEpaycoClassicCheckoutPayload(
+		"https://powerfulcontrolsystem.com",
+		"public-key-123",
+		"EPAYCO-LIC-9",
+		"Plan Empresa",
+		9,
+		15,
+		99000,
+		"cliente@example.com",
+		"production",
+	)
+
+	if payload.ScriptURL != "https://checkout.epayco.co/checkout.js" {
+		t.Fatalf("expected official checkout.js URL, got %q", payload.ScriptURL)
+	}
+	if payload.Config["key"] != "public-key-123" {
+		t.Fatalf("expected public key in checkout config, got %#v", payload.Config["key"])
+	}
+	if payload.Config["test"] != false {
+		t.Fatalf("expected production test=false, got %#v", payload.Config["test"])
+	}
+	data := payload.Data
+	if data["external"] != "true" || data["currency"] != "cop" || data["country"] != "co" {
+		t.Fatalf("expected standard external checkout data, got %#v", data)
+	}
+	if data["invoice"] != "EPAYCO-LIC-9" || data["amount"] != "99000.00" {
+		t.Fatalf("expected invoice and amount, got invoice=%#v amount=%#v", data["invoice"], data["amount"])
+	}
+	if data["confirmation"] != "https://powerfulcontrolsystem.com/epayco/webhook" {
+		t.Fatalf("expected webhook confirmation URL, got %#v", data["confirmation"])
+	}
+	if _, ok := data["p_key"]; ok {
+		t.Fatal("classic checkout.js payload must not expose P_KEY to the browser")
+	}
+	if data["extra1"] != "9" || data["extra2"] != "15" || data["extra3"] != "EPAYCO-LIC-9" {
+		t.Fatalf("expected extras with licencia/empresa/reference, got %#v", data)
+	}
+	if data["email_billing"] != "cliente@example.com" {
+		t.Fatalf("expected billing email, got %#v", data["email_billing"])
+	}
+}
+
+func TestBuildEpaycoSmartCheckoutSessionPayloadMatchesOfficialV2Shape(t *testing.T) {
+	payload := buildEpaycoSmartCheckoutSessionPayload(
+		"https://powerfulcontrolsystem.com",
+		"EPAYCO-LIC-7",
+		"Plan Empresarial",
+		7,
+		8,
+		50000.456,
+		"cliente@example.com",
+	)
+
+	if payload["checkout_version"] != "2" {
+		t.Fatalf("expected Smart Checkout v2, got %#v", payload["checkout_version"])
+	}
+	if payload["currency"] != "COP" || payload["country"] != "CO" || payload["method"] != "POST" {
+		t.Fatalf("expected COP/CO/POST payload, got %#v", payload)
+	}
+	if payload["amount"] != 50000.46 {
+		t.Fatalf("expected rounded numeric amount, got %#v", payload["amount"])
+	}
+	if payload["invoice"] != "EPAYCO-LIC-7" {
+		t.Fatalf("expected invoice reference, got %#v", payload["invoice"])
+	}
+	if payload["response"] == "" || payload["confirmation"] != "https://powerfulcontrolsystem.com/epayco/webhook" {
+		t.Fatalf("expected public response and confirmation URLs, got response=%#v confirmation=%#v", payload["response"], payload["confirmation"])
+	}
+	if payload["forceResponse"] != true || payload["uniqueTransactionPerBill"] != true {
+		t.Fatalf("expected deterministic response and unique invoice protection, got %#v", payload)
+	}
+	extras, ok := payload["extras"].(map[string]interface{})
+	if !ok || extras["extra1"] != "7" || extras["extra2"] != "8" || extras["extra3"] != "EPAYCO-LIC-7" {
+		t.Fatalf("expected extras with licencia/empresa/reference, got %#v", payload["extras"])
+	}
+	billing, ok := payload["billing"].(map[string]interface{})
+	if !ok || billing["email"] != "cliente@example.com" {
+		t.Fatalf("expected billing email, got %#v", payload["billing"])
+	}
+}
+
+func TestBuildWompiIntegritySignatureUsesOfficialWebCheckoutFormula(t *testing.T) {
+	reference := "WOMPI-LIC-1-EMP-2"
+	amountInCents := int64(1234500)
+	currency := "COP"
+	integrityKey := "test_integrity_secret"
+
+	expected := fmt.Sprintf("%x", sha256.Sum256([]byte(reference+"1234500"+currency+integrityKey)))
+	if got := buildWompiIntegritySignature(reference, amountInCents, currency, integrityKey); got != expected {
+		t.Fatalf("expected Wompi integrity signature %q, got %q", expected, got)
+	}
+}
+
+func TestIsLicenciaPrueba15DiasCatalogo(t *testing.T) {
+	trial := dbpkg.Licencia{Nombre: "Licencia de prueba 15 dias", Valor: 0, DuracionDias: 15}
+	if !isLicenciaPrueba15DiasCatalogo(trial) {
+		t.Fatal("expected free 15-day trial catalog license to be detected")
+	}
+
+	paid := dbpkg.Licencia{Nombre: "Plan mensual", Valor: 60000, DuracionDias: 15}
+	if isLicenciaPrueba15DiasCatalogo(paid) {
+		t.Fatal("paid 15-day license must remain visible")
+	}
+
+	assigned := dbpkg.Licencia{Nombre: "Licencia de prueba 15 dias", Valor: 0, DuracionDias: 15, EmpresaID: 32}
+	if isLicenciaPrueba15DiasCatalogo(assigned) {
+		t.Fatal("assigned company license must not be treated as catalog trial")
+	}
+}
+
+func TestBuildLicenciaFacturaDocumentoCodigoIsStableAndSafe(t *testing.T) {
+	got := buildLicenciaFacturaDocumentoCodigo("Epayco", "EPAYCO-LIC-6-EMP-20-ABC#123", 6, 20)
+	want := "LIC-EPAYCO-EPAYCO-LIC-6-EMP-20-ABC-123"
+	if got != want {
+		t.Fatalf("documento codigo = %q, want %q", got, want)
+	}
+
+	got = buildLicenciaFacturaDocumentoCodigo("", "", 6, 20)
+	if got != "LIC-LIC-LIC-6-EMP-20" {
+		t.Fatalf("fallback documento codigo inesperado: %q", got)
+	}
+}
+
+func TestLicenciaFacturaAmountFromPayloadPrefersPaidTotal(t *testing.T) {
+	lic := &dbpkg.Licencia{Valor: 150000}
+	amount, found := licenciaFacturaAmountFromPayload(lic, map[string]interface{}{"total_value": "COP 60.000,00"})
+	if !found || amount != 60000 {
+		t.Fatalf("expected paid total 60000, got amount=%.2f found=%v", amount, found)
+	}
+
+	amount, found = licenciaFacturaAmountFromPayload(lic, map[string]interface{}{"data": map[string]interface{}{"amount_in_cents": float64(10000000)}})
+	if !found || amount != 100000 {
+		t.Fatalf("expected Wompi cents to become 100000, got amount=%.2f found=%v", amount, found)
+	}
+}
+
+func TestBuildWompiWebCheckoutFormUsesOfficialFields(t *testing.T) {
+	form := buildWompiWebCheckoutForm(
+		"pub_test_123",
+		"test_integrity_secret",
+		"WOMPI-LIC-9",
+		"https://powerfulcontrolsystem.com/pagar_licencia.html?provider=wompi",
+		"cliente@example.com",
+		9900000,
+	)
+
+	if form.Method != "GET" {
+		t.Fatalf("expected Wompi Web Checkout GET form, got %q", form.Method)
+	}
+	if form.Action != "https://checkout.wompi.co/p/" {
+		t.Fatalf("expected Wompi hosted checkout action, got %q", form.Action)
+	}
+	fields := form.Fields
+	if fields["public-key"] != "pub_test_123" || fields["currency"] != "COP" || fields["amount-in-cents"] != "9900000" || fields["reference"] != "WOMPI-LIC-9" {
+		t.Fatalf("unexpected Wompi checkout required fields: %#v", fields)
+	}
+	if fields["redirect-url"] == "" || fields["customer-data:email"] != "cliente@example.com" {
+		t.Fatalf("expected Wompi optional redirect/email fields, got %#v", fields)
+	}
+	if fields["signature:integrity"] == "" {
+		t.Fatal("expected Wompi integrity signature")
+	}
+	if _, ok := fields["private-key"]; ok {
+		t.Fatal("Wompi Web Checkout must not expose private key")
+	}
+}
+
+func TestLooksLikeWompiPublicKey(t *testing.T) {
+	valid := []string{"pub_test_123", "pub_prod_456", " pub_test_abc "}
+	for _, key := range valid {
+		if !looksLikeWompiPublicKey(key) {
+			t.Fatalf("expected %q to be accepted as Wompi public key", key)
+		}
+	}
+
+	invalid := []string{"", "PUBLIC_KEY", "prv_test_123", "test_integrity_secret", "pk_test_123"}
+	for _, key := range invalid {
+		if looksLikeWompiPublicKey(key) {
+			t.Fatalf("expected %q to be rejected as Wompi public key", key)
+		}
+	}
+}
+
+func TestWompiModeFromKeysDoesNotAssumeProductionForPlaceholders(t *testing.T) {
+	if got := wompiModeFromKeys("PUBLIC_KEY", ""); got != "" {
+		t.Fatalf("expected placeholder key to have no inferred mode, got %q", got)
+	}
+	if got := wompiModeFromKeys("pub_prod_123", ""); got != "production" {
+		t.Fatalf("expected prod public key to infer production, got %q", got)
+	}
+	if got := wompiModeFromKeys("pub_test_123", ""); got != "sandbox" {
+		t.Fatalf("expected test public key to infer sandbox, got %q", got)
+	}
+}
+
+func TestVerifyEpaycoConfirmationSignatureUsesOfficialSha256Formula(t *testing.T) {
+	payload := map[string]interface{}{
+		"x_ref_payco":      "123456789",
+		"x_transaction_id": "TX-123",
+		"x_amount":         "50000.00",
+		"x_currency_code":  "COP",
+		"x_cod_response":   "1",
+		"x_response":       "Aceptada",
+	}
+	source := "9695^p-key-secret^123456789^TX-123^50000.00^COP"
+	sum := sha256.Sum256([]byte(source))
+	payload["x_signature"] = hex.EncodeToString(sum[:])
+
+	valid, provided, _, expected := verifyEpaycoConfirmationSignature("9695", "p-key-secret", payload)
+	if !provided {
+		t.Fatal("expected signature to be detected")
+	}
+	if !valid {
+		t.Fatalf("expected valid signature, expected hash %q", expected)
+	}
+
+	payload["x_amount"] = "50001.00"
+	valid, provided, _, _ = verifyEpaycoConfirmationSignature("9695", "p-key-secret", payload)
+	if !provided || valid {
+		t.Fatal("expected tampered amount to invalidate signature")
+	}
+}
+
+func TestValidateEpaycoWebhookSignatureRequiresConfiguredValidSignature(t *testing.T) {
+	payload := map[string]interface{}{
+		"x_ref_payco":      "123456789",
+		"x_transaction_id": "TX-123",
+		"x_amount":         "50000.00",
+		"x_currency_code":  "COP",
+		"x_cod_response":   "1",
+		"x_response":       "Aceptada",
+	}
+	creds := epaycoCredentialSet{CustomerID: "9695", CheckoutKey: "p-key-secret-for-webhook"}
+	source := "9695^p-key-secret-for-webhook^123456789^TX-123^50000.00^COP"
+	sum := sha256.Sum256([]byte(source))
+	payload["x_signature"] = hex.EncodeToString(sum[:])
+	if !validateEpaycoWebhookSignature(creds, payload) {
+		t.Fatal("expected valid signed webhook to be accepted")
+	}
+	delete(payload, "x_signature")
+	if validateEpaycoWebhookSignature(creds, payload) {
+		t.Fatal("unsigned webhook must be rejected")
+	}
+	payload["x_signature"] = "invalid"
+	if validateEpaycoWebhookSignature(creds, payload) {
+		t.Fatal("invalid signature must be rejected")
+	}
+	if validateEpaycoWebhookSignature(epaycoCredentialSet{}, payload) {
+		t.Fatal("missing verification credentials must reject the webhook")
+	}
+}
+
+func TestParseEpaycoPaymentStatusReadsTransactionStateCode(t *testing.T) {
+	payload := map[string]interface{}{
+		"x_cod_transaction_state": "1",
+	}
+	if got := parseEpaycoPaymentStatus(payload); got != "APPROVED" {
+		t.Fatalf("expected APPROVED from x_cod_transaction_state, got %q", got)
+	}
+}
+
+func TestEpaycoApprovedStatusAliasesActivateLicenses(t *testing.T) {
+	for _, status := range []string{"APPROVED", "accepted", "Aceptada", "ACEPTADO", "Aprobada", "acreditado", "1", "success"} {
+		if !isApprovedPaymentStatus(status) {
+			t.Fatalf("expected %q to be treated as approved", status)
+		}
+	}
+	for _, status := range []string{"PENDING", "DECLINED", "Rechazada", "ERROR", ""} {
+		if isApprovedPaymentStatus(status) {
+			t.Fatalf("did not expect %q to be treated as approved", status)
+		}
+	}
+}
+
+func TestLicenciaVisibleParaClientesRequiresActivo(t *testing.T) {
+	if licenciaVisibleParaClientes(nil) {
+		t.Fatal("nil license must not be visible")
+	}
+	if licenciaVisibleParaClientes(&dbpkg.Licencia{Activo: 0}) {
+		t.Fatal("inactive license must not be visible to clients")
+	}
+	if !licenciaVisibleParaClientes(&dbpkg.Licencia{Activo: 1}) {
+		t.Fatal("active license should be visible to clients")
+	}
+}
+
+func TestLicenciaDisponibleParaCheckoutAllowsInactiveAssignedRenewal(t *testing.T) {
+	if !licenciaDisponibleParaCheckout(&dbpkg.Licencia{Activo: 0, EmpresaID: 20}, 20) {
+		t.Fatal("inactive assigned company license should remain renewable by its company")
+	}
+	if licenciaDisponibleParaCheckout(&dbpkg.Licencia{Activo: 0, EmpresaID: 20}, 21) {
+		t.Fatal("inactive assigned company license must not be renewable by another company")
+	}
+	if licenciaDisponibleParaCheckout(&dbpkg.Licencia{Activo: 0, EmpresaID: 0}, 20) {
+		t.Fatal("inactive catalog license must remain hidden from checkout")
+	}
+}
+
+func TestParseLicenciaDiscountSpecCapsAtOriginalValue(t *testing.T) {
+	amount, label, ok := parseLicenciaDiscountSpec("120000", 50000)
+	if !ok {
+		t.Fatal("expected fixed discount value to be parsed")
+	}
+	if amount != 50000 {
+		t.Fatalf("expected discount to be capped at original value, got %.2f", amount)
+	}
+	if label != "120000" {
+		t.Fatalf("expected original label to be preserved, got %q", label)
+	}
+
+	amount, _, ok = parseLicenciaDiscountSpec("150%", 80000)
+	if !ok {
+		t.Fatal("expected percentage discount to be parsed")
+	}
+	if amount != 80000 {
+		t.Fatalf("expected percentage discount over 100%% to be capped at original value, got %.2f", amount)
+	}
+}
+
+func TestPaymentContextFromEpaycoPayloadReadsExtrasAndInvoice(t *testing.T) {
+	payload := map[string]interface{}{
+		"x_extra1": "12",
+		"x_extra2": "34",
+	}
+	licenciaID, empresaID, ok := paymentContextFromEpaycoPayload(payload)
+	if !ok || licenciaID != 12 || empresaID != 34 {
+		t.Fatalf("expected context from extras, got ok=%v licencia=%d empresa=%d", ok, licenciaID, empresaID)
+	}
+
+	payload = map[string]interface{}{
+		"x_id_invoice": "EPAYCO-LIC-56-EMP-78-123456",
+	}
+	licenciaID, empresaID, ok = paymentContextFromEpaycoPayload(payload)
+	if !ok || licenciaID != 56 || empresaID != 78 {
+		t.Fatalf("expected context from invoice, got ok=%v licencia=%d empresa=%d", ok, licenciaID, empresaID)
+	}
+}
+
+func TestStrongEpaycoApprovedReturnEvidenceRequiresGatewayAndInvoice(t *testing.T) {
+	payload := map[string]interface{}{
+		"x_transaction_id": "TX-123",
+		"x_ref_payco":      "987654321",
+		"x_id_invoice":     "EPAYCO-LIC-56-EMP-78-123456",
+		"x_cod_response":   "1",
+		"x_response":       "Aceptada",
+	}
+	if hasStrongEpaycoApprovedReturnEvidence(payload, false) {
+		t.Fatal("unsigned browser return must never be strong approval evidence")
+	}
+
+	delete(payload, "x_ref_payco")
+	if hasStrongEpaycoApprovedReturnEvidence(payload, false) {
+		t.Fatal("expected unsigned return without x_ref_payco to be rejected as weak evidence")
+	}
+
+	if !hasStrongEpaycoApprovedReturnEvidence(payload, true) {
+		t.Fatal("expected valid signed approved return to be accepted")
+	}
+}
+
+func TestResolveEpaycoClassicModeUsesClassicCredentials(t *testing.T) {
+	mode, source := resolveEpaycoClassicMode(nil, "123456", "a1c7200f0e2029d11b62bfd863422d5db10a8397")
+	if mode != "production" || source != "classic_credentials" {
+		t.Fatalf("expected production mode from classic credentials, got mode=%q source=%q", mode, source)
+	}
+}
+
+func TestEpaycoCheckoutCredentialReadinessSeparatesSmartAndClassicKeys(t *testing.T) {
+	if !epaycoSmartCheckoutReady("pub_prod_123", "prv_prod_456") {
+		t.Fatal("expected prefixed API credentials to enable Smart Checkout")
+	}
+	if epaycoSmartCheckoutReady("pub_prod_123", "checkout-secret-key") {
+		t.Fatal("checkout P_KEY must not be treated as Smart Checkout private_key API")
+	}
+	if !epaycoClassicCheckoutReady("9695", "a1c7200f0e2029d11b62bfd863422d5db10a8397") {
+		t.Fatal("expected customer id + P_KEY to enable classic checkout")
+	}
+	if !epaycoCustomCheckoutReady("491d6a0b6e992cf924edd8d3d088aff1", "9695", "a1c7200f0e2029d11b62bfd863422d5db10a8397") {
+		t.Fatal("expected public key + customer id + P_KEY to enable checkout.js fallback")
+	}
+	if epaycoCustomCheckoutReady("", "9695", "a1c7200f0e2029d11b62bfd863422d5db10a8397") {
+		t.Fatal("checkout.js fallback must require the public key")
+	}
+	if !epaycoCheckoutJSReady("491d6a0b6e992cf924edd8d3d088aff1") {
+		t.Fatal("current checkout.js fallback must be available with public key")
+	}
+	if epaycoCheckoutJSReady("clave-publica-sin-formato") {
+		t.Fatal("checkout.js fallback must reject malformed public keys")
+	}
+	if epaycoClassicCheckoutReady("9695", "clave-corta#") {
+		t.Fatal("short password-like values must not enable classic checkout")
+	}
+	if epaycoClassicCheckoutReady("pub_prod_123", "prv_prod_456") {
+		t.Fatal("API public/private keys must not be treated as classic checkout credentials")
+	}
+}
+
+func TestPaymentCredentialValueForReadinessIgnoresBrokenEncryptedValue(t *testing.T) {
+	if got := paymentCredentialValueForReadiness("epayco.private_key", "not-a-valid-ciphertext", true); got != "" {
+		t.Fatalf("expected broken encrypted credential to be ignored, got %q", got)
+	}
+	if got := paymentCredentialValueForReadiness("epayco.customer_id", " 9695 ", false); got != "9695" {
+		t.Fatalf("expected plaintext credential to be trimmed, got %q", got)
+	}
+}
+
+func TestWompiWebCheckoutReadyRequiresUsablePublicAndIntegrityKeys(t *testing.T) {
+	if !wompiWebCheckoutReady("pub_test_123", "test_integrity_123") {
+		t.Fatal("expected Wompi web checkout to be ready with public and integrity keys")
+	}
+	if wompiWebCheckoutReady("pub_test_123", "") {
+		t.Fatal("expected Wompi web checkout to require an integrity key")
+	}
+	if wompiWebCheckoutReady("encrypted-value-without-prefix", "test_integrity_123") {
+		t.Fatal("expected Wompi web checkout to require a real public key prefix")
+	}
+	if wompiWebCheckoutReady("pub_test_123", "prod_integrity_123") {
+		t.Fatal("expected Wompi web checkout to reject mixed environments")
+	}
+}
+
+func TestValidateEpaycoPaymentEvidenceBindsOrderAmountCurrencyAndEnvironment(t *testing.T) {
+	rec := &dbpkg.EpaycoPaymentRecord{
+		Reference:     sql.NullString{String: "EPAYCO-LIC-56-EMP-78-ABC", Valid: true},
+		TransactionID: sql.NullString{String: "EPAYCO-LIC-56-EMP-78-ABC", Valid: true},
+		RawPayload:    sql.NullString{String: `{"amount":5000,"currency":"COP"}`, Valid: true},
+	}
+	evidence := epaycoPaymentEvidence{
+		TransactionID: "TX-123", InvoiceRef: "EPAYCO-LIC-56-EMP-78-ABC", Status: "APPROVED",
+		Currency: "COP", Amount: 5000, Environment: "sandbox",
+	}
+	if err := validateEpaycoPaymentEvidence(rec, evidence, "sandbox", true); err != nil {
+		t.Fatalf("expected matching Epayco evidence: %v", err)
+	}
+	evidence.Amount = 4999
+	if err := validateEpaycoPaymentEvidence(rec, evidence, "sandbox", true); err == nil {
+		t.Fatal("expected amount mismatch to be rejected")
+	}
+	evidence.Amount = 5000
+	evidence.Currency = "USD"
+	if err := validateEpaycoPaymentEvidence(rec, evidence, "sandbox", true); err == nil {
+		t.Fatal("expected non-COP payment to be rejected")
+	}
+	evidence.Currency = "COP"
+	evidence.Environment = "production"
+	if err := validateEpaycoPaymentEvidence(rec, evidence, "sandbox", true); err == nil {
+		t.Fatal("expected environment mismatch to be rejected")
+	}
+}
+
+func TestEpaycoAuditPayloadOmitsSensitiveCustomerAndSignatureFields(t *testing.T) {
+	raw := epaycoAuditPayload(map[string]interface{}{
+		"x_transaction_id": "TX-123", "x_ref_payco": "987", "x_id_invoice": "INV-1",
+		"x_amount": "5000", "x_currency_code": "COP", "x_cod_response": "1",
+		"x_signature": "secret-signature", "x_customer_email": "buyer@example.com", "x_customer_document": "123456",
+	})
+	for _, forbidden := range []string{"secret-signature", "buyer@example.com", "123456", "customer_email", "customer_document"} {
+		if strings.Contains(raw, forbidden) {
+			t.Fatalf("sanitized audit payload leaked %q: %s", forbidden, raw)
+		}
+	}
+	if !strings.Contains(raw, `"amount":5000`) || !strings.Contains(raw, `"currency":"COP"`) {
+		t.Fatalf("sanitized audit payload omitted payment evidence: %s", raw)
+	}
+}
+
+func TestBuildWompiEventChecksumUsesOfficialDynamicPropertiesOrder(t *testing.T) {
+	obj := map[string]interface{}{
+		"data":      map[string]interface{}{"transaction": map[string]interface{}{"id": "tx-1", "status": "APPROVED", "amount_in_cents": float64(500000)}},
+		"timestamp": float64(1700000000),
+		"signature": map[string]interface{}{"properties": []interface{}{"transaction.id", "transaction.status", "transaction.amount_in_cents"}},
+	}
+	got, err := buildWompiEventChecksum(obj, "test_events_secret_123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedSource := "tx-1APPROVED5000001700000000test_events_secret_123"
+	sum := sha256.Sum256([]byte(expectedSource))
+	if got != hex.EncodeToString(sum[:]) {
+		t.Fatalf("checksum = %q", got)
+	}
+}
+
+func TestExtractWompiPaymentEvidencePreservesCOPAmount(t *testing.T) {
+	evidence := extractWompiPaymentEvidence(map[string]interface{}{
+		"environment": "test",
+		"data":        map[string]interface{}{"transaction": map[string]interface{}{"id": "tx-1", "reference": "LIC-1", "status": "APPROVED", "amount_in_cents": float64(125000), "currency": "COP"}},
+	})
+	if evidence.TransactionID != "tx-1" || evidence.Reference != "LIC-1" || evidence.AmountInCents != 125000 || evidence.Currency != "COP" || evidence.Environment != "test" {
+		t.Fatalf("unexpected evidence: %#v", evidence)
+	}
+}
+
+func TestDefaultLicenciaPaymentProviderEnabledFollowsConfigurationReadiness(t *testing.T) {
+	if !defaultLicenciaPaymentProviderEnabled(true) {
+		t.Fatal("configured license payment providers should be enabled by default")
+	}
+	if defaultLicenciaPaymentProviderEnabled(false) {
+		t.Fatal("unconfigured license payment providers should remain unavailable by default")
+	}
+}
+
+func TestSanitizeEpaycoClassicCheckoutFormMasksPrivateKey(t *testing.T) {
+	form := epaycoClassicCheckoutForm{
+		Method: "POST",
+		Action: "https://secure.payco.co/checkout.php",
+		Fields: map[string]string{
+			"p_key":        "private-key",
+			"p_id_invoice": "EPAYCO-LIC-1",
+		},
+	}
+
+	sanitized := sanitizeEpaycoClassicCheckoutForm(form)
+	if sanitized.Fields["p_key"] != "********" {
+		t.Fatalf("expected masked private key, got %q", sanitized.Fields["p_key"])
+	}
+	if sanitized.Fields["p_id_invoice"] != "EPAYCO-LIC-1" {
+		t.Fatalf("expected invoice to be preserved, got %q", sanitized.Fields["p_id_invoice"])
+	}
+	if form.Fields["p_key"] != "private-key" {
+		t.Fatalf("sanitize should not mutate original form, got %q", form.Fields["p_key"])
+	}
+}

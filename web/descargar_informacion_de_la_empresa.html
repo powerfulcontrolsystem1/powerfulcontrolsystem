@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Descargar Informacion de la Empresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body class="empresa-export-page">
+  <main class="empresa-export-minimal" aria-labelledby="empresaExportTitle">
+    <section class="empresa-export-panel">
+      <div class="empresa-export-brand">
+        <img src="/img/pwa-icon-192.png" alt="" width="44" height="44">
+        <div>
+          <span>Powerful Control System</span>
+          <strong>Exportacion de datos</strong>
+        </div>
+      </div>
+
+      <div class="empresa-export-copy">
+        <span class="empresa-export-eyebrow">Descargar informacion</span>
+        <h1 id="empresaExportTitle">Informacion de la empresa</h1>
+        <p id="empresaExportSubtitle">Elige backup completo o un formato de exportacion para descargar la informacion disponible de esta empresa.</p>
+      </div>
+
+      <form id="empresaExportForm" class="empresa-export-form">
+        <label class="form-label" for="empresaExportFormat">Formato de descarga</label>
+        <select id="empresaExportFormat" class="form-input">
+          <option value="backup">Backup completo (.json)</option>
+          <option value="xls">Excel empresarial (.xls)</option>
+          <option value="pdf">PDF ejecutivo (.pdf)</option>
+          <option value="csv">CSV para otros sistemas (.csv)</option>
+          <option value="json">JSON completo (.json)</option>
+          <option value="txt">Texto simple (.txt)</option>
+        </select>
+        <button id="empresaExportDownload" class="btn empresa-export-primary" type="submit">
+          <span aria-hidden="true">&#8595;</span>
+          Descargar
+        </button>
+      </form>
+
+      <p id="empresaExportStatus" class="empresa-export-status" aria-live="polite">Preparando descarga...</p>
+
+      <div class="empresa-export-footer-actions">
+        <button id="empresaExportBack" class="btn secondary empresa-export-back" type="button">
+          Regresar a seleccionar empresas
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/descargar_informacion_de_la_empresa.js"></script>
+</body>
+</html>

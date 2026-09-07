@@ -1,0 +1,260 @@
+name: Professional CI
+
+on:
+  push:
+    branches:
+      - main
+      - "security/**"
+      - "fix/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: professional-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Preflight, audits and Docker config
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          # El proyecto conserva compatibilidad de lenguaje con Go 1.20, pero
+          # el analisis de vulnerabilidades debe ejecutarse con una biblioteca
+          # estandar corregida por CVE-2026-46600.
+          go-version: "1.26.6"
+          cache-dependency-path: backend/go.sum
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22"
+
+      - name: Setup Go vulnerability scanner
+        working-directory: backend
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
+
+      - name: Documentation validator tests
+        run: node --test tools/docs_catalog.test.mjs
+
+      - name: Documentation catalog and maintained links
+        run: node tools/docs_catalog.mjs --check
+
+      - name: Professional preflight
+        shell: pwsh
+        run: ./scripts/profesional_preflight.ps1 -Full -SkipDockerConfig -SkipOpenAPI
+
+      - name: Git diff check
+        run: git diff --check
+
+      - name: Go test and vet
+        working-directory: backend
+        run: |
+          go mod verify
+          go test ./...
+          go vet ./...
+
+      - name: Structural code quality gate
+        working-directory: backend
+        run: go run ./tools/code_quality_audit -root . -baseline ../documentos/calidad/code_quality_baseline.json -out ../documentos/reportes_profesionales/code_quality.json
+
+      - name: Go race detector
+        timeout-minutes: 12
+        working-directory: backend
+        run: go test -race -timeout 10m ./...
+
+      - name: Go vulnerability scan
+        working-directory: backend
+        run: govulncheck -show verbose ./...
+
+      - name: Go static security scan
+        working-directory: backend
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.22.7
+          gosec ./...
+
+      - name: Security audit
+        run: node tools/security_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Permissions and licenses audit
+        run: node tools/permissions_license_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Generate and verify OpenAPI inventory
+        run: |
+          node tools/openapi_inventory.mjs --out documentos/api/openapi.generated.yaml
+          git diff --check documentos/api/openapi.generated.yaml
+
+      - name: Docker production config
+        run: docker compose --env-file deploy/.env.platform.example -f deploy/docker-compose.platform.yml config --quiet
+
+      - name: Docker staging config
+        run: docker compose --env-file deploy/.env.staging.example -f deploy/docker-compose.platform.yml -f deploy/docker-compose.staging.yml config --quiet
+
+      - name: Deployment pipeline contract
+        run: node tools/deploy_pipeline_contract.mjs
+
+      - name: Docker monitoring config
+        run: docker compose --env-file deploy/monitoring/.env.monitoring.example -f deploy/monitoring/docker-compose.monitoring.yml config --quiet
+
+      - name: Observability inventory
+        run: node tools/observability_report.mjs --out documentos/reportes_profesionales
+
+      - name: Business observability and capacity
+        run: node tools/business_observability_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Migration audit
+        run: node tools/migration_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Critical module QA contract
+        run: node tools/qa_module_contracts.mjs --out documentos/reportes_profesionales
+
+      - name: Role QA matrix
+        run: node tools/qa_roles_matrix.mjs --out documentos/reportes_profesionales
+
+      - name: Payment and receipts matrix
+        run: node tools/payment_matrix_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Real payment contract
+        run: node tools/payment_real_matrix_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Support center audit
+        run: node tools/support_center_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Staging anonymization audit
+        run: node tools/staging_anonymization_audit.mjs --out documentos/reportes_profesionales
+
+      - name: SLO/SLA audit
+        run: node tools/slo_sla_audit.mjs --out documentos/reportes_profesionales
+
+      - name: VPS hardening contract
+        run: node tools/vps_hardening_audit.mjs --out documentos/reportes_profesionales
+
+      - name: UX consistency audit
+        run: node tools/ux_consistency_audit.mjs --out documentos/reportes_profesionales
+
+      - name: CSP inline regression gate
+        run: node tools/qa_csp_inline_inventory.mjs web documentos/reportes_profesionales/csp-inline documentos/seguridad/csp_inline_baseline.json
+
+      - name: Documentation normalization audit
+        run: node tools/docs_normalization_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Upload professional reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: professional-reports
+          path: documentos/reportes_profesionales/
+          if-no-files-found: ignore
+
+  supply-chain:
+    name: Secrets, dependencies, containers and SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: "1.26.6"
+          cache-dependency-path: backend/go.sum
+
+      - name: Secret scan
+        # El historial compartido no se reescribe en este PR. Este control
+        # bloquea secretos presentes en el arbol que realmente se propone.
+        run: |
+          mkdir -p security-artifacts
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 detect --source=/repo --no-git --redact --no-banner --report-format json --report-path /repo/security-artifacts/gitleaks.json
+
+      - name: Filesystem dependency and IaC scan
+        run: |
+          docker run --rm -v "$PWD:/repo" aquasec/trivy:0.72.0 fs --exit-code 0 --severity HIGH,CRITICAL --scanners vuln,misconfig,secret --format sarif --output /repo/security-artifacts/trivy-filesystem.sarif /repo
+
+      - name: Publish filesystem SARIF
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
+        with:
+          sarif_file: security-artifacts/trivy-filesystem.sarif
+          category: trivy-filesystem
+
+      - name: Gate filesystem findings
+        run: jq -e '[.runs[].results[]?] | length == 0' security-artifacts/trivy-filesystem.sarif
+
+      - name: Build modified runtime images
+        timeout-minutes: 20
+        run: |
+          docker build -f deploy/docker/backend.Dockerfile -t pcs-backend:ci .
+          docker build -f deploy/docker/frontend.Dockerfile -t pcs-frontend:ci .
+          mkdir -p /tmp/pcs-images
+          docker save pcs-backend:ci -o /tmp/pcs-images/backend.tar
+          docker save pcs-frontend:ci -o /tmp/pcs-images/frontend.tar
+
+      - name: Container image scan
+        run: |
+          docker run --rm -v /tmp/pcs-images:/images:ro -v "$PWD:/repo" aquasec/trivy:0.72.0 image --input /images/backend.tar --exit-code 0 --severity HIGH,CRITICAL --format sarif --output /repo/security-artifacts/trivy-backend.sarif
+          docker run --rm -v /tmp/pcs-images:/images:ro -v "$PWD:/repo" aquasec/trivy:0.72.0 image --input /images/frontend.tar --exit-code 0 --severity HIGH,CRITICAL --format sarif --output /repo/security-artifacts/trivy-frontend.sarif
+
+      - name: Publish backend image SARIF
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
+        with:
+          sarif_file: security-artifacts/trivy-backend.sarif
+          category: trivy-backend-image
+
+      - name: Publish frontend image SARIF
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
+        with:
+          sarif_file: security-artifacts/trivy-frontend.sarif
+          category: trivy-frontend-image
+
+      - name: Gate container image findings
+        run: |
+          jq -e '[.runs[].results[]?] | length == 0' security-artifacts/trivy-backend.sarif
+          jq -e '[.runs[].results[]?] | length == 0' security-artifacts/trivy-frontend.sarif
+
+      - name: Generate SBOM
+        run: docker run --rm -v "$PWD:/repo" anchore/syft:v1.46.0 dir:/repo -o cyclonedx-json=/repo/security-artifacts/sbom.cdx.json
+
+      - name: Scan SBOM dependencies
+        run: docker run --rm -v "$PWD:/repo" anchore/grype:v0.115.0 sbom:/repo/security-artifacts/sbom.cdx.json --fail-on high
+
+      - name: Go license inventory
+        working-directory: backend
+        run: |
+          go install github.com/google/go-licenses@v1.6.0
+          go-licenses report ./... > ../security-artifacts/go-licenses.csv
+
+      - name: Working tree remains clean
+        run: git diff --exit-code
+
+      - name: Upload security artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: security-artifacts
+          path: security-artifacts/
+          if-no-files-found: warn

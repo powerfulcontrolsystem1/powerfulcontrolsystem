@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gestion documental - Menu</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="admin-empresa-shell empresa-submenu-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <p class="admin-sidebar-kicker">Gobierno documental</p>
+      <h2>Gestion documental</h2>
+      <p class="admin-sidebar-summary">Radicacion, expedientes, aprobaciones, evidencias, retencion y auditoria documental por empresa.</p>
+      <ul class="nav" id="gestionDocumentalSidebarNav">
+        <li><a href="/administrar_empresa/gestion_documental.html#mcAgenda" target="gestionDocumentalContentFrame" data-submenu-link><img class="icon" src="/img/analytics-color.svg" alt=""> Tablero y alertas</a></li>
+        <li><a href="/administrar_empresa/gestion_documental.html#mcForm" target="gestionDocumentalContentFrame" data-submenu-link><img class="icon" src="/img/report.svg" alt=""> Radicacion</a></li>
+        <li><a href="/administrar_empresa/gestion_documental.html#mcTable" target="gestionDocumentalContentFrame" data-submenu-link><img class="icon" src="/img/network-color.svg" alt=""> Expedientes</a></li>
+        <li><a href="/administrar_empresa/gestion_documental.html#mcExpediente" target="gestionDocumentalContentFrame" data-submenu-link><img class="icon" src="/img/company-briefcase-color.svg" alt=""> Expediente 360</a></li>
+        <li><a href="/administrar_empresa/gestion_documental.html#mcApprovalForm" target="gestionDocumentalContentFrame" data-submenu-link><img class="icon" src="/img/shield-license-color.svg" alt=""> Aprobaciones</a></li>
+        <li><a href="/administrar_empresa/gestion_documental.html#mcEvidenceForm" target="gestionDocumentalContentFrame" data-submenu-link><img class="icon" src="/img/excel.svg" alt=""> Evidencias</a></li>
+        <li><a href="/administrar_empresa/gestion_documental.html#mcTaskForm" target="gestionDocumentalContentFrame" data-submenu-link><img class="icon" src="/img/customer.svg" alt=""> Tareas</a></li>
+        <li><a href="/administrar_empresa/gestion_documental.html#mcSLA" target="gestionDocumentalContentFrame" data-submenu-link><img class="icon" src="/img/settings-color.svg" alt=""> Retencion y SLA</a></li>
+        <li><a href="/administrar_empresa/gestion_documental.html#mcRiesgo" target="gestionDocumentalContentFrame" data-submenu-link><img class="icon" src="/img/shield-license-color.svg" alt=""> Riesgo y auditoria</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="gestionDocumentalSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <iframe
+        name="gestionDocumentalContentFrame"
+        id="gestionDocumentalContentFrame"
+        src="/administrar_empresa/gestion_documental.html#mcAgenda"
+        title="Contenido de gestion documental"
+        class="admin-empresa-frame"
+        data-submenu-frame></iframe>
+    </main>
+  </div>
+
+  <script src="/js/empresa_submenu_shell.js" data-version="20260508-gestion-documental-menu"></script>
+  <script src="/menu.js"></script>
+</body>
+</html>

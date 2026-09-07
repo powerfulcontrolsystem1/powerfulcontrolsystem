@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Finanzas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/ai_button_icons.js?v=20260607"></script>
+  <style>
+    html,body{min-height:100%;height:auto}
+    body.admin-empresa-shell{overflow:auto}
+    .admin-layout{min-height:100vh}
+    .admin-content{min-height:100vh;overflow:visible}
+    .fin-center{display:grid;grid-template-rows:minmax(640px,1fr);gap:12px;min-height:100vh}
+    .fin-center-overview{display:grid;grid-template-columns:1fr;gap:10px;padding:14px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .fin-center-title{display:grid;gap:4px}
+    .fin-center-title h1{margin:0;color:var(--text);font-size:1.15rem;line-height:1.15}
+    .fin-center-title p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.35}
+    .fin-center-access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .fin-center-access-card{display:grid;gap:7px;align-content:start;min-height:118px;padding:13px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);text-decoration:none;box-shadow:0 12px 24px rgba(15,23,42,.08)}
+    .fin-center-access-card:hover{border-color:var(--accent);box-shadow:0 16px 30px rgba(15,23,42,.13);transform:translateY(-1px)}
+    .fin-center-access-card span{color:var(--muted);font-size:.82rem;line-height:1.35}
+    .fin-center-access-card strong{display:flex;align-items:center;gap:8px;color:var(--text);font-size:.96rem;line-height:1.2}
+    .fin-center-access-card em{font-style:normal;color:var(--accent);font-size:.82rem;font-weight:850}
+    .fin-center-access-card .icon{width:21px;height:21px;flex:0 0 21px}
+    .fin-center-health{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 14px 12px;background:var(--surface)}
+    .fin-center-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px}
+    .fin-center-metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase}
+    .fin-center-metric strong{display:block;color:var(--text);font-size:1rem;margin-top:4px}
+    .fin-center-frame-wrap{position:relative;min-height:640px}
+    .fin-center-loading{position:absolute;right:18px;top:12px;z-index:2;display:none;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);box-shadow:0 10px 22px rgba(15,23,42,.12)}
+    .fin-center-loading.is-visible{display:block}
+    @media(max-width:920px){.fin-center-overview{grid-template-columns:1fr}.fin-center-health{grid-template-columns:repeat(2,minmax(0,1fr))}.fin-center-access-grid{grid-template-columns:1fr}}
+    @media(max-width:620px){.fin-center-health{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="admin-empresa-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <h2>Finanzas</h2>
+      <p class="admin-sidebar-kicker">Finanzas, contabilidad y cumplimiento</p>
+      <ul class="nav" id="finanzasSidebarNav">
+        <li><a id="linkFinanzasMain" href="/administrar_empresa/finanzas.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas operativas</a></li>
+        <li hidden><a id="linkRentaIA" href="/administrar_empresa/renta_ia.html" target="finanzasContentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Renta IA</a></li>
+        <li hidden><a id="linkCentroIAEmpresarial" href="/administrar_empresa/centro_ia_empresarial.html" target="finanzasContentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Centro IA empresarial</a></li>
+        <li><a id="linkSuiteContador" href="/administrar_empresa/suite_contador.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Suite contador</a></li>
+        <li><a id="linkNIIF" href="/administrar_empresa/niif.html" target="finanzasContentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">NIIF</a></li>
+        <li><a id="linkContabilidadColombia" href="/administrar_empresa/contabilidad_colombia.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Contabilidad Colombia</a></li>
+        <li><a id="linkCentrosCostoMenu" href="/administrar_empresa/centros_costo.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Centros de costo</a></li>
+        <li><a id="linkCierreFiscalMenu" href="/administrar_empresa/cierre_fiscal.html" target="finanzasContentFrame"><img class="icon" src="/img/shield-security-color.svg" alt="">Cierre fiscal</a></li>
+        <li><a id="linkActivosFijosNIIFMenu" href="/administrar_empresa/activos_fijos_niif_fiscal.html" target="finanzasContentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Activos fijos NIIF/Fiscal</a></li>
+        <li><a id="linkDeclaracionesTributariasMenu" href="/administrar_empresa/declaraciones_tributarias.html" target="finanzasContentFrame"><img class="icon" src="/img/taxes.svg" alt="">Declaraciones tributarias</a></li>
+        <li><a id="linkImpuestos" href="/administrar_empresa/impuestos.html" target="finanzasContentFrame"><img class="icon" src="/img/taxes.svg" alt="">Impuestos</a></li>
+        <li><a id="linkTesoreriaPresupuesto" href="/administrar_empresa/tesoreria_presupuesto.html" target="finanzasContentFrame"><img class="icon" src="/img/money.svg" alt="">Tesorería y presupuesto</a></li>
+        <li><a id="linkBancosPagos" href="/administrar_empresa/bancos_pagos.html" target="finanzasContentFrame"><img class="icon" src="/img/money.svg" alt="">Bancos y pagos</a></li>
+        <li><a id="linkBrebQR" href="/administrar_empresa/finanzas_breb_qr.html" target="finanzasContentFrame"><img class="icon" src="/img/money.svg" alt="">Pagos Bre-B QR</a></li>
+        <li><a id="linkEgresosIngresos" href="/administrar_empresa/egresos_ingresos_menu.html" target="finanzasContentFrame"><img class="icon" src="/img/money.svg" alt="">Egresos e ingresos</a></li>
+        <li><a id="linkCorteCaja" href="/administrar_empresa/corte_de_caja.html" target="finanzasContentFrame"><img class="icon" src="/img/money.svg" alt="">Corte de caja</a></li>
+        <li><a id="linkCreditosMenu" href="/administrar_empresa/creditos_menu.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Creditos</a></li>
+        <li><a id="linkCobranzaMenu" href="/administrar_empresa/cobranza.html" target="finanzasContentFrame"><img class="icon" src="/img/money.svg" alt="">Gestion de cobranza</a></li>
+        <li><a id="linkCumplimientoKYC" href="/administrar_empresa/cumplimiento_kyc.html" target="finanzasContentFrame"><img class="icon" src="/img/shield-security.svg" alt="">KYC/KYB y LAFT</a></li>
+        <li><a id="linkPortalTercerosCertificadosMenu" href="/administrar_empresa/portal_terceros_certificados.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Certificados tributarios</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="finanzasSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <section class="fin-center">
+        <div class="fin-center-frame-wrap">
+          <div id="finCenterLoading" class="fin-center-loading">Cargando módulo...</div>
+          <iframe name="finanzasContentFrame" id="finanzasContentFrame" src="/administrar_empresa/finanzas.html" title="Contenido financiero y contable" class="admin-empresa-frame"></iframe>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/js/administrar_empresa.js"></script>
+  <script src="/menu.js"></script>
+  <script>
+    (function(){
+      var frame=document.getElementById("finanzasContentFrame");
+      var loading=document.getElementById("finCenterLoading");
+      var creditos=document.getElementById("linkCreditosTarjeta");
+      function empresaId(){
+        try{
+          var parentID=parent&&parent.__resolveEmpresaIdContext&&parent.__resolveEmpresaIdContext();
+          if(parentID)return parentID;
+        }catch(_){}
+        try{
+          var fromUrl=new URLSearchParams(location.search).get("empresa_id");
+          if(fromUrl)return fromUrl;
+        }catch(_){}
+        try{return localStorage.getItem("active_empresa_id")||"";}catch(_){return "";}
+      }
+      function withEmpresa(href){
+        var id=empresaId();
+        var url=new URL(href,location.origin);
+        if(id)url.searchParams.set("empresa_id",id);
+        return url.pathname+url.search;
+      }
+      frame.addEventListener("load",function(){loading.classList.remove("is-visible");});
+      if(creditos){
+        creditos.addEventListener("click",function(ev){
+          ev.preventDefault();
+          loading.classList.add("is-visible");
+          frame.src=withEmpresa(creditos.getAttribute("href"));
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

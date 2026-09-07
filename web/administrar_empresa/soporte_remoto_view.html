@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Visor remoto</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="page-header">
+        <h1>Visor de sesión remota</h1>
+      </div>
+      <p class="form-help">Este visor valida <strong>empresa_id</strong>, <strong>codigo_sesion</strong> y <strong>token</strong>. Si la sesión está aprobada/activa, se carga la URL embebible del dispositivo.</p>
+      <div id="srvMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form">
+      <h2>Datos de sesión</h2>
+      <div id="srvMeta">Cargando...</div>
+    </section>
+
+    <section class="card form">
+      <h2>Escritorio remoto</h2>
+      <iframe id="srvFrame" title="Escritorio remoto" class="iframe-remote" src="about:blank"></iframe>
+    </section>
+  </div>
+
+  <script src="/administrar_empresa/soporte_remoto_view.js?v=20260813-p110-csp"></script>
+</body>
+</html>

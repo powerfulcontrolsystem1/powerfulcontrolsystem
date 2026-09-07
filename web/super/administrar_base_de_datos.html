@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar base de datos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .db-shell { display: grid; gap: 12px; }
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at right top, color-mix(in srgb, var(--accent) 22%, transparent 78%), transparent 50%),
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--surface-soft) 84%, var(--surface) 16%),
+          color-mix(in srgb, var(--surface) 88%, var(--bg) 12%)
+        );
+    }
+    .hero-card .toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .hero-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-weight: 800;
+      font-size: 0.86rem;
+      border: 1px solid transparent;
+    }
+    .status-healthy { background: color-mix(in srgb, var(--success) 16%, transparent 84%); color: color-mix(in srgb, var(--success) 72%, var(--text) 28%); border-color: color-mix(in srgb, var(--success) 44%, transparent 56%); }
+    .status-warning { background: color-mix(in srgb, var(--accent-yellow) 18%, transparent 82%); color: color-mix(in srgb, var(--accent-yellow) 72%, var(--text) 28%); border-color: color-mix(in srgb, var(--accent-yellow) 44%, transparent 56%); }
+    .status-critical { background: color-mix(in srgb, var(--danger) 16%, transparent 84%); color: color-mix(in srgb, var(--danger) 72%, var(--text) 28%); border-color: color-mix(in srgb, var(--danger) 44%, transparent 56%); }
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      color: var(--text);
+      border: 1px solid var(--border);
+      background: var(--content-soft-bg);
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+    }
+    .kpi-card {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 78%, transparent 22%), color-mix(in srgb, var(--surface) 86%, transparent 14%));
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent 94%);
+    }
+    .kpi-label { color: var(--muted); font-size: 0.82rem; font-weight: 700; }
+    .kpi-value { font-size: 1.28rem; font-weight: 800; margin-top: 4px; }
+    .kpi-sub { color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 12px;
+    }
+    .table-wrap { overflow-x: auto; }
+    .table-wide { min-width: 980px; }
+    .table-small { min-width: 760px; }
+    .table td code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--accent) 70%, var(--text) 30%);
+      background: var(--content-soft-bg);
+      border: 1px solid var(--content-soft-border);
+      border-radius: 6px;
+      padding: 3px 6px;
+      display: inline-block;
+      max-width: 540px;
+      white-space: normal;
+      word-break: break-word;
+    }
+    .rec-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .rec-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: start;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: var(--content-soft-bg);
+    }
+    .rec-tag {
+      font-size: 0.72rem;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .rec-critical { background: color-mix(in srgb, var(--danger) 16%, transparent 84%); color: color-mix(in srgb, var(--danger) 72%, var(--text) 28%); border: 1px solid color-mix(in srgb, var(--danger) 42%, transparent 58%); }
+    .rec-warning { background: color-mix(in srgb, var(--accent-yellow) 16%, transparent 84%); color: color-mix(in srgb, var(--accent-yellow) 72%, var(--text) 28%); border: 1px solid color-mix(in srgb, var(--accent-yellow) 42%, transparent 58%); }
+    .rec-info { background: color-mix(in srgb, var(--accent) 14%, transparent 86%); color: color-mix(in srgb, var(--accent) 72%, var(--text) 28%); border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent 58%); }
+    .error-banner {
+      display: none;
+      border: 1px solid color-mix(in srgb, var(--danger) 42%, transparent 58%);
+      background: color-mix(in srgb, var(--danger) 14%, var(--surface) 86%);
+      color: color-mix(in srgb, var(--danger) 32%, var(--text) 68%);
+      font-weight: 700;
+    }
+    .error-banner.show { display: block; }
+    .muted { color: var(--muted); }
+    .inline-status { color: var(--muted); font-size: 0.88rem; font-weight: 700; }
+    .recovery-controls {
+      display: grid;
+      grid-template-columns: minmax(150px, 0.35fr) minmax(280px, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+      margin-top: 12px;
+    }
+    .recovery-field { display: grid; gap: 5px; }
+    .recovery-field label { color: var(--muted); font-size: 0.82rem; font-weight: 800; }
+    .recovery-field input,
+    .recovery-field textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 9px 10px;
+    }
+    .recovery-field textarea { min-height: 72px; resize: vertical; }
+    .recovery-confirm-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+      margin-top: 10px;
+    }
+    .recovery-warning {
+      margin-top: 10px;
+      padding: 9px 10px;
+      border: 1px solid color-mix(in srgb, var(--accent-yellow) 45%, transparent 55%);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent-yellow) 12%, transparent 88%);
+      color: var(--text);
+      font-size: 0.86rem;
+    }
+    @media (max-width: 720px) {
+      .db-shell { gap: 10px; }
+      .hero-meta,
+      .chart-grid,
+      .rec-item {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .table-wide { min-width: 640px; }
+      .table-small { min-width: 560px; }
+      .table td code { max-width: 240px; }
+      .hero-card .toolbar { justify-content: stretch; }
+      .hero-card .toolbar .btn { flex: 1 1 auto; justify-content: center; }
+      .recovery-controls,
+      .recovery-confirm-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container db-shell">
+    <section class="card hero-card">
+      <div class="page-header">
+        <div>
+          <h1>Administrar base de datos PostgreSQL</h1>
+          <p class="muted" id="generatedAtText">Ultima lectura: pendiente</p>
+        </div>
+        <div class="toolbar">
+          <button id="refreshBtn" class="btn">Actualizar</button>
+          <button id="toggleAutoBtn" class="btn secondary">Auto refresco: ON</button>
+          <button id="exportBtn" class="btn add">Exportar JSON</button>
+        </div>
+      </div>
+      <div class="hero-meta">
+        <span id="healthBadge" class="status-badge status-healthy">Salud: -</span>
+        <span id="enginePill" class="meta-pill">Motor: PostgreSQL</span>
+        <span id="versionPill" class="meta-pill">Version: -</span>
+        <span id="uptimePill" class="meta-pill">Uptime: -</span>
+      </div>
+    </section>
+
+    <section id="errorBanner" class="card error-banner"></section>
+
+    <section class="card">
+      <div class="page-header">
+        <h2>Indicadores del motor</h2>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi-card">
+          <div class="kpi-label">Conexiones maximas</div>
+          <div id="kpiMaxConnections" class="kpi-value">-</div>
+          <div class="kpi-sub">Capacidad total reportada</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Conexiones activas</div>
+          <div id="kpiActiveConnections" class="kpi-value">-</div>
+          <div id="kpiTotalConnections" class="kpi-sub">Total: -</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Uso de conexiones</div>
+          <div id="kpiConnectionUsage" class="kpi-value">-</div>
+          <div class="kpi-sub">Sobre max_connections</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Cache hit ratio global</div>
+          <div id="kpiCacheHit" class="kpi-value">-</div>
+          <div class="kpi-sub">Lecturas en cache vs disco</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Conexiones en espera</div>
+          <div id="kpiWaiting" class="kpi-value">-</div>
+          <div class="kpi-sub">wait_event en ejecucion</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Conexiones bloqueadas</div>
+          <div id="kpiBlocked" class="kpi-value">-</div>
+          <div class="kpi-sub">Esperas por locks</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Idle en transacción</div>
+          <div id="kpiIdleTx" class="kpi-value">-</div>
+          <div class="kpi-sub">Riesgo de locks persistentes</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-label">Tamano total monitoreado</div>
+          <div id="kpiTotalSize" class="kpi-value">-</div>
+          <div class="kpi-sub">Suma de bases visibles</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="chart-grid">
+      <article class="card">
+        <div class="page-header">
+          <h2>Tendencia uso de conexiones</h2>
+        </div>
+        <canvas id="connectionsChart" height="120"></canvas>
+      </article>
+      <article class="card">
+        <div class="page-header">
+          <h2>Tendencia cache hit ratio</h2>
+        </div>
+        <canvas id="cacheChart" height="120"></canvas>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="page-header">
+        <h2>Detalle por base de datos</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table table-wide" id="dbStatsTable">
+          <thead>
+            <tr>
+              <th>Contexto</th>
+              <th>Base</th>
+              <th>Tamano</th>
+              <th>Conn (A/I/E/B)</th>
+              <th>Cache %</th>
+              <th>Commit</th>
+              <th>Rollback %</th>
+              <th>Temp files</th>
+              <th>Deadlocks</th>
+              <th>Tiempo IO (ms)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="page-header">
+        <div>
+          <h2>Espacio consumido por empresa</h2>
+          <p class="muted">Carga una estimación del espacio usado por cada empresa dentro de la base operativa compartida y ordénala de mayor a menor.</p>
+        </div>
+        <div class="toolbar">
+          <button id="loadEmpresasStorageBtn" class="btn add">Cargar Empresas</button>
+        </div>
+      </div>
+      <div id="empresaStorageStatus" class="inline-status">Pendiente de cargar.</div>
+      <div class="table-wrap" >
+        <table class="table table-wide" id="empresaStorageTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Empresa</th>
+              <th>NIT</th>
+              <th>Estado</th>
+              <th>Tamano total</th>
+              <th>MB</th>
+              <th>Cuota DB</th>
+              <th>Uso cuota</th>
+              <th>Estado cuota</th>
+              <th>Filas estimadas</th>
+              <th>Tablas con datos</th>
+              <th>Tabla mayor</th>
+              <th>Tamano tabla mayor</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="page-header">
+        <h2>Consultas activas mas largas</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table table-small" id="longQueriesTable">
+          <thead>
+            <tr>
+              <th>PID</th>
+              <th>Usuario</th>
+              <th>Estado</th>
+              <th>Espera</th>
+              <th>Segundos</th>
+              <th>Consulta</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="outboxRecoveryTitle">
+      <div class="page-header">
+        <div>
+          <h2 id="outboxRecoveryTitle">Recuperación controlada de eventos CxP</h2>
+          <p class="muted">Vista previa limitada a una empresa y al tema de pagos de cartera de proveedores. Solo permite reactivar eventos en estado <code>dead</code>.</p>
+        </div>
+      </div>
+      <div class="recovery-warning">
+        Esta operación no repite el pago. Reactiva únicamente su procesamiento contable asíncrono e idempotente. Selecciona eventos concretos, explica la razón y escribe la confirmación exacta.
+      </div>
+      <div class="recovery-controls">
+        <div class="recovery-field">
+          <label for="outboxEmpresaID">ID de empresa</label>
+          <input id="outboxEmpresaID" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 12">
+        </div>
+        <div class="recovery-field">
+          <label for="outboxTopic">Tema permitido</label>
+          <input id="outboxTopic" type="text" value="cuentas_por_pagar.pago_registrado" readonly>
+        </div>
+        <button id="previewOutboxBtn" class="btn secondary" type="button">Vista previa</button>
+      </div>
+      <div id="outboxRecoveryStatus" class="inline-status" role="status" aria-live="polite">Ingrese una empresa para consultar eventos fallidos.</div>
+      <div class="table-wrap">
+        <table class="table table-wide" id="outboxRecoveryTable">
+          <thead>
+            <tr>
+              <th>Seleccionar</th>
+              <th>Evento</th>
+              <th>Pago</th>
+              <th>Cuenta CxP</th>
+              <th>Movimiento</th>
+              <th>Monto</th>
+              <th>Intentos</th>
+              <th>Fecha dead</th>
+              <th>Último error</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="9">Sin consulta.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="recovery-field">
+        <label for="outboxRecoveryReason">Razón operativa (mínimo 10 caracteres)</label>
+        <textarea id="outboxRecoveryReason" maxlength="500" placeholder="Ej. El manejador CxP ya fue desplegado y se verificó su idempotencia."></textarea>
+      </div>
+      <div class="recovery-confirm-grid">
+        <div class="recovery-field">
+          <label for="outboxRecoveryConfirmation">Confirmación exacta: <code>REACTIVAR EVENTOS CXP</code></label>
+          <input id="outboxRecoveryConfirmation" type="text" autocomplete="off" spellcheck="false">
+        </div>
+        <button id="executeOutboxRecoveryBtn" class="btn" type="button" disabled>Reactivar seleccionados</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="page-header">
+        <h2>Recomendaciones automaticas</h2>
+      </div>
+      <ul id="recommendationsList" class="rec-list"></ul>
+    </section>
+  </div>
+
+  <script>
+    const API_URL = '/super/api/postgres/performance'
+    const EMPRESAS_STORAGE_API_URL = '/super/api/postgres/performance?action=empresas_storage'
+    const OUTBOX_RECOVERY_API_URL = '/super/api/outbox/recovery'
+    const OUTBOX_CXP_TOPIC = 'cuentas_por_pagar.pago_registrado'
+    const OUTBOX_RECOVERY_CONFIRMATION = 'REACTIVAR EVENTOS CXP'
+    const HISTORY_MAX_POINTS = 72
+    const AUTO_REFRESH_MS = 15000
+    let autoRefreshEnabled = true
+    let autoRefreshHandle = null
+    let lastPayload = null
+
+    const chartHistory = {
+      labels: [],
+      connectionUsage: [],
+      cacheHit: []
+    }
+
+    let connectionsChart = null
+    let cacheChart = null
+
+    function formatNumber(value) {
+      const n = Number(value)
+      if (!Number.isFinite(n)) return '-'
+      return new Intl.NumberFormat('es-CO').format(n)
+    }
+
+    function formatPercent(value) {
+      const n = Number(value)
+      if (!Number.isFinite(n)) return '-'
+      return n.toFixed(2) + '%'
+    }
+
+    function formatBytes(value) {
+      const n = Number(value)
+      if (!Number.isFinite(n) || n < 0) return '-'
+      if (n < 1024) return n + ' B'
+      const units = ['KB', 'MB', 'GB', 'TB']
+      let amount = n
+      let unitIndex = -1
+      while (amount >= 1024 && unitIndex < units.length - 1) {
+        amount = amount / 1024
+        unitIndex += 1
+      }
+      return amount.toFixed(2) + ' ' + units[unitIndex]
+    }
+
+    function formatDurationSeconds(totalSeconds) {
+      const n = Number(totalSeconds)
+      if (!Number.isFinite(n) || n < 0) return '-'
+      const seconds = Math.floor(n)
+      const days = Math.floor(seconds / 86400)
+      const hours = Math.floor((seconds % 86400) / 3600)
+      const minutes = Math.floor((seconds % 3600) / 60)
+      if (days > 0) return days + 'd ' + hours + 'h '
+      if (hours > 0) return hours + 'h ' + minutes + 'm'
+      return minutes + 'm'
+    }
+
+    function escapeHtml(raw) {
+      return String(raw || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;')
+    }
+
+    function severityClass(severity) {
+      const key = String(severity || 'info').toLowerCase()
+      if (key === 'critical') return 'rec-critical'
+      if (key === 'warning') return 'rec-warning'
+      return 'rec-info'
+    }
+
+    function healthClass(health) {
+      const key = String(health || '').toLowerCase()
+      if (key === 'critical') return 'status-critical'
+      if (key === 'warning') return 'status-warning'
+      return 'status-healthy'
+    }
+
+    function sumDatabaseBytes(databases) {
+      if (!Array.isArray(databases)) return 0
+      return databases.reduce(function (acc, db) {
+        return acc + (Number(db && db.size_bytes) || 0)
+      }, 0)
+    }
+
+    function renderHeader(payload) {
+      const generatedText = payload && payload.generated_at ? new Date(payload.generated_at).toLocaleString('es-CO') : 'pendiente'
+      document.getElementById('generatedAtText').textContent = 'Ultima lectura: ' + generatedText
+
+      const health = (payload && payload.health) || 'healthy'
+      const healthBadge = document.getElementById('healthBadge')
+      healthBadge.className = 'status-badge ' + healthClass(health)
+      healthBadge.textContent = 'Salud: ' + String(health).toUpperCase()
+
+      const cluster = (payload && payload.cluster) || {}
+      const versionLabel = cluster.version_label || 'N/D'
+      const uptimeText = formatDurationSeconds(cluster.uptime_seconds)
+      document.getElementById('versionPill').textContent = 'Version: ' + versionLabel
+      document.getElementById('uptimePill').textContent = 'Uptime: ' + uptimeText
+    }
+
+    function renderKpis(payload) {
+      const cluster = (payload && payload.cluster) || {}
+      document.getElementById('kpiMaxConnections').textContent = formatNumber(cluster.max_connections)
+      document.getElementById('kpiActiveConnections').textContent = formatNumber(cluster.active_connections)
+      document.getElementById('kpiTotalConnections').textContent = 'Total: ' + formatNumber(cluster.total_connections)
+      document.getElementById('kpiConnectionUsage').textContent = formatPercent(cluster.connection_usage_pct)
+      document.getElementById('kpiCacheHit').textContent = formatPercent(cluster.cache_hit_ratio_pct)
+      document.getElementById('kpiWaiting').textContent = formatNumber(cluster.waiting_connections)
+      document.getElementById('kpiBlocked').textContent = formatNumber(cluster.blocked_connections)
+      document.getElementById('kpiIdleTx').textContent = formatNumber(cluster.idle_in_transaction_connections)
+      document.getElementById('kpiTotalSize').textContent = formatBytes(sumDatabaseBytes(payload && payload.databases))
+    }
+
+    function renderDatabasesTable(databases) {
+      const tbody = document.querySelector('#dbStatsTable tbody')
+      tbody.innerHTML = ''
+      const rows = Array.isArray(databases) ? databases : []
+
+      if (rows.length === 0) {
+        const tr = document.createElement('tr')
+        tr.innerHTML = '<td colspan="10">No hay bases reportadas.</td>'
+        tbody.appendChild(tr)
+        return
+      }
+
+      rows.forEach(function (item) {
+        const connSummary = [
+          formatNumber(item.active_connections),
+          formatNumber(item.idle_connections),
+          formatNumber(item.waiting_connections),
+          formatNumber(item.blocked_connections)
+        ].join(' / ')
+
+        const ioSummary = Number(item.block_read_time_ms || 0).toFixed(1) + ' / ' + Number(item.block_write_time_ms || 0).toFixed(1)
+
+        const tr = document.createElement('tr')
+        tr.innerHTML = [
+          '<td>' + escapeHtml(item.display_name) + '</td>',
+          '<td>' + escapeHtml(item.name) + '</td>',
+          '<td>' + escapeHtml(item.size_pretty || formatBytes(item.size_bytes)) + '</td>',
+          '<td>' + connSummary + '</td>',
+          '<td>' + formatPercent(item.cache_hit_ratio_pct) + '</td>',
+          '<td>' + formatNumber(item.xact_commit) + '</td>',
+          '<td>' + formatPercent(item.rollback_pct) + '</td>',
+          '<td>' + formatNumber(item.temp_files) + '</td>',
+          '<td>' + formatNumber(item.deadlocks) + '</td>',
+          '<td>' + ioSummary + '</td>'
+        ].join('')
+        tbody.appendChild(tr)
+      })
+    }
+
+    function renderLongQueriesTable(queries) {
+      const tbody = document.querySelector('#longQueriesTable tbody')
+      tbody.innerHTML = ''
+      const rows = Array.isArray(queries) ? queries : []
+
+      if (rows.length === 0) {
+        const tr = document.createElement('tr')
+        tr.innerHTML = '<td colspan="6">No se detectan consultas largas activas.</td>'
+        tbody.appendChild(tr)
+        return
+      }
+
+      rows.forEach(function (item) {
+        const waitText = [item.wait_event_type, item.wait_event].filter(Boolean).join(' / ') || 'Sin espera'
+        const tr = document.createElement('tr')
+        tr.innerHTML = [
+          '<td>' + formatNumber(item.pid) + '</td>',
+          '<td>' + escapeHtml(item.user) + '</td>',
+          '<td>' + escapeHtml(item.state) + '</td>',
+          '<td>' + escapeHtml(waitText) + '</td>',
+          '<td>' + formatNumber(item.running_seconds) + '</td>',
+          '<td><code>' + escapeHtml(item.query_snippet) + '</code></td>'
+        ].join('')
+        tbody.appendChild(tr)
+      })
+    }
+
+    function renderRecommendations(recommendations) {
+      const list = document.getElementById('recommendationsList')
+      list.innerHTML = ''
+      const rows = Array.isArray(recommendations) ? recommendations : []
+
+      if (rows.length === 0) {
+        const li = document.createElement('li')
+        li.className = 'rec-item'
+        li.innerHTML = '<span class="rec-tag rec-info">INFO</span><div>No se detectan alertas en este muestreo.</div>'
+        list.appendChild(li)
+        return
+      }
+
+      rows.forEach(function (item) {
+        const severity = String(item.severity || 'info').toUpperCase()
+        const li = document.createElement('li')
+        li.className = 'rec-item'
+        li.innerHTML = '<span class="rec-tag ' + severityClass(item.severity) + '">' + severity + '</span><div>' + escapeHtml(item.message) + '</div>'
+        list.appendChild(li)
+      })
+    }
+
+    function renderEmpresaStorageTable(payload) {
+      const tbody = document.querySelector('#empresaStorageTable tbody')
+      const status = document.getElementById('empresaStorageStatus')
+      tbody.innerHTML = ''
+
+      const rows = Array.isArray(payload && payload.empresas) ? payload.empresas : []
+      const scanned = Number(payload && payload.tables_scanned) || 0
+      const totalEmpresas = Number(payload && payload.total_empresas) || rows.length
+      const totalPretty = payload && payload.total_pretty ? payload.total_pretty : formatBytes(payload && payload.total_bytes)
+
+      status.textContent = 'Empresas cargadas: ' + formatNumber(totalEmpresas) + ' | Tablas escaneadas: ' + formatNumber(scanned) + ' | Total estimado: ' + totalPretty
+
+      if (!rows.length) {
+        const tr = document.createElement('tr')
+        tr.innerHTML = '<td colspan="13">No hay empresas para mostrar.</td>'
+        tbody.appendChild(tr)
+        return
+      }
+
+      rows.forEach(function (item, index) {
+        const tr = document.createElement('tr')
+        tr.innerHTML = [
+          '<td>' + formatNumber(index + 1) + '</td>',
+          '<td>' + escapeHtml(item.nombre || ('Empresa ' + item.empresa_id)) + '</td>',
+          '<td>' + escapeHtml(item.nit || '-') + '</td>',
+          '<td>' + escapeHtml(item.estado || '-') + '</td>',
+          '<td>' + escapeHtml(item.total_pretty || formatBytes(item.total_bytes)) + '</td>',
+          '<td>' + formatNumber(Number(item.total_mb || 0).toFixed ? Number(item.total_mb || 0).toFixed(2) : item.total_mb) + '</td>',
+          '<td>' + escapeHtml(item.quota_pretty || (Number(item.quota_gb) > 0 ? (formatNumber(item.quota_gb) + ' GB') : 'Sin limite')) + '</td>',
+          '<td>' + (Number(item.quota_bytes || 0) > 0 ? formatPercent(item.quota_usage_pct) : '-') + '</td>',
+          '<td>' + escapeHtml(item.quota_status || '-') + '</td>',
+          '<td>' + formatNumber(item.rows_count) + '</td>',
+          '<td>' + formatNumber(item.tables_with_data) + '</td>',
+          '<td>' + escapeHtml(item.largest_table || '-') + '</td>',
+          '<td>' + escapeHtml(item.largest_table_pretty || formatBytes(item.largest_table_bytes)) + '</td>'
+        ].join('')
+        tbody.appendChild(tr)
+      })
+    }
+
+    function updateErrorBanner(message) {
+      const banner = document.getElementById('errorBanner')
+      if (!message) {
+        banner.classList.remove('show')
+        banner.textContent = ''
+        return
+      }
+      banner.classList.add('show')
+      banner.textContent = message
+    }
+
+    function readCookieValue(name) {
+      const match = String(document.cookie || '').match(new RegExp('(?:^|;\\s*)' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]+)'))
+      return match ? decodeURIComponent(match[1]) : ''
+    }
+
+    function formatOutboxMoney(value) {
+      const amount = Number(value)
+      if (!Number.isFinite(amount)) return '-'
+      return new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)
+    }
+
+    function selectedOutboxEventIDs() {
+      return Array.from(document.querySelectorAll('#outboxRecoveryTable input[data-event-id]:checked'))
+        .map(function (input) { return Number(input.dataset.eventId) })
+        .filter(function (id) { return Number.isInteger(id) && id > 0 })
+    }
+
+    function updateOutboxRecoveryButton() {
+      const reason = document.getElementById('outboxRecoveryReason').value.trim()
+      const confirmation = document.getElementById('outboxRecoveryConfirmation').value.trim()
+      document.getElementById('executeOutboxRecoveryBtn').disabled = !(
+        selectedOutboxEventIDs().length > 0 &&
+        reason.length >= 10 &&
+        confirmation === OUTBOX_RECOVERY_CONFIRMATION
+      )
+    }
+
+    function renderOutboxRecoveryItems(payload) {
+      const tbody = document.querySelector('#outboxRecoveryTable tbody')
+      const status = document.getElementById('outboxRecoveryStatus')
+      const rows = Array.isArray(payload && payload.items) ? payload.items : []
+      tbody.innerHTML = ''
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="9">No hay eventos dead recuperables para este alcance.</td></tr>'
+        status.textContent = 'Empresa ' + (payload && payload.empresa_nombre ? payload.empresa_nombre : payload.empresa_id) + ': 0 eventos dead.'
+        updateOutboxRecoveryButton()
+        return
+      }
+      rows.forEach(function (item) {
+        const tr = document.createElement('tr')
+        tr.innerHTML = [
+          '<td><input type="checkbox" data-event-id="' + Number(item.id) + '" aria-label="Seleccionar evento ' + Number(item.id) + '"></td>',
+          '<td>' + formatNumber(item.id) + '</td>',
+          '<td>' + formatNumber(item.pago_id) + '</td>',
+          '<td>' + formatNumber(item.cuenta_por_pagar_id) + '</td>',
+          '<td>' + formatNumber(item.movimiento_finanzas_id) + '</td>',
+          '<td>' + formatOutboxMoney(item.monto) + '</td>',
+          '<td>' + formatNumber(item.attempts) + ' / ' + formatNumber(item.max_attempts) + '</td>',
+          '<td>' + escapeHtml(item.dead_at || '-') + '</td>',
+          '<td><code>' + escapeHtml(item.last_error || '-') + '</code></td>'
+        ].join('')
+        tbody.appendChild(tr)
+      })
+      status.textContent = 'Empresa ' + (payload.empresa_nombre || payload.empresa_id) + ': ' + rows.length + ' evento(s) dead. Ninguno se reactiva sin selección y confirmación.'
+      tbody.querySelectorAll('input[data-event-id]').forEach(function (input) {
+        input.addEventListener('change', updateOutboxRecoveryButton)
+      })
+      updateOutboxRecoveryButton()
+    }
+
+    async function previewOutboxRecovery() {
+      const empresaID = Number(document.getElementById('outboxEmpresaID').value)
+      const button = document.getElementById('previewOutboxBtn')
+      const status = document.getElementById('outboxRecoveryStatus')
+      if (!Number.isInteger(empresaID) || empresaID <= 0) {
+        status.textContent = 'Ingrese un ID de empresa válido.'
+        return
+      }
+      button.disabled = true
+      button.textContent = 'Consultando...'
+      status.textContent = 'Consultando eventos dead con filtro por empresa...'
+      try {
+        const query = new URLSearchParams({
+          empresa_id: String(empresaID),
+          topic: OUTBOX_CXP_TOPIC,
+          limit: '20'
+        })
+        const response = await fetch(OUTBOX_RECOVERY_API_URL + '?' + query.toString())
+        const payload = await response.json().catch(function () { return null })
+        if (!response.ok || !payload || payload.ok === false) {
+          throw new Error(payload && payload.error ? payload.error : ('Error HTTP ' + response.status))
+        }
+        renderOutboxRecoveryItems(payload)
+      } catch (err) {
+        status.textContent = 'No fue posible consultar: ' + (err && err.message ? err.message : err)
+      } finally {
+        button.disabled = false
+        button.textContent = 'Vista previa'
+      }
+    }
+
+    async function executeOutboxRecovery() {
+      const eventIDs = selectedOutboxEventIDs()
+      const empresaID = Number(document.getElementById('outboxEmpresaID').value)
+      const reason = document.getElementById('outboxRecoveryReason').value.trim()
+      const confirmation = document.getElementById('outboxRecoveryConfirmation').value.trim()
+      const button = document.getElementById('executeOutboxRecoveryBtn')
+      const status = document.getElementById('outboxRecoveryStatus')
+      updateOutboxRecoveryButton()
+      if (button.disabled) return
+
+      button.disabled = true
+      button.textContent = 'Reactivando...'
+      status.textContent = 'Ejecutando recuperación transaccional y auditada...'
+      try {
+        const headers = new Headers({ 'Content-Type': 'application/json' })
+        const csrf = readCookieValue('pcs_csrf')
+        if (csrf) headers.set('X-CSRF-Token', csrf)
+        const response = await fetch(OUTBOX_RECOVERY_API_URL + '?empresa_id=' + encodeURIComponent(String(empresaID)), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: headers,
+          body: JSON.stringify({
+            empresa_id: empresaID,
+            topic: OUTBOX_CXP_TOPIC,
+            event_ids: eventIDs,
+            reason: reason,
+            confirmation: confirmation
+          })
+        })
+        const payload = await response.json().catch(function () { return null })
+        if (!response.ok || !payload || payload.ok === false) {
+          throw new Error(payload && payload.error ? payload.error : ('Error HTTP ' + response.status))
+        }
+        status.textContent = 'Recuperación aceptada: ' + Number(payload.requeued || 0) + ' evento(s) quedaron pending para el worker.'
+        document.getElementById('outboxRecoveryConfirmation').value = ''
+        setTimeout(previewOutboxRecovery, 1200)
+      } catch (err) {
+        status.textContent = 'La recuperación no se ejecutó: ' + (err && err.message ? err.message : err)
+      } finally {
+        button.textContent = 'Reactivar seleccionados'
+        updateOutboxRecoveryButton()
+      }
+    }
+
+    function initCharts() {
+      const rootStyles = getComputedStyle(document.documentElement)
+      const labelColor = (rootStyles.getPropertyValue('--text') || '#e8f0fb').trim()
+      const gridColor = (rootStyles.getPropertyValue('--border') || 'rgba(152,176,206,0.2)').trim()
+
+      connectionsChart = new Chart(document.getElementById('connectionsChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: chartHistory.labels,
+          datasets: [{
+            label: 'Uso de conexiones %',
+            data: chartHistory.connectionUsage,
+            borderColor: '#1f8ef1',
+            backgroundColor: 'rgba(31,142,241,0.12)',
+            pointRadius: 2,
+            tension: 0.25,
+            fill: true
+          }]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          plugins: { legend: { labels: { color: labelColor } } },
+          scales: {
+            x: { ticks: { color: labelColor }, grid: { color: gridColor } },
+            y: { ticks: { color: labelColor }, grid: { color: gridColor }, suggestedMin: 0, suggestedMax: 100 }
+          }
+        }
+      })
+
+      cacheChart = new Chart(document.getElementById('cacheChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: chartHistory.labels,
+          datasets: [{
+            label: 'Cache hit ratio %',
+            data: chartHistory.cacheHit,
+            borderColor: '#29b36b',
+            backgroundColor: 'rgba(41,179,107,0.12)',
+            pointRadius: 2,
+            tension: 0.25,
+            fill: true
+          }]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          plugins: { legend: { labels: { color: labelColor } } },
+          scales: {
+            x: { ticks: { color: labelColor }, grid: { color: gridColor } },
+            y: { ticks: { color: labelColor }, grid: { color: gridColor }, suggestedMin: 80, suggestedMax: 100 }
+          }
+        }
+      })
+    }
+
+    function pushChartPoint(label, connUsage, cacheHit) {
+      chartHistory.labels.push(label)
+      chartHistory.connectionUsage.push(Number(connUsage) || 0)
+      chartHistory.cacheHit.push(Number(cacheHit) || 0)
+
+      if (chartHistory.labels.length > HISTORY_MAX_POINTS) {
+        chartHistory.labels.shift()
+        chartHistory.connectionUsage.shift()
+        chartHistory.cacheHit.shift()
+      }
+
+      if (connectionsChart) connectionsChart.update('none')
+      if (cacheChart) cacheChart.update('none')
+    }
+
+    async function loadPerformance() {
+      const refreshBtn = document.getElementById('refreshBtn')
+      refreshBtn.disabled = true
+      refreshBtn.textContent = 'Actualizando...'
+      try {
+        const response = await fetch(API_URL)
+        const payload = await response.json().catch(function () { return null })
+        if (!response.ok || !payload || payload.ok === false) {
+          const errText = payload && payload.error ? payload.error : ('Error HTTP ' + response.status)
+          throw new Error(errText)
+        }
+
+        lastPayload = payload
+        updateErrorBanner('')
+        renderHeader(payload)
+        renderKpis(payload)
+        renderDatabasesTable(payload.databases)
+        renderLongQueriesTable(payload.long_running_queries)
+        renderRecommendations(payload.recommendations)
+
+        const cluster = payload.cluster || {}
+        pushChartPoint(new Date().toLocaleTimeString('es-CO'), cluster.connection_usage_pct, cluster.cache_hit_ratio_pct)
+      } catch (err) {
+        updateErrorBanner('No fue posible cargar metricas PostgreSQL: ' + (err && err.message ? err.message : err))
+      } finally {
+        refreshBtn.disabled = false
+        refreshBtn.textContent = 'Actualizar'
+      }
+    }
+
+    async function loadEmpresasStorage() {
+      const button = document.getElementById('loadEmpresasStorageBtn')
+      const status = document.getElementById('empresaStorageStatus')
+      button.disabled = true
+      button.textContent = 'Cargando...'
+      status.textContent = 'Calculando tamano estimado por empresa...'
+      try {
+        const response = await fetch(EMPRESAS_STORAGE_API_URL)
+        const payload = await response.json().catch(function () { return null })
+        if (!response.ok || !payload || payload.ok === false) {
+          const errText = payload && payload.error ? payload.error : ('Error HTTP ' + response.status)
+          throw new Error(errText)
+        }
+        renderEmpresaStorageTable(payload)
+      } catch (err) {
+        status.textContent = 'No fue posible cargar el tamano por empresa: ' + (err && err.message ? err.message : err)
+      } finally {
+        button.disabled = false
+        button.textContent = 'Cargar Empresas'
+      }
+    }
+
+    function setAutoRefresh(enabled) {
+      autoRefreshEnabled = !!enabled
+      const btn = document.getElementById('toggleAutoBtn')
+      btn.textContent = 'Auto refresco: ' + (autoRefreshEnabled ? 'ON' : 'OFF')
+
+      if (autoRefreshHandle) {
+        clearInterval(autoRefreshHandle)
+        autoRefreshHandle = null
+      }
+      if (autoRefreshEnabled) {
+        autoRefreshHandle = setInterval(loadPerformance, AUTO_REFRESH_MS)
+      }
+    }
+
+    function exportSnapshot() {
+      if (!lastPayload) {
+        updateErrorBanner('Primero ejecuta una lectura para exportar datos.')
+        return
+      }
+      const blob = new Blob([JSON.stringify(lastPayload, null, 2)], { type: 'application/json' })
+      const now = new Date()
+      const stamp = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + '_' + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0')
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = 'postgres_performance_' + stamp + '.json'
+      document.body.appendChild(a)
+      a.click()
+      setTimeout(function () {
+        URL.revokeObjectURL(a.href)
+        document.body.removeChild(a)
+      }, 0)
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      initCharts()
+
+      document.getElementById('refreshBtn').addEventListener('click', loadPerformance)
+      document.getElementById('loadEmpresasStorageBtn').addEventListener('click', loadEmpresasStorage)
+      document.getElementById('previewOutboxBtn').addEventListener('click', previewOutboxRecovery)
+      document.getElementById('executeOutboxRecoveryBtn').addEventListener('click', executeOutboxRecovery)
+      document.getElementById('outboxRecoveryReason').addEventListener('input', updateOutboxRecoveryButton)
+      document.getElementById('outboxRecoveryConfirmation').addEventListener('input', updateOutboxRecoveryButton)
+      document.getElementById('toggleAutoBtn').addEventListener('click', function () {
+        setAutoRefresh(!autoRefreshEnabled)
+      })
+      document.getElementById('exportBtn').addEventListener('click', exportSnapshot)
+
+      loadPerformance()
+      setAutoRefresh(true)
+    })
+  </script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>
+

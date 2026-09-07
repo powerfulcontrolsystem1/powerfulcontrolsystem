@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Venta pública</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+  <script src="/menu.js"></script>
+  <style>
+    body{margin:0;min-height:100vh;color:var(--text);background:linear-gradient(180deg,var(--bg-alt),var(--bg));font-family:"Segoe UI",Arial,sans-serif}
+    .store{max-width:1220px;margin:0 auto;padding:22px 16px 70px}
+    .profile-shell{display:grid;gap:16px}
+    .cover{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:32px;min-height:290px;background:linear-gradient(135deg,var(--store-primary,#0f4c81),color-mix(in srgb,var(--store-primary,#0f4c81) 20%,#fff 80%));box-shadow:0 24px 58px rgba(0,0,0,.18);display:flex;align-items:flex-end}
+    .cover::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,15,24,.08),rgba(7,15,24,.60))}
+    .cover-body{position:relative;z-index:1;width:100%;padding:24px;display:grid;gap:18px}
+    .profile-main{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;flex-wrap:wrap}
+    .identity{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+    .avatar{width:102px;height:102px;border-radius:28px;border:4px solid rgba(255,255,255,.88);background:rgba(255,255,255,.18);backdrop-filter:blur(12px);display:grid;place-items:center;font-size:2rem;font-weight:900;color:#fff;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.2)}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .headline h1{font-size:clamp(2rem,4vw,3rem);line-height:1.02;margin:0 0 6px;font-weight:950;letter-spacing:-.04em;color:#fff}
+    .headline p{max-width:720px;color:rgba(255,255,255,.92);line-height:1.5;margin:0}
+    .handle{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;font-weight:800;backdrop-filter:blur(10px)}
+    .quick-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .metric{padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);color:#fff;backdrop-filter:blur(12px)}
+    .metric strong{display:block;font-size:1.2rem}
+    .toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:2px}
+    .search{flex:1;min-width:280px;display:flex;gap:10px;align-items:center}
+    .search input{flex:1;background:var(--input-bg-soft);border:1px solid var(--border);border-radius:999px;padding:12px 14px;color:var(--text)}
+    .search select{background:var(--input-bg-soft);border:1px solid var(--border);border-radius:999px;padding:12px 12px;color:var(--text);min-width:160px}
+    .cart-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:999px;padding:12px 14px;font-weight:950;cursor:pointer}
+    .tabs{display:flex;gap:10px;flex-wrap:wrap}
+    .tab{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:999px;padding:10px 14px;font-weight:800;text-decoration:none}
+    .tab.active{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff}
+    .public-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+    .panel{border:1px solid var(--border);border-radius:24px;background:var(--surface);box-shadow:0 16px 36px rgba(0,0,0,.12)}
+    .panel-body{padding:16px}
+    .feed-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:16px 16px 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;padding:16px;margin-top:0}
+    .product{border:1px solid var(--border);background:var(--surface);border-radius:22px;box-shadow:0 14px 30px rgba(0,0,0,.12);overflow:hidden;display:flex;flex-direction:column;min-height:380px}
+    .img{height:170px;background:var(--input-bg-soft);background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:900}
+    .body{padding:14px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .body h2{font-size:1.08rem;margin:0;line-height:1.2}
+    .desc{color:var(--muted);line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:3.8em}
+    .price{font-size:1.25rem;font-weight:950}
+    .actions{margin-top:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .actions .btn{flex:1;text-align:center}
+    .actions .btn.secondary{background:transparent}
+    .btn-cart{border:1px solid var(--border);background:transparent;color:var(--text);border-radius:14px;padding:10px 12px;font-weight:950;cursor:pointer;flex:1}
+    .empty{padding:42px;border:1px dashed var(--border);border-radius:24px;text-align:center;color:var(--muted);background:var(--surface)}
+    .load-more{color:var(--muted);text-align:center;padding:14px;border:1px dashed var(--border);border-radius:14px;background:var(--surface);margin:16px}
+    .side-card{padding:16px;display:grid;gap:16px}
+    .profile-summary{display:grid;gap:14px}
+    .summary-card{border:1px solid var(--border);border-radius:18px;padding:14px;background:var(--surface-soft)}
+    .summary-card h3{margin:0 0 4px}
+    .page-list{display:grid;gap:10px}
+    .page-link{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 14px;border-radius:16px;border:1px solid var(--border);background:var(--surface-soft);text-decoration:none;color:var(--text);font-weight:700}
+    .page-link.active{border-color:var(--store-primary,#0f4c81);box-shadow:0 0 0 2px color-mix(in srgb,var(--store-primary,#0f4c81) 24%,transparent)}
+    .page-link small{color:var(--muted);font-weight:600}
+    .order-form{display:grid;gap:10px}
+    .order-form input,.order-form textarea,.order-form select{background:var(--input-bg-soft);border:1px solid var(--border);border-radius:14px;padding:11px 12px;color:var(--text)}
+    .order-map{height:250px;border-radius:18px;overflow:hidden;background:var(--input-bg-soft);display:none}
+    .order-map.active{display:block}
+    .drawer{position:fixed;top:0;right:0;height:100vh;width:min(420px,92vw);background:var(--surface);border-left:1px solid var(--border);box-shadow:-20px 0 60px rgba(0,0,0,.22);transform:translateX(110%);transition:transform .18s ease;z-index:60;display:flex;flex-direction:column}
+    .drawer.open{transform:translateX(0)}
+    .drawer-header{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .drawer-header h3{margin:0;font-weight:950}
+    .drawer-body{padding:14px;overflow:auto;display:grid;gap:10px}
+    .cart-item{border:1px solid var(--border);border-radius:16px;padding:10px;display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;background:var(--surface-soft)}
+    .cart-thumb{width:56px;height:56px;border-radius:14px;background:var(--input-bg-soft);background-size:cover;background-position:center}
+    .cart-mini{color:var(--muted);font-size:.86rem}
+    .qty{width:72px;background:var(--input-bg-soft);border:1px solid var(--border);border-radius:12px;padding:8px 10px;color:var(--text)}
+    .drawer-footer{padding:14px;border-top:1px solid var(--border);display:grid;gap:10px}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:55;display:none}
+    .overlay.open{display:block}
+    .whatsapp-float{position:fixed;right:18px;bottom:18px;z-index:70;width:56px;height:56px;border-radius:999px;background:#25d366;color:#fff;display:none;align-items:center;justify-content:center;text-decoration:none;font-weight:950;box-shadow:0 14px 34px rgba(0,0,0,.24);border:2px solid rgba(255,255,255,.75)}
+    .whatsapp-float.is-visible{display:flex}
+    @media(max-width:960px){.public-layout{grid-template-columns:1fr}.quick-metrics{grid-template-columns:1fr}.toolbar{align-items:stretch}.search{min-width:0}}
+    @media(max-width:720px){.store{padding:0 0 60px;max-width:100%;overflow-x:hidden}.cover{border-radius:0;border-left:0;border-right:0;min-height:250px}.cover-body{padding:18px}.identity,.headline,.toolbar,.search{min-width:0;max-width:100%}.avatar{width:80px;height:80px;border-radius:22px}.headline h1{font-size:2rem;letter-spacing:0;overflow-wrap:anywhere}.grid,.feed-head{padding:12px}.tabs{padding:0 12px}.toolbar,.search{display:grid;grid-template-columns:minmax(0,1fr);width:100%;align-items:stretch}.search input,.search select,.cart-btn{width:100%;min-width:0;box-sizing:border-box}.public-layout,.panel,.side-card{min-width:0;max-width:100%}}
+  </style>
+</head>
+<body>
+  <main class="store">
+    <section class="profile-shell">
+      <section id="cover" class="cover">
+        <div class="cover-body">
+          <div class="profile-main">
+            <div class="identity">
+              <div id="avatar" class="avatar">E</div>
+              <div class="headline">
+                <div id="handle" class="handle">@empresa</div>
+                <h1 id="title">Venta pública</h1>
+                <p id="desc">Cargando catálogo...</p>
+              </div>
+            </div>
+            <div class="quick-metrics">
+              <div class="metric"><span>Páginas</span><strong id="metricPages">0</strong></div>
+              <div class="metric"><span>Productos</span><strong id="metricProducts">0</strong></div>
+              <div class="metric"><span>Moneda</span><strong id="metricCurrency">COP</strong></div>
+            </div>
+          </div>
+          <div id="status" class="form-help" style="color:#fff"></div>
+        </div>
+      </section>
+
+      <div class="toolbar">
+        <div class="tabs" id="tabs"></div>
+        <div class="search">
+          <input id="q" placeholder="Buscar productos (nombre / código / SKU)" />
+          <select id="sort">
+            <option value="relevancia">Relevancia</option>
+            <option value="precio_asc">Precio: menor a mayor</option>
+            <option value="precio_desc">Precio: mayor a menor</option>
+            <option value="nuevos">Nuevos</option>
+          </select>
+          <button id="searchBtn" class="cart-btn" type="button">Buscar</button>
+        </div>
+        <button id="cartBtn" class="cart-btn" type="button">Carrito (<span id="cartCount">0</span>)</button>
+      </div>
+
+      <section class="public-layout">
+        <div class="panel">
+          <div class="feed-head">
+            <div>
+              <strong>Catálogo público</strong>
+              <div class="form-help">Compra directa, promociones y vitrinas activas de esta empresa.</div>
+            </div>
+          </div>
+          <section id="grid" class="grid"></section>
+          <div id="feedSentinel" class="load-more" hidden>Cargando más...</div>
+        </div>
+
+        <aside class="panel side-card">
+          <section class="profile-summary">
+            <div class="summary-card">
+              <h3>Perfil comercial</h3>
+              <div id="profileSummaryText" class="form-help">Cargando información pública...</div>
+            </div>
+            <div class="summary-card">
+              <h3>Páginas de esta empresa</h3>
+              <div id="pageList" class="page-list"></div>
+            </div>
+            <div id="restaurantOrderCard" class="summary-card" hidden>
+              <h3>Pedidos para restaurante</h3>
+              <div id="restaurantOrderHint" class="form-help">Arma tu pedido y compártelo al restaurante desde esta misma página.</div>
+              <form id="restaurantOrderForm" class="order-form" style="margin-top:10px">
+                <input id="orderName" placeholder="Nombre de quien recibe">
+                <input id="orderPhone" placeholder="Teléfono">
+                <input id="orderEmail" placeholder="Correo opcional">
+                <select id="orderChannel">
+                  <option value="domicilio">Domicilio</option>
+                  <option value="recoger">Recoger en tienda</option>
+                </select>
+                <input id="orderAddress" placeholder="Dirección de entrega">
+                <textarea id="orderNotes" rows="3" placeholder="Notas del pedido. Ej: sin picante, portería, apartamento"></textarea>
+                <label><input id="orderShareLocation" type="checkbox" checked> Compartir mi ubicación para ubicar el domicilio</label>
+                <div class="vp-actions">
+                  <button id="useCustomerLocationBtn" class="btn secondary" type="button">Usar mi ubicación</button>
+                  <button class="btn" type="submit">Enviar pedido</button>
+                </div>
+                <div id="restaurantOrderMsg" class="form-help"></div>
+              </form>
+            </div>
+            <div id="trackingCard" class="summary-card" hidden>
+              <h3>Seguimiento del pedido</h3>
+              <div id="trackingSummary" class="form-help">Aún no hay un pedido para seguir.</div>
+              <div id="trackingMap" class="order-map"></div>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </section>
+  </main>
+  <div id="overlay" class="overlay"></div>
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <h3>Carrito</h3>
+      <button id="closeCartBtn" class="tab" type="button">Cerrar</button>
+    </div>
+    <div id="cartBody" class="drawer-body"></div>
+    <div class="drawer-footer">
+      <div><strong>Total:</strong> <span id="cartTotal">0</span></div>
+      <button id="checkoutBtn" class="btn" type="button">Ir a pagar</button>
+      <button id="clearCartBtn" class="btn secondary" type="button">Vaciar carrito</button>
+    </div>
+  </aside>
+  <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
+    <img class="icon ai-openai-mark ai-mark-shell" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true"><span class="ai-chat-toggle-label">Asistente IA</span>
+  </button>
+
+  <div id="aiChatBackdrop" class="ai-chat-backdrop" aria-hidden="true"></div>
+
+  <section id="aiChatDrawer" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">
+    <div class="ai-chat-minibar" id="aiChatMinibar" hidden>
+      <span class="ai-chat-minibar-label">Asistente IA</span>
+      <button type="button" id="aiChatMinibarExpand" class="ai-chat-minibar-btn" aria-label="Abrir asistente IA">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M7 14l5-5 5 5H7z"/></svg>
+      </button>
+    </div>
+    <div class="ai-chat-drawer-surface">
+      <div class="ai-chat-header">
+        <div class="ai-chat-header-title-row">
+          <span class="ai-chat-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+          </span>
+          <div>
+            <h2 id="aiChatTitle">Asistente público de tienda</h2>
+          </div>
+        </div>
+        <div class="ai-chat-header-actions">
+          <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
+          <button id="aiChatConfigBtn" type="button" class="ai-chat-header-icon-btn" aria-label="Configurar chat flotante" title="Configuración chat flotante">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm7.4 4.5c.04-.3.06-.6.06-.9s-.02-.6-.06-.9l2-1.6a.5.5 0 0 0 .1-.6l-1.8-3.1a.5.5 0 0 0-.6-.2l-2.4 1a7 7 0 0 0-1.6-1l-.4-2.6A.5.5 0 0 0 13.5 2h-3a.5.5 0 0 0-.5.4l-.4 2.6a7 7 0 0 0-1.6 1l-2.4-1a.5.5 0 0 0-.6.2L4.5 7a.5.5 0 0 0 .1.6l2 1.6c-.1.3-.1.6-.1.9s.02.6.06.9l-2 1.6a.5.5 0 0 0-.1.6l1.8 3.1a.5.5 0 0 0 .6.2l2.4-1c.5.4 1.1.7 1.6 1l.4 2.6a.5.5 0 0 0 .5.4h3a.5.5 0 0 0 .5-.4l.4-2.6c.6-.2 1.1-.5 1.6-1l2.4 1a.5.5 0 0 0 .6-.2l1.8-3.1a.5.5 0 0 0-.1-.6l-2-1.6z"/></svg>
+          </button>
+          <button id="aiChatMinimize" type="button" class="ai-chat-header-icon-btn" aria-label="Minimizar chat" title="Minimizar">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M5 12h14v2H5z"/></svg>
+          </button>
+          <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">&times;</button>
+        </div>
+      </div>
+      <div id="aiChatNotice" class="ai-chat-notice"></div>
+      <div class="ai-chat-body-scroll">
+        <div id="aiChatMessages" class="ai-chat-messages"></div>
+        <div id="aiChatHints" class="ai-chat-hints is-hidden">
+          <p>Preguntas recomendadas:</p>
+          <ul>
+            <li>¿Qué productos o servicios tiene esta empresa?</li>
+            <li>¿Qué promociones públicas están activas?</li>
+            <li>¿Cuáles son los precios visibles hoy?</li>
+            <li>Muéstrame las páginas públicas disponibles.</li>
+          </ul>
+        </div>
+      </div>
+      <form id="aiChatForm" class="ai-chat-form">
+        <div class="ai-chat-toolbar-row">
+          <div class="ai-chat-voice-toolbar" role="toolbar" aria-label="Voz y conversación">
+            <button id="aiChatNewBtn" type="button" class="ai-chat-icon-btn" aria-label="Nuevo chat" title="Nuevo chat">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6v-2z"/></svg>
+            </button>
+            <button type="button" id="aiChatConvBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversación" title="Modo conversación"></button>
+            <button type="button" id="aiChatMicBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Dictar mensaje" title="Dictar"></button>
+            <button type="button" id="aiChatVoiceBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Voz del asistente" title="Leer respuestas"></button>
+            <button type="button" id="aiChatStopBtn" class="ai-chat-icon-btn ai-chat-stop-btn" aria-label="Detener audio y respuesta" title="Detener audio y respuesta">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
+            </button>
+          </div>
+          <div class="ai-chat-controls">
+            <input id="aiChatMode" type="hidden" value="operativo">
+            <div class="ai-chat-control-field">
+              <span>Adjunto</span>
+              <div class="ai-chat-attachment-row">
+                <input id="aiChatAttachment" type="file" class="ai-chat-file-input" aria-label="Adjuntar archivo para IA" />
+                <button id="aiChatAttachBtn" type="button" class="ai-chat-icon-btn" aria-label="Adjuntar archivo" title="Adjuntar">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M16.5 6.5v9a4.5 4.5 0 0 1-9 0v-10a3 3 0 0 1 6 0v9a1.5 1.5 0 0 1-3 0v-8h2v8a.5.5 0 0 0 1 0v-9a2 2 0 1 0-4 0v10a2.5 2.5 0 0 0 5 0v-9h2z"/></svg>
+                </button>
+                <button id="aiChatClearAttachment" type="button" class="ai-chat-icon-btn is-hidden" aria-label="Quitar adjunto" title="Quitar adjunto">&times;</button>
+              </div>
+              <div id="aiChatAttachmentName" class="ai-chat-attachment-name is-hidden"></div>
+            </div>
+          </div>
+        </div>
+        <textarea id="aiChatInput" placeholder="Pregunta por productos, servicios, precios o promociones..." aria-label="Mensaje al asistente IA"></textarea>
+        <button type="submit" class="btn primary">Enviar</button>
+      </form>
+    </div>
+  </section>
+  <a id="whatsappFloat" class="whatsapp-float" href="#" target="_blank" rel="noopener" aria-label="WhatsApp">WA</a>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script>
+    window.__pcsPublicChatContext = { scope: 'venta_publica' };
+
+    const params=new URLSearchParams(location.search);
+    const state={
+      slug:params.get('empresa_slug')||params.get('slug')||'',
+      page:params.get('pagina_slug')||params.get('page')||'',
+      data:null,
+      paging:{limit: 18, offset: 0, done:false, loading:false},
+      q: params.get('q') || '',
+      sort: params.get('sort') || 'relevancia',
+      trackingToken: params.get('tracking_token') || '',
+      customerLocation: null,
+      map: null,
+      mapLayer: null
+    };
+    const cartCountEl = document.getElementById('cartCount');
+    function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+    function money(v,c){return new Intl.NumberFormat('es-CO',{style:'currency',currency:c||'COP',maximumFractionDigits:0}).format(Number(v||0))}
+    function initials(name){ const parts=String(name||'').trim().split(/\s+/).filter(Boolean).slice(0,2); return (parts.map(p=>p.charAt(0).toUpperCase()).join('') || 'E'); }
+    function payUrl(item){const p=new URL('/pagar_productos_de_venta_publica.html',location.origin); p.searchParams.set('empresa_slug',state.data.empresa_slug||state.slug); if(state.page)p.searchParams.set('pagina_slug',state.page); p.searchParams.set('item_id',item.id); return p.pathname+p.search;}
+    function checkoutCartUrl(){const p=new URL('/pagar_productos_de_venta_publica.html',location.origin); p.searchParams.set('empresa_slug',state.data.empresa_slug||state.slug); if(state.page)p.searchParams.set('pagina_slug',state.page); p.searchParams.set('cart','1'); return p.pathname+p.search;}
+    function pageUrl(page){const p=new URL('/venta_publica.html',location.origin); p.searchParams.set('empresa_slug',state.data.empresa_slug||state.slug); if(page&&page.slug)p.searchParams.set('pagina_slug',page.slug); return p.pathname+p.search;}
+    function cartKey(){return 'pcs_cart_venta_publica_'+String(state.slug||'').trim();}
+    function getCart(){try{const raw=localStorage.getItem(cartKey()); return raw?JSON.parse(raw):[];}catch(_){return [];}}
+    function saveCart(items){try{localStorage.setItem(cartKey(), JSON.stringify(items||[]));}catch(_){}}
+    function cartCount(){return (getCart()||[]).reduce((a,x)=>a+Number(x.qty||0),0);}
+    function updateCartBadge(){cartCountEl.textContent=String(cartCount());}
+    function addToCart(item){const cart=getCart(); const idx=cart.findIndex(x=>Number(x.id)===Number(item.id)); if(idx>=0){cart[idx].qty=Math.min(99, Number(cart[idx].qty||0)+1);}else{cart.push({id:Number(item.id),nombre:item.nombre||'',precio:Number(item.precio||0),moneda:item.moneda||'',imagen_url:item.imagen_url||'',qty:1});} saveCart(cart); updateCartBadge(); renderCart();}
+    function removeFromCart(itemId){let cart=getCart(); cart=cart.filter(x=>Number(x.id)!==Number(itemId)); saveCart(cart); updateCartBadge(); renderCart();}
+    function setQty(itemId, qty){let cart=getCart(); const it=cart.find(x=>Number(x.id)===Number(itemId)); if(!it)return; it.qty=Math.max(1, Math.min(99, Math.trunc(Number(qty||1)))); saveCart(cart); updateCartBadge(); renderCart();}
+    function cartTotalMoney(){const cart=getCart(); const total=cart.reduce((a,x)=>a+(Number(x.precio||0)*Number(x.qty||0)),0); const moneda=((state.data&&state.data.tienda&&state.data.tienda.moneda)||'COP'); return money(total, moneda);}
+    function openCart(){drawer.classList.add('open'); overlay.classList.add('open'); drawer.setAttribute('aria-hidden','false'); renderCart();}
+    function closeCart(){drawer.classList.remove('open'); overlay.classList.remove('open'); drawer.setAttribute('aria-hidden','true');}
+    function renderCart(){
+      const cart=getCart();
+      cartBody.innerHTML='';
+      if(!cart.length){
+        cartBody.innerHTML='<div class="empty">Tu carrito está vacío.</div>';
+      } else {
+        cart.forEach(it=>{
+          const div=document.createElement('div');
+          div.className='cart-item';
+          div.innerHTML=
+            '<div class="cart-thumb" style="'+(it.imagen_url?'background-image:url('+esc(it.imagen_url)+')':'')+'"></div>'+
+            '<div><strong>'+esc(it.nombre||'Producto')+'</strong><div class="cart-mini">'+money(it.precio, it.moneda||((state.data&&state.data.tienda&&state.data.tienda.moneda)||"COP"))+'</div></div>'+
+            '<div style="display:grid;gap:8px;justify-items:end">'+
+              '<input class="qty" type="number" min="1" max="99" value="'+esc(it.qty||1)+'" data-qty="'+esc(it.id)+'">'+
+              '<button class="tab" type="button" data-del="'+esc(it.id)+'">Quitar</button>'+
+            '</div>';
+          cartBody.appendChild(div);
+        });
+      }
+      cartTotal.textContent=cartTotalMoney();
+      cartBody.querySelectorAll('button[data-del]').forEach(b=>b.onclick=()=>removeFromCart(Number(b.getAttribute('data-del')||0)));
+      cartBody.querySelectorAll('input[data-qty]').forEach(inp=>inp.onchange=()=>setQty(Number(inp.getAttribute('data-qty')||0), Number(inp.value||1)));
+      checkoutBtn.disabled = !cart.length;
+    }
+
+    function renderProfile(data){
+      const tienda=data.tienda||{};
+      const page=data.page||null;
+      const pages=data.pages||[];
+      const items=data.items||[];
+      const titleText=(page&&page.nombre)||tienda.nombre_tienda||'Venta pública';
+      const descText=(page&&page.descripcion)||tienda.descripcion_tienda||'Productos disponibles para pago en línea.';
+      const primary=String(tienda.color_primario||'#0f4c81').trim() || '#0f4c81';
+      const banner=String((page&&page.banner_url) || tienda.banner_url || '').trim();
+      const logo=String(tienda.logo_url||'').trim();
+      title.textContent=titleText;
+      desc.textContent=descText;
+      handle.textContent='@'+String(tienda.empresa_slug||state.slug||'empresa').trim();
+      metricPages.textContent=String(pages.length||0);
+      metricProducts.textContent=String(items.length||0);
+      metricCurrency.textContent=String(tienda.moneda||'COP');
+      cover.style.setProperty('--store-primary', primary);
+      cover.style.background = banner
+        ? 'linear-gradient(0deg, rgba(7,15,24,.60), rgba(7,15,24,.16)), url('+JSON.stringify(banner).slice(1,-1)+') center/cover'
+        : 'linear-gradient(135deg,'+primary+',color-mix(in srgb,'+primary+' 20%,#fff 80%))';
+      avatar.innerHTML = logo ? '<img alt="Logo" src="'+esc(logo)+'">' : esc(initials(titleText));
+      renderWhatsappFloat(tienda);
+      profileSummaryText.textContent = descText;
+      restaurantOrderCard.hidden = !tienda.pedidos_restaurante_activo;
+      if(!restaurantOrderCard.hidden){
+        restaurantOrderHint.textContent=(tienda.pedidos_nombre_sistema||'Pedidos restaurante')+'. Envía tu pedido, espera la preparación y sigue al domiciliario si la empresa tiene tracking activo.';
+        orderChannel.querySelector('option[value="recoger"]').hidden = tienda.pedidos_permitir_recoger_en_tienda === false;
+        orderChannel.querySelector('option[value="domicilio"]').hidden = tienda.pedidos_permitir_domicilio === false;
+        if (tienda.pedidos_permitir_domicilio === false) orderChannel.value='recoger';
+      }
+      pageList.innerHTML = '<a class="page-link '+(!state.page?'active':'')+'" href="'+pageUrl(null)+'"><span>Perfil general</span><small>Ver todo</small></a>' +
+        pages.map(p=>'<a class="page-link '+(state.page===p.slug?'active':'')+'" href="'+pageUrl(p)+'"><span>'+esc(p.nombre)+'</span><small>/'+esc(p.slug)+'</small></a>').join('');
+    }
+
+    function renderWhatsappFloat(tienda){
+      const btn=document.getElementById('whatsappFloat');
+      if(!btn)return;
+      const digits=String(tienda&&tienda.whatsapp_numero||'').replace(/\D+/g,'');
+      if(tienda&&tienda.whatsapp_flotante_activo&&digits.length>=8){
+        btn.href='https://wa.me/'+encodeURIComponent(digits)+'?text='+encodeURIComponent('Hola, vi la pagina publica de '+(tienda.nombre_tienda||'la empresa'));
+        btn.classList.add('is-visible');
+      }else{
+        btn.classList.remove('is-visible');
+        btn.href='#';
+      }
+    }
+
+    function ensureTrackingMap(){
+      if(state.map || typeof L==='undefined') return;
+      state.map = L.map('trackingMap').setView([4.711,-74.0721], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(state.map);
+      state.mapLayer = L.layerGroup().addTo(state.map);
+    }
+
+    function renderTracking(data){
+      const order=data&&data.order?data.order:null;
+      const tracking=data&&data.tracking?data.tracking:null;
+      trackingCard.hidden=!order;
+      if(!order){
+        trackingSummary.textContent='Aún no hay un pedido para seguir.';
+        trackingMap.classList.remove('active');
+        return;
+      }
+      const req=tracking&&tracking.request?tracking.request:null;
+      trackingSummary.textContent='Pedido '+(order.codigo_orden||'')+'  - Estado: '+(order.estado_pedido||'recibido')+(req&&req.conductor_nombre?'  - Mensajero: '+req.conductor_nombre:'');
+      if(req && tracking && Array.isArray(tracking.route) && tracking.route.length){
+        ensureTrackingMap();
+        trackingMap.classList.add('active');
+        state.mapLayer.clearLayers();
+        const points=tracking.route.map(p=>[Number(p.latitud||0),Number(p.longitud||0)]).filter(p=>p[0]&&p[1]);
+        if(order.entrega_latitud && order.entrega_longitud){
+          L.marker([Number(order.entrega_latitud),Number(order.entrega_longitud)]).addTo(state.mapLayer).bindPopup('Entrega');
+        }
+        if(points.length){
+          L.polyline(points,{color:'#1f7ae0',weight:4}).addTo(state.mapLayer);
+          L.marker(points[points.length-1]).addTo(state.mapLayer).bindPopup('Domiciliario');
+          state.map.fitBounds(points,{padding:[24,24]});
+        }
+      } else {
+        trackingMap.classList.remove('active');
+      }
+    }
+
+    async function loadTracking(){
+      if(!state.trackingToken) return;
+      const qs='action=estado_pedido&empresa_slug='+encodeURIComponent(state.data&&state.data.empresa_slug?state.data.empresa_slug:state.slug)+'&tracking_token='+encodeURIComponent(state.trackingToken);
+      const res=await fetch('/api/public/venta_publica?'+qs,{credentials:'same-origin'});
+      const text=await res.text();
+      if(!res.ok) return;
+      const data=text?JSON.parse(text):{};
+      renderTracking(data);
+    }
+
+    async function sendCustomerLocation(){
+      if(!navigator.geolocation) throw new Error('Tu navegador no soporta ubicación');
+      const pos=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,e=>reject(new Error(e.message||'No se pudo obtener GPS')),{enableHighAccuracy:true,maximumAge:5000,timeout:12000}));
+      state.customerLocation={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      restaurantOrderMsg.textContent='Ubicación capturada para el domicilio.';
+    }
+
+    async function createRestaurantOrder(ev){
+      ev.preventDefault();
+      const cart=getCart();
+      if(!cart.length){ restaurantOrderMsg.textContent='Agrega productos al carrito antes de enviar el pedido.'; return; }
+      const payload={
+        empresa_slug:state.data&&state.data.empresa_slug?state.data.empresa_slug:state.slug,
+        comprador_nombre:orderName.value.trim(),
+        comprador_telefono:orderPhone.value.trim(),
+        comprador_email:orderEmail.value.trim(),
+        canal_entrega:orderChannel.value,
+        direccion_entrega:orderAddress.value.trim(),
+        notas_entrega:orderNotes.value.trim(),
+        cliente_comparte_ubicacion:!!orderShareLocation.checked,
+        entrega_latitud:state.customerLocation?Number(state.customerLocation.lat||0):0,
+        entrega_longitud:state.customerLocation?Number(state.customerLocation.lng||0):0,
+        items:cart.map(it=>({item_id:Number(it.id||0),cantidad:Number(it.qty||0)}))
+      };
+      const res=await fetch('/api/public/venta_publica?action=crear_pedido',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const text=await res.text();
+      const data=text?JSON.parse(text):{};
+      if(!res.ok) throw new Error(data.error||data.message||text||('HTTP '+res.status));
+      saveCart([]); updateCartBadge(); renderCart();
+      state.trackingToken=data.tracking_token||'';
+      if(state.trackingToken){
+        const u=new URL(location.href);
+        u.searchParams.set('tracking_token', state.trackingToken);
+        history.replaceState({},'',u.toString());
+      }
+      restaurantOrderMsg.textContent='Pedido enviado al restaurante.';
+      await loadTracking();
+    }
+
+    async function loadCatalog(reset){
+      try{
+        if(!state.slug && !state.data){
+          grid.innerHTML='<div class="empty">Selecciona una tienda pública válida para ver el catálogo.</div>';
+          feedSentinel.hidden=true;
+          return;
+        }
+        if(state.paging.loading) return;
+        if(reset){
+          state.paging.offset=0; state.paging.done=false;
+          grid.innerHTML='';
+        }
+        if(state.paging.done) return;
+        state.paging.loading=true;
+        feedSentinel.hidden=false; feedSentinel.textContent='Cargando más...';
+
+        let qs='action=catalogo';
+        if(state.slug)qs+='&empresa_slug='+encodeURIComponent(state.slug);
+        if(state.page)qs+='&pagina_slug='+encodeURIComponent(state.page);
+        if(state.q)qs+='&q='+encodeURIComponent(state.q);
+        if(state.sort)qs+='&sort='+encodeURIComponent(state.sort);
+        qs+='&limit='+encodeURIComponent(state.paging.limit)+'&offset='+encodeURIComponent(state.paging.offset);
+        const res=await fetch('/api/public/venta_publica?'+qs);
+        const text=await res.text();
+        const data=text?JSON.parse(text):{};
+        if(!res.ok)throw new Error(data.error||text||'No se pudo cargar');
+        state.data=data;
+        if(!state.slug && data.empresa_slug) state.slug=data.empresa_slug;
+        if(reset){
+          renderHeader(data);
+          renderProfile(data);
+        }
+        const tienda=data.tienda||{};
+        const items=data.items||[];
+        if(!items.length){
+          if(state.paging.offset===0) grid.innerHTML='<div class="empty">Esta página aún no tiene productos publicados.</div>';
+          state.paging.done=true;
+          feedSentinel.textContent='No hay más productos.';
+          return;
+        }
+        items.forEach(it=>{
+          const div=document.createElement('article');
+          div.className='product';
+          div.innerHTML=
+            '<div class="img" style="'+(it.imagen_url?'background-image:url('+esc(it.imagen_url)+')':'')+'">'+(it.imagen_url?'':'Producto')+'</div>'+
+            '<div class="body">'+
+              '<h2>'+esc(it.nombre)+'</h2>'+
+              '<div class="desc">'+esc(it.descripcion||'')+'</div>'+
+              '<div class="price">'+money(it.precio,it.moneda||tienda.moneda)+'</div>'+
+              '<div class="actions">'+
+                '<button class="btn-cart" type="button" data-add="'+String(it.id||'')+'">Agregar al carrito</button>'+
+                '<a class="btn" href="'+payUrl(it)+'">Pagar</a>'+
+                '<a class="btn secondary" href="#" data-private-msg="1" data-item="'+String(it.id||'')+'">Mensaje</a>'+
+              '</div>'+
+            '</div>';
+          grid.appendChild(div);
+        });
+        state.paging.offset += items.length;
+        status.textContent='';
+        grid.querySelectorAll('button[data-add]').forEach(b=>b.onclick=()=>{
+          const id=Number(b.getAttribute('data-add')||0);
+          const it=(state.data.items||[]).find(x=>Number(x.id)===id) || null;
+          if(it) addToCart(it);
+        });
+      }catch(e){
+        status.textContent=e.message||String(e);
+        if(!grid.children.length) grid.innerHTML='<div class="empty">No se pudo cargar esta página pública.</div>';
+      }finally{
+        state.paging.loading=false;
+      }
+    }
+
+    function renderHeader(data){
+      const tienda=data.tienda||{};
+      tabs.innerHTML='<a class="tab '+(!state.page?'active':'')+'" href="'+pageUrl(null)+'">Perfil</a>';
+      (data.pages||[]).forEach(p=>{tabs.innerHTML+='<a class="tab '+(state.page===p.slug?'active':'')+'" href="'+pageUrl(p)+'">'+esc(p.nombre)+'</a>';});
+      q.value = state.q || '';
+      sort.value = state.sort || 'relevancia';
+      updateCartBadge();
+      metricCurrency.textContent = tienda.moneda || 'COP';
+    }
+
+    function applySearch(){
+      state.q = String(q.value||'').trim();
+      state.sort = String(sort.value||'relevancia').trim();
+      const u = new URL(location.href);
+      if(state.q) u.searchParams.set('q', state.q); else u.searchParams.delete('q');
+      if(state.sort && state.sort !== 'relevancia') u.searchParams.set('sort', state.sort); else u.searchParams.delete('sort');
+      u.searchParams.set('empresa_slug', state.slug||'');
+      if(state.page) u.searchParams.set('pagina_slug', state.page); else u.searchParams.delete('pagina_slug');
+      history.replaceState({}, '', u.pathname + '?' + u.searchParams.toString());
+      loadCatalog(true);
+    }
+
+    (function init(){
+      q.value = state.q || '';
+      sort.value = state.sort || 'relevancia';
+      updateCartBadge();
+      if(!("IntersectionObserver" in window)){
+        loadCatalog(true).then(()=>loadTracking()).catch(()=>{});
+        return;
+      }
+      const io=new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if(e.isIntersecting) loadCatalog(false);
+        });
+      }, {rootMargin:"900px 0px"});
+      io.observe(feedSentinel);
+      loadCatalog(true).then(()=>loadTracking()).catch(()=>{});
+    })();
+
+    document.addEventListener('click', async function(ev){
+      const a = ev.target && ev.target.closest ? ev.target.closest('a[data-private-msg="1"]') : null;
+      if (!a) return;
+      ev.preventDefault();
+      try {
+        if (!state.data) throw new Error('Cargando catálogo...');
+        const empresaSlug = String(state.data.empresa_slug || state.slug || '').trim();
+        if (!empresaSlug) throw new Error('Empresa no disponible.');
+        const itemId = String(a.getAttribute('data-item') || '').trim();
+        const nombre = String(prompt('Tu nombre (opcional):') || '').trim();
+        const contacto = String(prompt('Tu WhatsApp o correo para que te respondan (opcional):') || '').trim();
+        const mensaje = String(prompt('Escribe tu mensaje para la empresa:') || '').trim();
+        if (!mensaje) return;
+        a.style.pointerEvents = 'none';
+        const res = await fetch('/api/public/mensajes_privados', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa_slug: empresaSlug,
+            origen: 'venta_publica',
+            origen_ref: 'pagina: ' + String((state.data.page && state.data.page.slug) || state.page || 'todos') + (itemId ? (' / item_id=' + itemId) : ''),
+            nombre: nombre,
+            contacto: contacto,
+            mensaje: mensaje
+          })
+        });
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!res.ok) throw new Error(data.error || text || ('HTTP ' + res.status));
+        alert('Mensaje enviado. Si dejas tu contacto, la empresa podrá responderte.');
+      } catch (e) {
+        alert(e.message || 'No se pudo enviar el mensaje.');
+      } finally {
+        a.style.pointerEvents = '';
+      }
+    });
+
+    cartBtn.onclick=openCart;
+    closeCartBtn.onclick=closeCart;
+    overlay.onclick=closeCart;
+    clearCartBtn.onclick=function(){ if(!confirm('¿Vaciar carrito?')) return; saveCart([]); updateCartBadge(); renderCart(); };
+    checkoutBtn.onclick=function(){ location.href = checkoutCartUrl(); };
+    searchBtn.onclick=applySearch;
+    sort.onchange=applySearch;
+    q.addEventListener('keydown', function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); applySearch(); } });
+    restaurantOrderForm.addEventListener('submit', function(ev){ createRestaurantOrder(ev).catch(err=>restaurantOrderMsg.textContent=err.message||String(err)); });
+    useCustomerLocationBtn.onclick=function(){ sendCustomerLocation().catch(err=>restaurantOrderMsg.textContent=err.message||String(err)); };
+    setInterval(function(){ loadTracking().catch(function(){}); }, 12000);
+  </script>
+  <script src="/js/ai_chat_drawer.js"></script>
+</body>
+</html>

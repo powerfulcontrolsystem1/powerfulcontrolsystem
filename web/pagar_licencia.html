@@ -1,0 +1,1482 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pagar Licencia</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
+</head>
+<body class="checkout-licencia-page">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Pagar Licencia</h2>
+      <ul class="nav">
+        <li><a href="/seleccionar_empresa.html"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Volver a empresas</a></li>
+        <li><a href="/elegir_licencia.html"><img class="icon" src="/img/shield-license-color.svg" alt="">Elegir otra licencia</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="container">
+        <div class="page-header">
+          <h1 id="pageTitle">Pagar Licencia</h1>
+        </div>
+
+        <div id="payment" class="card checkout-payment-shell">Cargando...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+
+    (function(){
+      const pendingPaymentKey = 'pcs_licencia_payment_pending_v1';
+
+      function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
+      function readCookieValue(name) {
+        var prefix = name + '=';
+        var parts = String(document.cookie || '').split(';');
+        for (var i = 0; i < parts.length; i++) {
+          var part = parts[i].trim();
+          if (part.indexOf(prefix) === 0) return decodeURIComponent(part.slice(prefix.length));
+        }
+        return '';
+      }
+      function normalizeImage(raw) {
+        const value = String(raw || '').trim();
+        if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) return '/img/shield-license-color.svg';
+        return value;
+      }
+      const verticalCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS) ? window.PCS_NUEVAS_PLANTILLAS.slice() : [];
+      const verticalByModule = {};
+      verticalCatalog.forEach(function(item){
+        const module = String(item && item.module || '').trim().toLowerCase();
+        if (module) verticalByModule[module] = item;
+      });
+      function normalizeSearchText(raw) {
+        let value = String(raw || '').trim().toLowerCase();
+        if (value.normalize) value = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return value;
+      }
+      function splitCSV(raw) {
+        return String(raw || '').split(',').map(function(part){ return String(part || '').trim().toLowerCase(); }).filter(Boolean);
+      }
+      function resolveLicenseVertical(lic, tipoNombre) {
+        const modules = splitCSV(lic && (lic.modulos_habilitados || lic.ModulosHab || lic.modulosHab));
+        for (let i = 0; i < modules.length; i += 1) {
+          if (verticalByModule[modules[i]]) return verticalByModule[modules[i]];
+        }
+        const haystack = normalizeSearchText([
+          tipoNombre,
+          lic && (lic.tipo_nombre || lic.TipoNombre || lic.tipoNombre),
+          lic && (lic.nombre || lic.Nombre),
+          lic && (lic.descripcion || lic.Descripcion)
+        ].join(' '));
+        for (let j = 0; j < verticalCatalog.length; j += 1) {
+          const item = verticalCatalog[j];
+          const title = normalizeSearchText([item.title, item.fullTitle, item.module].join(' '));
+          const compactModule = normalizeSearchText(String(item.module || '').replace(/_/g, ' '));
+          if ((title && haystack.indexOf(title) >= 0) || (compactModule && haystack.indexOf(compactModule) >= 0)) return item;
+        }
+        return null;
+      }
+      function resolveLicenseVisual(lic, tipoNombre) {
+        const plantilla = resolveLicenseVertical(lic, tipoNombre);
+        return {
+          plantilla: plantilla,
+          icon: normalizeImage((plantilla && plantilla.icon) || '/img/shield-license-color.svg'),
+          label: plantilla ? (plantilla.fullTitle || plantilla.title || plantilla.module) : ''
+        };
+      }
+      function formatCurrency(value){
+        const amount = Number(value || 0);
+        if (Number.isNaN(amount)) return '$ 0';
+        try {
+          return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+        } catch (err) {
+          return '$ ' + String(amount);
+        }
+      }
+      function normalizeProvider(raw){
+        const value = String(raw || '').trim().toLowerCase();
+        if (value === 'nequi' || value === 'wompi') return 'wompi';
+        if (value === 'epayco') return 'epayco';
+        return '';
+      }
+      function normalizeStatus(raw){
+        const value = String(raw || '').trim().toUpperCase();
+        if (!value) return '';
+        if (['SUCCESS','APPROVED','ACCEPTED','OK','ACREDITADA','ACREDITADO','ACEPTADA','ACEPTADO','APROBADA','APROBADO','1'].indexOf(value) >= 0) return 'APPROVED';
+        if (['FAILURE','DECLINED','REJECTED','RECHAZADA','RECHAZADO','CANCELADA','CANCELADO','ANULADA','ANULADO','2'].indexOf(value) >= 0) return 'DECLINED';
+        if (['PENDING','PENDIENTE','EN_PROCESO','3'].indexOf(value) >= 0) return 'PENDING';
+        if (['ERROR','FAILED','FALLIDA','FALLIDO','4'].indexOf(value) >= 0) return 'ERROR';
+        return value;
+      }
+      function providerLabel(provider){
+        if (provider === 'epayco') return 'Epayco';
+        if (provider === 'wompi') return 'Wompi';
+        return 'la pasarela';
+      }
+      function originalButtonLabel(provider){
+        return provider === 'epayco' ? 'Pagar con Epayco' : 'Pagar con Wompi';
+      }
+      function isSuccessStatus(status){ return normalizeStatus(status) === 'APPROVED'; }
+      function isFinalStatus(status){
+        const value = normalizeStatus(status);
+        return ['APPROVED','DECLINED','ERROR','VOIDED','CANCELED','FAILED'].indexOf(value) >= 0;
+      }
+      function readPendingPayment(){
+        try {
+          const raw = localStorage.getItem(pendingPaymentKey);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          const createdAt = Number(parsed && parsed.createdAt || 0);
+          if (createdAt > 0 && (Date.now() - createdAt) > (6 * 60 * 60 * 1000)) {
+            localStorage.removeItem(pendingPaymentKey);
+            return null;
+          }
+          return parsed;
+        } catch (err) {
+          return null;
+        }
+      }
+      function savePendingPayment(payment){
+        try {
+          localStorage.setItem(pendingPaymentKey, JSON.stringify(payment || {}));
+        } catch (err) {}
+      }
+      function clearPendingPayment(){
+        try {
+          localStorage.removeItem(pendingPaymentKey);
+        } catch (err) {}
+      }
+      function matchesPendingContext(pending, licenciaId, empresaId){
+        if (!pending) return false;
+        if (licenciaId && String(pending.licenciaId || '') !== String(licenciaId)) return false;
+        return String(pending.empresaId || '') === String(empresaId || '');
+      }
+      function buildReturnContext(params, licenciaId, empresaId){
+        const pending = readPendingPayment();
+        let provider = normalizeProvider(params.get('provider') || params.get('metodo') || params.get('method'));
+        let status = normalizeStatus(params.get('x_response') || params.get('x_transaction_state') || params.get('response') || params.get('status'));
+        if (!status) status = normalizeStatus(params.get('x_cod_response') || params.get('cod_response'));
+        const epaycoGatewayReference = String(params.get('x_ref_payco') || params.get('ref_payco') || '').trim();
+        const invoiceReference = String(params.get('x_id_invoice') || params.get('invoice') || '').trim();
+        let transactionId = String(params.get('x_transaction_id') || params.get('transaction_id') || params.get('id') || epaycoGatewayReference || '').trim();
+        let reference = String(invoiceReference || params.get('reference') || params.get('ref') || epaycoGatewayReference || '').trim();
+
+        if (matchesPendingContext(pending, licenciaId, empresaId)) {
+          if (!provider) provider = normalizeProvider(pending.provider);
+          if (!status) status = normalizeStatus(pending.status);
+          if (!transactionId) transactionId = String(pending.transactionId || '').trim();
+          if (!reference || reference === epaycoGatewayReference) reference = String(pending.reference || reference || '').trim();
+        }
+
+        return {
+          provider: provider,
+          status: status,
+          transactionId: transactionId,
+          reference: reference,
+          gatewayReference: epaycoGatewayReference,
+          rawParams: Object.fromEntries(params.entries()),
+          hasReturn: !!(provider || status || transactionId || reference)
+        };
+      }
+      function renderFeedback(target, kind, title, body){
+        if (!target) return;
+        const className = kind === 'success' ? 'success' : (kind === 'error' ? 'error' : 'muted');
+        target.innerHTML = '<div class="' + className + '"><strong>' + escapeHtml(title) + '</strong><div>' + escapeHtml(body) + '</div></div>';
+      }
+      function buildSuccessPageURL(provider, context, licenciaId, empresaId){
+        const target = new URL('/epayco/pago_exitoso.html', window.location.origin);
+        const normalizedProvider = normalizeProvider(provider || (context && context.provider) || '');
+        if (normalizedProvider) target.searchParams.set('provider', normalizedProvider);
+        if (licenciaId) target.searchParams.set('licencia_id', String(licenciaId));
+        if (empresaId) target.searchParams.set('empresa_id', String(empresaId));
+        if (context && context.reference) target.searchParams.set('reference', String(context.reference));
+        if (context && context.transactionId) target.searchParams.set('transaction_id', String(context.transactionId));
+        return target.toString();
+      }
+      function redirectToSuccessPage(provider, context, licenciaId, empresaId){
+        if (!licenciaId || !empresaId) return false;
+        window.location.replace(buildSuccessPageURL(provider, context, licenciaId, empresaId));
+        return true;
+      }
+      function syncStatusText(target, text){ if (target) target.textContent = text || ''; }
+      function extractResponseContext(data, fallback){
+        const payload = data && data.data && typeof data.data === 'object' ? data.data : null;
+        const context = fallback || {};
+        return {
+          provider: normalizeProvider((data && data.provider) || context.provider),
+          status: normalizeStatus((data && data.status) || (payload && payload.status) || context.status),
+          transactionId: String((data && (data.transaction_id || data.id)) || (payload && (payload.id || payload.transaction_id)) || context.transactionId || '').trim(),
+          reference: String((data && (data.reference || data.ref)) || (payload && (payload.reference || payload.invoice || payload.x_id_invoice)) || context.reference || '').trim(),
+          gatewayReference: String((data && (data.x_ref_payco || data.ref_payco || data.gateway_reference)) || (payload && (payload.x_ref_payco || payload.ref_payco)) || context.gatewayReference || '').trim()
+        };
+      }
+      function hasBackendActivationDecision(data){
+        return !!(data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'activated'));
+      }
+      let epaycoCheckoutScriptPromises = {};
+      function loadEpaycoSmartCheckoutScript(scriptURL){
+        const resolvedURL = String(scriptURL || 'https://checkout.epayco.co/checkout-v2.js').trim();
+        const loadedForURL = Array.prototype.some.call(document.scripts || [], function(existing){
+          return existing && existing.getAttribute && existing.getAttribute('data-epayco-checkout-url') === resolvedURL;
+        });
+        if (loadedForURL && window.ePayco && window.ePayco.checkout && typeof window.ePayco.checkout.configure === 'function') {
+          return Promise.resolve(window.ePayco);
+        }
+        if (epaycoCheckoutScriptPromises[resolvedURL]) return epaycoCheckoutScriptPromises[resolvedURL];
+        epaycoCheckoutScriptPromises[resolvedURL] = new Promise(function(resolve, reject){
+          const script = document.createElement('script');
+          script.src = resolvedURL;
+          script.async = true;
+          script.setAttribute('data-epayco-checkout-url', resolvedURL);
+          script.onload = function(){
+            if (window.ePayco && window.ePayco.checkout && typeof window.ePayco.checkout.configure === 'function') {
+              resolve(window.ePayco);
+              return;
+            }
+            delete epaycoCheckoutScriptPromises[resolvedURL];
+            reject(new Error('La librería de Epayco no quedó disponible en la página.'));
+          };
+          script.onerror = function(){
+            delete epaycoCheckoutScriptPromises[resolvedURL];
+            reject(new Error('No se pudo cargar la librería de checkout de Epayco.'));
+          };
+          document.head.appendChild(script);
+        });
+        return epaycoCheckoutScriptPromises[resolvedURL];
+      }
+      function preferredEpaycoCheckoutType(rawType){
+        const requested = String(rawType || '').trim().toLowerCase();
+        const isMobile = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+        if (isMobile) return 'onpage';
+        return requested === 'onpage' ? 'onpage' : 'standard';
+      }
+      function openEpaycoSmartCheckout(epaycoRuntime, sessionId, rawType, mode){
+        if (!epaycoRuntime || !epaycoRuntime.checkout || typeof epaycoRuntime.checkout.configure !== 'function') {
+          throw new Error('La librería de Epayco no quedó disponible para abrir el checkout.');
+        }
+        const firstType = preferredEpaycoCheckoutType(rawType);
+        const fallbackType = firstType === 'onpage' ? 'standard' : 'onpage';
+        const testMode = String(mode || '').trim().toLowerCase() === 'sandbox';
+        let lastError = null;
+        for (const type of [firstType, fallbackType]) {
+          try {
+            const checkout = epaycoRuntime.checkout.configure({
+              sessionId: sessionId,
+              type: type,
+              test: testMode
+            });
+            if (!checkout || typeof checkout.open !== 'function') {
+              throw new Error('Epayco no devolvió una instancia de checkout válida.');
+            }
+            if (typeof checkout.onErrors === 'function') {
+              checkout.onErrors(function(errors){
+                const detail = Array.isArray(errors) && errors.length ? JSON.stringify(errors) : String(errors || 'Error desconocido');
+                syncStatusText(document.getElementById('epaycoStatus'), 'Epayco reportó un error al abrir el checkout: ' + detail);
+                var btn = document.getElementById('payEpaycoBtn');
+                if (btn) {
+                  btn.disabled = false;
+                  btn.textContent = originalButtonLabel('epayco');
+                }
+              });
+            }
+            checkout.open();
+            return true;
+          } catch (err) {
+            lastError = err;
+          }
+        }
+        throw lastError || new Error('No se pudo abrir Epayco Smart Checkout.');
+      }
+      function openEpaycoClassicCheckout(epaycoRuntime, checkoutConfig, checkoutData){
+        if (!epaycoRuntime || !epaycoRuntime.checkout || typeof epaycoRuntime.checkout.configure !== 'function') {
+          throw new Error('La librería de Epayco no quedó disponible para abrir el checkout estándar.');
+        }
+        const config = checkoutConfig && typeof checkoutConfig === 'object' ? checkoutConfig : {};
+        const data = checkoutData && typeof checkoutData === 'object' ? checkoutData : {};
+        if (!config.key || !data.amount || !data.name) {
+          throw new Error('La configuración de Epayco está incompleta para abrir el checkout estándar.');
+        }
+        const checkout = epaycoRuntime.checkout.configure({
+          key: String(config.key || '').trim(),
+          test: !!config.test
+        });
+        if (!checkout || typeof checkout.open !== 'function') {
+          throw new Error('Epayco no devolvió una instancia válida del checkout estándar.');
+        }
+        checkout.open(data);
+        return true;
+      }
+      function isSafeEpaycoCheckoutAction(rawURL){
+        try {
+          const parsed = new URL(String(rawURL || ''), window.location.origin);
+          return parsed.protocol === 'https:' &&
+            parsed.hostname.toLowerCase() === 'secure.payco.co' &&
+            parsed.pathname.replace(/\/+$/, '') === '/checkout.php';
+        } catch (err) {
+          return false;
+        }
+      }
+      function isSafeEpaycoRedirectURL(rawURL){
+        try {
+          const parsed = new URL(String(rawURL || ''), window.location.origin);
+          const host = parsed.hostname.toLowerCase();
+          const path = parsed.pathname.replace(/\/+$/, '');
+          if (parsed.protocol !== 'https:') return false;
+          if ((host === 'secure.payco.co' || host === 'checkout.epayco.co') && path === '/checkout.php') return false;
+          return host === 'secure.payco.co' || host === 'checkout.epayco.co' || host.endsWith('.epayco.co') || host.endsWith('.payco.co');
+        } catch (err) {
+          return false;
+        }
+      }
+      function submitEpaycoClassicCheckoutForm(formSpec){
+        const spec = formSpec && typeof formSpec === 'object' ? formSpec : null;
+        if (!spec || !spec.action || !spec.fields || typeof spec.fields !== 'object') return false;
+        if (!isSafeEpaycoCheckoutAction(spec.action)) return false;
+
+        const form = document.createElement('form');
+        form.method = String(spec.method || 'POST').trim().toUpperCase() === 'GET' ? 'GET' : 'POST';
+        form.action = String(spec.action || '').trim();
+        form.style.display = 'none';
+        Object.keys(spec.fields).forEach(function(key){
+          if (!Object.prototype.hasOwnProperty.call(spec.fields, key)) return;
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = String(spec.fields[key] == null ? '' : spec.fields[key]);
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        return true;
+      }
+      function isSafeWompiCheckoutAction(rawURL){
+        try {
+          const parsed = new URL(String(rawURL || ''), window.location.origin);
+          return parsed.protocol === 'https:' &&
+            parsed.hostname.toLowerCase() === 'checkout.wompi.co' &&
+            parsed.pathname.replace(/\/+$/, '') === '/p';
+        } catch (err) {
+          return false;
+        }
+      }
+      function submitWompiCheckoutForm(formSpec){
+        const spec = formSpec && typeof formSpec === 'object' ? formSpec : null;
+        if (!spec || !spec.action || !spec.fields || typeof spec.fields !== 'object') return false;
+        if (!isSafeWompiCheckoutAction(spec.action)) return false;
+
+        const form = document.createElement('form');
+        form.method = String(spec.method || 'GET').trim().toUpperCase() === 'POST' ? 'POST' : 'GET';
+        form.action = String(spec.action || '').trim();
+        form.style.display = 'none';
+        Object.keys(spec.fields).forEach(function(key){
+          if (!Object.prototype.hasOwnProperty.call(spec.fields, key)) return;
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = String(spec.fields[key] == null ? '' : spec.fields[key]);
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        return true;
+      }
+      async function fetchProviderStatus(provider, context, licenciaId, empresaId){
+        const normalizedProvider = normalizeProvider(provider);
+        if (!normalizedProvider) throw new Error('No se pudo determinar la pasarela del pago.');
+        const search = new URLSearchParams();
+        if (context && context.transactionId) search.set('id', String(context.transactionId));
+        if (context && context.reference) search.set('reference', String(context.reference));
+        if (context && context.gatewayReference) search.set('x_ref_payco', String(context.gatewayReference));
+        if (context && context.rawParams && typeof context.rawParams === 'object') {
+          Object.keys(context.rawParams).forEach(function(key){
+            if (!key || search.has(key)) return;
+            const value = context.rawParams[key];
+            if (value == null || value === '') return;
+            search.set(key, String(value));
+          });
+        }
+        if (!search.get('id') && !search.get('reference')) throw new Error('No hay referencia suficiente para consultar el pago.');
+        if (licenciaId) search.set('licencia_id', String(licenciaId));
+        if (empresaId) search.set('empresa_id', String(empresaId));
+        let endpoint = '';
+        if (normalizedProvider === 'epayco') {
+          endpoint = '/epayco/transaction_status?' + search.toString();
+        } else {
+          endpoint = '/wompi/transaction_status?' + search.toString();
+        }
+        const response = await fetch(endpoint, { credentials: 'same-origin' });
+        const raw = await response.text();
+        let data = null;
+        try { data = JSON.parse(raw); } catch (err) { data = null; }
+        if (!response.ok) {
+          throw new Error((data && data.error) ? data.error : (raw || 'No se pudo consultar el estado del pago.'));
+        }
+        return data || {};
+      }
+
+      async function run(){
+        const params = new URLSearchParams(window.location.search);
+        const pendingSeed = readPendingPayment();
+        let licenciaId = params.get('licencia_id');
+        let empresaId = params.get('empresa_id');
+        const checkoutMode = String(params.get('checkout_mode') || '').trim();
+        const addonLicenciaIDs = String(params.get('addon_licencia_ids') || '').trim();
+        let checkoutQuantity = Math.max(1, parseInt(params.get('cantidad') || '1', 10) || 1);
+        const initialAsesorID = String(params.get('asesor_id') || params.get('codigo_asesor') || '').trim();
+        const initialDiscountCode = String(params.get('discount_code') || params.get('codigo_descuento') || '').trim();
+        const initialCustomerEmail = String(params.get('customer_email') || params.get('cliente_email') || '').trim();
+        if (!licenciaId && pendingSeed && pendingSeed.licenciaId) licenciaId = String(pendingSeed.licenciaId);
+        if (!empresaId && pendingSeed && pendingSeed.empresaId) empresaId = String(pendingSeed.empresaId);
+
+        const returnContext = buildReturnContext(params, licenciaId, empresaId);
+        const container = document.getElementById('payment');
+
+        if (!licenciaId) {
+          if (returnContext.hasReturn) {
+            if (isSuccessStatus(returnContext.status)) {
+              clearPendingPayment();
+              if (redirectToSuccessPage(returnContext.provider, returnContext, licenciaId, empresaId)) return;
+              container.innerHTML = '<div class="success"><strong>Pago aprobado</strong><div>La pasarela confirmó tu pago. Si no ves la licencia activa todavía, vuelve a empresas y recarga el listado.</div></div>';
+            } else if (isFinalStatus(returnContext.status)) {
+              clearPendingPayment();
+              container.innerHTML = '<div class="error"><strong>Pago no completado</strong><div>La pasarela reportó el estado ' + escapeHtml(returnContext.status || 'DESCONOCIDO') + '. Puedes volver a intentar el pago.</div></div>';
+            } else {
+              container.innerHTML = '<div class="muted"><strong>Pago en verificación</strong><div>Estamos recuperando el estado del pago. Si no ves cambios en unos segundos, vuelve a la selección de empresas.</div></div>';
+            }
+            return;
+          }
+          container.innerText = 'ID de licencia no proporcionado.';
+          return;
+        }
+
+        try{
+          let adminEmail = '';
+          try{
+            const meRes = await fetch('/me');
+            if (meRes.ok) {
+              const me = await meRes.json();
+              adminEmail = me.email || me.Email || '';
+            }
+          }catch(e){}
+
+          const summaryParams = new URLSearchParams();
+          summaryParams.set('licencia_id', String(licenciaId));
+          if (empresaId) summaryParams.set('empresa_id', String(empresaId));
+          if (checkoutMode) summaryParams.set('checkout_mode', checkoutMode);
+          if (addonLicenciaIDs) summaryParams.set('addon_licencia_ids', addonLicenciaIDs);
+          if (initialDiscountCode) summaryParams.set('discount_code', initialDiscountCode);
+          if (initialAsesorID) summaryParams.set('asesor_id', initialAsesorID);
+          summaryParams.set('cantidad', String(checkoutQuantity));
+
+          function resolveCountryFromBrowser(){
+            try {
+              const lang = String((navigator.languages && navigator.languages[0]) || navigator.language || '').trim();
+              const match = /-([A-Za-z]{2})\b/.exec(lang);
+              if (match && match[1]) return match[1].toUpperCase();
+            } catch (e) {}
+            return '';
+          }
+          function countryName(code){
+            const c = String(code || '').toUpperCase();
+            if (c === 'CO') return 'Colombia';
+            if (c === 'EC') return 'Ecuador';
+            if (c === 'PA') return 'Panamá';
+            if (c === 'MX') return 'México';
+            if (c === 'US') return 'Estados Unidos';
+            if (c === 'ES') return 'España';
+            return c || 'No detectado';
+          }
+          function normalizeCountryCode(code){
+            const c = String(code || '').trim().toUpperCase().slice(0, 2);
+            return /^[A-Z]{2}$/.test(c) ? c : '';
+          }
+          function resolveCountryForCheckout(){
+            const fromQuery = normalizeCountryCode(params.get('pais_codigo'));
+            if (fromQuery) return fromQuery;
+            try {
+              const stored = normalizeCountryCode(localStorage.getItem('pcs_checkout_country'));
+              if (stored) return stored;
+            } catch (e) {}
+            return normalizeCountryCode(resolveCountryFromBrowser()) || 'CO';
+          }
+          function countrySourceLabel(source){
+            const value = String(source || '').trim().toLowerCase();
+            if (value === 'configuracion_avanzada') return 'configuración general de la empresa';
+            if (value === 'facturacion_electronica') return 'perfil fiscal de facturación electrónica';
+            if (value === 'licencia_activa') return 'licencia activa';
+            if (value === 'request') return 'selección manual';
+            if (value === 'timezone') return 'zona horaria';
+            if (value === 'language') return 'idioma del navegador';
+            return 'valor por defecto';
+          }
+          const countryOptions = ['CO', 'EC', 'PA', 'MX', 'US', 'ES'];
+          const requestedPaisCodigo = resolveCountryForCheckout();
+          const methodParams = new URLSearchParams();
+          if (empresaId) methodParams.set('empresa_id', String(empresaId));
+          methodParams.set('pais_codigo', requestedPaisCodigo);
+          methodParams.set('tz', Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+          methodParams.set('lang', String((navigator.languages && navigator.languages[0]) || navigator.language || ''));
+
+          const [summaryRes, methodsRes] = await Promise.all([
+            fetch('/api/public/licencias/checkout_summary?' + summaryParams.toString(), { credentials: 'same-origin' }),
+            fetch('/api/public/licencias/payment_methods?' + methodParams.toString(), { credentials: 'same-origin' })
+          ]);
+          if (!summaryRes.ok) { container.innerText = 'Error al obtener el resumen público de la licencia'; return }
+          if (!methodsRes.ok) { container.innerText = 'Error al obtener métodos de pago disponibles'; return }
+
+          const summaryPayload = await summaryRes.json();
+          const methodsPayload = await methodsRes.json();
+          const paisCodigo = normalizeCountryCode(methodsPayload && methodsPayload.pais_codigo) || requestedPaisCodigo;
+          const paisSource = String((methodsPayload && methodsPayload.pais_source) || '').trim();
+          const lic = summaryPayload && summaryPayload.licencia ? summaryPayload.licencia : null;
+          const selectedEmpresa = summaryPayload && summaryPayload.empresa ? summaryPayload.empresa : null;
+          const paymentProviders = Array.isArray(methodsPayload.providers) ? methodsPayload.providers : [];
+          const epaycoProvider = paymentProviders.find(function(provider){ return provider && provider.id === 'epayco'; }) || null;
+          const wompiProvider = paymentProviders.find(function(provider){ return provider && provider.id === 'wompi'; }) || null;
+          const availableMethods = [];
+          if (epaycoProvider && epaycoProvider.available) availableMethods.push('epayco');
+          if (wompiProvider && wompiProvider.available) availableMethods.push('wompi');
+          const unavailableMessages = [];
+          if (epaycoProvider && !epaycoProvider.available) {
+            unavailableMessages.push(epaycoProvider.country_enabled === false
+              ? 'Epayco no está habilitado para ' + countryName(paisCodigo) + ' en la configuración de pasarelas por país.'
+              : (epaycoProvider.enabled
+                ? 'Epayco está activado, pero requiere Public Key + Private Key para Smart Checkout o Public Key + Customer ID + P_KEY para checkout estándar.'
+                : 'Epayco está desactivado en configuración avanzada.'));
+          }
+          if (wompiProvider && !wompiProvider.available) {
+            unavailableMessages.push(wompiProvider.country_enabled === false
+              ? 'Wompi no está habilitado para ' + countryName(paisCodigo) + ' en la configuración de pasarelas por país.'
+              : (wompiProvider.enabled
+                ? 'Wompi está activado, pero le faltan credenciales obligatorias para Web Checkout (Public Key e Integrity Key).'
+                : 'Wompi está desactivado en configuración avanzada.'));
+          }
+
+          const paymentCards = [];
+          const initialCheckoutSummary = summaryPayload && summaryPayload.summary ? summaryPayload.summary : null;
+          const initialZeroTotal = !!(initialCheckoutSummary && initialCheckoutSummary.is_zero_total);
+          if (epaycoProvider && epaycoProvider.available) {
+            const epaycoBadge = availableMethods.length === 1 ? 'Único disponible' : 'Epayco';
+            paymentCards.push(''+
+              '<button id="selectEpaycoCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-epayco">'+
+              '<span class="payment-method-badge">' + escapeHtml(epaycoBadge) + '</span>'+
+              '<img class="payment-method-logo payment-method-logo-epayco" src="/img/logo epayco.png" alt="Logo de Epayco">'+
+              '<span class="payment-bank-brand">'+
+                '<img class="payment-bank-logo payment-bank-logo-davivienda" src="/img/davivienda-logo.svg" alt="Logo de Davivienda">'+
+                '<span>Grupo Davivienda</span>'+
+              '</span>'+
+              '<span class="method-name">Epayco</span>'+
+              '<span class="method-desc">Tarjeta, PSE y otros</span>'+
+              '</button>'
+            );
+          }
+          if (wompiProvider && wompiProvider.available && !initialZeroTotal) {
+            const wompiBadge = availableMethods.length === 1 ? 'Único disponible' : 'Wompi';
+            paymentCards.push(''+
+              '<button id="selectWompiCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-wompi">'+
+              '<span class="payment-method-badge">' + escapeHtml(wompiBadge) + '</span>'+
+              '<span class="payment-bank-brand">'+
+                '<img class="payment-bank-logo payment-bank-logo-bancolombia" src="/img/bancolombia-logo.svg" alt="Logo de Bancolombia">'+
+                '<span>Grupo Bancolombia</span>'+
+              '</span>'+
+              '<span class="method-name">Wompi</span>'+
+              '<span class="method-desc">Nequi, PSE y tarjetas</span>'+
+              '</button>'
+            );
+          }
+
+          if (!lic){ container.innerText = 'Licencia no encontrada.'; return }
+
+          const empresaNombre = selectedEmpresa ? String(selectedEmpresa.nombre || selectedEmpresa.Nombre || '').trim() : '';
+          const tipoNombre = String(params.get('tipo_nombre') || lic.tipo_nombre || lic.TipoNombre || '').trim();
+          const licenciaNombre = String(lic.nombre || lic.Nombre || '').trim();
+          const licenciaDescripcion = String(lic.descripcion || lic.Descripcion || '').trim();
+          const licenciaValor = lic.valor || lic.Valor || 0;
+          const licenciaDuracion = String(lic.duracion_dias || lic.DuracionDias || '').trim();
+          const licenciaMaxDocs = String(lic.max_documentos_mensuales || lic.MaxDocumentosMensuales || '').trim();
+          const licenciaVisual = resolveLicenseVisual(lic, tipoNombre);
+          const bundle = summaryPayload && summaryPayload.bundle ? summaryPayload.bundle : null;
+          const checkoutTitle = checkoutMode === 'empresa_bundle'
+            ? 'Renovación agrupada de licencias'
+            : (checkoutMode === 'empresa_addons' ? 'Compra de licencias adicionales' : 'Checkout de licencia');
+          const checkoutSubtitle = checkoutMode === 'empresa_bundle'
+            ? 'Renueva la licencia base y los adicionales activos en un solo cobro periódico.'
+            : (checkoutMode === 'empresa_addons'
+              ? 'Agrega módulos o funciones específicas sobre la licencia base y súmalos al cobro periódico de la empresa.'
+              : 'Revisa los datos de la licencia, agrega descuentos si aplica y continúa con la pasarela disponible.');
+          const pageTitleEl = document.getElementById('pageTitle');
+          if (pageTitleEl) pageTitleEl.textContent = licenciaNombre || 'Pagar Licencia';
+
+          container.innerHTML = ''+
+            '<div class="checkout-licencia-shell">'+
+              '<section class="portal-intro checkout-licencia-hero">'+
+                '<div class="portal-intro-copy">'+
+                  '<p class="checkout-eyebrow">' + escapeHtml(checkoutTitle) + '</p>'+
+                  '<h2 class="brand-title checkout-brand-title"><span>Confirma tu licencia</span><span>y completa el pago</span></h2>'+
+                  '<p class="brand-subtitle checkout-brand-subtitle">' + escapeHtml(checkoutSubtitle) + '</p>'+
+                  '<div class="checkout-mini-pills" style="margin-top:10px;">' +
+                    '<span class="checkout-mini-pill">País de pago: ' + escapeHtml(countryName(paisCodigo)) + ' (' + escapeHtml(paisCodigo) + ')</span>' +
+                    '<span class="checkout-mini-pill">Origen: ' + escapeHtml(countrySourceLabel(paisSource)) + '</span>' +
+                    (checkoutMode ? '<span class="checkout-mini-pill">Modo: ' + escapeHtml(checkoutMode) + '</span>' : '') +
+                  '</div>' +
+                '</div>'+
+              '</section>'+
+              '<div class="portal-grid portal-home-grid checkout-summary-grid">'+
+                '<article class="portal-card home-offer-card checkout-home-card checkout-license-card">'+
+                  '<div class="checkout-license-topline">'+
+                    '<div class="checkout-card-kicker">Licencia seleccionada</div>'+
+                    '<div class="home-offer-media checkout-license-media"><img src="' + escapeHtml(licenciaVisual.icon) + '" alt="Licencia" class="card-logo"></div>'+
+                  '</div>'+
+                  '<h3>'+escapeHtml(licenciaNombre)+'</h3>'+
+                  '<p>'+escapeHtml(licenciaDescripcion || 'Licencia lista para pago y activación al confirmar la transacción.')+'</p>'+
+                  '<div class="checkout-license-benefits">'+
+                    '<span>Activación controlada</span>'+
+                    '<span>Renovación trazable</span>'+
+                    '<span>Pago seguro</span>'+
+                  '</div>'+
+                  '<div class="checkout-meta-list">'+
+                    (empresaNombre ? '<span class="checkout-meta-pill">Empresa: ' + escapeHtml(empresaNombre) + '</span>' : '')+
+                    (tipoNombre ? '<span class="checkout-meta-pill">Tipo: ' + escapeHtml(tipoNombre) + '</span>' : '')+
+                    (licenciaVisual.label ? '<span class="checkout-meta-pill">Plantilla: ' + escapeHtml(licenciaVisual.label) + '</span>' : '')+
+                    (licenciaDuracion ? '<span class="checkout-meta-pill">Duración: ' + escapeHtml(licenciaDuracion) + ' días</span>' : '')+
+                    (licenciaMaxDocs ? '<span class="checkout-meta-pill">Documentos: ' + escapeHtml(licenciaMaxDocs) + '/mes</span>' : '')+
+                  '</div>'+
+                  '<div class="checkout-license-value-row">'+
+                    '<span>Total a pagar ahora</span>'+
+                    '<strong class="checkout-price-chip">'+escapeHtml(formatCurrency((summaryPayload.summary && summaryPayload.summary.total_value) || licenciaValor))+'</strong>'+
+                  '</div>'+
+                '</article>'+
+                '<article class="portal-card home-offer-card checkout-home-card checkout-discount-card">'+
+                  '<div class="checkout-license-topline">'+
+                    '<div class="checkout-card-kicker">Códigos y referencias</div>'+
+                    '<div class="home-offer-media checkout-license-media"><img src="/img/tags-color.svg" alt="Descuentos" class="card-logo"></div>'+
+                  '</div>'+
+                  '<h3>Beneficios comerciales</h3>'+
+                  '<p>Aplica promociones y registra el asesor comercial asociado antes de abrir la pasarela.</p>'+
+                  '<div class="checkout-code-stack">'+
+                    '<div class="form-col">'+
+                      '<label class="form-label" for="checkoutCountrySelect">País de pago</label>'+
+                      '<select id="checkoutCountrySelect" class="form-input">'+
+                        countryOptions.map(function(code){
+                          return '<option value="' + escapeHtml(code) + '"' + (code === paisCodigo ? ' selected' : '') + '>' + escapeHtml(countryName(code)) + ' (' + escapeHtml(code) + ')</option>';
+                        }).join('')+
+                      '</select>'+
+                      '<div class="form-help">Si la empresa tiene país configurado, esa configuración tiene prioridad sobre navegador o selección manual.</div>'+
+                    '</div>'+
+                    '<div class="form-col">'+
+                      '<label class="form-label" for="discountCode">Código de descuento</label>'+
+                      '<input id="discountCode" class="form-input" type="text" placeholder="Código promocional" value="' + escapeHtml(initialDiscountCode) + '">'+
+                    '</div>'+
+                    (checkoutMode ? '' : '<div class="form-col">'+
+                      '<label class="form-label" for="checkoutQuantity">Cantidad de períodos</label>'+
+                      '<input id="checkoutQuantity" class="form-input" type="number" min="1" max="24" step="1" value="' + escapeHtml(String(checkoutQuantity)) + '">'+
+                      '<div class="form-help">El máximo se define en Super administrador. El total y la vigencia se actualizan antes del pago.</div>'+
+                    '</div>')+
+                    '<div class="form-col">'+
+                      '<label class="form-label" for="asesorId">Código de asesor comercial</label>'+
+                      '<input id="asesorId" class="form-input" type="text" placeholder="Ej: AC-123ABC" value="' + escapeHtml(initialAsesorID) + '">'+
+                      '<div class="form-help">También aplica para activar licencias de prueba de 15 días y dejar asociado el asesor.</div>'+
+                    '</div>'+
+                    '<div class="form-col">'+
+                      '<label class="form-label" for="customerEmail">Correo del cliente</label>'+
+                      '<input id="customerEmail" class="form-input" type="email" placeholder="cliente@correo.com" value="' + escapeHtml(initialCustomerEmail) + '">'+
+                      '<div class="form-help">Aquí llegará el correo de licencia y, si el pago es mayor a cero, la factura electrónica adjunta.</div>'+
+                    '</div>'+
+                  '</div>'+
+                  '<div class="checkout-mini-pills">'+
+                    '<span class="checkout-mini-pill">Opcional</span>'+
+                    '<span class="checkout-mini-pill">Validación automática</span>'+
+                  '</div>'+
+                  '<div id="discountCodeStatus" class="form-help checkout-discount-status"></div>'+
+                '</article>'+
+              '</div>'+
+              '<section class="card checkout-summary-card">'+
+                '<div class="checkout-payment-header">'+
+                  '<div>'+
+                    '<p class="checkout-eyebrow">Resumen</p>'+
+                    '<h3 class="payment-method-title">Total de la licencia</h3>'+
+                  '</div>'+
+                  '<p class="checkout-payment-copy">El total cambia si el código de descuento aplica. Si llega a cero, la licencia se activa sin pasarela.</p>'+
+                '</div>'+
+                '<div class="checkout-totals-grid">'+
+                  '<div class="checkout-total-item"><span>Valor base</span><strong id="summaryOriginalValue">' + escapeHtml(formatCurrency(licenciaValor)) + '</strong></div>'+
+                  '<div class="checkout-total-item"><span>Descuento</span><strong id="summaryDiscountValue">' + escapeHtml(formatCurrency(0)) + '</strong></div>'+
+                  '<div class="checkout-total-item total"><span>Total</span><strong id="summaryTotalValue">' + escapeHtml(formatCurrency(licenciaValor)) + '</strong></div>'+
+                '</div>'+
+                '<div id="bundleSummaryBox" class="form-help checkout-payment-feedback" style="display:none;"></div>'+
+                '<div id="bundleSummaryItems" class="checkout-mini-pills" style="display:none;"></div>'+
+                '<div id="checkoutSummaryMessage" class="form-help checkout-payment-feedback"></div>'+
+              '</section>'+
+              '<section id="freeActivationSection" class="card checkout-free-activation" style="display:none;">'+
+                '<div class="checkout-payment-header">'+
+                  '<div>'+
+                    '<p class="checkout-eyebrow">Activación directa</p>'+
+                    '<h3 class="payment-method-title">No se requiere pago</h3>'+
+                  '</div>'+
+                  '<p class="checkout-payment-copy">Esta licencia quedó en total cero. Se activará una sola vez por empresa y no abrirá pasarela.</p>'+
+                '</div>'+
+                '<button id="activateFreeBtn" class="btn" type="button">Activar licencia</button>'+
+                '<div id="freeActivationStatus" class="form-help"></div>'+
+              '</section>'+
+              '<div id="paymentFeedback" class="form-help checkout-payment-feedback"></div>'+
+              '<section id="paymentHub" class="card checkout-payment-hub">'+
+                '<div class="checkout-payment-header">'+
+                  '<div>'+
+                    '<p class="checkout-eyebrow">Pago</p>'+
+                    '<h3 class="payment-method-title">Formas de pago disponibles</h3>'+
+                  '</div>'+
+                  '<p class="checkout-payment-copy">La pasarela disponible se abre desde esta misma página y el estado del pago se retoma automáticamente al volver.</p>'+
+                '</div>'+
+                (paymentCards.length > 1
+                  ? '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
+                  : '')+
+                (paymentCards.length === 1
+                  ? '<div class="form-help checkout-single-method-help">Solo hay una forma de pago disponible en este momento. La dejamos activa para continuar más rápido.</div>'
+                  : '')+
+                (paymentCards.length === 0
+                  ? '<div class="form-help error">' + escapeHtml(unavailableMessages.length
+                    ? unavailableMessages.join(' ')
+                    : 'Actualmente no hay métodos de pago activos. Activa Epayco o Wompi desde configuración avanzada.') + '</div>'
+                  : '')+
+            ((epaycoProvider && epaycoProvider.available)
+              ? '<div id="epaycoPanel" class="payment-method-panel payment-method-panel-epayco">'+
+                '<div class="method-panel-heading payment-method-heading-with-logo payment-method-heading-with-logo-epayco">'+
+                  '<span class="payment-method-panel-logo-shell"><img class="payment-method-panel-logo" src="/img/logo epayco.png" alt="Logo de Epayco"></span>'+
+                  '<span class="payment-method-panel-title">Epayco</span>'+
+                '</div>'+
+                '<div class="small payment-method-hint payment-method-brand-copy">Abre el checkout seguro de Epayco desde esta tarjeta y vuelve aquí para que el sistema confirme el pago.</div>'+
+                '<label class="small payment-method-check"><input id="epaycoTermsChk" type="checkbox"> Acepto términos y tratamiento de datos</label>'+
+                '<button id="payEpaycoBtn" class="btn secondary payment-btn-epayco" type="button">Pagar con Epayco</button>'+
+                '<div id="epaycoStatus" class="small payment-method-status"></div>'+
+                '</div>'
+              : '')+
+            ((wompiProvider && wompiProvider.available)
+              ? '<div id="wompiPanel" class="payment-method-panel payment-method-panel-wompi" style="display:none;">'+
+                '<div class="method-panel-heading">Wompi</div>'+
+                '<div id="wompiCheckoutHint" class="small payment-method-hint">Abre el Web Checkout seguro de Wompi para elegir Nequi, PSE o tarjeta. Al volver, esta página retoma la verificación con la referencia guardada.</div>'+
+                '<label class="small payment-method-check"><input id="wompiTermsChk" type="checkbox"> Acepto continuar al checkout seguro de Wompi</label>'+
+                '<div id="wompiTermsLinks" class="small payment-method-links"></div>'+
+                '<button id="payWompiBtn" class="btn secondary payment-btn-wompi" type="button">Pagar con Wompi</button>'+
+                '<div id="wompiStatus" class="small payment-method-status"></div>'+
+                '</div>'
+              : '')+
+              '</section>'+
+            '</div>';
+
+          const ui = {
+            feedback: document.getElementById('paymentFeedback'),
+            selectWompiCard: document.getElementById('selectWompiCard'),
+            selectEpaycoCard: document.getElementById('selectEpaycoCard'),
+            wompiPanel: document.getElementById('wompiPanel'),
+            epaycoPanel: document.getElementById('epaycoPanel'),
+            payWompiBtn: document.getElementById('payWompiBtn'),
+            wompiTermsChk: document.getElementById('wompiTermsChk'),
+            wompiStatus: document.getElementById('wompiStatus'),
+            wompiTermsLinks: document.getElementById('wompiTermsLinks'),
+            wompiCheckoutHint: document.getElementById('wompiCheckoutHint'),
+            payEpaycoBtn: document.getElementById('payEpaycoBtn'),
+            epaycoTermsChk: document.getElementById('epaycoTermsChk'),
+            epaycoStatus: document.getElementById('epaycoStatus'),
+            discountCodeInput: document.getElementById('discountCode'),
+            asesorIdInput: document.getElementById('asesorId'),
+            customerEmailInput: document.getElementById('customerEmail'),
+            checkoutQuantityInput: document.getElementById('checkoutQuantity'),
+            checkoutCountrySelect: document.getElementById('checkoutCountrySelect'),
+            summaryOriginalValue: document.getElementById('summaryOriginalValue'),
+            summaryDiscountValue: document.getElementById('summaryDiscountValue'),
+            summaryTotalValue: document.getElementById('summaryTotalValue'),
+            bundleSummaryBox: document.getElementById('bundleSummaryBox'),
+            bundleSummaryItems: document.getElementById('bundleSummaryItems'),
+            checkoutSummaryMessage: document.getElementById('checkoutSummaryMessage'),
+            discountCodeStatus: document.getElementById('discountCodeStatus'),
+            freeActivationSection: document.getElementById('freeActivationSection'),
+            freeActivationStatus: document.getElementById('freeActivationStatus'),
+            activateFreeBtn: document.getElementById('activateFreeBtn'),
+            paymentHub: document.getElementById('paymentHub')
+          };
+
+          var checkoutSummaryState = summaryPayload && summaryPayload.summary ? summaryPayload.summary : null;
+          var summaryTimer = null;
+
+          async function fetchCheckoutSummary(){
+            var query = new URLSearchParams();
+            query.set('licencia_id', String(licenciaId || ''));
+            if (empresaId) query.set('empresa_id', String(empresaId));
+            if (checkoutMode) query.set('checkout_mode', checkoutMode);
+            if (addonLicenciaIDs) query.set('addon_licencia_ids', addonLicenciaIDs);
+            query.set('cantidad', String(checkoutQuantity));
+            var code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim();
+            if (code) query.set('discount_code', code);
+            var advisor = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim();
+            if (advisor) query.set('asesor_id', advisor);
+            var res = await fetch('/api/public/licencias/checkout_summary?' + query.toString(), { credentials: 'same-origin' });
+            var raw = await res.text();
+            var data = null;
+            try { data = raw ? JSON.parse(raw) : null; } catch(e) { data = null; }
+            if (!res.ok) throw new Error((data && data.error) || raw || 'No se pudo calcular el total de la licencia.');
+            return data || null;
+          }
+
+          function togglePaymentVisibility(showPaymentHub){
+            if (ui.paymentHub) ui.paymentHub.style.display = showPaymentHub ? '' : 'none';
+            if (ui.freeActivationSection) ui.freeActivationSection.style.display = showPaymentHub ? 'none' : '';
+          }
+
+          function renderCheckoutSummary(payloadOrSummary){
+            var payload = payloadOrSummary && payloadOrSummary.summary ? payloadOrSummary : null;
+            var summary = payloadOrSummary && payloadOrSummary.summary ? payloadOrSummary.summary : payloadOrSummary;
+            var bundlePayload = payload && payload.bundle ? payload.bundle : bundle;
+            checkoutSummaryState = summary || null;
+            var originalValue = summary && typeof summary.original_value === 'number' ? summary.original_value : licenciaValor;
+            var discountValue = summary && typeof summary.discount_value === 'number' ? summary.discount_value : 0;
+            var totalValue = summary && typeof summary.total_value === 'number' ? summary.total_value : licenciaValor;
+            if (ui.summaryOriginalValue) ui.summaryOriginalValue.textContent = formatCurrency(originalValue);
+            if (ui.summaryDiscountValue) ui.summaryDiscountValue.textContent = formatCurrency(discountValue);
+            if (ui.summaryTotalValue) ui.summaryTotalValue.textContent = formatCurrency(totalValue);
+            var priceChip = document.querySelector('.checkout-price-chip');
+            if (priceChip) priceChip.textContent = formatCurrency(totalValue);
+            if (ui.bundleSummaryBox) {
+              if (bundlePayload && (Number(bundlePayload.total_periodico_siguiente || 0) > 0 || Number(bundlePayload.total_checkout || 0) > 0)) {
+                ui.bundleSummaryBox.style.display = '';
+                ui.bundleSummaryBox.textContent = 'Siguiente cobro periódico agrupado: ' + formatCurrency(bundlePayload.total_periodico_siguiente || 0)
+                  + (bundlePayload.fecha_corte_base ? (' - corte base: ' + String(bundlePayload.fecha_corte_base)) : '');
+              } else {
+                ui.bundleSummaryBox.style.display = 'none';
+                ui.bundleSummaryBox.textContent = '';
+              }
+            }
+            if (ui.bundleSummaryItems) {
+              var items = bundlePayload && Array.isArray(bundlePayload.items_cobro) ? bundlePayload.items_cobro : [];
+              if (items.length) {
+                ui.bundleSummaryItems.style.display = '';
+                ui.bundleSummaryItems.innerHTML = items.map(function(item) {
+                  var label = String(item.nombre || item.label || 'Licencia').trim();
+                  var amount = formatCurrency(item.valor_cobro || item.valor || 0);
+                  return '<span class="checkout-mini-pill">' + escapeHtml(label) + ': ' + escapeHtml(amount) + '</span>';
+                }).join('');
+              } else {
+                ui.bundleSummaryItems.style.display = 'none';
+                ui.bundleSummaryItems.innerHTML = '';
+              }
+            }
+            if (ui.checkoutSummaryMessage) ui.checkoutSummaryMessage.textContent = summary && summary.message ? summary.message : '';
+            if (ui.discountCodeStatus) {
+              if (summary && (summary.discount_applied || summary.advisor_discount_applied)) {
+                var labels = [];
+                if (summary.discount_applied) labels.push(summary.discount_label || 'código promocional');
+                if (summary.advisor_discount_applied) labels.push(summary.advisor_discount_label || 'promoción de asesor');
+                ui.discountCodeStatus.textContent = 'Descuento aplicado correctamente: ' + labels.join(' + ');
+                ui.discountCodeStatus.classList.remove('error');
+                ui.discountCodeStatus.classList.add('success');
+              } else {
+                ui.discountCodeStatus.textContent = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim() ? 'El código no cambió el total de esta licencia.' : '';
+                ui.discountCodeStatus.classList.remove('success');
+                ui.discountCodeStatus.classList.remove('error');
+              }
+            }
+            var zeroTotal = !!(summary && summary.is_zero_total);
+            togglePaymentVisibility(!zeroTotal);
+            if (ui.activateFreeBtn) ui.activateFreeBtn.disabled = !!(summary && summary.zero_total_blocked);
+            if (ui.freeActivationStatus) {
+              ui.freeActivationStatus.textContent = summary && summary.message ? summary.message : '';
+              ui.freeActivationStatus.classList.toggle('error', !!(summary && summary.zero_total_blocked));
+            }
+          }
+
+          async function refreshCheckoutSummary(){
+            try {
+              var summaryPayload = await fetchCheckoutSummary();
+              renderCheckoutSummary(summaryPayload);
+            } catch (err) {
+              if (ui.discountCodeStatus) {
+                ui.discountCodeStatus.textContent = err && err.message ? err.message : String(err);
+                ui.discountCodeStatus.classList.remove('success');
+                ui.discountCodeStatus.classList.add('error');
+              }
+            }
+          }
+
+          renderCheckoutSummary(summaryPayload);
+
+          function scheduleCheckoutSummaryRefresh(){
+            if (summaryTimer) window.clearTimeout(summaryTimer);
+            summaryTimer = window.setTimeout(refreshCheckoutSummary, 220);
+          }
+
+          function updateUrlState(updates){
+            const nextParams = new URLSearchParams(window.location.search);
+            Object.keys(updates || {}).forEach(function(key){
+              const value = updates[key];
+              if (value === undefined || value === null || value === '') nextParams.delete(key);
+              else nextParams.set(key, String(value));
+            });
+            const query = nextParams.toString();
+            history.replaceState(null, '', window.location.pathname + (query ? ('?' + query) : ''));
+          }
+          function getStatusElement(provider){
+            const normalized = normalizeProvider(provider);
+            if (normalized === 'epayco') return ui.epaycoStatus;
+            if (normalized === 'wompi') return ui.wompiStatus;
+            return null;
+          }
+          function getButton(provider){
+            const normalized = normalizeProvider(provider);
+            if (normalized === 'epayco') return ui.payEpaycoBtn;
+            if (normalized === 'wompi') return ui.payWompiBtn;
+            return null;
+          }
+          function setPaymentMethod(method){
+            if (!availableMethods.length) return;
+            const normalizedInput = normalizeProvider(method);
+            const normalized = availableMethods.indexOf(normalizedInput) >= 0 ? normalizedInput : availableMethods[0];
+            const isWompi = normalized === 'wompi';
+            const isEpayco = normalized === 'epayco';
+            if (ui.selectWompiCard) ui.selectWompiCard.classList.toggle('active', isWompi);
+            if (ui.selectEpaycoCard) ui.selectEpaycoCard.classList.toggle('active', isEpayco);
+            if (ui.wompiPanel) { ui.wompiPanel.classList.toggle('active', isWompi); ui.wompiPanel.style.display = isWompi ? '' : 'none'; }
+            if (ui.epaycoPanel) { ui.epaycoPanel.classList.toggle('active', isEpayco); ui.epaycoPanel.style.display = isEpayco ? '' : 'none'; }
+          }
+          function setProviderBusy(provider, label){
+            const button = getButton(provider);
+            if (!button) return;
+            button.disabled = true;
+            button.textContent = label || 'Verificando...';
+          }
+	          function resetProvider(provider){
+	            const button = getButton(provider);
+	            if (!button) return;
+	            button.disabled = false;
+	            button.textContent = originalButtonLabel(provider);
+	          }
+	          function checkoutIdempotencyKey(provider, payload){
+	            const normalizedProvider = normalizeProvider(provider);
+	            const fingerprint = JSON.stringify(payload || {});
+	            const storageKey = 'pcs_checkout_idempotency_' + normalizedProvider + '_' + String(empresaId || 0) + '_' + String(licenciaId || 0);
+	            try {
+	              const stored = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+	              if (stored && stored.fingerprint === fingerprint && typeof stored.key === 'string' && stored.key.length >= 16) return stored.key;
+	            } catch(e) {}
+	            const randomPart = window.crypto && typeof window.crypto.randomUUID === 'function'
+	              ? window.crypto.randomUUID()
+	              : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + '-' + Math.random().toString(36).slice(2));
+	            const key = 'checkout-' + normalizedProvider + '-' + randomPart;
+	            try { sessionStorage.setItem(storageKey, JSON.stringify({fingerprint: fingerprint, key: key})); } catch(e) {}
+	            return key;
+	          }
+	          function clearCheckoutIdempotencyKey(provider){
+	            const normalizedProvider = normalizeProvider(provider);
+	            try { sessionStorage.removeItem('pcs_checkout_idempotency_' + normalizedProvider + '_' + String(empresaId || 0) + '_' + String(licenciaId || 0)); } catch(e) {}
+	          }
+          function disableAllPayments(){
+            if (ui.payWompiBtn) ui.payWompiBtn.disabled = true;
+            if (ui.payEpaycoBtn) ui.payEpaycoBtn.disabled = true;
+          }
+          function applyResolvedResult(provider, statusData, fallbackContext){
+            const resolved = extractResponseContext(statusData, fallbackContext);
+            const normalizedProvider = normalizeProvider(provider || resolved.provider);
+            const normalizedStatus = normalizeStatus(resolved.status);
+            const statusElement = getStatusElement(normalizedProvider);
+            const label = providerLabel(normalizedProvider);
+            const referenceText = resolved.reference ? ('Referencia: ' + resolved.reference + '.') : 'A?n no tenemos una referencia confirmada por la pasarela.';
+
+            if (resolved.reference || resolved.transactionId) {
+              savePendingPayment({
+                provider: normalizedProvider,
+                licenciaId: licenciaId,
+                empresaId: empresaId || '',
+                transactionId: resolved.transactionId || '',
+                reference: resolved.reference || '',
+                gatewayReference: resolved.gatewayReference || '',
+                status: normalizedStatus || 'PENDING',
+                createdAt: Date.now()
+              });
+            }
+
+            if (isSuccessStatus(normalizedStatus)) {
+              const backendDecision = hasBackendActivationDecision(statusData);
+              if (normalizedProvider === 'epayco' && !backendDecision && (resolved.reference || resolved.transactionId)) {
+                updateUrlState({
+                  provider: normalizedProvider,
+                  status: 'pending',
+                  transaction_id: resolved.transactionId || null,
+                  reference: resolved.reference || null,
+                  licencia_id: licenciaId,
+                  empresa_id: empresaId || null
+                });
+                renderFeedback(ui.feedback, 'muted', 'Activando licencia', 'Epayco aprobó el pago. Estamos confirmando el registro con el servidor para activar la licencia. ' + referenceText);
+                syncStatusText(statusElement, 'Estado ' + label + ': verificando activación');
+                return { done: false, context: resolved };
+              }
+              if (backendDecision && statusData && statusData.discount_blocked) {
+                clearPendingPayment();
+                renderFeedback(ui.feedback, 'error', 'Pago aprobado sin activar', 'El pago fue aprobado, pero el código de descuento ya había sido usado por esta empresa. Contacta soporte para revisar la licencia. ' + referenceText);
+                syncStatusText(statusElement, 'Estado ' + label + ': descuento bloqueado');
+                resetProvider(normalizedProvider);
+                return { done: true, context: resolved };
+              }
+              if (normalizedProvider === 'epayco' && backendDecision && statusData && statusData.activated !== true) {
+                if (statusData.context_found === false) {
+                  clearPendingPayment();
+                  renderFeedback(ui.feedback, 'error', 'Pago aprobado sin licencia asociada', 'Epayco aprobó el pago, pero el servidor no encontró la empresa y licencia para activar. Conserva la referencia y contacta soporte. ' + referenceText);
+                  syncStatusText(statusElement, 'Estado ' + label + ': falta contexto de licencia');
+                  resetProvider(normalizedProvider);
+                  return { done: true, context: resolved };
+                }
+                renderFeedback(ui.feedback, 'muted', 'Activación en proceso', 'Epayco aprobó el pago. Estamos reintentando activar la licencia en el servidor. ' + referenceText);
+                syncStatusText(statusElement, 'Estado ' + label + ': reintentando activación');
+                return { done: false, context: resolved };
+              }
+              clearPendingPayment();
+              updateUrlState({
+                provider: normalizedProvider,
+                status: normalizedStatus.toLowerCase(),
+                transaction_id: resolved.transactionId || null,
+                reference: resolved.reference || null,
+                licencia_id: licenciaId,
+                empresa_id: empresaId || null
+              });
+              if (!redirectToSuccessPage(normalizedProvider, resolved, licenciaId, empresaId)) {
+                renderFeedback(ui.feedback, 'success', 'Pago aprobado', label + ' confirmó el pago y la licencia quedó activa. ' + referenceText);
+                syncStatusText(statusElement, 'Estado ' + label + ': ' + normalizedStatus);
+                disableAllPayments();
+              }
+              return { done: true, context: resolved };
+            }
+
+	            if (isFinalStatus(normalizedStatus)) {
+	              clearCheckoutIdempotencyKey(normalizedProvider);
+	              clearPendingPayment();
+              updateUrlState({
+                provider: normalizedProvider,
+                status: normalizedStatus.toLowerCase(),
+                transaction_id: resolved.transactionId || null,
+                reference: resolved.reference || null,
+                licencia_id: licenciaId,
+                empresa_id: empresaId || null
+              });
+              renderFeedback(ui.feedback, 'error', 'Pago no completado', label + ' reportó el estado ' + normalizedStatus + '. Puedes intentarlo de nuevo. ' + referenceText);
+              syncStatusText(statusElement, 'Estado ' + label + ': ' + normalizedStatus);
+              resetProvider(normalizedProvider);
+              return { done: true, context: resolved };
+            }
+
+            updateUrlState({
+              provider: normalizedProvider,
+              status: 'pending',
+              transaction_id: resolved.transactionId || null,
+              reference: resolved.reference || null,
+              licencia_id: licenciaId,
+              empresa_id: empresaId || null
+            });
+            renderFeedback(ui.feedback, 'muted', 'Pago en verificación', 'Estamos consultando el estado final con ' + label + '. ' + referenceText);
+            syncStatusText(statusElement, 'Estado ' + label + ': ' + (normalizedStatus || 'PENDING'));
+            return { done: false, context: resolved };
+          }
+          function startPolling(provider, context, maxTries){
+            const normalizedProvider = normalizeProvider(provider);
+            if (!normalizedProvider) return;
+            if (!context || (!context.transactionId && !context.reference)) return;
+
+            let tries = 0;
+            var ctrl = { cancelled: false };
+            pollingCtrl = ctrl;
+            setPaymentMethod(normalizedProvider);
+            setProviderBusy(normalizedProvider, 'Verificando...');
+
+            var cancelEl = document.createElement('a');
+            cancelEl.href = '#';
+            cancelEl.textContent = 'Cancelar verificación e intentar de nuevo';
+            cancelEl.style.cssText = 'display:block;margin-top:8px;color:#c00;font-size:13px;cursor:pointer;';
+            cancelEl.addEventListener('click', function(ev){ ev.preventDefault(); doCancelPolling(); });
+            var stEl = getStatusElement(normalizedProvider);
+            if (stEl) stEl.appendChild(cancelEl);
+
+            const poll = async function(){
+              if (ctrl.cancelled) return;
+              tries++;
+              try {
+                const statusData = await fetchProviderStatus(normalizedProvider, context, licenciaId, empresaId);
+                if (ctrl.cancelled) return;
+                const outcome = applyResolvedResult(normalizedProvider, statusData, context);
+                context = outcome.context;
+                if (outcome.done) { pollingCtrl = null; return; }
+              } catch (err) {
+                if (ctrl.cancelled) return;
+                syncStatusText(getStatusElement(normalizedProvider), 'Reintentando verificación con ' + providerLabel(normalizedProvider) + '...');
+                if (stEl) stEl.appendChild(cancelEl);
+              }
+              if (ctrl.cancelled) return;
+              if (tries >= maxTries) {
+                clearPendingPayment();
+                renderFeedback(ui.feedback, 'error', 'No se pudo confirmar el pago', 'Se agotó el tiempo de verificación automática. Puedes intentar un nuevo pago o recargar la página.');
+                syncStatusText(getStatusElement(normalizedProvider), '');
+                resetProvider(normalizedProvider);
+                pollingCtrl = null;
+                return;
+              }
+              setTimeout(poll, 3000);
+            };
+
+            poll();
+          }
+
+          var pollingCtrl = null;
+	          function doCancelPolling(){
+	            const pending = loadPendingPayment();
+	            if (pending && pending.provider) clearCheckoutIdempotencyKey(pending.provider);
+	            if (pollingCtrl) { pollingCtrl.cancelled = true; pollingCtrl = null; }
+            clearPendingPayment();
+            renderFeedback(ui.feedback, '', '', '');
+            ['epayco','wompi'].forEach(function(p){ resetProvider(p); });
+            syncStatusText(ui.epaycoStatus, '');
+            syncStatusText(ui.wompiStatus, '');
+          }
+
+          if (ui.selectWompiCard) ui.selectWompiCard.addEventListener('click', function(){ setPaymentMethod('wompi'); });
+          if (ui.selectEpaycoCard) ui.selectEpaycoCard.addEventListener('click', function(){ setPaymentMethod('epayco'); });
+          if (ui.checkoutCountrySelect) ui.checkoutCountrySelect.addEventListener('change', function(){
+            const nextCountry = normalizeCountryCode(ui.checkoutCountrySelect.value) || 'CO';
+            try { localStorage.setItem('pcs_checkout_country', nextCountry); } catch (e) {}
+            const nextParams = new URLSearchParams(window.location.search);
+            nextParams.set('pais_codigo', nextCountry);
+            window.location.search = nextParams.toString();
+          });
+          if (ui.discountCodeInput) {
+            ui.discountCodeInput.addEventListener('input', scheduleCheckoutSummaryRefresh);
+            ui.discountCodeInput.addEventListener('blur', refreshCheckoutSummary);
+          }
+          if (ui.asesorIdInput) {
+            ui.asesorIdInput.addEventListener('input', scheduleCheckoutSummaryRefresh);
+            ui.asesorIdInput.addEventListener('blur', refreshCheckoutSummary);
+          }
+          if (ui.checkoutQuantityInput) {
+            ui.checkoutQuantityInput.addEventListener('change', function(){
+              checkoutQuantity = Math.max(1, parseInt(ui.checkoutQuantityInput.value || '1', 10) || 1);
+              ui.checkoutQuantityInput.value = String(checkoutQuantity);
+              updateUrlState({ cantidad: checkoutQuantity });
+              refreshCheckoutSummary();
+            });
+          }
+
+          if (ui.activateFreeBtn) ui.activateFreeBtn.addEventListener('click', async function(){
+            var summary = checkoutSummaryState;
+            if (!summary || !summary.is_zero_total) {
+              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = 'Esta licencia todavía no quedó en total cero.';
+              return;
+            }
+            if (summary.zero_total_blocked) {
+              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = summary.message || 'Esta licencia gratuita ya fue usada por esta empresa.';
+              return;
+            }
+            ui.activateFreeBtn.disabled = true;
+            if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = 'Activando licencia...';
+            try {
+              var payload = {
+                licencia_id: Number(licenciaId),
+                cantidad: checkoutQuantity,
+                empresa_id: Number(empresaId || 0),
+                motivo: summary.discount_applied ? 'descuento_total_cero' : 'licencia_valor_cero'
+              };
+              if (checkoutMode) payload.checkout_mode = checkoutMode;
+              if (addonLicenciaIDs) payload.addon_licencia_ids = addonLicenciaIDs.split(',').map(function(v){ return Number(String(v).trim() || 0); }).filter(function(v){ return v > 0; });
+              var freeCustomerEmail = String((ui.customerEmailInput && ui.customerEmailInput.value) || adminEmail || '').trim();
+              if (freeCustomerEmail) payload.customer_email = freeCustomerEmail;
+              var freeCode = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim();
+              if (freeCode) payload.discount_code = freeCode;
+              var freeAsesor = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim();
+              if (freeAsesor) { payload.asesor_id = freeAsesor; }
+              var freeHeaders = {'Content-Type':'application/json'};
+              var csrfToken = readCookieValue('pcs_csrf');
+              if (csrfToken) freeHeaders['X-CSRF-Token'] = csrfToken;
+              var freeRes = await fetch('/licencias/activar_sin_pago', {
+                method: 'POST',
+                headers: freeHeaders,
+                body: JSON.stringify(payload)
+              });
+              var freeRaw = await freeRes.text();
+              var freeData = null;
+              try { freeData = freeRaw ? JSON.parse(freeRaw) : null; } catch(e) { freeData = null; }
+              if (!freeRes.ok) throw new Error((freeData && freeData.error) || freeRaw || 'No se pudo activar la licencia.');
+              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = 'Licencia activada correctamente. Redirigiendo...';
+              window.setTimeout(function(){
+                window.location.href = (freeData && freeData.redirect_url) ? freeData.redirect_url : ('/administrar_empresa.html?id=' + encodeURIComponent(String(empresaId || '')));
+              }, 500);
+            } catch (err) {
+              ui.activateFreeBtn.disabled = false;
+              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = err && err.message ? err.message : String(err);
+            }
+          });
+
+          const preferredProvider = normalizeProvider(params.get('provider') || params.get('metodo') || params.get('method'));
+          const configuredDefaultProvider = normalizeProvider(methodsPayload.default_method);
+          const resolvedDefaultProvider = availableMethods.length === 1
+            ? availableMethods[0]
+            : (availableMethods.indexOf(configuredDefaultProvider) >= 0 ? configuredDefaultProvider : availableMethods[0]);
+          if (availableMethods.length) {
+            if (availableMethods.indexOf(preferredProvider) >= 0) setPaymentMethod(preferredProvider);
+            else setPaymentMethod(resolvedDefaultProvider);
+          }
+
+          refreshCheckoutSummary();
+
+          if (wompiProvider && wompiProvider.available && !(checkoutSummaryState && checkoutSummaryState.is_zero_total)) {
+            try{
+              const termsRes = await fetch('/wompi/terms');
+              if (termsRes.ok) {
+                const terms = await termsRes.json();
+                const linkA = terms.acceptance_permalink ? ('<a href="'+escapeHtml(terms.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a>') : 'Términos';
+                const linkB = terms.personal_data_permalink ? ('<a href="'+escapeHtml(terms.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>') : 'Datos personales';
+                if (ui.wompiTermsLinks) ui.wompiTermsLinks.innerHTML = linkA + ' · ' + linkB;
+                const wompiMode = String(terms.mode || '').toLowerCase();
+                if (ui.wompiCheckoutHint) {
+                  ui.wompiCheckoutHint.textContent = wompiMode.indexOf('sandbox') >= 0
+                    ? 'Wompi está en sandbox. El checkout hospedado permite elegir Nequi, PSE o tarjeta con datos de prueba.'
+                    : 'Wompi está en producción. El checkout hospedado permite elegir Nequi, PSE o tarjeta.';
+                }
+              } else if (ui.wompiTermsLinks) {
+                ui.wompiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
+              }
+            } catch(e){
+              if (ui.wompiTermsLinks) ui.wompiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
+            }
+          }
+
+          if (ui.payWompiBtn) ui.payWompiBtn.addEventListener('click', async function(){
+            if (!ui.wompiTermsChk || !ui.wompiTermsChk.checked) {
+              syncStatusText(ui.wompiStatus, 'Debes aceptar continuar al checkout seguro de Wompi.');
+              return;
+            }
+
+            setProviderBusy('wompi', 'Enviando a Wompi...');
+            syncStatusText(ui.wompiStatus, '');
+            try {
+              const payload = {
+                licencia_id: Number(licenciaId),
+                cantidad: checkoutQuantity
+              };
+              if (checkoutMode) payload.checkout_mode = checkoutMode;
+              if (addonLicenciaIDs) payload.addon_licencia_ids = addonLicenciaIDs.split(',').map(function(v){ return Number(String(v).trim() || 0); }).filter(function(v){ return v > 0; });
+              if (empresaId) payload.empresa_id = Number(empresaId);
+              var wompiCustomerEmail = String((ui.customerEmailInput && ui.customerEmailInput.value) || adminEmail || '').trim();
+              if (wompiCustomerEmail) payload.customer_email = wompiCustomerEmail;
+              try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
+              try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; } } catch(e){}
+
+	              const wompiRes = await fetch('/wompi/create_checkout', {
+	                method: 'POST',
+	                headers: {'Content-Type':'application/json', 'Idempotency-Key': checkoutIdempotencyKey('wompi', payload)},
+                body: JSON.stringify(payload)
+              });
+
+              const raw = await wompiRes.text();
+              let data = null;
+              try { data = JSON.parse(raw); } catch(e) { data = null; }
+              if (!wompiRes.ok) {
+                const msg = data && data.error ? data.error : raw;
+                syncStatusText(ui.wompiStatus, 'Error Wompi: ' + msg);
+                resetProvider('wompi');
+                return;
+              }
+
+              const context = extractResponseContext(data, { provider: 'wompi' });
+              if (!context.reference) {
+                syncStatusText(ui.wompiStatus, 'No se recibió una referencia válida de Wompi.');
+                resetProvider('wompi');
+                return;
+              }
+
+              savePendingPayment({
+                provider: 'wompi',
+                licenciaId: licenciaId,
+                empresaId: empresaId || '',
+                checkoutMode: checkoutMode || '',
+                addonLicenciaIDs: addonLicenciaIDs || '',
+                transactionId: context.transactionId,
+                reference: context.reference,
+                status: context.status || 'PENDING',
+                createdAt: Date.now()
+              });
+              updateUrlState({ provider: 'wompi', status: 'pending', transaction_id: context.transactionId || null, reference: context.reference || null, licencia_id: licenciaId, empresa_id: empresaId || null });
+
+              const checkoutForm = data && (data.checkout_form || (data.data && data.data.checkout_form));
+              if (checkoutForm) {
+                setProviderBusy('wompi', 'Redirigiendo...');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Wompi', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                syncStatusText(ui.wompiStatus, 'Enviando formulario seguro de Wompi...');
+                if (submitWompiCheckoutForm(checkoutForm)) {
+                  return;
+                }
+                syncStatusText(ui.wompiStatus, 'No se pudo abrir el checkout seguro de Wompi. Revisa la configuración de la pasarela.');
+                resetProvider('wompi');
+                return;
+              }
+
+              renderFeedback(ui.feedback, 'muted', 'Checkout Wompi iniciado', 'No se recibió formulario directo del checkout. Mantendremos esta pantalla verificando el estado del pago.');
+              syncStatusText(ui.wompiStatus, 'Estado Wompi: ' + (context.status || 'PENDING'));
+              startPolling('wompi', context, 30);
+            } catch (err) {
+              syncStatusText(ui.wompiStatus, 'Error enviando pago Wompi: ' + (err && err.message ? err.message : String(err)));
+              resetProvider('wompi');
+            }
+          });
+
+          if (ui.payEpaycoBtn) ui.payEpaycoBtn.addEventListener('click', async function(){
+            if (!ui.epaycoTermsChk || !ui.epaycoTermsChk.checked) {
+              syncStatusText(ui.epaycoStatus, 'Debes aceptar términos y autorización de datos para pagar con Epayco.');
+              return;
+            }
+
+            setProviderBusy('epayco', 'Enviando a Epayco...');
+            syncStatusText(ui.epaycoStatus, '');
+            try {
+              const payload = {
+                licencia_id: Number(licenciaId),
+                cantidad: checkoutQuantity
+              };
+              if (checkoutMode) payload.checkout_mode = checkoutMode;
+              if (addonLicenciaIDs) payload.addon_licencia_ids = addonLicenciaIDs.split(',').map(function(v){ return Number(String(v).trim() || 0); }).filter(function(v){ return v > 0; });
+              if (empresaId) payload.empresa_id = Number(empresaId);
+              var epaycoCustomerEmail = String((ui.customerEmailInput && ui.customerEmailInput.value) || adminEmail || '').trim();
+              if (epaycoCustomerEmail) payload.customer_email = epaycoCustomerEmail;
+              try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
+              try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; } } catch(e){}
+
+	              const epayRes = await fetch('/epayco/create_transaction', {
+	                method: 'POST',
+	                headers: {'Content-Type':'application/json', 'Idempotency-Key': checkoutIdempotencyKey('epayco', payload)},
+                body: JSON.stringify(payload)
+              });
+              const raw = await epayRes.text();
+              let data = null;
+              try { data = JSON.parse(raw); } catch(e) { data = null; }
+              if (!epayRes.ok) {
+                const msg = data && data.error ? data.error : raw;
+                syncStatusText(ui.epaycoStatus, 'Error Epayco: ' + msg);
+                resetProvider('epayco');
+                return;
+              }
+
+              const context = extractResponseContext(data, { provider: 'epayco' });
+              if (!context.transactionId && !context.reference) {
+                syncStatusText(ui.epaycoStatus, 'No se recibió una referencia válida de Epayco.');
+                resetProvider('epayco');
+                return;
+              }
+
+              savePendingPayment({
+                provider: 'epayco',
+                licenciaId: licenciaId,
+                empresaId: empresaId || '',
+                checkoutMode: checkoutMode || '',
+                addonLicenciaIDs: addonLicenciaIDs || '',
+                transactionId: context.transactionId,
+                reference: context.reference,
+                status: context.status || 'PENDING',
+                createdAt: Date.now()
+              });
+              updateUrlState({ provider: 'epayco', status: 'pending', transaction_id: context.transactionId || null, reference: context.reference || null, licencia_id: licenciaId, empresa_id: empresaId || null });
+
+              const sessionId = String(data && (data.checkout_session_id || data.session_id || (data.data && (data.data.sessionId || data.data.session_id))) || '').trim();
+              const checkoutType = String(data && (data.checkout_type || (data.data && data.data.type) || 'standard') || 'standard').trim().toLowerCase();
+              const checkoutScriptURL = String(data && (data.checkout_script_url || (data.data && data.data.script_url) || 'https://checkout.epayco.co/checkout-v2.js') || 'https://checkout.epayco.co/checkout-v2.js').trim();
+              const checkoutUrl = data && (data.checkout_url || (data.data && data.data.checkout_url));
+              const checkoutForm = data && (data.checkout_form || (data.data && data.data.checkout_form));
+              const checkoutConfig = data && (data.checkout_config || (data.data && data.data.checkout_config));
+              const checkoutData = data && (data.checkout_data || (data.data && data.data.checkout_data));
+              if (sessionId) {
+                setProviderBusy('epayco', 'Abriendo checkout seguro...');
+                renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se iniciará el Smart Checkout seguro de Epayco. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                syncStatusText(ui.epaycoStatus, 'Preparando Smart Checkout de Epayco...');
+                const epaycoRuntime = await loadEpaycoSmartCheckoutScript(checkoutScriptURL);
+                openEpaycoSmartCheckout(epaycoRuntime, sessionId, checkoutType, data && data.mode);
+                return;
+              }
+              if (checkoutType === 'classic_js' && checkoutConfig && checkoutData) {
+                setProviderBusy('epayco', 'Abriendo checkout seguro...');
+                renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se abrirá el checkout estándar seguro de Epayco. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                syncStatusText(ui.epaycoStatus, 'Preparando checkout estándar de Epayco...');
+                const epaycoRuntime = await loadEpaycoSmartCheckoutScript(checkoutScriptURL || 'https://checkout.epayco.co/checkout.js');
+                openEpaycoClassicCheckout(epaycoRuntime, checkoutConfig, checkoutData);
+                startPolling('epayco', context, 60);
+                return;
+              }
+              if (checkoutForm) {
+                setProviderBusy('epayco', 'Redirigiendo...');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout seguro para completar el pago. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                syncStatusText(ui.epaycoStatus, 'Enviando el formulario seguro de Epayco...');
+                if (submitEpaycoClassicCheckoutForm(checkoutForm)) {
+                  return;
+                }
+                syncStatusText(ui.epaycoStatus, 'No se pudo enviar el formulario seguro de Epayco. Revisa la configuración de la pasarela.');
+                resetProvider('epayco');
+                return;
+              }
+              if (checkoutUrl) {
+                if (!isSafeEpaycoRedirectURL(checkoutUrl)) {
+                  syncStatusText(ui.epaycoStatus, 'Epayco devolvió una URL de checkout no válida o requiere formulario POST. No se redirigió para evitar el error AccessDenied.');
+                  resetProvider('epayco');
+                  return;
+                }
+                setProviderBusy('epayco', 'Redirigiendo...');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout para completar el pago. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                if (ui.epaycoStatus) {
+                  ui.epaycoStatus.innerHTML = 'Redirigiendo a la pasarela de Epayco. Si no ocurre automáticamente, usa este enlace: <a href="' + escapeHtml(checkoutUrl) + '" target="_self" rel="noopener">Abrir Epayco</a>.';
+                }
+                window.setTimeout(function(){
+                  window.location.assign(checkoutUrl);
+                }, 120);
+                return;
+              }
+
+              renderFeedback(ui.feedback, 'muted', 'Checkout Epayco iniciado', 'No se recibió una URL directa del checkout. Mantendremos esta pantalla verificando el estado del pago.');
+              syncStatusText(ui.epaycoStatus, 'Estado Epayco: ' + (context.status || 'PENDING'));
+              startPolling('epayco', context, 30);
+            } catch (err) {
+              syncStatusText(ui.epaycoStatus, 'Error enviando pago Epayco: ' + (err && err.message ? err.message : String(err)));
+              resetProvider('epayco');
+            }
+          });
+
+          var hasUrlReturnParams = !!(
+            params.get('provider') || params.get('metodo') || params.get('method') ||
+            params.get('status') || params.get('x_response') || params.get('x_transaction_state') || params.get('response') ||
+            params.get('x_cod_response') || params.get('cod_response') ||
+            params.get('transaction_id') || params.get('id') || params.get('x_transaction_id') ||
+            params.get('reference') || params.get('ref') || params.get('invoice') || params.get('x_id_invoice') || params.get('ref_payco') || params.get('x_ref_payco')
+          );
+
+          if (returnContext.hasReturn && hasUrlReturnParams) {
+            var providerForReturn = normalizeProvider(returnContext.provider) || availableMethods[0] || '';
+            if (providerForReturn) setPaymentMethod(providerForReturn);
+
+            if ((returnContext.transactionId || returnContext.reference) && providerForReturn) {
+              var returnOutcome = applyResolvedResult(providerForReturn, returnContext, returnContext);
+              if (returnOutcome && !returnOutcome.done) {
+                startPolling(providerForReturn, returnOutcome.context || returnContext, 20);
+              }
+            } else if (returnContext.status) {
+              applyResolvedResult(providerForReturn, returnContext, returnContext);
+            }
+          } else if (returnContext.hasReturn) {
+            var providerForStale = normalizeProvider(returnContext.provider) || availableMethods[0] || '';
+            if (providerForStale) setPaymentMethod(providerForStale);
+            syncStatusText(getStatusElement(providerForStale), 'Se encontró un pago anterior sin completar. Puedes iniciar uno nuevo.');
+            clearPendingPayment();
+          }
+
+        }catch(err){ console.error(err); container.innerText = 'Error: ' + (err && err.message ? err.message : String(err)); }
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+    })();
+  </script>
+  <script src="/js/ai_chat_drawer.js"></script>
+</body>
+</html>

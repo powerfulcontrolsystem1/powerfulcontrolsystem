@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Storage Imagenes</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body>
+  <main class="container empresa-module">
+    <section class="card">
+      <div class="empresa-section-header compact">
+        <div>
+          <h1>Storage Imagenes</h1>
+          <p class="form-help">Administra carpetas empresariales, espacio usado y tamano maximo de imagenes para Domotica y usuarios creados por cada empresa.</p>
+        </div>
+        <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="defaultMaxKb">Tamano maximo general por imagen (KB)</label>
+          <input id="defaultMaxKb" class="form-input" type="number" min="128" max="20480" step="128" value="2048">
+        </div>
+        <div class="form-actions">
+          <button id="saveDefaultBtn" class="btn add" type="button">Guardar limite general</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="empresa-section-header compact">
+        <div>
+          <h2>Empresas y carpetas</h2>
+          <p class="form-help">Cada empresa guarda sus fotos en <code>/uploads/empresas/empresa_ID_nombre/imagenes/</code>, separadas por subcarpetas como <code>domotica</code> y <code>usuarios</code>.</p>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Carpeta</th>
+              <th>Imagenes</th>
+              <th>Usado MB</th>
+              <th>Max KB</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="6">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/super/domotica_storage.js?v=20260813-p110-csp"></script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

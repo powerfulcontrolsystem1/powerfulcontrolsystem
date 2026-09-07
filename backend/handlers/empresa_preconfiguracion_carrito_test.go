@@ -1,0 +1,182 @@
+package handlers
+
+import (
+	"encoding/json"
+	"testing"
+)
+
+func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
+	cfg := defaultEmpresaPreconfigCarritoUI()
+
+	wantTrue := []string{
+		"mostrar_boton_buscar_productos",
+		"mostrar_busqueda_catalogo",
+		"mostrar_codigo_manual_item",
+		"mostrar_observaciones_item",
+		"mostrar_selector_cliente",
+		"mostrar_impuestos_item",
+		"mostrar_lector_codigo_barras",
+		"permitir_pago_mixto",
+		"metodo_pago_efectivo",
+		"metodo_pago_tarjeta_credito",
+		"metodo_pago_tarjeta_debito",
+		"metodo_pago_transferencia_bancaria",
+		"metodo_pago_transferencia_bre_b",
+		"metodo_pago_nequi",
+		"metodo_pago_otras_transferencias",
+		"metodo_pago_credito_cliente",
+		"mostrar_resumen_totales_carrito",
+		"mostrar_resumen_productos",
+		"mostrar_boton_pagar",
+		"mostrar_tarjetas_pago",
+		"mostrar_tarjeta_lector_codigo",
+		"mostrar_tarjeta_items_carrito",
+		"mostrar_tarjeta_totales_detalles",
+		"mostrar_tarjeta_acciones_carrito",
+		"mostrar_control_electrico_carrito",
+		"mostrar_tarjeta_domotica_carrito",
+		"mostrar_tarjeta_valores_pago",
+		"mostrar_tarjeta_vip_cliente",
+		"mostrar_boton_descuentos_carrito",
+		"mostrar_boton_cambiar_tarifa_carrito",
+		"mostrar_boton_control_electrico_carrito",
+		"mostrar_boton_cancelar_carrito",
+		"mostrar_boton_taxi_carrito",
+		"mostrar_boton_clientes_carrito",
+		"mostrar_boton_abonos_carrito",
+		"mostrar_boton_vehiculo_carrito",
+		"atajos_pos_habilitados",
+		"atajos_pos_mostrar_ayuda",
+	}
+	for _, key := range wantTrue {
+		if got, _ := cfg[key].(bool); !got {
+			t.Fatalf("%s debe quedar activo por defecto", key)
+		}
+	}
+
+	wantFalse := []string{
+		"modo_pantalla_tactil",
+		"mostrar_descuentos",
+		"mostrar_propina",
+		"mostrar_comision",
+		"cliente_obligatorio_pago",
+		"habilitar_bascula_electronica",
+		"mostrar_desglose_cobro",
+		"mostrar_tarjeta_cobro_estados",
+		"mostrar_tarjeta_comision",
+		"mostrar_alerta_tiempo_carrito",
+		"alerta_tiempo_activa_default",
+		"mostrar_qr_factura_electronica",
+	}
+	for _, key := range wantFalse {
+		if got, _ := cfg[key].(bool); got {
+			t.Fatalf("%s debe quedar apagado por defecto", key)
+		}
+	}
+	if got, _ := cfg["alerta_tiempo_minutos"].(int); got != 10 {
+		t.Fatalf("alerta_tiempo_minutos debe quedar en 10 por defecto, got=%v", cfg["alerta_tiempo_minutos"])
+	}
+	if got, _ := cfg["cliente_general_nombre"].(string); got != "Cliente General" {
+		t.Fatalf("cliente_general_nombre debe quedar en Cliente General por defecto, got=%v", cfg["cliente_general_nombre"])
+	}
+	atajos, ok := cfg["atajos_pos"].(map[string]any)
+	if !ok {
+		t.Fatalf("atajos_pos debe existir como mapa, got=%T", cfg["atajos_pos"])
+	}
+	wantAtajos := map[string]string{
+		"ayuda":                 "F1",
+		"buscar_producto":       "F2",
+		"buscar_cliente":        "F3",
+		"descuento":             "F4",
+		"cambiar_cantidad":      "F5",
+		"modificar_precio":      "F6",
+		"suspender_venta":       "F7",
+		"recuperar_venta":       "F8",
+		"verificar_inventario":  "F9",
+		"cobrar":                "F10",
+		"abrir_cajon":           "F11",
+		"imprimir":              "F12",
+		"cancelar_operacion":    "ESC",
+		"agregar_producto":      "ENTER",
+		"descuento_combo":       "CTRL+D",
+		"imprimir_combo":        "CTRL+P",
+		"buscar_producto_combo": "CTRL+B",
+		"salir_sistema":         "ALT+F4",
+	}
+	for key, want := range wantAtajos {
+		if got, _ := atajos[key].(string); got != want {
+			t.Fatalf("atajo %s debe quedar en %s por defecto, got=%v", key, want, atajos[key])
+		}
+	}
+}
+
+func TestApplyDefaultCarritoUIPresetToConfigActualizaEmpresasViejas(t *testing.T) {
+	raw := `{
+		"cantidad": 2,
+		"card_size": "medium",
+		"station_card_ui": {"mostrar_total": true},
+		"carrito_ui_global": {
+			"mostrar_descuentos": true,
+			"mostrar_tarjeta_cobro_estados": true,
+			"mostrar_tarjeta_comision": true
+		},
+		"estaciones": [
+			{
+				"id": 1,
+				"nombre": "Estacion 1",
+				"carrito": {
+					"usar_configuracion_global": false,
+					"configuracion": {
+						"mostrar_descuentos": true,
+						"mostrar_tarjeta_cobro_estados": true
+					}
+				}
+			}
+		]
+	}`
+
+	nextRaw, changed, err := applyDefaultCarritoUIPresetToConfig(raw, defaultEmpresaPreconfigCarritoUI(), empresaStationLabelPreset{
+		Singular: "Mesa",
+		Plural:   "Mesas",
+	})
+	if err != nil {
+		t.Fatalf("applyDefaultCarritoUIPresetToConfig error: %v", err)
+	}
+	if !changed {
+		t.Fatal("se esperaba cambio en configuracion antigua")
+	}
+
+	var cfg map[string]any
+	if err := json.Unmarshal([]byte(nextRaw), &cfg); err != nil {
+		t.Fatalf("json resultante invalido: %v", err)
+	}
+	global := cfg["carrito_ui_global"].(map[string]any)
+	if got, _ := global["mostrar_tarjeta_cobro_estados"].(bool); got {
+		t.Fatal("carrito_ui_global debe apagar cobro y estados")
+	}
+	if got, _ := global["mostrar_tarjeta_valores_pago"].(bool); !got {
+		t.Fatal("carrito_ui_global debe conservar valores por medio de pago")
+	}
+	if got, _ := global["cliente_general_nombre"].(string); got != "Cliente General" {
+		t.Fatalf("carrito_ui_global debe completar cliente_general_nombre, got=%v", global["cliente_general_nombre"])
+	}
+	if cfg["cantidad"].(float64) != 2 {
+		t.Fatal("no debe cambiar la cantidad de estaciones")
+	}
+	if cfg["estacion_nombre_singular"] != "Mesa" || cfg["estacion_nombre_plural"] != "Mesas" {
+		t.Fatalf("debe completar nombres singulares/plurales del recurso: %+v", cfg)
+	}
+	if _, ok := cfg["station_card_ui"].(map[string]any); !ok {
+		t.Fatal("debe preservar station_card_ui")
+	}
+	stations := cfg["estaciones"].([]any)
+	station := stations[0].(map[string]any)
+	carrito := station["carrito"].(map[string]any)
+	if got, _ := carrito["usar_configuracion_global"].(bool); !got {
+		t.Fatal("debe activar usar_configuracion_global para unificar empresas viejas")
+	}
+	stationCfg := carrito["configuracion"].(map[string]any)
+	if got, _ := stationCfg["mostrar_tarjeta_comision"].(bool); got {
+		t.Fatal("configuracion por estacion debe apagar lavador/comision")
+	}
+}

@@ -1,0 +1,1151 @@
+package handlers
+
+import (
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/mail"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
+)
+
+const adminEmpresaCompartidaMailNotificationType = "empresa_admin_share_invitation"
+
+func hashAdminEmpresaCompartidaToken(token string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(token)))
+	return hex.EncodeToString(sum[:])
+}
+
+func isAllowedAdminEmpresaCompartidaRole(raw string) bool {
+	role := strings.ToLower(strings.TrimSpace(raw))
+	switch role {
+	case "super_administrador", "superadmin", "super":
+		return true
+	case "administrador", "admin", "admin_empresa":
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeAdminEmpresaCompartidaNivel(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "solo_ver", "lectura", "read_only", "solo lectura", "solo_lectura":
+		return "solo_ver"
+	case "modulos", "solo_modulos", "modulos_especificos":
+		return "modulos"
+	default:
+		return "acceso_total"
+	}
+}
+
+func normalizeAdminEmpresaCompartidaModulos(input []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(input))
+	for _, raw := range input {
+		for _, part := range strings.Split(raw, ",") {
+			modulo := strings.ToLower(strings.TrimSpace(part))
+			if modulo == "" || seen[modulo] || !isPermissionModuleKnown(modulo) {
+				continue
+			}
+			seen[modulo] = true
+			out = append(out, modulo)
+		}
+	}
+	return out
+}
+
+func adminEmpresaCompartidaModulosCSV(input []string) string {
+	return strings.Join(normalizeAdminEmpresaCompartidaModulos(input), ",")
+}
+
+func adminEmpresaCompartidaScopeLabel(nivelAcceso, modulosCSV string) string {
+	switch normalizeAdminEmpresaCompartidaNivel(nivelAcceso) {
+	case "solo_ver":
+		return "Solo ver"
+	case "modulos":
+		modulos := normalizeAdminEmpresaCompartidaModulos([]string{modulosCSV})
+		if len(modulos) == 0 {
+			return "Solo módulos seleccionados"
+		}
+		labels := make([]string, 0, len(modulos))
+		for _, modulo := range modulos {
+			label := permissionModuleDisplayNames[modulo]
+			if label == "" {
+				label = modulo
+			}
+			labels = append(labels, sanitizeLegacyPermissionVisibleText(label))
+		}
+		return "Solo módulos: " + strings.Join(labels, ", ")
+	default:
+		return "Acceso total"
+	}
+}
+
+func buildAdminEmpresaCompartidaScopeCatalog() []map[string]string {
+	out := make([]map[string]string, 0, len(permissionModulesCatalogOrdered))
+	for _, modulo := range permissionModulesCatalogOrdered {
+		label := permissionModuleDisplayNames[modulo]
+		if label == "" {
+			label = modulo
+		}
+		out = append(out, map[string]string{
+			"modulo": modulo,
+			"label":  sanitizeLegacyPermissionVisibleText(label),
+		})
+	}
+	return out
+}
+
+func newAdminEmpresaCompartidaInvitationTokenAndExpiration() (string, string, string, error) {
+	token, err := utils.GenerateSecureToken(32)
+	if err != nil {
+		return "", "", "", err
+	}
+	expira := time.Now().Add(7 * 24 * time.Hour).Format(time.RFC3339)
+	return token, hashAdminEmpresaCompartidaToken(token), expira, nil
+}
+
+func adminEmpresaCompartidaAcceptURL(r *http.Request, dbSuper *sql.DB, token string) string {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	return strings.TrimRight(baseURL, "/") + "/super/api/empresas/compartidos/aceptar?token=" + url.QueryEscape(strings.TrimSpace(token))
+}
+
+func createAdminEmpresaCompartidaSession(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, adminEmail string) error {
+	token, err := utils.GenerateSecureToken(32)
+	if err != nil {
+		return err
+	}
+	if err := dbpkg.CreateSession(dbSuper, adminEmail, r.RemoteAddr, r.UserAgent(), token); err != nil {
+		return err
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   utils.SessionCookieMaxAge(),
+		Secure:   SessionCookieSecure(r),
+		SameSite: http.SameSiteLaxMode,
+	})
+	SetBrowserSessionStateCookie(w, r, true)
+	return nil
+}
+
+func acceptAdminEmpresaCompartidaInvitationByToken(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, token string) (map[string]interface{}, int, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("token requerido")
+	}
+	inv, err := dbpkg.GetAdminEmpresaCompartidaInvitacionByTokenHash(dbSuper, hashAdminEmpresaCompartidaToken(token))
+	if err != nil || inv == nil {
+		return nil, http.StatusNotFound, fmt.Errorf("invitación no válida")
+	}
+	if isAdminEmpresaCompartidaInvitationExpired(inv) {
+		_ = dbpkg.SetAdminEmpresaCompartidaInvitacionEstado(dbSuper, inv.ID, "expirada", strings.TrimSpace(inv.AdminEmail))
+		return nil, http.StatusConflict, fmt.Errorf("la invitación expiró")
+	}
+	estado := strings.ToLower(strings.TrimSpace(inv.Estado))
+	if estado == "aceptada" {
+		return nil, http.StatusConflict, fmt.Errorf("la invitación ya fue aceptada")
+	}
+	if estado == "revocada" || estado == "rechazada" {
+		return nil, http.StatusConflict, fmt.Errorf("la invitación ya no está disponible")
+	}
+	adminTarget, err := dbpkg.GetAdminByEmailFull(dbSuper, inv.AdminEmail)
+	if err != nil || adminTarget == nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("el administrador invitado no existe o no está disponible")
+	}
+	if adminTarget.EmailConfirmado != 1 {
+		return nil, http.StatusConflict, fmt.Errorf("primero debes completar el registro y confirmar la cuenta administrativa antes de aceptar la empresa compartida")
+	}
+	if !isAllowedAdminEmpresaCompartidaRole(adminTarget.Role) {
+		return nil, http.StatusForbidden, fmt.Errorf("solo un usuario administrador o superadministrador puede aceptar una empresa compartida")
+	}
+	if strings.EqualFold(strings.TrimSpace(adminTarget.Estado), "inactivo") {
+		return nil, http.StatusConflict, fmt.Errorf("el administrador invitado está inactivo")
+	}
+
+	acceptedAt := time.Now().Format("2006-01-02 15:04:05")
+	if _, err := dbpkg.UpsertAdminEmpresaCompartidaAcceso(dbSuper, dbpkg.AdminEmpresaCompartidaAcceso{
+		EmpresaID:          inv.EmpresaID,
+		AdminEmail:         strings.TrimSpace(inv.AdminEmail),
+		CompartidoPorEmail: inv.InvitadoPorEmail,
+		InvitacionID:       inv.ID,
+		NivelAcceso:        normalizeAdminEmpresaCompartidaNivel(inv.NivelAcceso),
+		ModulosPermitidos:  strings.TrimSpace(inv.ModulosPermitidos),
+		PuedeCompartir:     inv.PuedeCompartir,
+		FechaAceptada:      acceptedAt,
+		UsuarioCreador:     strings.TrimSpace(inv.AdminEmail),
+		Estado:             "activo",
+	}); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo activar el acceso compartido: %w", err)
+	}
+	invalidateEmpresaPermissionCacheForEmpresa(inv.EmpresaID)
+	if err := dbpkg.MarkAdminEmpresaCompartidaInvitacionAccepted(dbSuper, inv.ID, acceptedAt, inv.AdminEmail); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo cerrar la invitación compartida")
+	}
+	if err := createAdminEmpresaCompartidaSession(w, r, dbSuper, adminTarget.Email); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("el acceso fue aceptado, pero no se pudo iniciar la sesión automática")
+	}
+
+	return map[string]interface{}{
+		"ok":           true,
+		"message":      "Acceso compartido aceptado correctamente. La empresa ya está disponible en seleccionar empresa.",
+		"empresa_id":   inv.EmpresaID,
+		"admin_email":  strings.TrimSpace(adminTarget.Email),
+		"redirect_url": "/seleccionar_empresa.html?empresa_id=" + url.QueryEscape(strconv.FormatInt(inv.EmpresaID, 10)) + "&shared_invitation_accepted=1",
+	}, http.StatusOK, nil
+}
+
+func parseAdminEmpresaCompartidaTime(value string) (time.Time, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{time.RFC3339, "2006-01-02 15:04:05", time.RFC3339Nano}
+	for _, layout := range layouts {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func isAdminEmpresaCompartidaInvitationExpired(item *dbpkg.AdminEmpresaCompartidaInvitacion) bool {
+	if item == nil {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(item.Estado), "pendiente") {
+		return false
+	}
+	expira, ok := parseAdminEmpresaCompartidaTime(item.ExpiraEn)
+	if !ok {
+		return false
+	}
+	return time.Now().After(expira)
+}
+
+func normalizeAdminEmpresaCompartidaInvitation(item dbpkg.AdminEmpresaCompartidaInvitacion) dbpkg.AdminEmpresaCompartidaInvitacion {
+	if isAdminEmpresaCompartidaInvitationExpired(&item) {
+		item.Estado = "expirada"
+	}
+	item.TokenHash = ""
+	return item
+}
+
+func effectiveAdminPrincipalSet(dbSuper *sql.DB, requesterEmail, principalEmail string) (map[string]bool, error) {
+	set := map[string]bool{}
+	requesterEmail = strings.ToLower(strings.TrimSpace(requesterEmail))
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	if principalEmail != "" && principalEmail != requesterEmail {
+		set[principalEmail] = true
+	}
+	if requesterEmail == "" {
+		return set, nil
+	}
+	principals, err := dbpkg.ListActiveAdminPrincipalDelegacionPrincipals(dbSuper, requesterEmail)
+	if err != nil {
+		return nil, err
+	}
+	for _, principal := range principals {
+		principal = strings.ToLower(strings.TrimSpace(principal))
+		if principal != "" && principal != requesterEmail {
+			set[principal] = true
+		}
+	}
+	return set, nil
+}
+
+func adminPrincipalSetOwnsEmpresa(principalSet map[string]bool, empresaCreator string) bool {
+	creator := strings.ToLower(strings.TrimSpace(empresaCreator))
+	if creator == "" {
+		return false
+	}
+	return principalSet[creator]
+}
+
+func decorateEmpresaAccessForRequester(dbSuper *sql.DB, requesterEmail, principalEmail string, empresa *dbpkg.Empresa) error {
+	if empresa == nil {
+		return nil
+	}
+	principalSet, err := effectiveAdminPrincipalSet(dbSuper, requesterEmail, principalEmail)
+	if err != nil {
+		return err
+	}
+	owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador)
+	if owner {
+		empresa.AccessSource = "owner"
+		empresa.CompartidaPor = ""
+		return nil
+	}
+	if adminPrincipalSetOwnsEmpresa(principalSet, empresa.UsuarioCreador) {
+		empresa.AccessSource = "delegated"
+		empresa.CompartidaPor = strings.TrimSpace(empresa.UsuarioCreador)
+		return nil
+	}
+	access, err := dbpkg.GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresa.EmpresaID, requesterEmail)
+	if err != nil {
+		return err
+	}
+	if access != nil {
+		empresa.AccessSource = "shared"
+		empresa.CompartidaPor = strings.TrimSpace(access.CompartidoPorEmail)
+		empresa.SharedNivelAcceso = normalizeAdminEmpresaCompartidaNivel(access.NivelAcceso)
+		empresa.SharedModulos = strings.TrimSpace(access.ModulosPermitidos)
+		empresa.SharedPuedeCompartir = access.PuedeCompartir
+		return nil
+	}
+	sharedBy, err := dbpkg.HasActiveAdminEmpresaCompartidaAccesoBySharer(dbSuper, empresa.EmpresaID, requesterEmail)
+	if err != nil {
+		return err
+	}
+	if sharedBy {
+		empresa.AccessSource = "owner"
+		empresa.CompartidaPor = ""
+		empresa.SharedNivelAcceso = ""
+		empresa.SharedModulos = ""
+	}
+	return nil
+}
+
+func decorateEmpresasByEffectiveAccessCore(requesterEmail string, empresas []dbpkg.Empresa, principalSet map[string]bool, shareMap map[int64]dbpkg.AdminEmpresaCompartidaAcceso, sharedByMap map[int64]bool) []dbpkg.Empresa {
+	out := make([]dbpkg.Empresa, 0, len(empresas))
+	for _, empresa := range empresas {
+		owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador)
+		if owner {
+			empresa.AccessSource = "owner"
+			out = append(out, empresa)
+			continue
+		}
+		if adminPrincipalSetOwnsEmpresa(principalSet, empresa.UsuarioCreador) {
+			empresa.AccessSource = "delegated"
+			empresa.CompartidaPor = strings.TrimSpace(empresa.UsuarioCreador)
+			out = append(out, empresa)
+			continue
+		}
+		if sharedByMap[empresa.EmpresaID] {
+			empresa.AccessSource = "owner"
+			empresa.CompartidaPor = ""
+			empresa.SharedNivelAcceso = ""
+			empresa.SharedModulos = ""
+			empresa.SharedPuedeCompartir = false
+			out = append(out, empresa)
+			continue
+		}
+		share, ok := shareMap[empresa.EmpresaID]
+		if ok {
+			empresa.AccessSource = "shared"
+			empresa.CompartidaPor = strings.TrimSpace(share.CompartidoPorEmail)
+			empresa.SharedNivelAcceso = normalizeAdminEmpresaCompartidaNivel(share.NivelAcceso)
+			empresa.SharedModulos = strings.TrimSpace(share.ModulosPermitidos)
+			empresa.SharedPuedeCompartir = share.PuedeCompartir
+			out = append(out, empresa)
+		}
+	}
+	return out
+}
+
+func decorateEmpresasByEffectiveAccess(dbSuper *sql.DB, requesterEmail, principalEmail string, empresas []dbpkg.Empresa) ([]dbpkg.Empresa, error) {
+	if len(empresas) == 0 {
+		return empresas, nil
+	}
+	principalSet, err := effectiveAdminPrincipalSet(dbSuper, requesterEmail, principalEmail)
+	if err != nil {
+		return nil, err
+	}
+	shareMap := map[int64]dbpkg.AdminEmpresaCompartidaAcceso{}
+	sharedByMap := map[int64]bool{}
+	if strings.TrimSpace(requesterEmail) != "" {
+		shares, err := dbpkg.ListActiveAdminEmpresaCompartidaAccesosByAdmin(dbSuper, requesterEmail)
+		if err != nil {
+			return nil, err
+		}
+		for _, share := range shares {
+			shareMap[share.EmpresaID] = share
+		}
+		sharedBy, err := dbpkg.ListActiveAdminEmpresaCompartidaAccesosBySharer(dbSuper, requesterEmail)
+		if err != nil {
+			return nil, err
+		}
+		for _, share := range sharedBy {
+			sharedByMap[share.EmpresaID] = true
+		}
+	}
+	return decorateEmpresasByEffectiveAccessCore(requesterEmail, empresas, principalSet, shareMap, sharedByMap), nil
+}
+
+func ensureEmpresaOwnerAccess(dbEmp, dbSuper *sql.DB, r *http.Request, empresaID int64) (*dbpkg.Empresa, string, bool, error) {
+	requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+	admin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+	if err != nil {
+		return nil, "", false, err
+	}
+	if empresaID <= 0 {
+		return nil, principalEmail, false, fmt.Errorf("empresa_id invalido")
+	}
+	empresa, err := dbpkg.GetEmpresaByID(dbEmp, empresaID)
+	if err != nil {
+		return nil, principalEmail, false, err
+	}
+	// El super administrador es la autoridad global del SaaS. Debe poder ejecutar
+	// la eliminacion integral de una empresa ajena, que sigue exigiendo la doble
+	// confirmacion de nombre y riesgo del handler llamador.
+	owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador) || (admin != nil && utils.IsSuperPanelRole(admin.Role))
+	return empresa, principalEmail, owner, nil
+}
+
+func adminEmpresaCompartidaCanManageShares(owner, isSuperAdmin, canReshare bool) bool {
+	return owner || isSuperAdmin || canReshare
+}
+
+func adminEmpresaCompartidaCanReshare(dbSuper *sql.DB, empresaID int64, adminEmail string) (bool, error) {
+	adminEmail = strings.ToLower(strings.TrimSpace(adminEmail))
+	if dbSuper == nil || empresaID <= 0 || adminEmail == "" {
+		return false, nil
+	}
+	access, err := dbpkg.GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresaID, adminEmail)
+	if err != nil {
+		return false, err
+	}
+	return access != nil && access.PuedeCompartir, nil
+}
+
+func adminEmpresaCompartidaActorEmail(requesterEmail, principalEmail string, isSuperAdmin bool) string {
+	requesterEmail = strings.ToLower(strings.TrimSpace(requesterEmail))
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	if isSuperAdmin && requesterEmail != "" {
+		return requesterEmail
+	}
+	if principalEmail != "" {
+		return principalEmail
+	}
+	return requesterEmail
+}
+
+func ensureEmpresaShareManagerAccess(dbEmp, dbSuper *sql.DB, r *http.Request, empresaID int64) (*dbpkg.Empresa, string, bool, bool, string, error) {
+	requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+	admin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+	if err != nil {
+		return nil, "", false, false, "", err
+	}
+	if empresaID <= 0 {
+		return nil, principalEmail, false, false, "", fmt.Errorf("empresa_id invalido")
+	}
+	empresa, err := dbpkg.GetEmpresaByID(dbEmp, empresaID)
+	if err != nil {
+		return nil, principalEmail, false, false, "", err
+	}
+	owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador)
+	isSuperAdmin := admin != nil && utils.IsSuperPanelRole(admin.Role)
+	actorEmail := adminEmpresaCompartidaActorEmail(requesterEmail, principalEmail, isSuperAdmin)
+	return empresa, principalEmail, owner, isSuperAdmin, actorEmail, nil
+}
+
+func sendAdminEmpresaCompartidaInvitationEmail(r *http.Request, dbEmp, dbSuper *sql.DB, empresa *dbpkg.Empresa, inviter *dbpkg.Admin, toEmail, toName, token, mensaje string) (string, error) {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	loginURL := strings.TrimRight(baseURL, "/") + "/login.html"
+	acceptURL := adminEmpresaCompartidaAcceptURL(r, dbSuper, token)
+	companyName := "la empresa"
+	if empresa != nil && strings.TrimSpace(empresa.Nombre) != "" {
+		companyName = strings.TrimSpace(empresa.Nombre)
+	}
+	inviterName := "Un administrador"
+	if inviter != nil && strings.TrimSpace(inviter.Name) != "" {
+		inviterName = strings.TrimSpace(inviter.Name)
+	} else if inviter != nil && strings.TrimSpace(inviter.Email) != "" {
+		inviterName = strings.TrimSpace(inviter.Email)
+	}
+	recipientName := strings.TrimSpace(toName)
+	if recipientName == "" {
+		recipientName = "administrador"
+	}
+	mensaje = strings.TrimSpace(mensaje)
+	asunto, cuerpoPlano, cuerpoHTML, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyEmpresaAdminShareInvite, map[string]string{
+		"name":                     recipientName,
+		"company_name":             companyName,
+		"invited_by_name":          inviterName,
+		"accept_url":               acceptURL,
+		"login_url":                loginURL,
+		"admin_message":            mensaje,
+		"admin_message_block_text": templateParagraphText("Mensaje del administrador:", mensaje),
+		"admin_message_block_html": templateParagraphHTML("Mensaje del administrador:", mensaje),
+	})
+	if err != nil {
+		return acceptURL, err
+	}
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"accept_url":%q,"login_url":%q,"empresa_id":%d,"mail_mode":"test","mensaje":%q}`, acceptURL, loginURL, empresa.EmpresaID, mensaje)
+		if err := captureEmpresaUsuarioMailNotification(dbSuper, adminEmpresaCompartidaMailNotificationType, empresa.EmpresaID, toEmail, asunto, cuerpoPlano, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
+			return acceptURL, err
+		}
+		return acceptURL, nil
+	}
+	if err := sendEmpresaUsuarioMailuMultipart(dbSuper, resolveBaseURLForConfirmation(r, dbSuper), toEmail, asunto, cuerpoPlano, cuerpoHTML); err != nil {
+		return acceptURL, err
+	}
+	return acceptURL, nil
+}
+
+func targetAdminAlreadyHasEmpresaAccess(dbSuper *sql.DB, empresa *dbpkg.Empresa, targetAdminEmail string) (bool, error) {
+	if empresa == nil || dbSuper == nil {
+		return false, nil
+	}
+	targetAdminEmail = strings.ToLower(strings.TrimSpace(targetAdminEmail))
+	if targetAdminEmail == "" || empresa.EmpresaID <= 0 {
+		return false, nil
+	}
+
+	// 1) Dueño exacto: solo el email creador real de la empresa.
+	creator := strings.ToLower(strings.TrimSpace(empresa.UsuarioCreador))
+	if creator != "" && creator == targetAdminEmail {
+		return true, nil
+	}
+
+	// 2) Acceso compartido activo (solo existe tras aceptación de invitación).
+	access, err := dbpkg.GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresa.EmpresaID, targetAdminEmail)
+	if err != nil {
+		return false, err
+	}
+	return access != nil, nil
+}
+
+func adminEmpresaCompartidaNeedsRegistration(admin *dbpkg.Admin) bool {
+	return admin == nil || admin.EmailConfirmado != 1
+}
+
+func ensurePendingAdminEmpresaCompartidaRegistration(dbSuper *sql.DB, email, name, actorEmail string) (*dbpkg.Admin, string, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	name = strings.TrimSpace(name)
+	actorEmail = strings.ToLower(strings.TrimSpace(actorEmail))
+	if email == "" {
+		return nil, "", fmt.Errorf("email requerido")
+	}
+	if name == "" {
+		name = email
+	}
+	existing, err := dbpkg.GetAdminByEmailFull(dbSuper, email)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, "", err
+	}
+	if err == sql.ErrNoRows || existing == nil {
+		if err := dbpkg.UpsertAdministradorConCreador(dbSuper, email, name, "administrador", "", actorEmail); err != nil {
+			return nil, "", err
+		}
+	} else if existing.EmailConfirmado != 1 {
+		role := strings.TrimSpace(existing.Role)
+		if !isAllowedAdminEmpresaCompartidaRole(role) {
+			role = "administrador"
+		}
+		updateName := strings.TrimSpace(existing.Name)
+		if updateName == "" || strings.EqualFold(updateName, existing.Email) {
+			updateName = name
+		}
+		if err := dbpkg.UpdateAdministrador(dbSuper, existing.ID, updateName, role); err != nil {
+			return nil, "", err
+		}
+	} else {
+		return existing, "", nil
+	}
+	token, expira, tokenErr := newEmailConfirmationTokenAndExpiration()
+	if tokenErr != nil {
+		return nil, "", tokenErr
+	}
+	if err := dbpkg.SetAdministradorConfirmToken(dbSuper, email, token, expira); err != nil {
+		return nil, "", err
+	}
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, email)
+	if err != nil {
+		return nil, "", err
+	}
+	return admin, token, nil
+}
+
+func registrarAuditoriaEmpresaCompartidaNoBloqueante(dbEmp *sql.DB, r *http.Request, empresaID int64, accion string, recurso string, recursoID int64, statusCode int, metadata map[string]interface{}, observaciones string) {
+	if dbEmp == nil || r == nil || empresaID <= 0 {
+		return
+	}
+	raw, _ := json.Marshal(metadata)
+	resultado := "ok"
+	if statusCode >= 400 {
+		resultado = "error"
+	}
+	usuario := strings.TrimSpace(adminEmailFromRequest(r))
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	_, _ = dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, dbpkg.EmpresaAuditoriaEvento{
+		EmpresaID:      empresaID,
+		Modulo:         "empresas_compartidas",
+		Accion:         strings.TrimSpace(accion),
+		Recurso:        strings.TrimSpace(recurso),
+		RecursoID:      recursoID,
+		MetodoHTTP:     r.Method,
+		Endpoint:       r.URL.Path,
+		Resultado:      resultado,
+		CodigoHTTP:     int64(statusCode),
+		RequestID:      utils.RequestIDFromContext(r.Context()),
+		IPOrigen:       strings.TrimSpace(r.RemoteAddr),
+		UserAgent:      r.UserAgent(),
+		MetadataJSON:   string(raw),
+		RetencionDias:  3650,
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  strings.TrimSpace(observaciones),
+	})
+}
+
+func EmpresaCompartidaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "pendientes_mias") {
+				requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+				if requesterEmail == "" || requesterEmail == "sistema" {
+					http.Error(w, "unauthenticated", http.StatusUnauthorized)
+					return
+				}
+				invitaciones, err := dbpkg.ListPendingAdminEmpresaCompartidaInvitacionesByAdmin(dbSuper, requesterEmail)
+				if err != nil {
+					http.Error(w, "no se pudieron cargar invitaciones pendientes", http.StatusInternalServerError)
+					return
+				}
+				items := make([]map[string]interface{}, 0, len(invitaciones))
+				for _, inv := range invitaciones {
+					inv = normalizeAdminEmpresaCompartidaInvitation(inv)
+					empresaNombre := ""
+					empresaEstado := ""
+					if dbEmp != nil && inv.EmpresaID > 0 {
+						if emp, eerr := dbpkg.GetEmpresaByID(dbEmp, inv.EmpresaID); eerr == nil && emp != nil {
+							empresaNombre = strings.TrimSpace(emp.Nombre)
+							empresaEstado = strings.TrimSpace(emp.Estado)
+						}
+					}
+					items = append(items, map[string]interface{}{
+						"id":                 inv.ID,
+						"empresa_id":         inv.EmpresaID,
+						"empresa_nombre":     empresaNombre,
+						"empresa_estado":     empresaEstado,
+						"admin_email":        strings.TrimSpace(inv.AdminEmail),
+						"invitado_por":       strings.TrimSpace(inv.InvitadoPorEmail),
+						"mensaje":            strings.TrimSpace(inv.Mensaje),
+						"nivel_acceso":       normalizeAdminEmpresaCompartidaNivel(inv.NivelAcceso),
+						"modulos_permitidos": normalizeAdminEmpresaCompartidaModulos([]string{inv.ModulosPermitidos}),
+						"puede_compartir":    inv.PuedeCompartir,
+						"scope_label":        adminEmpresaCompartidaScopeLabel(inv.NivelAcceso, inv.ModulosPermitidos),
+						"expira_en":          strings.TrimSpace(inv.ExpiraEn),
+						"fecha_creacion":     strings.TrimSpace(inv.FechaCreacion),
+						"estado":             strings.TrimSpace(inv.Estado),
+					})
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "items": items})
+				return
+			}
+			empresaID, err := parseInt64QueryOptional(r, "empresa_id")
+			if err != nil || empresaID <= 0 {
+				http.Error(w, "empresa_id invalido", http.StatusBadRequest)
+				return
+			}
+			requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+			if requesterEmail == "" || requesterEmail == "sistema" {
+				http.Error(w, "unauthenticated", http.StatusUnauthorized)
+				return
+			}
+			principalEmail, ok, err := ensureEmpresaInRequesterScope(dbEmp, dbSuper, r, empresaID)
+			if err != nil {
+				http.Error(w, "no se pudo validar la empresa", http.StatusInternalServerError)
+				return
+			}
+			if !ok {
+				http.Error(w, "no tienes acceso a esta empresa", http.StatusForbidden)
+				return
+			}
+			_, _, owner, isSuperAdmin, _, ownerErr := ensureEmpresaShareManagerAccess(dbEmp, dbSuper, r, empresaID)
+			if ownerErr != nil {
+				http.Error(w, "no se pudo validar el acceso propietario", http.StatusInternalServerError)
+				return
+			}
+			canReshare, reshareErr := adminEmpresaCompartidaCanReshare(dbSuper, empresaID, requesterEmail)
+			if reshareErr != nil {
+				http.Error(w, "no se pudo validar el permiso para compartir", http.StatusInternalServerError)
+				return
+			}
+			canManageShares := adminEmpresaCompartidaCanManageShares(owner, isSuperAdmin, canReshare)
+			accesos, err := dbpkg.ListAdminEmpresaCompartidaAccesosByEmpresa(dbSuper, empresaID)
+			if err != nil {
+				http.Error(w, "no se pudieron cargar accesos compartidos", http.StatusInternalServerError)
+				return
+			}
+			invitaciones, err := dbpkg.ListAdminEmpresaCompartidaInvitacionesByEmpresa(dbSuper, empresaID)
+			if err != nil {
+				http.Error(w, "no se pudieron cargar invitaciones compartidas", http.StatusInternalServerError)
+				return
+			}
+			normalized := make([]dbpkg.AdminEmpresaCompartidaInvitacion, 0, len(invitaciones))
+			for _, item := range invitaciones {
+				normalized = append(normalized, normalizeAdminEmpresaCompartidaInvitation(item))
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":                true,
+				"accesos":           accesos,
+				"invitaciones":      normalized,
+				"scope_catalog":     buildAdminEmpresaCompartidaScopeCatalog(),
+				"is_owner":          owner,
+				"is_super_admin":    isSuperAdmin,
+				"can_reshare":       canReshare,
+				"can_manage_shares": canManageShares,
+				"requester_email":   requesterEmail,
+				"principal_email":   strings.TrimSpace(principalEmail),
+			})
+			return
+
+		case http.MethodPost:
+			var payload struct {
+				EmpresaID            int64    `json:"empresa_id"`
+				Email                string   `json:"email"`
+				Mensaje              string   `json:"mensaje"`
+				NivelAcceso          string   `json:"nivel_acceso"`
+				ModulosPermitidos    []string `json:"modulos_permitidos"`
+				ModulosPermitidosCSV string   `json:"modulos_permitidos_csv"`
+				PuedeCompartir       bool     `json:"puede_compartir"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+			payload.Email = strings.TrimSpace(payload.Email)
+			nivelAcceso := normalizeAdminEmpresaCompartidaNivel(payload.NivelAcceso)
+			modulosPermitidos := normalizeAdminEmpresaCompartidaModulos(append(payload.ModulosPermitidos, payload.ModulosPermitidosCSV))
+			modulosPermitidosCSV := strings.Join(modulosPermitidos, ",")
+			if nivelAcceso == "modulos" && len(modulosPermitidos) == 0 {
+				http.Error(w, "elige al menos un modulo para compartir acceso por modulos", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 || payload.Email == "" {
+				http.Error(w, "empresa_id y email son obligatorios", http.StatusBadRequest)
+				return
+			}
+			if _, err := mail.ParseAddress(payload.Email); err != nil {
+				http.Error(w, "email invalido", http.StatusBadRequest)
+				return
+			}
+			empresa, principalEmail, owner, isSuperAdmin, actorEmail, err := ensureEmpresaShareManagerAccess(dbEmp, dbSuper, r, payload.EmpresaID)
+			if err != nil {
+				http.Error(w, "no se pudo validar la empresa", http.StatusInternalServerError)
+				return
+			}
+			canReshare, reshareErr := adminEmpresaCompartidaCanReshare(dbSuper, payload.EmpresaID, strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r))))
+			if reshareErr != nil {
+				http.Error(w, "no se pudo validar el permiso para compartir", http.StatusInternalServerError)
+				return
+			}
+			if !adminEmpresaCompartidaCanManageShares(owner, isSuperAdmin, canReshare) {
+				http.Error(w, "solo el administrador propietario, un super administrador o un administrador compartido autorizado puede invitar acceso compartido", http.StatusForbidden)
+				return
+			}
+			if strings.EqualFold(payload.Email, actorEmail) {
+				http.Error(w, "no puedes compartir la empresa contigo mismo", http.StatusConflict)
+				return
+			}
+			adminTarget, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+			if err != nil && err != sql.ErrNoRows {
+				http.Error(w, "no se pudo validar el administrador invitado", http.StatusInternalServerError)
+				return
+			}
+			targetNeedsRegistration := adminEmpresaCompartidaNeedsRegistration(adminTarget)
+			adminRegistrationToken := ""
+			if err == sql.ErrNoRows || targetNeedsRegistration {
+				adminTarget, adminRegistrationToken, err = ensurePendingAdminEmpresaCompartidaRegistration(dbSuper, payload.Email, payload.Email, actorEmail)
+				if err != nil {
+					http.Error(w, "no se pudo preparar el registro del administrador invitado", http.StatusInternalServerError)
+					return
+				}
+				targetNeedsRegistration = adminEmpresaCompartidaNeedsRegistration(adminTarget)
+			}
+			if err != nil || adminTarget == nil {
+				http.Error(w, "el administrador invitado debe existir y estar registrado", http.StatusBadRequest)
+				return
+			}
+			if !isAllowedAdminEmpresaCompartidaRole(adminTarget.Role) {
+				http.Error(w, "solo se puede compartir con un usuario administrador o superadministrador", http.StatusForbidden)
+				return
+			}
+			if strings.EqualFold(strings.TrimSpace(adminTarget.Estado), "inactivo") {
+				http.Error(w, "el administrador invitado está inactivo", http.StatusConflict)
+				return
+			}
+			if alreadyHasAccess, accessErr := targetAdminAlreadyHasEmpresaAccess(dbSuper, empresa, payload.Email); accessErr != nil {
+				http.Error(w, "no se pudo validar acceso actual del administrador invitado", http.StatusInternalServerError)
+				return
+			} else if alreadyHasAccess {
+				http.Error(w, "ese administrador ya tiene acceso a la empresa", http.StatusConflict)
+				return
+			}
+			pending, err := dbpkg.GetPendingAdminEmpresaCompartidaInvitacion(dbSuper, payload.EmpresaID, payload.Email)
+			if err != nil {
+				http.Error(w, "no se pudo validar invitación pendiente", http.StatusInternalServerError)
+				return
+			}
+			if pending != nil && !isAdminEmpresaCompartidaInvitationExpired(pending) {
+				writeJSON(w, http.StatusConflict, map[string]interface{}{
+					"ok":                 false,
+					"code":               "invitation_pending",
+					"error":              "Ya existe una invitación pendiente para ese administrador.",
+					"invitation_id":      pending.ID,
+					"empresa_id":         pending.EmpresaID,
+					"admin_email":        strings.TrimSpace(pending.AdminEmail),
+					"nivel_acceso":       normalizeAdminEmpresaCompartidaNivel(pending.NivelAcceso),
+					"modulos_permitidos": normalizeAdminEmpresaCompartidaModulos([]string{pending.ModulosPermitidos}),
+					"puede_compartir":    pending.PuedeCompartir,
+					"estado":             strings.TrimSpace(pending.Estado),
+					"expira_en":          strings.TrimSpace(pending.ExpiraEn),
+				})
+				return
+			}
+			token, tokenHash, expiraEn, err := newAdminEmpresaCompartidaInvitationTokenAndExpiration()
+			if err != nil {
+				http.Error(w, "no se pudo generar token de invitación", http.StatusInternalServerError)
+				return
+			}
+			if strings.TrimSpace(actorEmail) == "" {
+				actorEmail = strings.TrimSpace(principalEmail)
+			}
+			inviter, _ := dbpkg.GetAdminByEmailFull(dbSuper, actorEmail)
+			invID, err := dbpkg.CreateAdminEmpresaCompartidaInvitacion(dbSuper, dbpkg.AdminEmpresaCompartidaInvitacion{
+				EmpresaID:         payload.EmpresaID,
+				AdminEmail:        payload.Email,
+				InvitadoPorEmail:  actorEmail,
+				TokenHash:         tokenHash,
+				NivelAcceso:       nivelAcceso,
+				ModulosPermitidos: modulosPermitidosCSV,
+				PuedeCompartir:    payload.PuedeCompartir,
+				Mensaje:           payload.Mensaje,
+				ExpiraEn:          expiraEn,
+				UsuarioCreador:    actorEmail,
+				Estado:            "pendiente",
+			})
+			if err != nil {
+				http.Error(w, "no se pudo crear la invitacion compartida", http.StatusInternalServerError)
+				return
+			}
+			acceptURL := ""
+			var mailErr error
+			if targetNeedsRegistration {
+				inviterName := ""
+				if inviter != nil {
+					inviterName = strings.TrimSpace(inviter.Name)
+					if inviterName == "" {
+						inviterName = strings.TrimSpace(inviter.Email)
+					}
+				}
+				acceptURL, mailErr = sendAdminScopedInvitationEmail(r, dbSuper, payload.Email, adminTarget.Name, inviterName, adminRegistrationToken)
+			} else {
+				acceptURL, mailErr = sendAdminEmpresaCompartidaInvitationEmail(r, dbEmp, dbSuper, empresa, inviter, payload.Email, adminTarget.Name, token, payload.Mensaje)
+			}
+			response := map[string]interface{}{"ok": true, "id": invID, "accept_url": acceptURL, "nivel_acceso": nivelAcceso, "modulos_permitidos": modulosPermitidos, "puede_compartir": payload.PuedeCompartir, "requires_registration": targetNeedsRegistration}
+			if mailErr != nil {
+				response["email_sent"] = false
+				response["message"] = "La invitación se creó, pero el correo no pudo enviarse. Puedes reenviarla desde esta misma pantalla."
+				writeJSON(w, http.StatusOK, response)
+				return
+			}
+			response["email_sent"] = true
+			if targetNeedsRegistration {
+				response["message"] = "Invitacion enviada. El correo invitado primero debe registrarse como administrador; luego vera la invitacion pendiente de esta empresa."
+			} else {
+				response["message"] = "Invitación enviada correctamente al administrador seleccionado."
+			}
+			writeJSON(w, http.StatusOK, response)
+			return
+
+		case http.MethodPut:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "aceptar" {
+				id, err := parseInt64QueryOptional(r, "id")
+				if err != nil || id <= 0 {
+					http.Error(w, "id invalido", http.StatusBadRequest)
+					return
+				}
+				requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+				if requesterEmail == "" || requesterEmail == "sistema" {
+					http.Error(w, "unauthenticated", http.StatusUnauthorized)
+					return
+				}
+				inv, err := dbpkg.GetAdminEmpresaCompartidaInvitacionByID(dbSuper, id)
+				if err != nil || inv == nil {
+					http.Error(w, "invitación no encontrada", http.StatusNotFound)
+					return
+				}
+				if !strings.EqualFold(strings.TrimSpace(inv.AdminEmail), requesterEmail) {
+					http.Error(w, "la invitación no corresponde al administrador autenticado", http.StatusForbidden)
+					return
+				}
+				if isAdminEmpresaCompartidaInvitationExpired(inv) {
+					_ = dbpkg.SetAdminEmpresaCompartidaInvitacionEstado(dbSuper, inv.ID, "expirada", requesterEmail)
+					http.Error(w, "la invitación expiró", http.StatusConflict)
+					return
+				}
+				estado := strings.ToLower(strings.TrimSpace(inv.Estado))
+				if estado == "revocada" || estado == "rechazada" {
+					http.Error(w, "la invitación ya no está disponible", http.StatusConflict)
+					return
+				}
+				if estado == "aceptada" {
+					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "message": "La invitación ya había sido aceptada.", "empresa_id": inv.EmpresaID})
+					return
+				}
+				adminRequester, err := dbpkg.GetAdminByEmailFull(dbSuper, requesterEmail)
+				if err != nil || adminRequester == nil {
+					http.Error(w, "el administrador autenticado no existe o no está disponible", http.StatusBadRequest)
+					return
+				}
+				if adminRequester.EmailConfirmado != 1 {
+					http.Error(w, "primero debes completar el registro y confirmar la cuenta administrativa", http.StatusConflict)
+					return
+				}
+				if !isAllowedAdminEmpresaCompartidaRole(adminRequester.Role) {
+					http.Error(w, "solo un usuario administrador o superadministrador puede aceptar una empresa compartida", http.StatusForbidden)
+					return
+				}
+				if strings.EqualFold(strings.TrimSpace(adminRequester.Estado), "inactivo") {
+					http.Error(w, "el administrador autenticado está inactivo", http.StatusConflict)
+					return
+				}
+				acceptedAt := time.Now().Format("2006-01-02 15:04:05")
+				if _, err := dbpkg.UpsertAdminEmpresaCompartidaAcceso(dbSuper, dbpkg.AdminEmpresaCompartidaAcceso{
+					EmpresaID:          inv.EmpresaID,
+					AdminEmail:         requesterEmail,
+					CompartidoPorEmail: inv.InvitadoPorEmail,
+					InvitacionID:       inv.ID,
+					NivelAcceso:        normalizeAdminEmpresaCompartidaNivel(inv.NivelAcceso),
+					ModulosPermitidos:  strings.TrimSpace(inv.ModulosPermitidos),
+					PuedeCompartir:     inv.PuedeCompartir,
+					FechaAceptada:      acceptedAt,
+					UsuarioCreador:     requesterEmail,
+					Estado:             "activo",
+				}); err != nil {
+					http.Error(w, "no se pudo activar el acceso compartido", http.StatusInternalServerError)
+					return
+				}
+				invalidateEmpresaPermissionCacheForEmpresa(inv.EmpresaID)
+				if err := dbpkg.MarkAdminEmpresaCompartidaInvitacionAccepted(dbSuper, inv.ID, acceptedAt, requesterEmail); err != nil {
+					http.Error(w, "no se pudo cerrar la invitación compartida", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "message": "Acceso compartido aceptado correctamente.", "empresa_id": inv.EmpresaID})
+				return
+			}
+
+			if action != "reenviar" {
+				http.Error(w, "accion no soportada", http.StatusBadRequest)
+				return
+			}
+			id, err := parseInt64QueryOptional(r, "id")
+			if err != nil || id <= 0 {
+				http.Error(w, "id invalido", http.StatusBadRequest)
+				return
+			}
+			inv, err := dbpkg.GetAdminEmpresaCompartidaInvitacionByID(dbSuper, id)
+			if err != nil || inv == nil {
+				http.Error(w, "invitación no encontrada", http.StatusNotFound)
+				return
+			}
+			empresa, principalEmail, owner, isSuperAdmin, actorEmail, err := ensureEmpresaShareManagerAccess(dbEmp, dbSuper, r, inv.EmpresaID)
+			if err != nil {
+				http.Error(w, "no se pudo validar la empresa", http.StatusInternalServerError)
+				return
+			}
+			canReshare, reshareErr := adminEmpresaCompartidaCanReshare(dbSuper, inv.EmpresaID, strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r))))
+			if reshareErr != nil {
+				http.Error(w, "no se pudo validar el permiso para reenviar", http.StatusInternalServerError)
+				return
+			}
+			if !adminEmpresaCompartidaCanManageShares(owner, isSuperAdmin, canReshare) {
+				http.Error(w, "solo el administrador propietario, un super administrador o un administrador compartido autorizado puede reenviar invitaciones", http.StatusForbidden)
+				return
+			}
+			token, tokenHash, expiraEn, err := newAdminEmpresaCompartidaInvitationTokenAndExpiration()
+			if err != nil {
+				http.Error(w, "no se pudo regenerar token de invitación", http.StatusInternalServerError)
+				return
+			}
+			if strings.TrimSpace(actorEmail) == "" {
+				actorEmail = strings.TrimSpace(principalEmail)
+			}
+			if err := dbpkg.RefreshAdminEmpresaCompartidaInvitacion(dbSuper, inv.ID, tokenHash, inv.Mensaje, expiraEn, actorEmail, inv.NivelAcceso, inv.ModulosPermitidos, inv.PuedeCompartir); err != nil {
+				http.Error(w, "no se pudo actualizar la invitación", http.StatusInternalServerError)
+				return
+			}
+			inviter, _ := dbpkg.GetAdminByEmailFull(dbSuper, actorEmail)
+			acceptURL, mailErr := sendAdminEmpresaCompartidaInvitationEmail(r, dbEmp, dbSuper, empresa, inviter, inv.AdminEmail, inv.AdminName, token, inv.Mensaje)
+			response := map[string]interface{}{"ok": true, "id": inv.ID, "accept_url": acceptURL}
+			if mailErr != nil {
+				response["email_sent"] = false
+				response["message"] = "La invitación se actualizó, pero el correo no pudo reenviarse."
+				writeJSON(w, http.StatusOK, response)
+				return
+			}
+			response["email_sent"] = true
+			response["message"] = "Invitación reenviada correctamente."
+			writeJSON(w, http.StatusOK, response)
+			return
+
+		case http.MethodDelete:
+			kind := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("kind")))
+			id, err := parseInt64QueryOptional(r, "id")
+			if err != nil || id <= 0 {
+				http.Error(w, "id invalido", http.StatusBadRequest)
+				return
+			}
+			if kind == "access" {
+				access, err := dbpkg.GetAdminEmpresaCompartidaAccesoByID(dbSuper, id)
+				if err != nil || access == nil {
+					http.Error(w, "acceso compartido no encontrado", http.StatusNotFound)
+					return
+				}
+				requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+				if requesterEmail == "" || requesterEmail == "sistema" {
+					http.Error(w, "unauthenticated", http.StatusUnauthorized)
+					return
+				}
+				_, principalEmail, owner, isSuperAdmin, actorEmail, ownErr := ensureEmpresaShareManagerAccess(dbEmp, dbSuper, r, access.EmpresaID)
+				if ownErr != nil {
+					http.Error(w, "no se pudo validar empresa: "+ownErr.Error(), http.StatusInternalServerError)
+					return
+				}
+				canReshare, reshareErr := adminEmpresaCompartidaCanReshare(dbSuper, access.EmpresaID, requesterEmail)
+				if reshareErr != nil {
+					http.Error(w, "no se pudo validar permiso para revocar", http.StatusInternalServerError)
+					return
+				}
+				canRevoke := adminEmpresaCompartidaCanManageShares(owner, isSuperAdmin, canReshare) ||
+					strings.EqualFold(strings.TrimSpace(access.AdminEmail), requesterEmail) ||
+					strings.EqualFold(strings.TrimSpace(access.CompartidoPorEmail), requesterEmail)
+				if !canRevoke {
+					http.Error(w, "solo el propietario, un super administrador, quien compartio o el administrador receptor pueden revocar este acceso", http.StatusForbidden)
+					return
+				}
+				if strings.TrimSpace(actorEmail) == "" {
+					actorEmail = strings.TrimSpace(principalEmail)
+				}
+				if strings.TrimSpace(actorEmail) == "" {
+					actorEmail = requesterEmail
+				}
+				if err := dbpkg.RevokeAdminEmpresaCompartidaAcceso(dbSuper, access.ID, actorEmail); err != nil {
+					http.Error(w, "no se pudo revocar acceso compartido", http.StatusInternalServerError)
+					return
+				}
+				invalidateEmpresaPermissionCacheForEmpresa(access.EmpresaID)
+				registrarAuditoriaEmpresaCompartidaNoBloqueante(dbEmp, r, access.EmpresaID, "revocar_acceso", "admin_empresa_compartida", access.ID, http.StatusOK, map[string]interface{}{
+					"admin_email":          strings.TrimSpace(access.AdminEmail),
+					"compartido_por_email": strings.TrimSpace(access.CompartidoPorEmail),
+					"actor_email":          requesterEmail,
+					"actor_es_propietario": owner,
+					"actor_es_super_admin": isSuperAdmin,
+					"invitacion_id":        access.InvitacionID,
+					"estado_anterior":      strings.TrimSpace(access.Estado),
+					"fecha_aceptada":       strings.TrimSpace(access.FechaAceptada),
+				}, "Acceso compartido revocado desde el lapiz de empresa.")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
+			}
+			inv, err := dbpkg.GetAdminEmpresaCompartidaInvitacionByID(dbSuper, id)
+			if err != nil || inv == nil {
+				http.Error(w, "invitación compartida no encontrada", http.StatusNotFound)
+				return
+			}
+			requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+			if requesterEmail == "" || requesterEmail == "sistema" {
+				http.Error(w, "unauthenticated", http.StatusUnauthorized)
+				return
+			}
+			_, principalEmail, owner, isSuperAdmin, actorEmail, ownErr := ensureEmpresaShareManagerAccess(dbEmp, dbSuper, r, inv.EmpresaID)
+			if ownErr != nil {
+				http.Error(w, "no se pudo validar empresa: "+ownErr.Error(), http.StatusInternalServerError)
+				return
+			}
+			canReshare, reshareErr := adminEmpresaCompartidaCanReshare(dbSuper, inv.EmpresaID, requesterEmail)
+			if reshareErr != nil {
+				http.Error(w, "no se pudo validar permiso para revocar invitacion", http.StatusInternalServerError)
+				return
+			}
+			canRevokeInvitation := adminEmpresaCompartidaCanManageShares(owner, isSuperAdmin, canReshare) ||
+				strings.EqualFold(strings.TrimSpace(inv.AdminEmail), requesterEmail) ||
+				strings.EqualFold(strings.TrimSpace(inv.InvitadoPorEmail), requesterEmail)
+			if !canRevokeInvitation {
+				http.Error(w, "solo el propietario, un super administrador, quien invito o el administrador invitado pueden revocar esta invitacion", http.StatusForbidden)
+				return
+			}
+			if strings.TrimSpace(actorEmail) == "" {
+				actorEmail = strings.TrimSpace(principalEmail)
+			}
+			if strings.TrimSpace(actorEmail) == "" {
+				actorEmail = requesterEmail
+			}
+			if err := dbpkg.SetAdminEmpresaCompartidaInvitacionEstado(dbSuper, inv.ID, "revocada", actorEmail); err != nil {
+				http.Error(w, "no se pudo revocar invitación compartida", http.StatusInternalServerError)
+				return
+			}
+			registrarAuditoriaEmpresaCompartidaNoBloqueante(dbEmp, r, inv.EmpresaID, "revocar_invitacion", "admin_empresa_compartida_invitaciones", inv.ID, http.StatusOK, map[string]interface{}{
+				"admin_email":          strings.TrimSpace(inv.AdminEmail),
+				"invitado_por_email":   strings.TrimSpace(inv.InvitadoPorEmail),
+				"actor_email":          requesterEmail,
+				"actor_es_propietario": owner,
+				"actor_es_super_admin": isSuperAdmin,
+				"estado_anterior":      strings.TrimSpace(inv.Estado),
+				"expira_en":            strings.TrimSpace(inv.ExpiraEn),
+			}, "Invitacion compartida revocada desde el lapiz de empresa.")
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+			return
+		}
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func EmpresaCompartidaAcceptHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			token := strings.TrimSpace(r.URL.Query().Get("token"))
+			result, status, err := acceptAdminEmpresaCompartidaInvitationByToken(w, r, dbSuper, token)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			redirectURL, _ := result["redirect_url"].(string)
+			if strings.TrimSpace(redirectURL) == "" {
+				redirectURL = "/seleccionar_empresa.html"
+			}
+			http.Redirect(w, r, redirectURL, http.StatusFound)
+			return
+
+		case http.MethodPost:
+			var payload struct {
+				Token string `json:"token"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+			result, status, err := acceptAdminEmpresaCompartidaInvitationByToken(w, r, dbSuper, payload.Token)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, http.StatusOK, result)
+			return
+
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}

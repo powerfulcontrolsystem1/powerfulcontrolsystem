@@ -1,0 +1,263 @@
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
+)
+
+func TestCorporateEmailMailuAPIUsesBearerAndClosedPayload(t *testing.T) {
+	called := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		if r.Method != http.MethodPost || r.URL.Path != "/v1/user" {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer test-token" {
+			t.Fatal("Mailu API must use a bearer token")
+		}
+		var payload mailuAPIUserPayload
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode payload: %v", err)
+		}
+		if payload.Email != "empresa@example.test" || payload.RawPassword != "temporary-secret" || payload.QuotaBytes != 2*1024*1024 || payload.ChangePassword {
+			t.Fatalf("unexpected bounded payload: %+v", payload)
+		}
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer server.Close()
+
+	account := dbpkg.EmpresaEmailCorporativo{Email: "empresa@example.test", EmpresaNombre: "Empresa QA"}
+	status, err := corporateEmailMailuAPIRequestWithToken(context.Background(), CorporateEmailConfig{APIBaseURL: server.URL}, "test-token", http.MethodPost, "/v1/user", mailuAPIUserPayloadForAccount(account, "temporary-secret", 2))
+	if err != nil || status != http.StatusCreated || !called {
+		t.Fatalf("Mailu API request status=%d err=%v called=%v", status, err, called)
+	}
+}
+
+func TestCorporateEmailProvisionModeKeepsMailuAPI(t *testing.T) {
+	if got := normalizeCorporateEmailProvisionMode("api"); got != "mailu_api" {
+		t.Fatalf("api mode=%q, want mailu_api", got)
+	}
+}
+
+func TestCorporateEmailMailuAPIUpdatesExistingUserBeforeCreating(t *testing.T) {
+	payload := mailuAPIUserPayloadForAccount(dbpkg.EmpresaEmailCorporativo{Email: "empresa+qa@example.test"}, "temporary-secret", 2)
+	var calls []string
+	status, err := upsertCorporateEmailMailuAPIUser(func(method, path string, got interface{}) (int, error) {
+		calls = append(calls, method+" "+path)
+		if got != payload {
+			t.Fatalf("unexpected Mailu payload: %#v", got)
+		}
+		return http.StatusNoContent, nil
+	}, payload.Email, payload)
+	if err != nil || status != http.StatusNoContent {
+		t.Fatalf("update existing Mailu user status=%d err=%v", status, err)
+	}
+	if got, want := strings.Join(calls, ","), "PATCH /v1/user/empresa+qa@example.test"; got != want {
+		t.Fatalf("existing Mailu user sequence=%q, want %q", got, want)
+	}
+}
+
+func TestCorporateEmailMailuAPICreatesOnlyAfterNotFound(t *testing.T) {
+	payload := mailuAPIUserPayloadForAccount(dbpkg.EmpresaEmailCorporativo{Email: "nueva@example.test"}, "temporary-secret", 2)
+	var calls []string
+	status, err := upsertCorporateEmailMailuAPIUser(func(method, path string, _ interface{}) (int, error) {
+		calls = append(calls, method+" "+path)
+		if method == http.MethodPatch {
+			return http.StatusNotFound, nil
+		}
+		return http.StatusCreated, nil
+	}, payload.Email, payload)
+	if err != nil || status != http.StatusCreated {
+		t.Fatalf("create missing Mailu user status=%d err=%v", status, err)
+	}
+	if got, want := strings.Join(calls, ","), "PATCH /v1/user/nueva@example.test,POST /v1/user"; got != want {
+		t.Fatalf("missing Mailu user sequence=%q, want %q", got, want)
+	}
+}
+
+func TestCorporateEmailDirectScriptIsPinnedToReviewedPath(t *testing.T) {
+	if err := validateCorporateEmailDirectScript(corporateEmailDirectProvisionScript, corporateEmailDirectProvisionScript); err != nil {
+		t.Fatalf("approved direct script rejected: %v", err)
+	}
+	if err := validateCorporateEmailDirectScript("/tmp/untrusted-command", corporateEmailDirectProvisionScript); err == nil {
+		t.Fatal("arbitrary direct script must be rejected")
+	}
+}
+
+func TestCorporateEmailAppendThemePreservesSnappyMailSSOQuery(t *testing.T) {
+	got := corporateEmailAppendThemeToURI("/webmail/index.php?sso&hash=abc123", "dark")
+	if !strings.HasPrefix(got, "/webmail/index.php?sso&hash=abc123&") {
+		t.Fatalf("SnappyMail SSO query must keep sso first, got %q", got)
+	}
+	if !strings.Contains(got, "theme=dark") {
+		t.Fatalf("expected theme parameter in %q", got)
+	}
+	if !strings.Contains(got, "mail_theme=PCSDark%40custom") {
+		t.Fatalf("expected SnappyMail theme parameter in %q", got)
+	}
+}
+
+func TestSnappyMailAutologinUsesPublicWebmailHost(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Host != "mail.powerfulcontrolsystem.com" {
+			t.Fatalf("internal SSO host=%q, want public Mailu host", r.Host)
+		}
+		if got := r.Header.Get("X-Forwarded-Host"); got != "mail.powerfulcontrolsystem.com" {
+			t.Fatalf("X-Forwarded-Host=%q", got)
+		}
+		if got := r.Header.Get("X-Forwarded-Proto"); got != "https" {
+			t.Fatalf("X-Forwarded-Proto=%q", got)
+		}
+		http.Redirect(w, r, "/index.php?sso&hash=qa", http.StatusFound)
+	}))
+	defer server.Close()
+	t.Setenv("EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL", server.URL)
+
+	got, _, err := snappyMailAutologinRedirectURL(CorporateEmailConfig{
+		WebmailURL: "https://mail.powerfulcontrolsystem.com/webmail/",
+	}, "qa@powerfulcontrolsystem.com", "temporary-secret", "light")
+	if err != nil {
+		t.Fatalf("snappyMailAutologinRedirectURL error: %v", err)
+	}
+	if !strings.HasPrefix(got, "/index.php?sso&hash=qa&") {
+		t.Fatalf("unexpected public redirect %q", got)
+	}
+}
+
+func TestCorporateEmailAppendThemeRegularURL(t *testing.T) {
+	got := corporateEmailAppendThemeToURI("/webmail/?_task=mail", "light")
+	if !strings.Contains(got, "_task=mail") {
+		t.Fatalf("expected existing query to be preserved, got %q", got)
+	}
+	if !strings.Contains(got, "theme=light") {
+		t.Fatalf("expected light theme parameter in %q", got)
+	}
+}
+
+func TestCorporateEmailMaxAccountsDefaultAndBounds(t *testing.T) {
+	if got := getCorporateEmailConfig(nil).MaxAccounts; got != corporateEmailDefaultMax {
+		t.Fatalf("default max accounts per empresa = %d, want %d", got, corporateEmailDefaultMax)
+	}
+	cases := []struct {
+		in   int
+		want int
+	}{
+		{0, corporateEmailDefaultMax},
+		{-3, corporateEmailDefaultMax},
+		{5, 5},
+		{12, 12},
+		{501, 500},
+	}
+	for _, tc := range cases {
+		if got := normalizeCorporateEmailMaxAccounts(tc.in); got != tc.want {
+			t.Fatalf("normalizeCorporateEmailMaxAccounts(%d)=%d, want %d", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestCorporateEmailParseStatusLineUnread(t *testing.T) {
+	status := parseCorporateEmailStatusLine(`* STATUS INBOX (MESSAGES 14 RECENT 1 UNSEEN 3)`)
+	if !status.Checked || !status.OK {
+		t.Fatalf("expected checked OK status, got %+v", status)
+	}
+	if status.Messages != 14 || status.Recent != 1 || status.Unseen != 3 {
+		t.Fatalf("unexpected IMAP counters: %+v", status)
+	}
+}
+
+func TestCorporateEmailIMAPAddressDefaultsToMailuWebmailPort(t *testing.T) {
+	t.Setenv("EMAIL_CORPORATIVO_IMAP_ADDR", "")
+	t.Setenv("MAILU_IMAP_ADDR", "")
+	if got := corporateEmailIMAPAddress(); got != "mailu-front:10143" {
+		t.Fatalf("direccion IMAP por defecto = %q; se esperaba canal interno de webmail", got)
+	}
+}
+
+func TestCorporateEmailIMAPAddressReplacesLegacyDirectService(t *testing.T) {
+	t.Setenv("EMAIL_CORPORATIVO_IMAP_ADDR", "mailu-imap:143")
+	t.Setenv("MAILU_IMAP_ADDR", "")
+	if got := corporateEmailIMAPAddress(); got != "mailu-front:10143" {
+		t.Fatalf("direccion IMAP heredada = %q; se esperaba canal interno de webmail", got)
+	}
+}
+
+func TestCorporateEmailProvisionReconciliationRequiresVerifiedInbox(t *testing.T) {
+	account := &dbpkg.EmpresaEmailCorporativo{EmpresaID: 12, EstadoProvision: "pendiente_provision"}
+	if shouldReconcileCorporateEmailProvision(account, corporateEmailUnreadStatus{Checked: true, OK: false}) {
+		t.Fatal("un INBOX rechazado no debe cambiar el estado de provision")
+	}
+	if !shouldReconcileCorporateEmailProvision(account, corporateEmailUnreadStatus{Checked: true, OK: true}) {
+		t.Fatal("un INBOX autenticado debe permitir reconciliar el estado")
+	}
+	account.EstadoProvision = "provisionado"
+	if shouldReconcileCorporateEmailProvision(account, corporateEmailUnreadStatus{Checked: true, OK: true}) {
+		t.Fatal("un buzon ya provisionado no debe registrar otra reconciliacion")
+	}
+}
+
+func TestCorporateEmailCompanyPageReconcilesMailuWithCSRFProtectedPost(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "email_corporativo.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		`JSON.stringify({ reconcile: true })`, `method: "POST"`,
+		`options.headers.set("X-CSRF-Token", token)`, `Verificando Mailu...`,
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("reconciliacion segura de Mailu ausente: %q", required)
+		}
+	}
+}
+
+func TestCorporateEmailSuperPageIncludesMaxAccountsField(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "super", "email_corporativo.html"))
+	if err != nil {
+		t.Fatalf("read email_corporativo.html: %v", err)
+	}
+	html := string(raw)
+	required := []string{
+		`id="maxAccountsPerEmpresa"`,
+		`config.max_accounts_per_empresa || 5`,
+		`max_accounts_per_empresa: Number(fields.maxAccountsPerEmpresa.value || 5)`,
+	}
+	for _, expected := range required {
+		if !strings.Contains(html, expected) {
+			t.Fatalf("email_corporativo.html debe exponer y guardar el cupo de cuentas por empresa; falta %q", expected)
+		}
+	}
+}
+
+func TestCorporateEmailSuperPageIncludesBrandAvatarAndCSRF(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "super", "email_corporativo.html"))
+	if err != nil {
+		t.Fatalf("read email_corporativo.html: %v", err)
+	}
+	page := string(raw)
+	required := []string{
+		`src="/img/bimi-pcs.svg"`,
+		`src="/img/Logo pcs 1.png"`,
+		`<option value="mailu_api">Mailu API interna</option>`,
+		`? (apiProvisionEnabled ? "API interna" : "API incompleta")`,
+		`function readCSRFCookie()`,
+		`pcs_csrf`,
+		`headers.set("X-CSRF-Token", token)`,
+		`id="quotaMB" type="number" min="0" step="1"`,
+		`.card { min-width: 0;`,
+		`.table-wrap { max-width: 100%; overflow-x: auto;`,
+	}
+	for _, expected := range required {
+		if !strings.Contains(page, expected) {
+			t.Fatalf("email_corporativo.html debe mostrar la marca y autorizar mutaciones CSRF; falta %q", expected)
+		}
+	}
+}

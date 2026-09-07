@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Elegir Licencia</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.elegir-licencia-page .portal-home-grid{
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:18px;
+      align-items:stretch;
+    }
+    body.elegir-licencia-page .home-offer-card{
+      min-height:unset !important;
+      padding:0;
+    }
+    body.elegir-licencia-page .license-sales-card{
+      --license-card-accent:#2563eb;
+      --license-card-accent-2:#06b6d4;
+      --license-card-shadow:rgba(37,99,235,.22);
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      border:1px solid color-mix(in srgb,var(--license-card-accent) 34%,var(--border));
+      border-radius:18px;
+      background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb,var(--license-card-accent) 18%, transparent) 0 26%, transparent 48%),
+        radial-gradient(circle at 100% 18%, color-mix(in srgb,var(--license-card-accent-2) 14%, transparent) 0 24%, transparent 48%),
+        linear-gradient(145deg,color-mix(in srgb,var(--surface) 93%,var(--license-card-accent) 7%),color-mix(in srgb,var(--surface-soft) 86%,var(--license-card-accent-2) 14%));
+      box-shadow:0 18px 42px color-mix(in srgb,var(--license-card-shadow) 62%, transparent);
+      transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+    }
+    body.elegir-licencia-page .license-sales-card::before{
+      content:"";
+      position:absolute;
+      inset:0 0 auto 0;
+      height:5px;
+      background:linear-gradient(90deg,var(--license-card-accent),var(--license-card-accent-2));
+    }
+    body.elegir-licencia-page .license-sales-card::after{
+      content:"";
+      position:absolute;
+      inset:auto -34px -48px auto;
+      width:132px;
+      height:132px;
+      border-radius:999px;
+      background:color-mix(in srgb,var(--license-card-accent) 14%, transparent);
+      pointer-events:none;
+    }
+    body.elegir-licencia-page .license-sales-card:hover{
+      transform:translateY(-3px);
+      border-color:color-mix(in srgb,var(--license-card-accent) 62%,var(--border));
+      box-shadow:0 24px 58px color-mix(in srgb,var(--license-card-shadow) 74%, transparent);
+    }
+    body.elegir-licencia-page .license-tone-1{--license-card-accent:#2563eb;--license-card-accent-2:#06b6d4;--license-card-shadow:rgba(37,99,235,.28)}
+    body.elegir-licencia-page .license-tone-2{--license-card-accent:#16a34a;--license-card-accent-2:#84cc16;--license-card-shadow:rgba(22,163,74,.26)}
+    body.elegir-licencia-page .license-tone-3{--license-card-accent:#dc2626;--license-card-accent-2:#f97316;--license-card-shadow:rgba(220,38,38,.24)}
+    body.elegir-licencia-page .license-tone-4{--license-card-accent:#7c3aed;--license-card-accent-2:#db2777;--license-card-shadow:rgba(124,58,237,.26)}
+    body.elegir-licencia-page .license-tone-5{--license-card-accent:#0891b2;--license-card-accent-2:#0d9488;--license-card-shadow:rgba(8,145,178,.25)}
+    body.elegir-licencia-page .license-tone-6{--license-card-accent:#ca8a04;--license-card-accent-2:#ea580c;--license-card-shadow:rgba(202,138,4,.26)}
+    body.elegir-licencia-page .license-tone-7{--license-card-accent:#be185d;--license-card-accent-2:#e11d48;--license-card-shadow:rgba(190,24,93,.24)}
+    body.elegir-licencia-page .license-tone-8{--license-card-accent:#4f46e5;--license-card-accent-2:#0ea5e9;--license-card-shadow:rgba(79,70,229,.26)}
+    html[data-theme^="dark"] body.elegir-licencia-page .license-sales-card,
+    html.theme-dark body.elegir-licencia-page .license-sales-card{
+      background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb,var(--license-card-accent) 24%, transparent) 0 26%, transparent 50%),
+        radial-gradient(circle at 100% 18%, color-mix(in srgb,var(--license-card-accent-2) 18%, transparent) 0 24%, transparent 50%),
+        linear-gradient(145deg,color-mix(in srgb,var(--surface) 88%,var(--license-card-accent) 12%),color-mix(in srgb,var(--surface-soft) 78%,var(--license-card-accent-2) 22%));
+    }
+    html[data-theme^="light"] body.elegir-licencia-page .license-sales-card,
+    html.theme-light body.elegir-licencia-page .license-sales-card{
+      background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb,var(--license-card-accent) 12%, transparent) 0 26%, transparent 50%),
+        radial-gradient(circle at 100% 18%, color-mix(in srgb,var(--license-card-accent-2) 10%, transparent) 0 24%, transparent 50%),
+        linear-gradient(145deg,color-mix(in srgb,var(--surface) 96%,var(--license-card-accent) 4%),color-mix(in srgb,var(--surface-soft) 88%,var(--license-card-accent-2) 12%));
+    }
+    body.elegir-licencia-page .license-sales-top{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:22px 22px 0;
+    }
+    body.elegir-licencia-page .license-sales-media{
+      width:72px;
+      height:72px;
+      flex:0 0 72px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:16px;
+      background:linear-gradient(135deg,color-mix(in srgb,var(--license-card-accent) 16%,var(--surface)),color-mix(in srgb,var(--license-card-accent-2) 14%,var(--surface-soft)));
+      border:1px solid color-mix(in srgb,var(--license-card-accent) 28%,var(--border));
+      margin:0;
+      box-shadow:inset 0 1px 0 color-mix(in srgb,white 18%,transparent),0 12px 24px color-mix(in srgb,var(--license-card-shadow) 42%, transparent);
+    }
+    body.elegir-licencia-page .license-sales-media .card-logo{
+      width:50px !important;
+      height:50px !important;
+      object-fit:contain;
+    }
+    body.elegir-licencia-page .license-sales-title{
+      min-width:0;
+    }
+    body.elegir-licencia-page .license-sales-title h3{
+      margin:0 0 6px;
+      font-size:1.18rem !important;
+      line-height:1.18;
+      letter-spacing:0;
+      color:color-mix(in srgb,var(--text) 88%,var(--license-card-accent) 12%);
+      text-shadow:none;
+    }
+    body.elegir-licencia-page .license-sales-kicker{
+      display:inline-flex;
+      align-items:center;
+      min-height:24px;
+      padding:3px 9px;
+      border-radius:999px;
+      color:color-mix(in srgb,var(--license-card-accent) 76%,var(--text));
+      background:color-mix(in srgb,var(--license-card-accent) 12%,var(--surface));
+      border:1px solid color-mix(in srgb,var(--license-card-accent) 24%,transparent);
+      font-size:.76rem;
+      font-weight:800;
+      text-transform:uppercase;
+    }
+    body.elegir-licencia-page .license-sales-body{
+      display:flex;
+      flex:1;
+      flex-direction:column;
+      gap:14px;
+      padding:0 22px 22px;
+    }
+    body.elegir-licencia-page .license-sales-description{
+      min-height:58px;
+      margin:0;
+      color:var(--muted);
+      font-size:.94rem;
+      line-height:1.45;
+    }
+    body.elegir-licencia-page .license-sales-meta{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    body.elegir-licencia-page .license-sales-metric{
+      padding:12px;
+      border-radius:12px;
+      background:color-mix(in srgb,var(--surface) 86%,var(--license-card-accent) 14%);
+      border:1px solid color-mix(in srgb,var(--license-card-accent) 24%,var(--border));
+      box-shadow:inset 3px 0 0 var(--license-card-accent);
+    }
+    body.elegir-licencia-page .license-sales-metric span{
+      display:block;
+      margin-bottom:5px;
+      color:var(--muted);
+      font-size:.74rem;
+      font-weight:800;
+      text-transform:uppercase;
+    }
+    body.elegir-licencia-page .license-sales-metric strong{
+      display:block;
+      color:var(--text);
+      font-size:.98rem;
+      line-height:1.2;
+    }
+    body.elegir-licencia-page .license-price-stack{
+      display:grid;
+      gap:3px;
+      align-content:start;
+    }
+    body.elegir-licencia-page .license-price-before{
+      position:relative;
+      display:inline-block;
+      width:max-content;
+      max-width:100%;
+      color:var(--muted);
+      font-size:.82rem;
+      font-weight:850;
+      line-height:1.08;
+    }
+    body.elegir-licencia-page .license-price-before::after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      top:50%;
+      height:2px;
+      background:currentColor;
+      transform:translateY(-50%);
+    }
+    body.elegir-licencia-page .license-price-current{
+      display:block;
+      color:var(--text);
+      font-size:1rem;
+      font-weight:900;
+      line-height:1.12;
+    }
+    body.elegir-licencia-page .license-sales-card .card-actions{
+      margin-top:auto;
+    }
+    body.elegir-licencia-page .license-advisor-field{
+      margin-top:2px;
+      padding:9px;
+      border:1px solid color-mix(in srgb,var(--license-card-accent) 22%,var(--border));
+      border-radius:10px;
+      background:color-mix(in srgb,var(--surface) 88%,var(--license-card-accent) 12%);
+    }
+    body.elegir-licencia-page .license-advisor-field label{
+      display:block;
+      margin:0 0 5px;
+      color:var(--text);
+      font-size:.78rem;
+      font-weight:850;
+    }
+    body.elegir-licencia-page .license-advisor-field input{
+      width:100%;
+      min-height:36px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:7px 9px;
+      background:var(--surface);
+      color:var(--text);
+      font-weight:800;
+      text-transform:uppercase;
+    }
+    body.elegir-licencia-page .license-advisor-field small{
+      display:block;
+      margin-top:5px;
+      color:var(--muted);
+      font-size:.72rem;
+      line-height:1.25;
+    }
+    body.elegir-licencia-page .license-sales-card .home-offer-btn{
+      display:inline-flex;
+      align-items:center;
+      width:100%;
+      justify-content:center;
+      padding:12px 16px;
+      border-radius:12px;
+      font-size:.94rem;
+      font-weight:800;
+      border-color:color-mix(in srgb,var(--license-card-accent) 62%,var(--border));
+      background:linear-gradient(135deg,var(--license-card-accent),var(--license-card-accent-2));
+      color:#fff;
+      box-shadow:0 12px 26px color-mix(in srgb,var(--license-card-shadow) 72%,transparent);
+    }
+    @media (max-width: 640px){
+      body.elegir-licencia-page .portal-home-grid{
+        grid-template-columns:1fr;
+      }
+      body.elegir-licencia-page .license-sales-top{
+        padding:20px 18px 0;
+      }
+      body.elegir-licencia-page .license-sales-body{
+        padding:0 18px 18px;
+      }
+      body.elegir-licencia-page .license-sales-meta{
+        grid-template-columns:1fr;
+      }
+    }
+
+    body.elegir-licencia-page .page-header{
+      position: relative;
+      padding-right: 62px;
+    }
+
+    .detected-country-flag{
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      width: 46px;
+      height: 34px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.22);
+      font-size: 20px;
+      line-height: 1;
+      user-select: none;
+    }
+  </style>
+  <script src="/menu.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
+</head>
+<body class="elegir-licencia-page">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Elegir Licencia</h2>
+      <ul class="nav">
+        <li><a href="/seleccionar_empresa.html"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Volver a empresas</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="container">
+        <div class="page-header">
+          <h1 id="pageTitle">Elegir Licencia</h1>
+          <div id="detectedCountryFlag" class="detected-country-flag" title="País detectado" aria-label="País detectado" hidden>CO</div>
+        </div>
+        <p class="form-help" id="licenciasHelp">Explora las licencias disponibles y elige la opción que mejor encaje con la operación de la empresa.</p>
+        <div id="licencias" class="portal-grid portal-home-grid">Cargando licencias...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+
+    (function(){
+      function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
+      function normalizeImage(raw) {
+        var value = String(raw || '').trim();
+        if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) {
+          return '/img/punto_venta.png';
+        }
+        return value;
+      }
+
+      var verticalCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS) ? window.PCS_NUEVAS_PLANTILLAS.slice() : [];
+      var verticalByModule = {};
+      verticalCatalog.forEach(function(item) {
+        var module = String(item && item.module || '').trim().toLowerCase();
+        if (module) verticalByModule[module] = item;
+      });
+
+      function normalizeSearchText(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value.normalize) {
+          value = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        return value;
+      }
+
+      function splitCSV(raw) {
+        return String(raw || '').split(',').map(function(part) {
+          return String(part || '').trim().toLowerCase();
+        }).filter(Boolean);
+      }
+
+      function getLicenciaModuloVertical(licencia, tipoNombre) {
+        var modulos = splitCSV(licencia && (licencia.modulos_habilitados || licencia.ModulosHab || licencia.modulosHab));
+        for (var i = 0; i < modulos.length; i += 1) {
+          if (verticalByModule[modulos[i]]) return verticalByModule[modulos[i]];
+        }
+        var haystack = normalizeSearchText([
+          tipoNombre,
+          licencia && (licencia.tipo_nombre || licencia.tipoNombre),
+          licencia && (licencia.nombre || licencia.Nombre),
+          licencia && (licencia.descripcion || licencia.Descripcion)
+        ].join(' '));
+        for (var j = 0; j < verticalCatalog.length; j += 1) {
+          var item = verticalCatalog[j];
+          var title = normalizeSearchText([item.title, item.fullTitle, item.module].join(' '));
+          var compactModule = normalizeSearchText(String(item.module || '').replace(/_/g, ' '));
+          if ((title && haystack.indexOf(title) >= 0) || (compactModule && haystack.indexOf(compactModule) >= 0)) {
+            return item;
+          }
+        }
+        return null;
+      }
+
+      function getLicenciaIcon(licencia, tipoNombre) {
+        var plantilla = getLicenciaModuloVertical(licencia, tipoNombre);
+        if (plantilla && plantilla.icon) return plantilla.icon;
+        var tipo = String((licencia && (licencia.tipo_nombre || licencia.tipoNombre)) || tipoNombre || '').toLowerCase();
+        var nombre = String((licencia && (licencia.nombre || licencia.Nombre)) || '').toLowerCase();
+        if (tipo.indexOf('hotel') >= 0 || nombre.indexOf('hotel') >= 0) return '/img/hotel-logo.svg';
+        if (tipo.indexOf('motel') >= 0 || nombre.indexOf('motel') >= 0) return '/img/motel.png';
+        if (/\bbar\b|\bpub\b|licoreria|discoteca|coctel|bebida|barra/.test(tipo + ' ' + nombre)) return '/img/bar-logo.svg';
+        if (tipo.indexOf('restaurante') >= 0 || nombre.indexOf('restaurante') >= 0) return '/img/restaurante.png';
+        if (tipo.indexOf('turno') >= 0 || nombre.indexOf('turno') >= 0) return '/img/turnos-logo.svg';
+        if (tipo.indexOf('vehiculo') >= 0 || nombre.indexOf('vehiculo') >= 0 || tipo.indexOf('flota') >= 0 || nombre.indexOf('flota') >= 0) return '/img/vehiculos-flotas-logo.svg';
+        if (tipo.indexOf('salon') >= 0 || nombre.indexOf('salon') >= 0 || tipo.indexOf('belleza') >= 0 || nombre.indexOf('belleza') >= 0) return '/img/salon-belleza-logo.svg';
+        if (tipo.indexOf('lavadero') >= 0 || nombre.indexOf('lavadero') >= 0 || tipo.indexOf('lavado') >= 0 || nombre.indexOf('lavado') >= 0) return '/img/lavadero-autos-logo.svg';
+        if (tipo.indexOf('taller') >= 0 || nombre.indexOf('taller') >= 0 || tipo.indexOf('mecanico') >= 0 || nombre.indexOf('mecanico') >= 0) return '/img/taller-mecanico-logo.svg';
+        if (tipo.indexOf('pyme') >= 0 || nombre.indexOf('pyme') >= 0) return '/img/pymes-logo.svg';
+        if (tipo.indexOf('red social') >= 0 || nombre.indexOf('red social') >= 0 || tipo.indexOf('redes sociales') >= 0 || nombre.indexOf('redes sociales') >= 0) return '/img/redes-sociales-logo.svg';
+        if (tipo.indexOf('sensor') >= 0 || nombre.indexOf('sensor') >= 0 || tipo.indexOf('monitoreo') >= 0 || nombre.indexOf('monitoreo') >= 0) return '/img/sensores-logo.svg';
+        return '/img/punto_venta.png';
+      }
+
+      function getLicenciaToneClass(licencia, tipoNombre, idx) {
+        var plantilla = getLicenciaModuloVertical(licencia, tipoNombre);
+        if (plantilla && plantilla.module) {
+          var foundIndex = verticalCatalog.findIndex(function(item) {
+            return String(item.module || '').toLowerCase() === String(plantilla.module || '').toLowerCase();
+          });
+          if (foundIndex >= 0) return 'license-tone-' + ((foundIndex % 8) + 1);
+        }
+        return 'license-tone-' + ((idx % 8) + 1);
+      }
+
+      function getLicenciaKicker(licencia, tipoNombre) {
+        var plantilla = getLicenciaModuloVertical(licencia, tipoNombre);
+        return plantilla ? 'Plantilla' : 'Licencia';
+      }
+
+      function resolveCurrencyByCountry(paisCodigo) {
+        switch (normalizeCountryCode(paisCodigo) || 'CO') {
+          case 'CO': return { currency: 'COP', locale: 'es-CO', symbolFallback: '$' };
+          case 'MX': return { currency: 'MXN', locale: 'es-MX', symbolFallback: '$' };
+          case 'PE': return { currency: 'PEN', locale: 'es-PE', symbolFallback: 'S/' };
+          case 'EC': return { currency: 'USD', locale: 'es-EC', symbolFallback: '$' };
+          case 'CL': return { currency: 'CLP', locale: 'es-CL', symbolFallback: '$' };
+          case 'AR': return { currency: 'ARS', locale: 'es-AR', symbolFallback: '$' };
+          default:   return { currency: 'USD', locale: 'es',    symbolFallback: '$' };
+        }
+      }
+
+      function normalizeCurrencyCode(raw) {
+        var c = String(raw || '').trim().toUpperCase();
+        if (c.length !== 3) return '';
+        for (var i = 0; i < c.length; i += 1) {
+          var ch = c.charCodeAt(i);
+          if (ch < 65 || ch > 90) return '';
+        }
+        return c;
+      }
+
+      function formatMoney(value, currencyCode, locale) {
+        var amount = Number(value || 0);
+        if (!Number.isFinite(amount)) amount = 0;
+        var curr = normalizeCurrencyCode(currencyCode) || 'COP';
+        var loc = String(locale || '').trim() || 'es-CO';
+        try {
+          return new Intl.NumberFormat(loc, { style: 'currency', currency: curr, maximumFractionDigits: 2 }).format(amount);
+        } catch (e) {
+          return (curr === 'PEN' ? 'S/' : '$') + String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+      }
+
+      function getLicenciaValor(licencia) {
+        var amount = Number(typeof licencia.valor !== 'undefined' ? licencia.valor : licencia.Valor);
+        if (!Number.isFinite(amount)) return 0;
+        return amount;
+      }
+
+      function getLicenciaPrecioAntes(valor) {
+        var amount = Math.round(Number(valor || 0));
+        if (amount === 60000) return 70000;
+        if (amount === 110000) return 120000;
+        if (amount === 200000) return 220000;
+        return 0;
+      }
+
+      function buildLicenciaPrecioMarkup(valor, currencyCtx) {
+        var currency = currencyCtx && currencyCtx.currency;
+        var locale = currencyCtx && currencyCtx.locale;
+        var current = formatMoney(valor, currency, locale);
+        var before = getLicenciaPrecioAntes(valor);
+        if (!before) {
+          return '<strong>' + escapeHtml(current) + '</strong>';
+        }
+        return '' +
+          '<strong class="license-price-stack">' +
+          '  <span class="license-price-before">' + escapeHtml(formatMoney(before, currency, locale)) + '</span>' +
+          '  <span class="license-price-current">' + escapeHtml(current) + '</span>' +
+          '</strong>';
+      }
+
+      function normalizeCountryCode(raw) {
+        var code = String(raw || '').trim().toUpperCase();
+        return code.length === 2 ? code : '';
+      }
+
+      function countryCodeToFlagEmoji(code) {
+        code = normalizeCountryCode(code);
+        if (!code) return '🌎';
+        var A = 0x1F1E6;
+        var out = '';
+        for (var i = 0; i < code.length; i += 1) {
+          var c = code.charCodeAt(i);
+          if (c < 65 || c > 90) return '🌎';
+          out += String.fromCodePoint(A + (c - 65));
+        }
+        return out || '🌎';
+      }
+
+      function setDetectedCountryBadge(paisCodigo) {
+        var el = document.getElementById('detectedCountryFlag');
+        if (!el) return;
+        var code = normalizeCountryCode(paisCodigo) || 'CO';
+        el.textContent = countryCodeToFlagEmoji(code);
+        el.title = 'País detectado: ' + code;
+        el.hidden = false;
+      }
+
+      async function detectCountryCode() {
+        try {
+          // En producción, el backend puede resolver país via headers (ej. Cloudflare).
+          // En local puedes forzar: /api/public/geo?pais=CO
+          var res = await fetch('/api/public/geo', { credentials: 'same-origin' });
+          if (!res.ok) throw new Error('geo http ' + res.status);
+          var data = await res.json().catch(function(){ return {}; });
+          var code = normalizeCountryCode(data && data.pais_codigo);
+          return code || 'CO';
+        } catch (e) {
+          return 'CO';
+        }
+      }
+
+      function isTrial15License(licencia) {
+        var valor = getLicenciaValor(licencia);
+        var duracion = Number(licencia && (licencia.duracion_dias || licencia.DuracionDias || 0));
+        if (valor > 0 || duracion !== 15) return false;
+        var text = String((licencia && (licencia.nombre || licencia.Nombre || '')) + ' ' + (licencia && (licencia.descripcion || licencia.Descripcion || ''))).toLowerCase();
+        return !text || text.indexOf('prueba') >= 0 || text.indexOf('gratis') >= 0 || text.indexOf('trial') >= 0;
+      }
+
+      function buildLicenciaCard(licencia, idx, empresaId, tipoId, tipoNombre, currencyCtx, initialAsesorID) {
+        var valor = getLicenciaValor(licencia);
+        var duracion = (licencia.duracion_dias || licencia.DuracionDias || '');
+        var icono = normalizeImage(getLicenciaIcon(licencia, tipoNombre));
+        var descripcion = String(licencia.descripcion || licencia.Descripcion || '').trim();
+        var actionLabel = valor <= 0 ? 'Activar licencia' : 'Comprar licencia';
+        var moneyMarkup = buildLicenciaPrecioMarkup(valor, currencyCtx);
+        var toneClass = getLicenciaToneClass(licencia, tipoNombre, idx);
+        var kicker = getLicenciaKicker(licencia, tipoNombre);
+        var trial15 = isTrial15License(licencia);
+        var advisorField = trial15 ? (
+          '    <div class="license-advisor-field">' +
+          '      <label for="asesor_licencia_' + escapeHtml(String(licencia.id || idx)) + '">Código de asesor comercial</label>' +
+          '      <input id="asesor_licencia_' + escapeHtml(String(licencia.id || idx)) + '" class="js-license-advisor" type="text" placeholder="Ej: AC-123ABC" value="' + escapeHtml(initialAsesorID || '') + '">' +
+          '      <small>Opcional. Si escribes el codigo, la prueba queda registrada con ese asesor al activarla.</small>' +
+          '    </div>'
+        ) : '';
+        return '' +
+          '<article class="portal-card home-offer-card license-sales-card ' + escapeHtml(toneClass) + '" style="animation-delay:' + (idx * 90) + 'ms">' +
+          '  <div class="license-sales-top">' +
+          '    <div class="home-offer-media license-sales-media">' +
+          '      <img src="' + escapeHtml(icono) + '" alt="Icono licencia ' + escapeHtml(String(licencia.nombre || licencia.Nombre || '')) + '" class="card-logo">' +
+          '    </div>' +
+          '    <div class="license-sales-title">' +
+          '      <span class="license-sales-kicker">' + escapeHtml(kicker) + '</span>' +
+          '      <h3>' + escapeHtml(String(licencia.nombre || licencia.Nombre || '--')) + '</h3>' +
+          '    </div>' +
+          '  </div>' +
+          '  <div class="license-sales-body">' +
+          '    <p class="license-sales-description">' + escapeHtml(descripcion || ('Licencia con duración de ' + String(duracion || '--') + ' días y activación para la empresa seleccionada.')) + '</p>' +
+          '    <div class="license-sales-meta">' +
+          '      <div class="license-sales-metric"><span>Valor</span>' + moneyMarkup + '</div>' +
+          '      <div class="license-sales-metric"><span>Duración</span><strong>' + escapeHtml(String(duracion || '--')) + ' días</strong></div>' +
+          '    </div>' +
+          advisorField +
+          '    <div class="card-actions">' +
+          '      <button class="home-offer-btn js-buy-license" type="button" data-licencia="' + escapeHtml(String(licencia.id)) + '" data-empresa-id="' + escapeHtml(String(empresaId || '')) + '" data-tipo-id="' + escapeHtml(String(tipoId || '')) + '" data-tipo-nombre="' + escapeHtml(String(tipoNombre || '')) + '">' + escapeHtml(actionLabel) + '</button>' +
+          '    </div>' +
+          '  </div>' +
+          '</article>';
+      }
+
+      async function run(){
+        try{
+          const params = new URLSearchParams(window.location.search);
+          const empresaId = params.get('empresa_id');
+          let tipoId = params.get('tipo_id');
+          let tipoNombre = params.get('tipo_nombre');
+          const initialAsesorID = String(params.get('asesor_id') || params.get('codigo_asesor') || '').trim().toUpperCase();
+
+          // auth check
+          const meRes = await fetch('/me');
+          if (!meRes.ok) { window.location.href = '/login.html'; return }
+
+          const paisCodigo = await detectCountryCode();
+          setDetectedCountryBadge(paisCodigo);
+
+          // Moneda: por defecto según país; si la empresa tiene moneda configurada, gana.
+          var currencyCtx = resolveCurrencyByCountry(paisCodigo);
+          try {
+            if (empresaId) {
+              var cfgRes = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(String(empresaId)), { credentials: 'same-origin' });
+              if (cfgRes.ok) {
+                var cfg = await cfgRes.json().catch(function(){ return {}; });
+                var empresaCurrency = normalizeCurrencyCode(cfg && cfg.moneda_codigo);
+                if (empresaCurrency) {
+                  currencyCtx.currency = empresaCurrency;
+                  // Mantener locale por país detectado (salvo COP)
+                }
+              }
+            }
+          } catch (e) {}
+
+          const empRes = await fetch('/super/api/empresas');
+          const empresas = empRes.ok ? await empRes.json() : [];
+
+          let empresaName = '';
+          if (empresaId && Array.isArray(empresas)){
+            const found = empresas.find(function(x){ return String(x.id) === String(empresaId) });
+            if (found) {
+              empresaName = found.nombre || '';
+              if (!tipoId && found.tipo_id != null) tipoId = String(found.tipo_id);
+              if (!tipoNombre && (found.tipo_nombre || found.tipoNombre)) tipoNombre = found.tipo_nombre || found.tipoNombre;
+            }
+          }
+
+          // fetch licencias filtradas desde backend por tipo de empresa
+          const licParams = new URLSearchParams();
+          licParams.set('activo', '1');
+          licParams.set('pais_codigo', paisCodigo);
+          if (tipoId) licParams.set('tipo_id', String(tipoId));
+          if (empresaId) {
+            licParams.set('empresa_id', String(empresaId));
+            licParams.set('ocultar_prueba_usada', '1');
+          }
+          const licRes = await fetch('/super/api/licencias?' + licParams.toString(), { credentials: 'same-origin' });
+          const licencias = licRes.ok ? await licRes.json() : [];
+          const pruebaUsada = licRes && licRes.headers && licRes.headers.get('X-PCS-Trial-Used') === '1';
+
+          const titleEl = document.getElementById('pageTitle');
+          if (empresaName) titleEl.textContent = 'Elegir licencia para: ' + empresaName;
+          else if (tipoNombre) titleEl.textContent = 'Licencias para tipo: ' + decodeURIComponent(tipoNombre);
+          const helpEl = document.getElementById('licenciasHelp');
+          if (helpEl && pruebaUsada) {
+            helpEl.textContent = 'Esta empresa ya uso la prueba gratuita de 15 dias. Solo se muestran planes comerciales disponibles para continuar.';
+          }
+
+          // filter by tipo_id or tipo_nombre
+          const filtered = (licencias||[]).filter(function(l){
+            try{
+              if (Number(l.empresa_id || l.EmpresaID || 0) > 0) return false;
+              if (Number(l.es_adicional || l.EsAdicional || 0) === 1) return false;
+              var licTipo = Number(l.tipo_id || l.TipoID || 0);
+              if (licTipo === 0) return true;
+              if (tipoId && l.tipo_id != null) return String(l.tipo_id) === String(tipoId);
+              if (tipoNombre && (l.tipo_nombre || l.tipoNombre)) return String((l.tipo_nombre||l.tipoNombre)).toLowerCase() === String(tipoNombre).toLowerCase();
+              return false;
+            }catch(e){ return false }
+          }).sort(function(a, b){
+            return getLicenciaValor(a) - getLicenciaValor(b);
+          });
+
+          const container = document.getElementById('licencias'); container.innerHTML = '';
+          if (!filtered || filtered.length === 0){
+            container.innerHTML = '<article class="portal-card home-offer-card"><div class="home-offer-media"><img src="/img/punto_venta.png" alt="Sin licencias" class="card-logo"></div><h3>Sin licencias disponibles</h3><p>No se encontraron licencias para este tipo de empresa.</p><p>Contacta al administrador para revisar disponibilidad o configuración comercial.</p><div class="card-actions"><a class="home-offer-btn" href="/seleccionar_empresa.html">Volver a empresas</a></div></article>';
+            return;
+          }
+
+          container.innerHTML = filtered.map(function(l, idx){
+            return buildLicenciaCard(l, idx, empresaId, tipoId, tipoNombre, currencyCtx, initialAsesorID);
+          }).join('');
+
+          Array.prototype.forEach.call(container.querySelectorAll('.js-buy-license'), function(btn){
+            btn.addEventListener('click', function(){
+              const q = new URLSearchParams();
+              const card = btn.closest('.license-sales-card');
+              const asesorInput = card ? card.querySelector('.js-license-advisor') : null;
+              const asesorID = asesorInput ? String(asesorInput.value || '').trim().toUpperCase() : '';
+              q.set('licencia_id', String(btn.getAttribute('data-licencia') || ''));
+              if (btn.getAttribute('data-empresa-id')) q.set('empresa_id', btn.getAttribute('data-empresa-id'));
+              if (btn.getAttribute('data-tipo-id')) q.set('tipo_id', btn.getAttribute('data-tipo-id'));
+              if (btn.getAttribute('data-tipo-nombre')) q.set('tipo_nombre', btn.getAttribute('data-tipo-nombre'));
+              if (asesorID) q.set('asesor_id', asesorID);
+              window.location.href = '/pagar_licencia.html?' + q.toString();
+            });
+          });
+
+        }catch(err){ console.error(err); document.getElementById('licencias').innerText = 'Error cargando licencias: ' + (err && err.message ? err.message : String(err)); }
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+    })();
+  </script>
+  <script src="/js/ai_chat_drawer.js"></script>
+
+</body>
+</html>

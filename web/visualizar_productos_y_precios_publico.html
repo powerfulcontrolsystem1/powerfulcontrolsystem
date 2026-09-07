@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Visualizar productos y precios</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root {
+      --public-ink: var(--text);
+      --public-muted: var(--muted);
+      --public-line: var(--border);
+      --public-bg: var(--bg);
+      --public-panel: var(--surface);
+      --public-accent: var(--accent-2);
+      --public-accent-dark: color-mix(in srgb, var(--accent-2) 72%, var(--text) 28%);
+      --public-accent-soft: color-mix(in srgb, var(--surface-soft) 86%, var(--accent-2) 14%);
+      --public-warn: var(--warning, #f59e0b);
+      --public-shadow: 0 18px 34px color-mix(in srgb, #020617 16%, transparent);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--public-ink);
+      background: var(--public-bg);
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      border-bottom: 1px solid var(--public-line);
+      background: color-mix(in srgb, var(--public-panel) 94%, transparent);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      border: 1px solid var(--public-line);
+      background: var(--public-accent-soft);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--public-accent-dark);
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .brand-title {
+      min-width: 0;
+    }
+
+    .brand-title strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 15px;
+    }
+
+    .brand-title span {
+      display: block;
+      color: var(--public-muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .read-only {
+      border: 1px solid color-mix(in srgb, var(--public-accent) 36%, var(--public-line));
+      color: var(--public-accent-dark);
+      background: var(--public-accent-soft);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .hero {
+      background: var(--public-panel);
+      border-bottom: 1px solid var(--public-line);
+    }
+
+    .hero-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 30px 18px 22px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .banner {
+      min-height: 180px;
+      border-radius: 8px;
+      border: 1px solid var(--public-line);
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--public-accent) 14%, transparent), color-mix(in srgb, var(--public-ink) 7%, transparent)),
+        var(--surface-soft);
+      display: grid;
+      align-items: end;
+    }
+
+    .banner.has-image {
+      background-size: cover;
+      background-position: center;
+    }
+
+    .hero-copy {
+      max-width: 780px;
+      padding: 18px;
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--public-accent-dark);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 48px);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .description {
+      max-width: 780px;
+      margin: 10px 0 0;
+      color: var(--public-muted);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .content {
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 18px;
+      flex: 1;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 160px;
+      gap: 10px;
+    }
+
+    input, select, textarea {
+      min-height: 42px;
+      border: 1px solid var(--public-line);
+      border-radius: 8px;
+      background: var(--form-input-bg);
+      color: var(--public-ink);
+      padding: 9px 11px;
+      font: inherit;
+      letter-spacing: 0;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 112px;
+      line-height: 1.45;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 3px solid color-mix(in srgb, var(--public-accent) 18%, transparent);
+      border-color: var(--public-accent);
+    }
+
+    .whatsapp-float {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      width: 56px;
+      height: 56px;
+      border-radius: 999px;
+      background: #25d366;
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-weight: 950;
+      box-shadow: var(--public-shadow);
+      border: 2px solid rgba(255,255,255,.78);
+    }
+    .whatsapp-float.is-visible { display: flex; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 0 18px;
+    }
+
+    .tab {
+      border: 1px solid var(--public-line);
+      background: var(--public-panel);
+      color: var(--public-ink);
+      border-radius: 999px;
+      min-height: 36px;
+      padding: 7px 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      border-color: var(--public-accent);
+      background: var(--public-accent);
+      color: var(--btn-primary-text, #fff);
+    }
+
+    .status {
+      color: var(--public-muted);
+      font-size: 14px;
+      min-height: 22px;
+      margin-bottom: 12px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .status.error { color: var(--danger); }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .product {
+      background: var(--public-panel);
+      border: 1px solid var(--public-line);
+      border-radius: 8px;
+      box-shadow: var(--public-shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    .photo {
+      aspect-ratio: 4 / 3;
+      background: var(--surface-soft);
+      border-bottom: 1px solid var(--public-line);
+      display: grid;
+      place-items: center;
+      color: var(--public-muted);
+      font-weight: 900;
+      text-transform: uppercase;
+      overflow: hidden;
+    }
+
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .product-body {
+      padding: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .product h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .product p {
+      margin: 0;
+      color: var(--public-muted);
+      line-height: 1.45;
+      font-size: 13px;
+      flex: 1;
+    }
+
+    .product-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-end;
+      border-top: 1px solid var(--public-line);
+      padding-top: 11px;
+    }
+
+    .price {
+      color: var(--public-ink);
+      font-size: 18px;
+      font-weight: 950;
+    }
+
+    .stock {
+      color: var(--public-muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+    }
+
+    .empty {
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--public-muted);
+      border: 1px dashed var(--public-line);
+      border-radius: 8px;
+      background: var(--public-panel);
+      padding: 22px;
+    }
+
+    .contact-section {
+      margin-top: 24px;
+      border-top: 1px solid var(--public-line);
+      padding-top: 20px;
+    }
+
+    .contact-card {
+      background: var(--public-panel);
+      border: 1px solid var(--public-line);
+      border-radius: 8px;
+      box-shadow: var(--public-shadow);
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .contact-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .contact-head h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .contact-head p {
+      margin: 6px 0 0;
+      color: var(--public-muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .contact-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .contact-form label {
+      display: grid;
+      gap: 6px;
+      color: var(--public-ink);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .contact-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid var(--public-accent);
+      background: var(--public-accent);
+      color: var(--btn-primary-text, #fff);
+      min-height: 42px;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn:disabled {
+      opacity: .65;
+      cursor: wait;
+    }
+
+    .footer {
+      color: var(--public-muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 22px 18px 28px;
+    }
+
+    @media (max-width: 720px) {
+      .topbar-inner { align-items: flex-start; }
+      .controls { grid-template-columns: 1fr; }
+      .search-row { grid-template-columns: 1fr; }
+      .hero-inner { padding-top: 18px; }
+      .banner { min-height: 150px; }
+      .hero-copy { padding: 14px; }
+      .products { grid-template-columns: 1fr; }
+      .contact-head { flex-direction: column; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .contact-actions { justify-content: stretch; }
+      .contact-actions .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-logo" id="brandLogo">PC</div>
+          <div class="brand-title">
+            <strong id="brandName">Carta de productos</strong>
+            <span id="brandSubtitle">Productos y precios actualizados</span>
+          </div>
+        </div>
+        <span class="read-only">Solo consulta</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="banner" id="banner">
+          <div class="hero-copy">
+            <p class="eyebrow">Visualizar productos y precios publico</p>
+            <h1 id="pageTitle">Carta de productos</h1>
+            <p class="description" id="pageDescription">Consulta productos, fotos y precios publicados por la empresa.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <main class="content">
+      <section class="controls" aria-label="Filtros de catalogo">
+        <div class="search-row">
+          <input id="search" placeholder="Buscar productos">
+          <select id="sort" aria-label="Ordenar productos">
+            <option value="">Relevancia</option>
+            <option value="precio_asc">Menor precio</option>
+            <option value="precio_desc">Mayor precio</option>
+            <option value="nombre_asc">Nombre A-Z</option>
+          </select>
+        </div>
+        <span class="read-only" id="counter">0 productos</span>
+      </section>
+      <nav class="tabs" id="tabs" aria-label="Secciones de la carta"></nav>
+      <div class="status" id="status">Cargando carta publica...</div>
+      <section class="products" id="products" aria-live="polite"></section>
+      <section class="contact-section" id="contactSection" aria-label="Contacto con la empresa">
+        <div class="contact-card">
+          <div class="contact-head">
+            <div>
+              <h2>Escríbenos</h2>
+              <p>Envía una consulta a la empresa. El mensaje llega al correo corporativo configurado.</p>
+            </div>
+          </div>
+          <form class="contact-form" id="contactForm">
+            <div class="contact-grid">
+              <label>Nombre
+                <input id="contactName" maxlength="160" autocomplete="name" required>
+              </label>
+              <label>Correo
+                <input id="contactEmail" type="email" maxlength="180" autocomplete="email" required>
+              </label>
+            </div>
+            <label>Teléfono
+              <input id="contactPhone" maxlength="60" autocomplete="tel">
+            </label>
+            <label>Mensaje
+              <textarea id="contactMessage" maxlength="2200" required placeholder="Escribe tu consulta sobre productos, precios o disponibilidad."></textarea>
+            </label>
+            <div class="contact-actions">
+              <button class="btn" id="contactSubmit" type="submit">Enviar mensaje</button>
+            </div>
+            <div class="status" id="contactStatus" aria-live="polite"></div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">Pagina publica de solo lectura. Los precios publicados pueden cambiar sin previo aviso.</footer>
+  </div>
+  <a id="whatsappFloat" class="whatsapp-float" href="#" target="_blank" rel="noopener" aria-label="WhatsApp">WA</a>
+
+  <script>
+    (function() {
+      const state = {
+        slug: '',
+        empresaId: '',
+        pageSlug: '',
+        query: '',
+        sort: '',
+        data: null
+      };
+
+      const els = {
+        brandLogo: document.getElementById('brandLogo'),
+        brandName: document.getElementById('brandName'),
+        brandSubtitle: document.getElementById('brandSubtitle'),
+        banner: document.getElementById('banner'),
+        pageTitle: document.getElementById('pageTitle'),
+        pageDescription: document.getElementById('pageDescription'),
+        contactSection: document.getElementById('contactSection'),
+        search: document.getElementById('search'),
+        sort: document.getElementById('sort'),
+        tabs: document.getElementById('tabs'),
+        status: document.getElementById('status'),
+        products: document.getElementById('products'),
+        counter: document.getElementById('counter'),
+        contactForm: document.getElementById('contactForm'),
+        contactName: document.getElementById('contactName'),
+        contactEmail: document.getElementById('contactEmail'),
+        contactPhone: document.getElementById('contactPhone'),
+        contactMessage: document.getElementById('contactMessage'),
+        contactSubmit: document.getElementById('contactSubmit'),
+        contactStatus: document.getElementById('contactStatus')
+      };
+
+      function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, function(ch) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+        });
+      }
+
+      function normalizeSlug(value) {
+        return String(value || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+
+      function resolveContext() {
+        const params = new URLSearchParams(window.location.search || '');
+        state.slug = normalizeSlug(params.get('empresa_slug') || '');
+        state.empresaId = params.get('empresa_id') || '';
+        state.pageSlug = normalizeSlug(params.get('pagina_slug') || params.get('page') || '');
+        if (!state.slug) {
+          const parts = window.location.pathname.split('/').filter(Boolean);
+          const file = parts[parts.length - 1] || '';
+          if (parts.length >= 2 && file.toLowerCase() === 'visualizar_productos_y_precios_publico.html') {
+            state.slug = normalizeSlug(parts[parts.length - 2]);
+          }
+        }
+        if (!state.slug && !state.empresaId) {
+          const host = window.location.hostname.toLowerCase();
+          if (host !== 'localhost' && host !== '127.0.0.1' && host.indexOf('.') > 0) {
+            const first = host.split('.')[0];
+            if (first && !['www', 'powerfulcontrolsystem', 'staging'].includes(first)) {
+              state.slug = normalizeSlug(first);
+            }
+          }
+        }
+      }
+
+      function money(value, moneda) {
+        const amount = Number(value || 0);
+        const currency = String(moneda || 'COP').trim() || 'COP';
+        try {
+          return new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency,
+            maximumFractionDigits: currency === 'COP' ? 0 : 2
+          }).format(amount);
+        } catch (_) {
+          return currency + ' ' + amount.toLocaleString('es-CO');
+        }
+      }
+
+      function initials(name) {
+        return String(name || 'Producto').trim().slice(0, 2).toUpperCase();
+      }
+
+      function setStatus(message, error) {
+        els.status.textContent = message || '';
+        els.status.className = 'status' + (error ? ' error' : '');
+      }
+
+      function setContactStatus(message, error) {
+        els.contactStatus.textContent = message || '';
+        els.contactStatus.className = 'status' + (error ? ' error' : '');
+      }
+
+      async function responseErrorMessage(res, fallback) {
+        const text = await res.text().catch(() => '');
+        if (!text) return fallback;
+        try {
+          const parsed = JSON.parse(text);
+          return String(parsed.error || parsed.message || fallback);
+        } catch (_) {
+          return text.length <= 240 ? text : fallback;
+        }
+      }
+
+      function applyProfile(data) {
+        const tienda = data.tienda || {};
+        const title = tienda.nombre_tienda || 'Carta de productos';
+        const desc = data.page?.descripcion || tienda.descripcion_tienda || 'Consulta productos, fotos y precios publicados por la empresa.';
+        const color = /^#[0-9a-f]{6}$/i.test(tienda.color_primario || '') ? tienda.color_primario : '';
+        if (color) {
+          document.documentElement.style.setProperty('--public-accent', color);
+          document.documentElement.style.setProperty('--public-accent-dark', color);
+        }
+        els.brandName.textContent = title;
+        els.brandSubtitle.textContent = tienda.empresa_slug ? tienda.empresa_slug + '.powerfulcontrolsystem.com' : 'Productos y precios actualizados';
+        els.pageTitle.textContent = data.page?.nombre || title;
+        els.pageDescription.textContent = desc;
+        if (tienda.logo_url) {
+          els.brandLogo.innerHTML = '<img src="' + escapeHtml(tienda.logo_url) + '" alt="">';
+        } else {
+          els.brandLogo.textContent = initials(title);
+        }
+        const bannerUrl = data.page?.banner_url || tienda.banner_url || '';
+        if (bannerUrl) {
+          els.banner.classList.add('has-image');
+          els.banner.style.backgroundImage = 'linear-gradient(135deg, color-mix(in srgb, var(--public-panel) 88%, transparent), color-mix(in srgb, var(--public-panel) 58%, transparent)), url("' + bannerUrl.replace(/"/g, '%22') + '")';
+        }
+        if (els.contactSection) {
+          els.contactSection.hidden = tienda.contacto_formulario_activo === false;
+        }
+        renderWhatsappFloat(tienda);
+      }
+
+      function renderWhatsappFloat(tienda) {
+        const btn = document.getElementById('whatsappFloat');
+        if (!btn) return;
+        const digits = String(tienda && tienda.whatsapp_numero || '').replace(/\D+/g, '');
+        if (tienda && tienda.whatsapp_flotante_activo && digits.length >= 8) {
+          btn.href = 'https://wa.me/' + encodeURIComponent(digits) + '?text=' + encodeURIComponent('Hola, vi la carta publica de ' + (tienda.nombre_tienda || 'la empresa'));
+          btn.classList.add('is-visible');
+        } else {
+          btn.classList.remove('is-visible');
+          btn.href = '#';
+        }
+      }
+
+      function renderTabs(data) {
+        const pages = Array.isArray(data.pages) ? data.pages : [];
+        const buttons = ['<button class="tab' + (!state.pageSlug ? ' active' : '') + '" data-page="">Todos</button>'];
+        pages.forEach(page => {
+          const slug = normalizeSlug(page.slug || '');
+          const active = slug && slug === state.pageSlug;
+          buttons.push('<button class="tab' + (active ? ' active' : '') + '" data-page="' + escapeHtml(slug) + '">' + escapeHtml(page.nombre || page.slug || 'Seccion') + '</button>');
+        });
+        els.tabs.innerHTML = buttons.join('');
+      }
+
+      function renderProducts(data) {
+        const items = Array.isArray(data.items) ? data.items : [];
+        els.counter.textContent = items.length + (items.length === 1 ? ' producto' : ' productos');
+        if (!items.length) {
+          els.products.innerHTML = '<div class="empty">No hay productos publicados para este filtro.</div>';
+          return;
+        }
+        const tienda = data.tienda || {};
+        els.products.innerHTML = items.map(item => {
+          const img = item.imagen_url || '';
+          const photo = img
+            ? '<img src="' + escapeHtml(img) + '" alt="">'
+            : '<span>' + escapeHtml(initials(item.nombre)) + '</span>';
+          const stock = tienda.mostrar_stock ? '<span class="stock">' + Number(item.stock_publicado || 0).toLocaleString('es-CO') + ' disponibles</span>' : '';
+          return [
+            '<article class="product">',
+            '  <div class="photo">' + photo + '</div>',
+            '  <div class="product-body">',
+            '    <h2>' + escapeHtml(item.nombre || 'Producto') + '</h2>',
+            '    <p>' + escapeHtml(item.descripcion || 'Producto publicado por la empresa.') + '</p>',
+            '    <div class="product-foot">',
+            '      <span class="price">' + money(item.precio, item.moneda || tienda.moneda) + '</span>',
+            stock,
+            '    </div>',
+            '  </div>',
+            '</article>'
+          ].join('');
+        }).join('');
+      }
+
+      async function loadCatalog() {
+        const params = new URLSearchParams();
+        params.set('action', 'catalogo');
+        params.set('limit', '100');
+        if (state.slug) params.set('empresa_slug', state.slug);
+        if (state.empresaId) params.set('empresa_id', state.empresaId);
+        if (state.pageSlug) params.set('pagina_slug', state.pageSlug);
+        if (state.query) params.set('q', state.query);
+        if (state.sort) params.set('sort', state.sort);
+        if (!state.slug && !state.empresaId) {
+          setStatus('Falta empresa_slug o empresa_id en el enlace publico.', true);
+          els.products.innerHTML = '<div class="empty">Este enlace aun no tiene empresa asociada.</div>';
+          return;
+        }
+        setStatus('Cargando productos publicados...', false);
+        const res = await fetch('/api/public/venta_publica?' + params.toString(), {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) {
+          throw new Error(await responseErrorMessage(res, 'No se pudo cargar la carta publica.'));
+        }
+        const data = await res.json();
+        state.data = data;
+        applyProfile(data);
+        renderTabs(data);
+        renderProducts(data);
+        setStatus('Carta publica actualizada.', false);
+      }
+
+      async function sendContactMessage(ev) {
+        ev.preventDefault();
+        const payload = {
+          empresa_id: state.empresaId ? Number(state.empresaId) : 0,
+          empresa_slug: state.slug || '',
+          pagina_slug: state.pageSlug || '',
+          nombre: els.contactName.value.trim(),
+          email: els.contactEmail.value.trim(),
+          telefono: els.contactPhone.value.trim(),
+          mensaje: els.contactMessage.value.trim(),
+          url: window.location.href
+        };
+        if (state.data && state.data.tienda && state.data.tienda.contacto_formulario_activo === false) {
+          setContactStatus('El formulario de contacto no esta activo en este momento.', true);
+          return;
+        }
+        if (!payload.nombre || payload.nombre.length < 2) {
+          setContactStatus('Escribe tu nombre para enviar el mensaje.', true);
+          return;
+        }
+        if (!payload.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+          setContactStatus('Escribe un correo valido para que la empresa pueda responder.', true);
+          return;
+        }
+        if (!payload.mensaje || payload.mensaje.length < 10) {
+          setContactStatus('Escribe un mensaje un poco mas completo.', true);
+          return;
+        }
+        els.contactSubmit.disabled = true;
+        setContactStatus('Enviando mensaje...', false);
+        try {
+          const res = await fetch('/api/public/venta_publica?action=contacto', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            throw new Error(await responseErrorMessage(res, 'No se pudo enviar el mensaje.'));
+          }
+          els.contactForm.reset();
+          setContactStatus('Mensaje enviado. La empresa recibio tu consulta en su correo corporativo.', false);
+        } catch (err) {
+          setContactStatus(err.message || 'No se pudo enviar el mensaje.', true);
+        } finally {
+          els.contactSubmit.disabled = false;
+        }
+      }
+
+      let searchTimer = 0;
+      els.search.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() {
+          state.query = els.search.value.trim();
+          loadCatalog().catch(err => setStatus(err.message, true));
+        }, 220);
+      });
+
+      els.sort.addEventListener('change', function() {
+        state.sort = els.sort.value;
+        loadCatalog().catch(err => setStatus(err.message, true));
+      });
+
+      els.tabs.addEventListener('click', function(ev) {
+        const btn = ev.target.closest('button[data-page]');
+        if (!btn) return;
+        state.pageSlug = normalizeSlug(btn.getAttribute('data-page') || '');
+        loadCatalog().catch(err => setStatus(err.message, true));
+      });
+      els.contactForm.addEventListener('submit', sendContactMessage);
+
+      resolveContext();
+      loadCatalog().catch(err => {
+        setStatus(err.message || 'No se pudo cargar la carta publica.', true);
+        els.products.innerHTML = '<div class="empty">La carta publica no esta disponible en este momento.</div>';
+      });
+    })();
+  </script>
+</body>
+</html>

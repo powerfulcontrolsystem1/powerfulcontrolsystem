@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="PCS logo concepto enterprise stack">
+
+  <defs>
+    <linearGradient id="stack-blue" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#38d5ff"/>
+      <stop offset="0.48" stop-color="#0878df"/>
+      <stop offset="1" stop-color="#05306f"/>
+    </linearGradient>
+    <linearGradient id="stack-steel" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#aeb8c5"/>
+    </linearGradient>
+    <linearGradient id="stack-bolt" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff76b"/>
+      <stop offset="0.42" stop-color="#ffb000"/>
+      <stop offset="1" stop-color="#ff4d00"/>
+    </linearGradient>
+    <filter id="stack-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#020617" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+<rect width="1024" height="1024" rx="184" fill="#eef7ff"/>
+<g filter="url(#stack-shadow)">
+  <rect x="168" y="154" width="688" height="520" rx="72" fill="#07111f"/>
+  <rect x="224" y="210" width="576" height="344" rx="34" fill="url(#stack-blue)"/>
+  <path d="M306 428c20-88 96-147 196-147 82 0 145 31 190 84l-83 78c-27-31-60-47-105-47-58 0-98 33-113 84h132l-38 88H284c1-49 8-96 22-140z" fill="#eef9ff"/>
+  <path d="M556 188 410 510h126l-54 326 173-388H532l24-260z" fill="url(#stack-bolt)" stroke="#07111f" stroke-width="12" stroke-linejoin="round"/>
+  <rect x="214" y="702" width="596" height="146" rx="36" fill="#07111f"/>
+  <rect x="274" y="738" width="210" height="72" rx="18" fill="#eef9ff"/>
+  <rect x="542" y="738" width="54" height="54" rx="12" fill="#38d5ff"/>
+  <rect x="628" y="738" width="54" height="54" rx="12" fill="#38d5ff"/>
+  <rect x="714" y="738" width="54" height="54" rx="12" fill="#38d5ff"/>
+</g>
+</svg>

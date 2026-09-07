@@ -1,0 +1,209 @@
+# Decisiones tecnicas permanentes
+
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+Este archivo evita rediscutir reglas ya decididas por el proyecto. Si una tarea
+necesita cambiar una de estas reglas, debe pedir autorizacion explicita y dejar
+trazabilidad en la PR, el ADR y la fuente técnica afectada.
+
+## Backend
+
+- Go puro y libreria estandar siempre que aplique.
+- No agregar dependencias externas, imports de terceros, binarios ni cambios en
+  `go.mod` sin autorizacion explicita.
+- PostgreSQL es el unico motor de base de datos permitido.
+- No reintroducir SQLite, MySQL, MariaDB u otros motores en runtime, pruebas
+  operativas, utilidades vigentes o documentacion actual.
+- Mantener compatibilidad con PostgreSQL en SQL, migraciones ligeras y tests.
+
+## Frontend
+
+- Frontend tradicional con HTML, CSS y JavaScript estatico.
+- No migrar a frameworks ni bundlers sin aprobacion explicita.
+- Mantener responsive real para PC y celular.
+- Mantener textos de UI, ayuda y mensajes backend en UTF-8 real. No reemplazar
+  tildes o eñes por signos `?`, caracteres de reemplazo ni secuencias mojibake;
+  si aparece una palabra con tilde rota, signos de reemplazo o secuencias de
+  doble codificacion, debe corregirse antes de cerrar o ejecutar `rs`.
+- Validar visualmente cambios de pantallas, formularios, botones, carritos,
+  reportes e impresion.
+- Los botones deben tener iconos relacionados usando la infraestructura global
+  existente, sin agregar dependencias.
+- El carrito de compras debe mantener apariencia plana: sin sombras, sin efecto
+  3D y sin separaciones visuales innecesarias entre tarjetas. Para que no se vea
+  todo del mismo bloque, el fondo estructural del carrito debe ser mas oscuro
+  que las tarjetas usando variables de tema (`--carrito-page-bg` y
+  `--carrito-card-bg`) y debe funcionar en apariencias claras y oscuras.
+
+## Multiempresa y seguridad
+
+- Todo dato operativo debe aislarse por `empresa_id`.
+- Todo endpoint o consulta multiempresa debe pasar por
+  `documentos/checklist_seguridad_endpoint_multiempresa.md` antes de cerrarse.
+- El backend debe validar `empresa_id` y permisos efectivos. No confiar solo en
+  parametros de URL, cache, localStorage o controles del frontend.
+- Toda consulta o mutacion multiempresa debe filtrar por `empresa_id` cuando la
+  tabla pertenezca a una empresa.
+- No imprimir secretos, claves, tokens, certificados, contrasenas ni datos
+  privados en consola, documentacion o commits.
+- Operaciones criticas deben tener auditoria o historial razonable: caja, pagos,
+  licencias, facturacion, usuarios, backups, conectividad y configuraciones.
+- Las altas y acciones criticas deben ser idempotentes en backend cuando puedan
+  duplicarse por doble clic, reintento de red, service worker, modo offline o
+  concurrencia. La UI puede bloquear botones, pero la garantia real debe vivir
+  en la capa de datos/handler.
+
+## Configuracion empresarial
+
+## Correo corporativo
+
+- Todo correo automatico del dominio `powerfulcontrolsystem.com` debe usar el
+  constructor corporativo comun y llevar el logo de empresa como imagen inline
+  `cid:` cuando exista archivo local configurado. No depender solo de una URL
+  externa para el logo, porque algunos clientes muestran un avatar con inicial.
+
+- Usar `empresa_estacion_prefs.estaciones_config` para configuracion flexible de
+  estaciones, carrito y preferencias operativas cuando aplique.
+- Usar `carrito_ui_global` como base global del carrito y overrides por estacion
+  solo cuando sea necesario.
+- POS 80mm es el formato predeterminado para reportes de turno y documentos POS.
+- Los defaults masivos requieren alcance explícito y verificación del entorno
+  y datos afectados. No asumir que una empresa carece de operación real por
+  una descripción histórica de preproducción.
+
+## Documentos imprimibles
+
+- Facturas, recibos, notas, documentos electronicos y reportes imprimibles deben
+  mostrarse como papel real en blanco y negro.
+- No deben depender del tema claro/oscuro de la aplicacion.
+- La factura o venta debe parecerse al documento fiscal/electronico aplicable
+  cuando corresponda.
+- El bloque opcional de deducido de impuesto en la impresion de factura o recibo
+  es solo presentacional: usa base gravable e impuesto ya calculados y no debe
+  modificar XML, CUFE/CUDE, envio, validacion ni reglas legales de la DIAN.
+- El reporte de turno debe ser compacto, claro, profesional y adaptable a POS
+  80mm y carta, pero no necesita copiar la apariencia de una factura electronica.
+
+## Facturacion electronica
+
+- Colombia mantiene modelo SaaS con software DIAN compartido cuando aplique, pero
+  NIT, credenciales, firma, certificados y trazabilidad son por empresa.
+- El transporte oficial DIAN SOAP/WCF para habilitacion conserva WS-Security con
+  `Timestamp`, `BinarySecurityToken`, firma RSA-SHA256 de `wsa:To`,
+  `wsse:Reference URI="#X509-..."` e `InclusiveNamespaces`; cualquier cambio en
+  esa forma exige prueba real contra habilitacion y no puede basarse en
+  simulacion.
+- TrackId/ZipKey y `Batch en proceso de validacion` son recepcion inicial, no
+  aceptacion legal. La habilitacion o produccion local solo puede activarse tras
+  acuse final aceptado y conteo de minimos por empresa.
+- Panama y Ecuador se manejan como configuraciones independientes por pais y
+  licencia.
+- El submenu de facturacion electronica permanece, pero las paginas internas se
+  muestran segun pais detectado, licencia y permisos.
+- No guardar certificados, tokens o claves en documentacion ni logs.
+- Cada familia DIAN usa fuente, numeracion, XML, identificador, transporte y
+  representacion propios. Factura, documento soporte y nomina no pueden
+  reutilizar adaptadores entre si aunque compartan firma o cliente SOAP.
+- La nomina electronica ordinaria se consolida en un solo `NominaIndividual`
+  por empresa, trabajador y mes calendario cerrado desde liquidaciones/pagos
+  reales. No se inventan pagos, intervalos ni perfiles fiscales.
+- La emision/retransmision de nomina exige simultaneamente autorizacion de
+  Facturacion y Nomina. Sus datos y artefactos tampoco se exponen desde listados
+  fiscales genericos a usuarios sin lectura de Nomina.
+- `SendNominaSync` es exclusivo de produccion. Habilitacion de nomina requiere
+  su `SendTestSetAsync`/`TestSetId` verificado; el preflight local no sustituye
+  la habilitacion oficial.
+- Para Colombia, `GetNumberingRange` es parte obligatoria del flujo de
+  produccion porque actualiza la clave tecnica usada para CUFE. La llave tecnica
+  se trata como secreto y solo se guarda en base de datos.
+- `Regla 90, Documento procesado anteriormente` no equivale por si sola a
+  aceptacion DIAN; debe quedar como envio pendiente de consulta del acuse
+  original salvo que exista evidencia independiente `IsValid=true`/`StatusCode=00`,
+  `estado_dian=aceptado`/`acuse_estado=aceptado` del SOAP oficial o documento
+  visible en DIAN.
+- Los errores DIAN deben mostrarse al usuario en consola con letras grandes,
+  rojas y ayuda accionable. Ademas, un fallo de envio debe crear alerta interna
+  en el buzon del administrador/creador de la empresa sin exponer XML, claves ni
+  certificados.
+
+## IA super administrador
+
+- El menu `IA` debe tener una sola pagina visible:
+  `web/super/configuracion/ia_global.html`.
+- Esa pagina unica puede embeber o enlazar internamente secciones tecnicas, pero
+  el menu lateral no debe repetir `Integracion IA`, `Chat IA global`, `Voz IA`,
+  `Reglas de chat` y `Contexto negocio` como entradas separadas.
+
+## Caja, turnos y carritos
+
+- Caja y turno deben funcionar de manera independiente por usuario/caja dentro de
+  una misma empresa.
+- Varias cajas pueden operar simultaneamente si la configuracion empresarial lo
+  permite. Las licencias no limitan cajas; solo limitan documentos/ventas
+  emitidas.
+- Los estados de estaciones deben sincronizarse para que otros usuarios vean
+  cambios operativos.
+- Venta directa y estaciones deben compartir el mismo carrito unificado y las
+  mismas reglas de configuracion.
+- El destino predeterminado de estaciones y `Venta directa` sigue siendo el
+  carrito unificado. Una empresa dedicada solo a Domotica puede activar
+  `estaciones_config.carrito_ui_global.abrir_domotica_al_entrar_estacion`; la
+  ruta de una estacion conserva su `estacion_id` y `Venta directa` abre la vista
+  consolidada. La preferencia no concede permisos, no desactiva facturacion y
+  nunca se comparte entre empresas.
+- Venta directa debe permitir abrir y salir de pantalla completa desde el propio
+  carrito. Cuando se abre dentro del panel empresarial, el iframe principal debe
+  permitir `fullscreen`.
+- Abonos, descuentos, pagos mixtos y cierres deben reflejarse en el pago final y
+  en el reporte de turno.
+- En Colombia/COP, el carrito no debe mostrar ni aceptar centavos operativos:
+  precios, abonos, pagos, devoluciones, QR y totales se normalizan a pesos
+  enteros; monedas de otros paises pueden conservar precision decimal.
+
+## Precisión monetaria de cartera
+
+- `empresa_cuentas_por_cobrar` y `empresa_cuentas_por_pagar` deben persistir
+  `valor_original`, `valor_pagado` y `saldo` como `NUMERIC(18,2)`, nunca `REAL`.
+- El saldo canónico es exactamente `valor_original - valor_pagado`; no se
+  compensa una diferencia material durante una migración automática.
+- La migración de tipos solo corrige artefactos de redondeo de hasta 0,02 y
+  falla cerrada ante negativos, sobrepagos o drift que exige conciliación.
+
+## Despliegue y portabilidad
+
+- Docker/VPS es el camino operativo principal de despliegue.
+- Los paquetes portables no deben incluir `.env`, backups, uploads privados,
+  certificados, secretos ni datos runtime.
+- `rs` y `sync_to_vps` son scripts operativos reales; revisar
+  `documentos/comandos_codex.md` antes de ejecutarlos.
+
+## Compatibilidad historica
+
+- Antes de retirar rutas o páginas, identificar consumidores y operación real.
+  Una solicitud de limpieza permite consolidar redundancias, preservando datos,
+  contratos y trazabilidad. El estado del entorno debe verificarse; no inferir
+  ausencia de producción a partir de una nota histórica.
+# 2026-07-28 - Separación del propietario PostgreSQL y roles runtime
+
+- `pcs-migrate` conserva la conexión propietaria para DDL y catálogo.
+- API y worker usan `PCS_RUNTIME_DB_USER`, un login distinto sin superusuario,
+  `CREATEDB`, `CREATEROLE`, `BYPASSRLS` ni `CREATE` sobre `public`.
+- El migrador otorga DML sobre tablas, uso de secuencias y ejecución de
+  funciones existentes, además de privilegios por defecto para objetos futuros.
+- La contraseña runtime debe tener al menos 32 caracteres URL-safe y nunca se
+  versiona.
+## 2026-08-13 - Domotica: SSH, escenas y VE.Direct
+
+- La conexión operativa sigue siendo HTTPS saliente desde la Raspberry. SSH es
+  solo un canal alternativo de instalación/actualización y nunca sustituye el
+  túnel durable.
+- Las redes privadas SSH se rechazan salvo pertenecer a
+  `PCS_DOMOTICA_SSH_ALLOWED_CIDRS`; la huella del host debe confirmarse antes de
+  autenticar o transferir el instalador.
+- Password y sudo se cifran con `CONFIG_ENC_KEY` mediante AES-GCM y un propósito
+  ligado a empresa/Raspberry. El navegador solo recibe `credentials_configured`.
+- Las escenas no crean una vía paralela de GPIO: llaman el dispatcher canónico y
+  comparten la reserva transaccional de encendidos.
+- VE.Direct se implementa en Python estándar a 19200 8N1, autodetección por
+  datos y checksum módulo 256. No se infiere SOC desde voltaje; se requiere un
+  monitor de batería que publique esa métrica.

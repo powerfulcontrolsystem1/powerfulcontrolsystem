@@ -1,0 +1,1476 @@
+{
+  "schema_version": 1,
+  "policy": "documentos/gobernanza_tecnica/politica_catalogo.json",
+  "scope": "Documentos de texto versionados o nuevos no ignorados por Git; metadatos técnicos bajo documentos. Excluye datos privados ignorados y binarios. Sin auditoría semántica ni validación de URLs externas.",
+  "total": 162,
+  "counts": {
+    "vigente": 137,
+    "generado": 20,
+    "contrato_maquina": 1,
+    "referencia_por_validar": 2,
+    "control_documental": 1,
+    "referencia_externa": 1
+  },
+  "issues": [],
+  "duplicates": [],
+  "documents": [
+    {
+      "path": ".cursor/AGENTS.md",
+      "title": "Contexto de trabajo para Cursor",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cdd62526f91d3f714fca0ca9bfa052a2ed646520e2ff20b08f88e402f97b5320"
+    },
+    {
+      "path": ".cursor/README.md",
+      "title": "Compatibilidad de contexto con Cursor",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "660a5971329ca7392a75c5c454bc4207b07ebca8d9b348a7e75f3b86972cf9ed"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-backend-db/SKILL.md",
+      "title": "PCS Agente Backend DB",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ab0613306d4ad78dc94569e816c42e920d699e84a25bf840ac348d36ffc849c5"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-frontend-ux/SKILL.md",
+      "title": "PCS Agente Frontend UX",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "2cd173fdf4876a67f296039207abd3aa2ecfa03ff5d71f200cda3222b4e1f256"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-go/SKILL.md",
+      "title": "PCS Agente Go (coordinador)",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "41653fbe7bdc266fe13e83dcdabe17dc5c89b4470736c8c30a22c94b177a0859"
+    },
+    {
+      "path": ".cursor/skills/pcs-agente-qa-operacion/SKILL.md",
+      "title": "PCS Agente QA Operacion",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "9f73d55db38e442b0625d9bea6efba1f9cc54ebbcca8e75899f0c46147ac03c1"
+    },
+    {
+      "path": ".cursor/skills/pcs-protocolo-por-modulo/SKILL.md",
+      "title": "PCS Protocolo Por Modulo",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "37c9d530126878191af46591060f33591c622f3e7875eb61e9cbdba5945d6e9c"
+    },
+    {
+      "path": ".github/SECRETOS_REQUERIDOS.md",
+      "title": "Secretos requeridos en GitHub Actions",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d56b09da9363b67d3d5bec1c9b9aee4ceea2c8e0e28df93251a50c070510f710"
+    },
+    {
+      "path": ".github/agents/README.md",
+      "title": "Perfiles de trabajo del repositorio",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "98b094140845768e795a4927115999cc5ef68bee5c5a44bcd73e94d690421644"
+    },
+    {
+      "path": ".github/agents/agente_backend_db.agent.md",
+      "title": "agente_backend_db.agent",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "4a212b4d7fbcdedaa8fe294231a84ac53db83679844ea951d108ebeb80d830b3"
+    },
+    {
+      "path": ".github/agents/agente_frontend_ux.agent.md",
+      "title": "agente_frontend_ux.agent",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "7d3b5931fdbbaa1d4c15a107e11feece47b14dcc5cd8f7842b7caaa6d5030c2f"
+    },
+    {
+      "path": ".github/agents/agente_go.agent.md",
+      "title": "agente_go: coordinación técnica",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "3c30533e1476546856756e7402912a79932d0a16c2a34d6872bbab805d98bbe6"
+    },
+    {
+      "path": ".github/agents/agente_qa_operacion.agent.md",
+      "title": "agente_qa_operacion.agent",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "91299c8b1fc2ae6c62a1a7ac345bc5684c0fd0377bd4b3074096f3f830ec9409"
+    },
+    {
+      "path": ".github/agents/plantilla_trabajo_por_modulo.md",
+      "title": "Plantilla de trabajo por modulo",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "4cb526eb456d8c3aae1ecc64ac3d2e3e7048ca474ca51776c0d5fa7157590f64"
+    },
+    {
+      "path": ".github/agents/protocolo_delegacion.md",
+      "title": "Protocolo de delegacion del equipo de agentes",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "152219120f1db7eb5054f94afe1df9dfb00b95bd15ea3de92cb9097647341944"
+    },
+    {
+      "path": "AGENTS.md",
+      "title": "AGENTS.md",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "908b96e2d2efe0a79676f7ab7dce34bd6c29b5440983ef3efb342e5aec78aa76"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "title": "Guía de contribución",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "9a1f1d81e14101ee2a1d0bbf350cc711168ac969ae63d3e243fa4bc5a4790ed4"
+    },
+    {
+      "path": "README.md",
+      "title": "Powerful Control System",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "38cd60ceec74fe24c0e370004e3d67b3539b8b8b479ed018cf0f4e2dd880d41e"
+    },
+    {
+      "path": "RESUMEN_DEL_PROYECTO.md",
+      "title": "Resumen del proyecto",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "8f2b26eac4e73580c7b4bf9c46774aee3ac87942839b358afaf1f0b07c082521"
+    },
+    {
+      "path": "SECURITY.md",
+      "title": "Politica de seguridad",
+      "state": "vigente",
+      "owner": "Seguridad",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "3832e43713461eb1e5a2c68462f4bf22428d0d5515e99a31f560290e3bb71987"
+    },
+    {
+      "path": "deploy/README-compose-platform.md",
+      "title": "Docker Compose de PCS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "67d7524e20c1c189b6953622a23901f306dc32824670fa85ea04e1274daaac0c"
+    },
+    {
+      "path": "documentos/README.md",
+      "title": "Portal de documentación de PCS",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "1ff37854ed9d79ca30a501e844f419f5da116ec53054e3e5f2a9b8b11a7b75d6"
+    },
+    {
+      "path": "documentos/activos_fijos_avanzado.md",
+      "title": "Activos fijos avanzado",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cc0a2a75ff2b6cd231c9d4641af93b5afdbcbda325e905277284570f4481681f"
+    },
+    {
+      "path": "documentos/activos_fijos_niif_fiscal.md",
+      "title": "Activos Fijos e Intangibles NIIF / Fiscal",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e3335c82c31516164e86ad43703ccb981deeed59f8f280337c84741581bc0e20"
+    },
+    {
+      "path": "documentos/aiu_construccion.md",
+      "title": "AIU construccion y contratos de obra",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "083057e3d10ef50f6afd40754795eb56d6266390d994e12f41a61106a0420ae6"
+    },
+    {
+      "path": "documentos/alquileres.md",
+      "title": "Alquileres / Renta universal de activos",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "170e632093753a855c5520e1aad7af8c534370bcdc70f99989a0ef77d3c1e990"
+    },
+    {
+      "path": "documentos/api/README.md",
+      "title": "Contratos e inventarios API",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f5b570bcd526deb52967ff1c9b07bb3f7afc7f481bc518aec6b88a146814af0a"
+    },
+    {
+      "path": "documentos/api/ayuda_apis.md",
+      "title": "Ayuda de APIs",
+      "state": "vigente",
+      "owner": "Ingeniería de API",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "71a0c56b53a98af5ccfa83c44f3ecf885a30c6e1c4bfe98b493f696d46c86d21"
+    },
+    {
+      "path": "documentos/api/inventario_api_movil.md",
+      "title": "Inventario de APIs para migracion movil",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "78691cb3fcc5f70c5c641a9f72c496c2e064c23ccaf1d169ad328bf09fcba88b"
+    },
+    {
+      "path": "documentos/api/mobile_api_v1.md",
+      "title": "API movil v1",
+      "state": "vigente",
+      "owner": "Ingeniería de API",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "4331803afb412b794d7c37c7b14b5ab328d4a26fc52486d34ef8644e4d2e9bbc"
+    },
+    {
+      "path": "documentos/api/openapi.generated.yaml",
+      "title": "openapi.generated.yaml",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "afe6f026ae366f6c77fdafbc504cbd5841fea3a743f0fd91bc5bede3648824d8"
+    },
+    {
+      "path": "documentos/api/openapi.mobile.v1.yaml",
+      "title": "openapi.mobile.v1.yaml",
+      "state": "contrato_maquina",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d56fd8db23f3ca8e9693d350daf4215e84ad2fc298c7d7a2ecbf84d2053679f0"
+    },
+    {
+      "path": "documentos/arquitectura/adr_106_cxp_fuente_canonica.md",
+      "title": "ADR 106 - fuente canonica de cuentas por pagar de proveedores",
+      "state": "vigente",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5d208009bc2b98538421bea12e1ec5fce1781d6bcc816fa31e05caf3e1680c86"
+    },
+    {
+      "path": "documentos/arquitectura/capacidad_colas_multiempresa.md",
+      "title": "Capacidad de colas multiempresa",
+      "state": "referencia_por_validar",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "049efd2c8b70d004ffde64654aaab8c7f992607d003bb9925ad1586207535f0c"
+    },
+    {
+      "path": "documentos/arquitectura/descripcion_arquitectura.md",
+      "title": "Descripción de arquitectura de PCS",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d6eb7a9c8ec759b301c083ab7f38a9c9f2916b39bb56b6fcac9c50205a074b0c"
+    },
+    {
+      "path": "documentos/arquitectura/gobierno_datos.md",
+      "title": "Gobierno de datos y evolución del esquema",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5bb617dd6b7917fc44f77085423255ec1c39620ca9971d88c59c69afe6781c9a"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_bootstrap_ensure.md",
+      "title": "Inventario de bootstrap Ensure",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "90721ddeb2db220d19db02475c1a41c326bfbf5fe1c19f0357d07fc3afa90ac5"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_cliente_movil_plan_105.md",
+      "title": "Inventario de cliente movil - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c6afdeb0d86b6e4a85d0a77954123a55d9cdd63c92d6de9cb36749906b407063"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_errores_publicos_plan_105.md",
+      "title": "Inventario de errores publicos - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "3cf5c01d8883d44add1ce848c0ed68bdbb7033d8188211ea8b3d8f80088995d4"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_goroutines_plan_105.md",
+      "title": "Inventario de goroutines - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "8bd36aa61a5f749e438e4940ebdb4d134a8c442f9afa53ad0e34980d1fde75f4"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_impresiones_plan_106.md",
+      "title": "Inventario inicial de impresiones y vistas previas - Plan 106",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c2046d3686b51a96d818fb9de0146e3673d246db546e85166a2b4bb558ae4f23"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_runtime_ensure.md",
+      "title": "Inventario de llamadas Ensure en procesos ejecutables",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "5b1313b6370f63ffb3f620c3e7bc4d62e5d62814a53a9f4163fb2f0b118bca19"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_storage_plan_105.md",
+      "title": "Inventario de almacenamiento - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "cc8bf5fb4a55862138c541c219f766a9705471c47b6f8a083ea0a86a59e62dd4"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_supply_chain_plan_105.md",
+      "title": "Inventario de supply chain - Plan 105",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "73b8c7f56ae31cc3f080b9e70da70113a22cf58f2e17f05ef75cd84796f0da54"
+    },
+    {
+      "path": "documentos/arquitectura/inventario_ui_plan_106.md",
+      "title": "Inventario estático de interfaz - Plan 106",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "033724dc55dc9821b939e2055f715b0efda194e59aa1733efdc9273e4ad53a33"
+    },
+    {
+      "path": "documentos/arquitectura/matriz_rutas_multiempresa.md",
+      "title": "Matriz de rutas multiempresa",
+      "state": "generado",
+      "owner": "Ingeniería backend y datos",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fffafdebdb0e793da7ae9ea4bef0ac652c01bffd11dd0f60ff5dbbdd06d8b7c8"
+    },
+    {
+      "path": "documentos/arquitectura_modulos_universales.md",
+      "title": "Arquitectura de modulos universales",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ebc958be72e0abd040b9ea896842449cbf15552c4179c4c1c1133b8f54e2d9e4"
+    },
+    {
+      "path": "documentos/calidad/code_quality_baseline.json",
+      "title": "code_quality_baseline.json",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e9c86339925b243959e68308380a3779b6e93ba5fdc71823428f4d5066a2372b"
+    },
+    {
+      "path": "documentos/calidad/estrategia_verificacion.md",
+      "title": "Estrategia de verificación y aceptación",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "95840233b53d7cf660d9bd44d29b5866306a806ecf1a11e3164a2603a06286f1"
+    },
+    {
+      "path": "documentos/carnets_empresariales.md",
+      "title": "Modulo de carnets empresariales",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "17287dd6d8483aed793d9411f9fa9ad12aab5f42939bf0580db648ac4515b4ba"
+    },
+    {
+      "path": "documentos/carta_publica_productos.md",
+      "title": "Carta publica de productos y precios",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "b43e1eab241775dcb0909a1927b47217c8c1d1c449b76c342e4bbafe55593f9b"
+    },
+    {
+      "path": "documentos/catalogo_documental.json",
+      "title": "Catálogo documental generado",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": null
+    },
+    {
+      "path": "documentos/catalogo_documental.md",
+      "title": "Catálogo documental generado",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": null
+    },
+    {
+      "path": "documentos/centros_costo.md",
+      "title": "Centros de costo y rentabilidad",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "0ab0b1d3743d6b884f78a29aa61e8ba707867c6c505c160d04b35603fbdb0857"
+    },
+    {
+      "path": "documentos/chat_ia_capacidades_2026-09-06.md",
+      "title": "Chat IA: capacidades y verificación local",
+      "state": "referencia_por_validar",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "e182b38413f34fb06b185cc6800dc212e02ca9b5be171b9dc5677185674cb8f5"
+    },
+    {
+      "path": "documentos/checklist_seguridad_endpoint_multiempresa.md",
+      "title": "Checklist de seguridad por endpoint multiempresa",
+      "state": "vigente",
+      "owner": "Seguridad e ingeniería",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "0b41de091f08a71e278e0f17340a4c3b97d1ac307ef0cb7d208551f21e48e4f3"
+    },
+    {
+      "path": "documentos/cierre_fiscal.md",
+      "title": "Cierre y bloqueo contable/fiscal avanzado",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d885c0e748961d9159049e315a9c4f0815110bdf53edb72a3b956eaf82cda9e7"
+    },
+    {
+      "path": "documentos/cobranza.md",
+      "title": "Gestion de cobranza",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "88bb0c9d2616d0a395d0158d771fc8868d42a3c9a970c3d83a79f10f6ae2c573"
+    },
+    {
+      "path": "documentos/comandos_codex.md",
+      "title": "Comandos para Codex",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6ba5032de8d0d1e68b26beb6c4bb03c2b01fea2b00527ce4bcaca7853cfe2d79"
+    },
+    {
+      "path": "documentos/compras_avanzadas.md",
+      "title": "Compras avanzadas",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d0d8cb9f5b219e13275520bb7d0cfe12340e49b58e7364ae4022d13bed3cba30"
+    },
+    {
+      "path": "documentos/contabilidad_colombia.md",
+      "title": "Módulo Contabilidad Colombia",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "2f19969418d3a4545facd1de61af8d73ede308200c5a9bec04d3f62ee023eeaa"
+    },
+    {
+      "path": "documentos/contabilidad_colombia_avanzada.md",
+      "title": "Suite Contable Colombia Avanzada",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5791982750495c833bb4272752acb6ea7e58789c727eabc54e039ff871055da3"
+    },
+    {
+      "path": "documentos/contexto_codex.md",
+      "title": "Contexto operativo para agentes de IA",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "171fdcea47460f9198a72dc0bf23187081ae5e8ea736e8bb804770e8da35af46"
+    },
+    {
+      "path": "documentos/contexto_especifico_del_sistema.md",
+      "title": "Contexto especifico del sistema",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "a1d5ed93796ade8009e764aa94aa906a0d8e78fc3a6298a77cb33200a46aee8f"
+    },
+    {
+      "path": "documentos/contexto_general_del_sistema.md",
+      "title": "Contexto general del sistema",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "fa3f55a95ef0b5b7ae37ab3e2b665a3511dc24f7738764602a572de817fe9720"
+    },
+    {
+      "path": "documentos/crm_ventas_avanzadas.md",
+      "title": "CRM y ventas avanzadas",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "a95aa4456615280b97ce3f1e03d4e7a4f0ff074899c78dee583d0d76b74faaad"
+    },
+    {
+      "path": "documentos/decisiones_tecnicas.md",
+      "title": "Decisiones tecnicas permanentes",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ed95bbbd3d1b34bc04a12415b3af768e6303650f66cb8e2e5b2b305b6b568e03"
+    },
+    {
+      "path": "documentos/declaraciones_tributarias.md",
+      "title": "Declaraciones Tributarias y Motor de Impuestos Colombia",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "63023f40f262ecd18ee562d7f2843dcf13868a2923a65a4bcd199d68db59056d"
+    },
+    {
+      "path": "documentos/deploy_nginx_reverse_proxy_vps.md",
+      "title": "Nginx y terminación TLS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "67392a8bf06f55b32d2afb555c3d4e6e0bc46c58f13c43d198dda733149e2ec9"
+    },
+    {
+      "path": "documentos/desarrollo/configuracion_y_entornos.md",
+      "title": "Configuración y separación de entornos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "8d7a75dce68e1ff618bc73892f53c9e3101a9be099202f8f6e1430c7d232cf13"
+    },
+    {
+      "path": "documentos/desarrollo/incorporacion.md",
+      "title": "Incorporación de ingeniería y entorno de desarrollo",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "1dbf2a48c9fee1aa6cfe7086b65918bf0960ad5a58b0c0184d9ac8c3d6445986"
+    },
+    {
+      "path": "documentos/descripcion_de_modulos",
+      "title": "Descripción de módulos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "3098d38531dc6247bcba7d07d0e193f017ae82741616f6afe88f1017ae0be216"
+    },
+    {
+      "path": "documentos/descripcion_del_proyecto",
+      "title": "Descripción del proyecto PCS",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f0124d71bd4d6329a7e61201184f4c7ec885154d4b929e9579bd1eff5a9fb796"
+    },
+    {
+      "path": "documentos/diagramas/diagrama_entidad_relacion.md",
+      "title": "Diagrama Entidad Relacion",
+      "state": "vigente",
+      "owner": "Ingeniería de arquitectura",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e0f4026d645e96ae6a7887183fa6452ee8f7622749c6543d68c922b2e64091bd"
+    },
+    {
+      "path": "documentos/diagramas/diagramas_sistema_pcs.md",
+      "title": "Diagramas del sistema PCS para super administrador y Codex",
+      "state": "vigente",
+      "owner": "Ingeniería de arquitectura",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cbc450d9563a0a2d5ad3c06e64989eab7f52d12bcb8cccc17ca29d7f5d9a8ca2"
+    },
+    {
+      "path": "documentos/diagramas/diagramas_sistema_pcs_manifest.json",
+      "title": "diagramas_sistema_pcs_manifest.json",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d78146e8f1de7cef4e63805331285fa363b36c79c3b62004b9b848b6328e1c60"
+    },
+    {
+      "path": "documentos/diagramas/documentacion_tecnica_completa.md",
+      "title": "Documentacion tecnica completa con diagramas PCS",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "fb3d5efdd01fff010afb32c7cc473be130725121b22b9ff522c3c07ef690ce96"
+    },
+    {
+      "path": "documentos/diagramas/documentacion_tecnica_completa_manifest.json",
+      "title": "documentacion_tecnica_completa_manifest.json",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "53aa196e31c88318e04b84bc5579194e9be7181584c32aa300373ad8328eec73"
+    },
+    {
+      "path": "documentos/diagramas/estructura_del_codigo.md",
+      "title": "Estructura del código",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ee59f9664cbb67cd1d2467d7765f0102a85a5753ce1e01e4116a2215e4e2a3c2"
+    },
+    {
+      "path": "documentos/docker_vps_operacion.md",
+      "title": "Operación Docker, release y recuperación",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "307dd8b84f284386294206723b5c8aba9fb524dde3966ec84a1ae2c0905ac5eb"
+    },
+    {
+      "path": "documentos/domicilios_profesional.md",
+      "title": "Modulo profesional de domicilios",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f94b7d73c34481b9bfc9e114442c22f7f32f063556f903e218665d43e96f9916"
+    },
+    {
+      "path": "documentos/domotica_raspberry_tunnel.md",
+      "title": "Domotica Raspberry Pi por tunel HTTPS saliente",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "71eb0ffe08f94171a9e002b059c65d5721d1a83534c55346e40036596a370147"
+    },
+    {
+      "path": "documentos/email_corporativo_mailu.md",
+      "title": "Email corporativo Mailu",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e31dd4318e07dd3f71e0585b1f81d8432e877c06c363bbea32f437ec980d87d0"
+    },
+    {
+      "path": "documentos/energia_solar.md",
+      "title": "Modulo energia solar",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d669733da128650c532aeadf9a2c65024e607eaa4cb762972c5d69eefa8557a3"
+    },
+    {
+      "path": "documentos/erp_multiempresa/README.md",
+      "title": "Antecedentes del diseño ERP",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e989fe4d9991d6242357f38469ea48c759ee5e660239ab86d58bb2e1fb1be56c"
+    },
+    {
+      "path": "documentos/estado_actual.md",
+      "title": "Estado actual del sistema",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-06",
+      "review_due": "2026-12-05",
+      "sha256_lf": "2d8cdca8895845e2fedf8b807b746b7404ad3342be4c42a08d618a7cb5c3f766"
+    },
+    {
+      "path": "documentos/estructura_bd.md",
+      "title": "Estructura del Base de Datos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "feda3a6797150e8d8e6c8588228aaf5382c4e38590200284528cb4c7cdc6177d"
+    },
+    {
+      "path": "documentos/flujos_operativos.md",
+      "title": "Flujos operativos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "8d61ac5171b6c7bb14ef29418267f83447f9921a469c7baa031b266e0f88243b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/README.md",
+      "title": "Gobernanza técnica de PCS",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "04a3e8e79b3331d020ffc33e1aac52b50f0095c4d6e74fd32cca6bd072f6524b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/adr/ADR-0001-frontera-multiempresa-empresa-id.md",
+      "title": "ADR-0001:  como frontera obligatoria multiempresa",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "fb38080d321ead120b3b15f52c13d39dd5ac379aa861d204e42ec6b024ec64b9"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md",
+      "title": "ADR-0002: PostgreSQL en VPS como runtime productivo canonico",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f01b214732108d6a12392200dc40070b95c5fa1a39338920c2dbc640eac619d9"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/adr/ADR-0003-gobierno-documental-y-fuentes-canonicas.md",
+      "title": "ADR-0003 — Gobierno documental y fuentes principales",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "4f7fa10fce5bcdad8afedc2a1f42e9e3ef8704b8a004a5a70ad958d27aa24afe"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/README.md",
+      "title": "Catalogo de contratos tecnicos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5f1bd95617973fbba38d363d4fd9939ff4e643a1ed6d1cdd671a4674959e1ad6"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md",
+      "title": "Contrato tecnico: autenticacion administrativa y usuarios de empresa",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5ad8c40bf249f38142656f8f39b58a4630d877acf39bd33f62d9da4b3d0c3058"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md",
+      "title": "Contrato del centro de soporte",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6a98209064912991c40522c2e19ccdf4431d65e3c9d26a4fe7e2371dd783aa47"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md",
+      "title": "Contrato técnico: checkout público de licencias",
+      "state": "vigente",
+      "owner": "Ingeniería de pagos y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d5ce60541431cae6dd43dfca9600d6a3407eef738c025d090c7c27a5182a5f77"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md",
+      "title": "Contrato tecnico: conciliacion bancaria y cierre de periodo contable",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "c4fb9bab76e00796125db9ac6406802470592ea7592c69bd1a3187fb59aaa41d"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_documentos_dinamicos_ia_exportacion.md",
+      "title": "Contrato tecnico: documentos dinamicos con IA y exportacion multiformato",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "7d1c8b51a073480c89e30743e9f8cf29fc577c6c8af611b8abc651d0f106b53b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_estaciones_sensores_ventas_simple.md",
+      "title": "Contrato tecnico: estaciones, sensores y carrito unificado por estacion",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "943e929a30fccdeaeca7f321801b7730b422789ba928d54e41b9429815b8c0b1"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md",
+      "title": "Contrato tecnico: facturacion electronica y documentos transaccionales",
+      "state": "vigente",
+      "owner": "Ingeniería fiscal y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "83551f2f178740de032d56a639af18f90b4053e4bc5fc2cd664e69b386f1e313"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md",
+      "title": "Contrato tecnico: integraciones bancarias y conectores externos",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "96d5341fff3455b3efab7dbf747cc2d529c6b8c5a3245ce39d3928d31f1b1280"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md",
+      "title": "Contrato tecnico: interoperabilidad documental contable y fiscal externa",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "215aa3a369f37d39130d0768ec5b13036bf82c9bff732ce7109f99e7bc8b1899"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_matriz_pagos_reales.md",
+      "title": "Contrato de pruebas reales de pagos y comprobantes",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ac901415d2f9654f61c3a67e8cad2d82e2fc6ad6abcc69f0a977304abd1b1083"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md",
+      "title": "Contrato tecnico: permisos_contexto y wrappers de /api/empresa",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6b73041df6ecd12517a898e885897631b8d36a751d1c74dbcd4a20656f3e9d29"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md",
+      "title": "Contrato tecnico: reportes contables, financieros y exportacion multiformato",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "dafea3eab47639ab02858a90006289499ee2db264de6b114ac873ee3f0dbf115"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md",
+      "title": "Contrato tecnico: repositorio documental y firmas externas",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "1f9f12a0adb0995b080c84b5e79a09dd5d76f1b4e67254b76bdd94e7f4c545e8"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md",
+      "title": "Contrato tecnico: soporte remoto por empresa y mesa tecnica central",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ec52372453bbfbb095c146c47999cb1a6dcdf4505305e4f7e21dacdd8ce23fe4"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md",
+      "title": "Contrato tecnico: venta publica empresarial por empresa",
+      "state": "vigente",
+      "owner": "Ingeniería backend y QA",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "84d43419d9657d64317221435fa31feefd48c39978a5d9eaaca42d3d3b37ae19"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/estandares_de_cambio_seguro.md",
+      "title": "Estandares de cambio seguro",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "0ab88fa782cca2cf4cda374e81aacf34f5fa38077e9df08870a66de3b90c7a64"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/marco_documental.md",
+      "title": "Marco de gobierno documental",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "05b9c2b4f0d8427afee154d2f4ecd404e0965cb5556f513025cf9dca5314fd65"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/plantillas_documentales.md",
+      "title": "Plantillas de información técnica",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6458f53acea0a728db57290b1d92344621b7dd3be0b33e40135ea3fb771194bb"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/politica_catalogo.json",
+      "title": "politica_catalogo.json",
+      "state": "control_documental",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "2b3f34dc033df963f20c568e01c3ae23032946ed68b028bb71ce7655035c3f75"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/riesgos_y_brechas.md",
+      "title": "Registro vigente de riesgos y brechas",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "22cede92d0aeb153023f2cd7f125fd874d04f699f8fb219aec3ae16d83a779e7"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/README.md",
+      "title": "Catalogo de runbooks operativos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f60a16fd997c99e8c796a672b13c2bbe03ba368e4d96882d2de84057d1a1af5e"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md",
+      "title": "Checklist operativa: evidencia documental para QA y soporte",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6e38ee01eff3da402d5846ab406ab2d809f645d03693f0d608a881a011157706"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md",
+      "title": "Runbook: alertas de reinicio y monitoreo Gmail SMTP",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "1ec376e1a18c40fe00fdc35284ab80481172802bd650abfbf22caef5314d7b14"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md",
+      "title": "Runbook: arranque backend PostgreSQL por tunel local",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "9cd07f2eb7929f67bd39f490f62657df5539db277020df07169d94dc30f67832"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md",
+      "title": "Runbook: diagnóstico de checkout de licencias",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "1135d6e7fd0b2adcf58ca215a60ca08eb832432cdd43878eb81ea6719ef15f5c"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md",
+      "title": "Runbook: cierre de periodo y conciliacion bancaria",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "061b8ffd4deaf5b61d0494c86a1c700a5773c4be44fd9ef3ee4985a7dce3eaed"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md",
+      "title": "Runbook: contingencias de integraciones bancarias y conectores externos",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "99cafe11714dc3d27e99067a8d461346e3b362a09bae89da688497c37f15fa0e"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_depuracion_soportes_ia_y_cuarentena.md",
+      "title": "Runbook: depuracion de soportes IA y cuarentena privada",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cfa634c0c3ba115e0a26a562bb4b49c72a6b1e2084a640af5e89c9a02ea02790"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md",
+      "title": "Runbook: DIAN set de pruebas y diagnostico oficial",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "8fe93c4966ed1a85c16eeb56608698a4fbe9c72d5d4f70bce83f0a1281dab7ff"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_estaciones_sensores_ventas_simple.md",
+      "title": "Runbook: estaciones, sensores y carrito unificado por estacion",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "170657975cc9a9e5d3a51dd7676a438ed07a6f216af41f593a4614e7ed1ee45b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_hardening_vps.md",
+      "title": "Runbook de hardening VPS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "8c5bbfab66b918dfbcf824ddb5386a4b6c62d32d77869dd3ca0f08320e075919"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_madurez_empresarial_12_pasos.md",
+      "title": "Runbook de madurez empresarial - 12 pasos",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "5f1a45ceceff84b7abc72d27c6338a88bbbf5de0609bebd99121d972009d7df2"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md",
+      "title": "Runbook: reconciliacion documental fiscal y contable externa",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f8bae12c5c8d18f6949448b17ad6677f11214dbc3704e2879d76534d4a222286"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_recuperacion_desastre_docker_vps.md",
+      "title": "Runbook de recuperacion ante desastre Docker/VPS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "b5f7e02a1bbd9cbc089254ba33787c27bdab243c2bae5acec74ab40261e56fd9"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_release_profesional.md",
+      "title": "Runbook de release, despliegue y rollback",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d984c6ca7cc16d19b539b772de6152d2a654e2bc9c475a4312b2f30c5a6d008b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md",
+      "title": "Runbook: reportes programados y exportaciones contables",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "9c2441fe94111662dc0d78dbceab7d8fb3c4d0247cdec42936a48e5e524cdd2a"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md",
+      "title": "Runbook: soporte remoto, sesiones y dispositivos",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "ae00bae4a4d2d4f062c0a59f4430e15877c334a3aa37f7f896c94fa3557a4d50"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_staging_ci_e2e.md",
+      "title": "Runbook staging, CI y E2E visual",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "89045632a5939f0633cc26be3f429b6faf842ce7f9a2c68fa71545832e042b8b"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md",
+      "title": "Runbook: versionado documental y firmas externas",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "451852c1c3837103ddafb24c4b159c8974192c398edbdda11143288e45d09e34"
+    },
+    {
+      "path": "documentos/gobernanza_tecnica/slo_sla_operativo.md",
+      "title": "SLO/SLA operativo de Powerful Control System",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d0736f44865e71bf2561afef74ed02ea54ed314515198615ba116a33661e398e"
+    },
+    {
+      "path": "documentos/ia_orquestador_empresarial.md",
+      "title": "Orquestador IA empresarial",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "a9afcd2e5ebb7c3f299e31b4adce5c81e9821a4300ba455230d3bb37c443419d"
+    },
+    {
+      "path": "documentos/importaciones_costeo.md",
+      "title": "Importaciones y costeo de nacionalizacion",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "4b80563d39ab21a4b9e4dfadfa7dc2380200ff53245c1f214bda2232d2dd8277"
+    },
+    {
+      "path": "documentos/inventario_avanzado.md",
+      "title": "Inventario avanzado",
+      "state": "generado",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "d7b982580e9f9a880dfd4b4e16c646c7ac76162fb8b5c25c41669e3376843f82"
+    },
+    {
+      "path": "documentos/logistica_wms.md",
+      "title": "Logistica avanzada / WMS de bodega, picking, packing y despachos",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "26237350c4e9916e190f214d5c1cb1c1cdb45caaad1952a764f38721eaf52162"
+    },
+    {
+      "path": "documentos/manual_de_instalacion.md",
+      "title": "Manual de instalación y arranque controlado",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d12ca6546c87d24d3a2112eb1249c8c30cb1568b35aed2c901abd7b371ac2cc7"
+    },
+    {
+      "path": "documentos/manual_vps_seguridad.md",
+      "title": "Manual operativo del modulo de seguridad VPS",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "fd2825e312b530a1a1d112cc07e223a1923f2cf72c900a42eb310a74c46aa930"
+    },
+    {
+      "path": "documentos/mapa_modulos.md",
+      "title": "Mapa de modulos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "62cc4ac6b742bc22b3817482750fcafc173f4ea87da78a6dfc7d70c8d3c61c92"
+    },
+    {
+      "path": "documentos/matriz_integracion_plantillas.md",
+      "title": "Matriz de integracion de plantillas",
+      "state": "vigente",
+      "owner": "Ingeniería de módulos",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "d927877a27289982b0070da67d0e910d7ade967eafe0235379b97664e5ada884"
+    },
+    {
+      "path": "documentos/matriz_roles_permisos_pos_multiempresa.md",
+      "title": "Roles, permisos y licencias",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e784a7bc1bbfebe23b2ea0d93b8cdd6fb0c5fc68dda25dc0c578a0c2aff8504a"
+    },
+    {
+      "path": "documentos/modulos_empresariales_colombia.md",
+      "title": "Modulos empresariales Colombia",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f199cd15fd78bfedad412ee20785656d9c1a262e9c99369080785b5751a2de50"
+    },
+    {
+      "path": "documentos/nextcloud_empresarial.md",
+      "title": "Nextcloud empresarial",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "315d9e79d002d8a85056b0c49fd3a90cd288ea510f9a86c4cdf6fd490de51a56"
+    },
+    {
+      "path": "documentos/nomina_colombia_avanzada.md",
+      "title": "Nomina Colombia avanzada",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f5dd71a0e3046186aa10477ce6b2a0f7dfaed522108270d7f248165ed198b666"
+    },
+    {
+      "path": "documentos/observability_runbook.md",
+      "title": "Runbook de observabilidad",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "944e212edbf5f4de634c5dcaef204fd3d2f5e6af9fed0baf73eb8dbf2cd6319b"
+    },
+    {
+      "path": "documentos/operacion/incidentes_y_continuidad.md",
+      "title": "Gestión de incidentes y continuidad",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "f195e609f2c4a53e862da3ef4e3ae8a94fd7584e46ffdb3b5ccde8a1e381c7de"
+    },
+    {
+      "path": "documentos/parqueadero_tickets_qr.md",
+      "title": "Modulo Parqueadero: tickets QR y cobro automatico",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "7f0610824acace3e6d4a280439d71205a9fcc965c3406db1fbb7f55c05147bf5"
+    },
+    {
+      "path": "documentos/portal_contador.md",
+      "title": "Portal contador / Oficina virtual para contadores",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "bb2cd9e5f22310ca60cc1b8774b063382bfcb2c84039c8752f6dd52193c80452"
+    },
+    {
+      "path": "documentos/portal_terceros_certificados.md",
+      "title": "Portal de Terceros y Certificados Tributarios",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6782001445e46708e817276423db119c583a2e2e044e40a26c2eaa4f4b27bf91"
+    },
+    {
+      "path": "documentos/produccion_mrp.md",
+      "title": "Produccion / MRP",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "e34ce1749f2fea4eeabba6b090b55bdbcb4847e8bfe80a14a77a342ae4e4aa7b"
+    },
+    {
+      "path": "documentos/promocion_asesor_licencias.md",
+      "title": "Promocion de licencias por codigo de asesor",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "838e11673c2f962bf13345a373de9594e7ec6039c968687647c0be66fbe0634a"
+    },
+    {
+      "path": "documentos/referencias/dian/README.md",
+      "title": "Referencias DIAN Colombia",
+      "state": "referencia_externa",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "ee16bbe18f51db073620002290268e2069df5ecf9c19a05424fc25a65138427f"
+    },
+    {
+      "path": "documentos/release_checklist.md",
+      "title": "Checklist de release",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "cd670ffd97e76a7a24a64870e9914cc4100f4f20d9a4aa91b7f66846574c25f7"
+    },
+    {
+      "path": "documentos/requisitos/especificacion_y_trazabilidad.md",
+      "title": "Especificación transversal y trazabilidad de requisitos",
+      "state": "vigente",
+      "owner": "Coordinación técnica",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "415904effdf585795a29ed7fd1123b86c43b6c265a6620c23775909dba03c06d"
+    },
+    {
+      "path": "documentos/seguridad/csp_inline_baseline.json",
+      "title": "csp_inline_baseline.json",
+      "state": "generado",
+      "owner": "Seguridad",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "78c4e07b37f4744294d96b7415ab9b06fd921e06a81882a49a131282fc1ec4a3"
+    },
+    {
+      "path": "documentos/seguridad/modelo_amenazas_y_privacidad.md",
+      "title": "Modelo de amenazas y protección de datos",
+      "state": "vigente",
+      "owner": "Seguridad",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6ad4857e072c2198c334281ed7d4203d12a0f3c7c1a6f8467473d8a6a4c36abb"
+    },
+    {
+      "path": "documentos/soportes_compras_ia.md",
+      "title": "Captura inteligente de compras y gastos con IA GPT-5.5",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "173e4fff572207c126eee6cf9bd06f128d7d0d7b555977f33ddb727bbc065c31"
+    },
+    {
+      "path": "documentos/tesoreria_presupuesto.md",
+      "title": "Tesoreria y presupuesto",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "058063a18b52d677e857965fcffd222b91715a9cca2fa9b462d5c182c124e986"
+    },
+    {
+      "path": "documentos/vida.md",
+      "title": "Modulo Vida",
+      "state": "vigente",
+      "owner": "Ingeniería del módulo",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "c0c80af29cb73a31dd5449f8dcfee9f90caf2004abaf1e123223d35749e722b9"
+    },
+    {
+      "path": "documentos/vps2_operacion.md",
+      "title": "VPS2 operacion",
+      "state": "vigente",
+      "owner": "QA/operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "6290861425b41f6db3dd07831353800db7d662ac28addb2ad34d716e61234a92"
+    },
+    {
+      "path": "services/voice_stream_server/README.md",
+      "title": "Servidor de voz natural para IA",
+      "state": "vigente",
+      "owner": "Ingeniería y operación",
+      "reviewed": "2026-09-05",
+      "review_due": "2026-12-04",
+      "sha256_lf": "caeb44b699bfcdb375ada30b8a4ef9930462c67d738192248f7f82c4f519ee20"
+    }
+  ]
+}

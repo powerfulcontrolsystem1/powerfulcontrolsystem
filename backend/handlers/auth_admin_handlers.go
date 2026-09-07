@@ -1,0 +1,2156 @@
+package handlers
+
+import (
+	"crypto/sha256"
+	"crypto/subtle"
+	"database/sql"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"net/mail"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/you/pos-backend/auth"
+	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/internal/platform/valueutil"
+	"github.com/you/pos-backend/utils"
+)
+
+const googleOAuthRedirectCookieName = "oauth_redirect_url"
+const googleOAuthStateAdminCookieName = "oauth_google_admin_state"
+const googleOAuthStateUsuarioCookieName = "oauth_google_usuario_state"
+const googleOAuthPKCEAdminCookieName = "oauth_google_admin_pkce"
+const googleOAuthPKCEUsuarioCookieName = "oauth_google_usuario_pkce"
+const googleOAuthUsuarioFlowCookieName = "oauth_usuario_flow"
+const googleOAuthUsuarioEmpresaCookieName = "oauth_usuario_empresa_id"
+const googleOAuthUsuarioInvitationCookieName = "oauth_usuario_invitation_token"
+const googleOAuthUsuarioAcceptContractCookieName = "oauth_usuario_accept_contract"
+const browserSessionStateCookieName = "browser_session_active"
+const googlePasswordSetupPagePath = "/registrar_contrasena_usuario_de_google.html"
+
+const googleOAuthCookiePath = "/auth/google"
+const googleOAuthFlowTTL = 600
+
+func hashOAuthValue(value string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(value)))
+	return fmt.Sprintf("%x", sum[:])
+}
+
+func googleOAuthCookieName(usuario bool, state bool) string {
+	if usuario {
+		if state {
+			return googleOAuthStateUsuarioCookieName
+		}
+		return googleOAuthPKCEUsuarioCookieName
+	}
+	if state {
+		return googleOAuthStateAdminCookieName
+	}
+	return googleOAuthPKCEAdminCookieName
+}
+
+func setGoogleOAuthCookie(w http.ResponseWriter, r *http.Request, name, value string, maxAge int) {
+	http.SetCookie(w, &http.Cookie{Name: name, Value: value, Path: googleOAuthCookiePath, HttpOnly: true, Secure: SessionCookieSecure(r), SameSite: http.SameSiteLaxMode, MaxAge: maxAge})
+}
+
+func clearGoogleOAuthFlowCookies(w http.ResponseWriter, r *http.Request) {
+	for _, usuario := range []bool{false, true} {
+		clearGoogleOAuthFlowCookiesFor(w, r, usuario)
+	}
+}
+
+func clearGoogleOAuthFlowCookiesFor(w http.ResponseWriter, r *http.Request, usuario bool) {
+	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, true), "", -1)
+	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, false), "", -1)
+}
+
+func beginGoogleOAuthFlow(w http.ResponseWriter, r *http.Request, usuario bool) (state, verifier, challenge string, err error) {
+	state, err = utils.GenerateSecureToken(32)
+	if err != nil {
+		return "", "", "", err
+	}
+	verifier, err = utils.GenerateSecureToken(48)
+	if err != nil {
+		return "", "", "", err
+	}
+	sum := sha256.Sum256([]byte(verifier))
+	challenge = base64.RawURLEncoding.EncodeToString(sum[:])
+	// Solo se limpia el flujo contrario. Emitir borrados para los cuatro cookies
+	// junto con los metadatos de usuario superaba el buffer de cabeceras de Nginx
+	// y convertia el redirect valido de Google en un 502.
+	clearGoogleOAuthFlowCookiesFor(w, r, !usuario)
+	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, true), hashOAuthValue(state), googleOAuthFlowTTL)
+	setGoogleOAuthCookie(w, r, googleOAuthCookieName(usuario, false), verifier, googleOAuthFlowTTL)
+	return state, verifier, challenge, nil
+}
+
+func validateAndConsumeGoogleOAuthState(w http.ResponseWriter, r *http.Request) (usuario bool, verifier string, err error) {
+	state := strings.TrimSpace(r.URL.Query().Get("state"))
+	if state == "" {
+		clearGoogleOAuthFlowCookies(w, r)
+		return false, "", errors.New("oauth state missing")
+	}
+	hash := hashOAuthValue(state)
+	for _, candidate := range []bool{false, true} {
+		stateCookie, stateErr := r.Cookie(googleOAuthCookieName(candidate, true))
+		verifierCookie, verifierErr := r.Cookie(googleOAuthCookieName(candidate, false))
+		if stateErr != nil || verifierErr != nil {
+			continue
+		}
+		stored := strings.TrimSpace(stateCookie.Value)
+		if len(stored) == len(hash) && subtle.ConstantTimeCompare([]byte(stored), []byte(hash)) == 1 {
+			verifier = strings.TrimSpace(verifierCookie.Value)
+			clearGoogleOAuthFlowCookiesFor(w, r, candidate)
+			if verifier == "" {
+				return false, "", errors.New("oauth verifier missing")
+			}
+			return candidate, verifier, nil
+		}
+	}
+	clearGoogleOAuthFlowCookies(w, r)
+	return false, "", errors.New("oauth state invalid or expired")
+}
+
+// SessionCookieSecure resuelve si una cookie de sesión debe emitirse como Secure
+// considerando terminación TLS local o por proxy inverso.
+func SessionCookieSecure(r *http.Request) bool {
+	return resolveOAuthScheme(r) == "https"
+}
+
+func writeAdminAuthJSON(w http.ResponseWriter, status int, payload map[string]interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	encodeJSONResponse(w, payload)
+}
+
+func writeAdminAuthError(w http.ResponseWriter, status int, message string) {
+	writeAdminAuthJSON(w, status, map[string]interface{}{"ok": false, "message": message})
+}
+
+func validatePendingAdminInvitationToken(admin *dbpkg.Admin, token string, now time.Time) (int, string) {
+	if admin == nil {
+		return http.StatusForbidden, "Invitacion invalida."
+	}
+	storedToken := strings.TrimSpace(admin.EmailConfirmToken)
+	token = strings.TrimSpace(token)
+	if storedToken == "" || token == "" || !dbpkg.AdministradorEmailConfirmTokenMatches(storedToken, token) {
+		return http.StatusForbidden, "Invitacion invalida o ya utilizada."
+	}
+	expiraRaw := strings.TrimSpace(admin.EmailConfirmExpira)
+	if expiraRaw == "" {
+		return http.StatusForbidden, "Invitacion sin vencimiento valido."
+	}
+	expiraAt, ok := parseEmpresaUsuarioDateTime(expiraRaw)
+	if !ok {
+		return http.StatusForbidden, "Invitacion con vencimiento invalido."
+	}
+	if now.After(expiraAt) {
+		return http.StatusGone, "Invitacion expirada; solicita que te envien una nueva invitacion."
+	}
+	return http.StatusOK, ""
+}
+
+func countAdminPhoneDigits(raw string) int {
+	total := 0
+	for _, ch := range strings.TrimSpace(raw) {
+		if ch >= '0' && ch <= '9' {
+			total++
+		}
+	}
+	return total
+}
+
+func resolveAdminPostLoginRedirect(admin *dbpkg.Admin) string {
+	if admin == nil {
+		return "/seleccionar_empresa.html"
+	}
+	if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
+		return googlePasswordSetupPagePath
+	}
+	if utils.IsSuperPanelRole(admin.Role) {
+		return "/super_administrador.html"
+	}
+	return "/seleccionar_empresa.html"
+}
+
+func resolveAdminContractAcceptanceRedirect(dbSuper *sql.DB, admin *dbpkg.Admin) (string, bool, error) {
+	if admin == nil || strings.TrimSpace(admin.Email) == "" {
+		return "", false, errors.New("administrator is required")
+	}
+	if err := dbpkg.SuperContractSchemaReady(dbSuper); err != nil {
+		return "", false, err
+	}
+	currentContract, err := dbpkg.GetCurrentSuperContract(dbSuper)
+	if err != nil || currentContract == nil {
+		if err == nil {
+			err = errors.New("current contract is unavailable")
+		}
+		return "", false, err
+	}
+	acceptance, err := dbpkg.GetAdministradorContratoAceptacion(dbSuper, admin.Email)
+	if err != nil {
+		return "", false, err
+	}
+	if admin.AceptaContrato == 1 && acceptance.Acepta && acceptance.Version >= currentContract.Version {
+		return "", false, nil
+	}
+	payload := map[string]interface{}{
+		"email": admin.Email,
+		"exp":   time.Now().Add(10 * time.Minute).Unix(),
+		"next":  resolveAdminPostLoginRedirect(admin),
+	}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return "", false, err
+	}
+	encrypted, err := utils.EncryptString(string(payloadBytes))
+	if err != nil {
+		return "", false, err
+	}
+	return "/accept.html?payload=" + url.QueryEscape(encrypted), true, nil
+}
+
+func enforceManagedAdminRole(dbSuper *sql.DB, admin *dbpkg.Admin) (*dbpkg.Admin, error) {
+	if admin == nil {
+		return nil, nil
+	}
+	desiredRole := utils.ManagedAdminRole(admin.Email, admin.Role)
+	if strings.EqualFold(strings.TrimSpace(admin.Role), desiredRole) {
+		return admin, nil
+	}
+	if admin.ID <= 0 {
+		return admin, nil
+	}
+	if err := dbpkg.UpdateAdministrador(dbSuper, admin.ID, admin.Name, desiredRole); err != nil {
+		return nil, err
+	}
+	admin.Role = desiredRole
+	return admin, nil
+}
+
+// AdminRegisterHandler registra un administrador (envía email de confirmación).
+func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
+			return
+		}
+		var payload struct {
+			Email           string `json:"email"`
+			Name            string `json:"name"`
+			Telefono        string `json:"telefono"`
+			Pais            string `json:"pais"`
+			Ciudad          string `json:"ciudad"`
+			Password        string `json:"password"`
+			InvitationToken string `json:"invitation_token"`
+			RecaptchaToken  string `json:"recaptcha_token"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, "El formulario de registro es inválido.")
+			return
+		}
+		payload.Email = strings.TrimSpace(payload.Email)
+		payload.Name = strings.TrimSpace(payload.Name)
+		payload.Telefono = strings.TrimSpace(payload.Telefono)
+		payload.Pais = strings.TrimSpace(payload.Pais)
+		payload.Ciudad = strings.TrimSpace(payload.Ciudad)
+		payload.Password = strings.TrimSpace(payload.Password)
+		payload.InvitationToken = strings.TrimSpace(payload.InvitationToken)
+		if payload.Email == "" || payload.Name == "" || payload.Telefono == "" || payload.Pais == "" || payload.Ciudad == "" || payload.Password == "" {
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes completar correo, nombre completo, celular, pais, ciudad y contraseña.")
+			return
+		}
+		if _, err := mail.ParseAddress(payload.Email); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, "El correo electrónico no es válido.")
+			return
+		}
+		if normalizeWhatsAppPhone(payload.Telefono) == "" {
+			writeAdminAuthError(w, http.StatusBadRequest, "El teléfono debe contener al menos 7 dígitos.")
+			return
+		}
+		if len([]rune(payload.Ciudad)) < 2 {
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes indicar una ciudad valida.")
+			return
+		}
+		if err := validateEmpresaUsuarioPasswordWithPolicy(payload.Password, resolveEmpresaUsuarioPasswordPolicy(dbSuper)); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
+			return
+		}
+
+		existing, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			log.Println("AdminRegisterHandler get existing admin error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el estado de la cuenta.")
+			return
+		}
+		if err == nil && existing != nil && existing.EmailConfirmado == 1 {
+			writeAdminAuthError(w, http.StatusConflict, "Ya existe una cuenta administrativa confirmada con ese correo. Inicia sesión o recupera tu contraseña.")
+			return
+		}
+
+		isPendingAdminInvitation := isPendingAdminScopedInvitation(existing)
+		if isPendingAdminInvitation {
+			if status, msg := validatePendingAdminInvitationToken(existing, payload.InvitationToken, time.Now()); status != http.StatusOK {
+				writeAdminAuthError(w, status, msg)
+				return
+			}
+			invitedRole := strings.TrimSpace(existing.Role)
+			if invitedRole == "" {
+				invitedRole = "administrador"
+			}
+			if err := dbpkg.UpdateAdministrador(dbSuper, existing.ID, payload.Name, invitedRole); err != nil {
+				log.Println("AdminRegisterHandler update invited admin error:", err)
+				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo preparar la cuenta invitada.")
+				return
+			}
+		} else if err := dbpkg.UpsertAdministrador(dbSuper, payload.Email, payload.Name, utils.ManagedAdminRole(payload.Email, "administrador"), ""); err != nil {
+			log.Println("AdminRegisterHandler upsert error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo crear la cuenta administrativa.")
+			return
+		}
+
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil || admin == nil {
+			log.Println("AdminRegisterHandler reload admin error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo completar el registro de la cuenta.")
+			return
+		}
+		if err := dbpkg.UpdateAdministradorProfile(dbSuper, admin.ID, payload.Name, payload.Telefono, payload.Email, payload.Pais, payload.Ciudad); err != nil {
+			log.Println("AdminRegisterHandler update profile error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la información de contacto.")
+			return
+		}
+
+		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
+		if err != nil {
+			log.Println("AdminRegisterHandler hash error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo proteger la contraseña del administrador.")
+			return
+		}
+		if err := dbpkg.SetAdministradorPassword(dbSuper, payload.Email, hash, salt); err != nil {
+			log.Println("AdminRegisterHandler set password error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la contraseña del administrador.")
+			return
+		}
+
+		// generar token confirmación
+		if isPendingAdminInvitation {
+			if _, err := dbpkg.ConfirmAdministradorByToken(dbSuper, payload.InvitationToken); err != nil {
+				log.Println("AdminRegisterHandler confirm invited admin error:", err)
+				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo activar la cuenta invitada.")
+				return
+			}
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":         true,
+				"email_sent": false,
+				"message":    "Invitacion aceptada. Tu cuenta quedo activa y ya puedes iniciar sesion.",
+			})
+			return
+		}
+
+		token, expira, nerr := newEmailConfirmationTokenAndExpiration()
+		if nerr != nil {
+			log.Println("AdminRegisterHandler token gen error:", nerr)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo generar el enlace de confirmación.")
+			return
+		} else {
+			if err := dbpkg.SetAdministradorConfirmToken(dbSuper, payload.Email, token, expira); err != nil {
+				log.Println("AdminRegisterHandler set confirm token error:", err)
+				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo activar la confirmación por correo.")
+				return
+			}
+		}
+
+		// enviar correo de confirmación
+		NotifySuperAdminAdminRegistered(dbSuper, admin.ID, payload.Email, payload.Name, payload.Telefono, payload.Pais, payload.Ciudad)
+		if _, err := sendAdminConfirmationEmail(r, dbSuper, payload.Email, payload.Name, token); err != nil {
+			log.Println("AdminRegisterHandler send email error:", err)
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":         true,
+				"email_sent": false,
+				"message":    "La cuenta fue creada, pero no se pudo enviar el correo de confirmación. Revisa la configuración SMTP.",
+			})
+			return
+		}
+
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":         true,
+			"email_sent": true,
+			"message":    "Registro exitoso. Revisa tu correo para confirmar la cuenta antes de iniciar sesión.",
+		})
+	}
+}
+
+func isPendingAdminScopedInvitation(admin *dbpkg.Admin) bool {
+	return admin != nil &&
+		admin.EmailConfirmado != 1 &&
+		strings.TrimSpace(admin.UsuarioCreador) != ""
+}
+
+// ConfirmarAdminHandler confirma el correo vía token y vuelve al acceso con un
+// estado visual accesible. El token nunca se conserva en la URL de destino.
+func ConfirmarAdminHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
+			return
+		}
+		q := r.URL.Query()
+		token := strings.TrimSpace(q.Get("token"))
+		if token == "" {
+			http.Redirect(w, r, "/login.html?confirmacion=error", http.StatusSeeOther)
+			return
+		}
+		if _, err := dbpkg.ConfirmAdministradorByToken(dbSuper, token); err != nil {
+			log.Println("ConfirmarAdminHandler error:", err)
+			http.Redirect(w, r, "/login.html?confirmacion=error", http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/login.html?confirmacion=ok", http.StatusSeeOther)
+	}
+}
+
+type adminLoginPayload struct {
+	Email          string `json:"email"`
+	Password       string `json:"password"`
+	OTPCode        string `json:"otp_code"`
+	RecaptchaToken string `json:"recaptcha_token"`
+}
+
+func authenticateAdminCredentials(w http.ResponseWriter, dbSuper *sql.DB, payload adminLoginPayload) (*dbpkg.Admin, bool, bool) {
+	now := time.Now().UTC()
+	attemptState, err := dbpkg.GetAdministradorLoginAttemptState(dbSuper, payload.Email)
+	if err != nil {
+		log.Println("AdminLoginHandler load throttle state error:", err)
+		writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+		return nil, false, false
+	}
+	if attemptState.Locked(now) {
+		retryAfter := int(time.Until(attemptState.LockedUntil).Seconds())
+		if retryAfter < 1 {
+			retryAfter = 1
+		}
+		w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+		writeAdminAuthError(w, http.StatusTooManyRequests, "Demasiados intentos. Espera antes de volver a intentar.")
+		return nil, false, false
+	}
+	registerFailure := func() bool {
+		state, failureErr := dbpkg.RegisterAdministradorLoginFailure(dbSuper, payload.Email, time.Now().UTC())
+		if failureErr != nil {
+			log.Println("AdminLoginHandler register failure error:", failureErr)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+			return true
+		}
+		if state.Locked(time.Now().UTC()) {
+			retryAfter := int(time.Until(state.LockedUntil).Seconds())
+			if retryAfter < 1 {
+				retryAfter = 1
+			}
+			w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+			writeAdminAuthError(w, http.StatusTooManyRequests, "Demasiados intentos. Espera antes de volver a intentar.")
+			return true
+		}
+		return false
+	}
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			log.Println("AdminLoginHandler get admin error:", err)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+			return nil, false, false
+		}
+		if registerFailure() {
+			return nil, false, false
+		}
+		writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
+		return nil, false, false
+	}
+	admin, err = enforceManagedAdminRole(dbSuper, admin)
+	if err != nil {
+		log.Println("AdminLoginHandler enforce managed role error:", err)
+		writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
+		return nil, false, false
+	}
+	if !strings.EqualFold(strings.TrimSpace(admin.Estado), "activo") {
+		writeAdminAuthError(w, http.StatusForbidden, "La cuenta administrativa no esta disponible para iniciar sesión.")
+		return nil, false, false
+	}
+	if admin.EmailConfirmado != 1 {
+		writeAdminAuthError(w, http.StatusForbidden, "Debes confirmar tu correo antes de iniciar sesión.")
+		return nil, false, false
+	}
+	if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": false, "password_setup_required": true, "message": "Tu cuenta todavía no tiene una contraseña activa."})
+		return nil, false, false
+	}
+	passwordOK, passwordNeedsUpgrade := verifyEmpresaUsuarioPasswordHash(payload.Password, admin.PasswordSalt, admin.PasswordHash)
+	if !passwordOK {
+		if registerFailure() {
+			return nil, false, false
+		}
+		writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
+		return nil, false, false
+	}
+	globalTOTPEnabled, policyErr := adminTOTPLoginPolicy(dbSuper)
+	if policyErr != nil {
+		log.Println("AdminLoginHandler load 2FA policy error:", policyErr)
+		writeAdminAuthError(w, http.StatusServiceUnavailable, "No se pudo validar la politica de acceso 2FA.")
+		return nil, false, false
+	}
+	if adminTOTPConfigurationRequired(admin) {
+		writeAdminAuthJSON(w, http.StatusForbidden, map[string]interface{}{"ok": false, "two_factor_setup_required": true, "message": "Esta cuenta global debe configurar 2FA antes de iniciar sesion."})
+		return nil, false, false
+	}
+	if adminTOTPLoginRequiredForAdmin(admin, globalTOTPEnabled) && !verifyAndConsumeAdminTOTP(dbSuper, admin, payload.OTPCode, time.Now(), true) {
+		if registerFailure() {
+			return nil, false, false
+		}
+		writeAdminAuthJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "two_factor_required": true, "message": "Ingresa el codigo 2FA de tu aplicacion autenticadora."})
+		return nil, false, false
+	}
+	return admin, passwordNeedsUpgrade, true
+}
+
+// AdminLoginHandler maneja login por email/contraseña para administradores.
+func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
+			return
+		}
+		var payload adminLoginPayload
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, "El formulario de acceso es inválido.")
+			return
+		}
+		payload.Email = strings.TrimSpace(payload.Email)
+		payload.Password = strings.TrimSpace(payload.Password)
+		if payload.Email == "" || payload.Password == "" {
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes ingresar correo y contraseña.")
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
+			return
+		}
+		admin, passwordNeedsUpgrade, authenticated := authenticateAdminCredentials(w, dbSuper, payload)
+		if !authenticated {
+			return
+		}
+		if passwordNeedsUpgrade {
+			upgradedHash, upgradedSalt, upgradeErr := generateEmpresaUsuarioPasswordHash(payload.Password)
+			if upgradeErr != nil || dbpkg.SetAdministradorPassword(dbSuper, admin.Email, upgradedHash, upgradedSalt) != nil {
+				log.Println("AdminLoginHandler password verifier upgrade error")
+				writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+				return
+			}
+		}
+		if err := dbpkg.ClearAdministradorLoginFailures(dbSuper, admin.Email); err != nil {
+			log.Println("AdminLoginHandler clear failures error:", err)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "El acceso no está disponible temporalmente.")
+			return
+		}
+		contractRedirect, contractRequired, contractErr := resolveAdminContractAcceptanceRedirect(dbSuper, admin)
+		if contractErr != nil {
+			log.Println("AdminLoginHandler contract gate error:", contractErr)
+			writeAdminAuthError(w, http.StatusServiceUnavailable, "No se pudo validar el contrato vigente.")
+			return
+		}
+		if contractRequired {
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":                           true,
+				"contract_acceptance_required": true,
+				"redirect_url":                 contractRedirect,
+				"message":                      "Debes aceptar el contrato vigente antes de iniciar sesión.",
+			})
+			return
+		}
+		token, terr := utils.GenerateSecureToken(32)
+		if terr != nil {
+			log.Println("AdminLoginHandler token gen error:", terr)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo crear la sesión administrativa.")
+			return
+		}
+		if err := dbpkg.CreateSession(dbSuper, admin.Email, r.RemoteAddr, r.UserAgent(), token); err != nil {
+			log.Println("AdminLoginHandler create session error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la sesión administrativa.")
+			return
+		}
+		cookie := &http.Cookie{
+			Name:     "session_token",
+			Value:    token,
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   utils.SessionCookieMaxAge(),
+			Secure:   SessionCookieSecure(r),
+			SameSite: http.SameSiteLaxMode,
+		}
+		http.SetCookie(w, cookie)
+		SetBrowserSessionStateCookie(w, r, true)
+
+		redirectURL := "/seleccionar_empresa.html"
+		if strings.ToLower(strings.TrimSpace(admin.Role)) == "super_administrador" {
+			redirectURL = "/super_administrador.html"
+		}
+		apariencia, appearanceErr := dbpkg.GetUsuarioApariencia(dbSuper, admin.Email)
+		if appearanceErr != nil {
+			log.Println("AdminLoginHandler get appearance error:", appearanceErr)
+			apariencia = ""
+		}
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "redirect_url": redirectURL, "apariencia": apariencia})
+	}
+}
+
+// AdminRequestPasswordRecoveryHandler solicita envío de token de recuperación.
+func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		respondAccepted := func() {
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":      true,
+				"message": "Si la cuenta existe y ya fue confirmada, enviaremos instrucciones para restablecer la contraseña.",
+			})
+		}
+		if r.Method != http.MethodPost {
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
+			return
+		}
+		var payload struct {
+			Email          string `json:"email"`
+			RecaptchaToken string `json:"recaptcha_token"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, "La solicitud de recuperación es inválida.")
+			return
+		}
+		payload.Email = strings.TrimSpace(payload.Email)
+		if payload.Email == "" {
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes indicar el correo de la cuenta.")
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
+			return
+		}
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				respondAccepted()
+				return
+			}
+			log.Println("AdminRequestPasswordRecoveryHandler get admin error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar la cuenta administrativa.")
+			return
+		}
+		if admin == nil || admin.EmailConfirmado != 1 {
+			respondAccepted()
+			return
+		}
+		// generar token
+		token, expira, nerr := newPasswordRecoveryTokenAndExpiration()
+		if nerr != nil {
+			log.Println("AdminRequestPasswordRecoveryHandler token gen error:", nerr)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo generar el token de recuperación.")
+			return
+		}
+		if err := dbpkg.SetAdministradorPasswordResetToken(dbSuper, payload.Email, token, expira); err != nil {
+			log.Println("AdminRequestPasswordRecoveryHandler set token error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo iniciar la recuperación de contraseña.")
+			return
+		}
+		if _, err := sendAdminPasswordRecoveryEmail(r, dbSuper, payload.Email, "", token); err != nil {
+			log.Println("AdminRequestPasswordRecoveryHandler send mail error:", err)
+			respondAccepted()
+			return
+		}
+		respondAccepted()
+	}
+}
+
+// AdminResetPasswordHandler restablece contraseña usando token.
+func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
+			return
+		}
+		var payload struct {
+			Email          string `json:"email"`
+			Token          string `json:"token"`
+			Password       string `json:"password"`
+			RecaptchaToken string `json:"recaptcha_token"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, "La solicitud para restablecer la contraseña es inválida.")
+			return
+		}
+		payload.Email = strings.TrimSpace(payload.Email)
+		payload.Token = strings.TrimSpace(payload.Token)
+		payload.Password = strings.TrimSpace(payload.Password)
+		if payload.Email == "" || payload.Token == "" || payload.Password == "" {
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes indicar correo, token y nueva contraseña.")
+			return
+		}
+		if err := validateEmpresaUsuarioPasswordWithPolicy(payload.Password, resolveEmpresaUsuarioPasswordPolicy(dbSuper)); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
+			return
+		}
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil {
+			log.Println("AdminResetPasswordHandler get admin error:", err)
+			writeAdminAuthError(w, http.StatusBadRequest, "El correo o el token de recuperación no son válidos.")
+			return
+		}
+		admin, err = enforceManagedAdminRole(dbSuper, admin)
+		if err != nil {
+			log.Println("AdminResetPasswordHandler enforce managed role error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
+			return
+		}
+		if strings.TrimSpace(admin.PasswordResetToken) == "" || !dbpkg.AdministradorPasswordResetTokenMatches(admin.PasswordResetToken, payload.Token) {
+			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación no es válido.")
+			return
+		}
+		// An absent or malformed expiry must never turn a recovery token into an
+		// indefinitely valid credential.
+		expiresAt, expiresOK := parseEmpresaUsuarioDateTime(strings.TrimSpace(admin.PasswordResetExpira))
+		if !expiresOK || time.Now().After(expiresAt) {
+			if clearErr := dbpkg.ClearAdministradorPasswordResetToken(dbSuper, admin.ID); clearErr != nil {
+				log.Printf("AdminResetPasswordHandler clear expired token error: %v", clearErr)
+			}
+			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación no es válido o ya expiró.")
+			return
+		}
+		// generar hash y guardar
+		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
+		if err != nil {
+			log.Println("AdminResetPasswordHandler hash error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo proteger la nueva contraseña.")
+			return
+		}
+		if err := dbpkg.SetAdministradorPasswordFromResetToken(dbSuper, payload.Email, payload.Token, hash, salt); err != nil {
+			log.Println("AdminResetPasswordHandler set password error:", err)
+			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación ya no es válido.")
+			return
+		}
+		utils.InvalidateAuthCacheForAdmin(admin.Email)
+		// crear sesión y responder
+		tokenSession, terr := utils.GenerateSecureToken(32)
+		if terr != nil {
+			log.Println("AdminResetPasswordHandler token gen error:", terr)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo crear la nueva sesión administrativa.")
+			return
+		}
+		if err := dbpkg.CreateSession(dbSuper, admin.Email, r.RemoteAddr, r.UserAgent(), tokenSession); err != nil {
+			log.Println("AdminResetPasswordHandler create session error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la nueva sesión administrativa.")
+			return
+		}
+		cookie := &http.Cookie{
+			Name:     "session_token",
+			Value:    tokenSession,
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   utils.SessionCookieMaxAge(),
+			Secure:   SessionCookieSecure(r),
+			SameSite: http.SameSiteLaxMode,
+		}
+		http.SetCookie(w, cookie)
+		SetBrowserSessionStateCookie(w, r, true)
+
+		redirectURL := "/seleccionar_empresa.html"
+		if strings.ToLower(strings.TrimSpace(admin.Role)) == "super_administrador" {
+			redirectURL = "/super_administrador.html"
+		}
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "redirect_url": redirectURL, "message": "Contraseña restablecida correctamente."})
+	}
+}
+
+// sendAdminConfirmationEmail envía el correo de confirmación para administradores.
+func sendAdminConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEmail, toName, token string) (string, error) {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	confirmURL := strings.TrimRight(baseURL, "/") + "/auth/confirmar_admin?token=" + url.QueryEscape(token)
+	loginURL := strings.TrimRight(baseURL, "/") + "/login.html"
+
+	safeName := strings.TrimSpace(toName)
+	if safeName == "" {
+		safeName = "administrador"
+	}
+
+	subject, body, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyAdminConfirmation, map[string]string{
+		"name":        safeName,
+		"confirm_url": confirmURL,
+		"login_url":   loginURL,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"confirm_url":%q,"login_url":%q,"mail_mode":"test"}`, confirmURL, loginURL)
+		sendPCSWhatsAppForEmailRecipient(dbSuper, "admin_registro", toEmail, subject, body, metadataJSON, adminEmailFromRequest(r))
+		if err := captureEmpresaUsuarioMailNotification(dbSuper, "confirmacion_correo_admin", 0, toEmail, subject, body, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
+			return confirmURL, err
+		}
+		return confirmURL, nil
+	}
+
+	if isPCSEmailEventEnabled(dbSuper, "admin_registro") {
+		if err := sendEmpresaUsuarioMailuPlain(dbSuper, toEmail, subject, body); err != nil {
+			return confirmURL, err
+		}
+	}
+	sendPCSWhatsAppForEmailRecipient(dbSuper, "admin_registro", toEmail, subject, body, "", adminEmailFromRequest(r))
+	return confirmURL, nil
+}
+
+// buildAdminScopedInvitationURL arma el enlace donde el invitado acepta y completa registro.
+func buildAdminScopedInvitationURL(r *http.Request, dbSuper *sql.DB, toEmail, token string) string {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	inviteURL := strings.TrimRight(baseURL, "/") + "/registrar_nuevo_usuario_administrador.html"
+	query := url.Values{}
+	query.Set("email", strings.TrimSpace(toEmail))
+	query.Set("invitation_token", strings.TrimSpace(token))
+	return inviteURL + "?" + query.Encode()
+}
+
+func sendAdminPortfolioDelegatedEmail(r *http.Request, dbSuper *sql.DB, toEmail, toName, invitedByName string) (string, error) {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	loginURL := strings.TrimRight(baseURL, "/") + "/login.html"
+	safeName := strings.TrimSpace(toName)
+	if safeName == "" {
+		safeName = "administrador"
+	}
+	inviter := strings.TrimSpace(invitedByName)
+	if inviter == "" {
+		inviter = "Un administrador"
+	}
+	subject, bodyPlain, bodyHTML, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyAdminPortfolioDelegated, map[string]string{
+		"name":            safeName,
+		"invited_by_name": inviter,
+		"login_url":       loginURL,
+	})
+	if err != nil {
+		return "", err
+	}
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"login_url":%q,"mail_mode":"test","invited_by_name":%q}`, loginURL, inviter)
+		if err := captureEmpresaUsuarioMailNotification(dbSuper, "admin_portafolio_compartido", 0, toEmail, subject, bodyPlain, "", metadataJSON, adminEmailFromRequest(r)); err != nil {
+			return loginURL, err
+		}
+		return loginURL, nil
+	}
+	if err := sendEmpresaUsuarioMailuMultipart(dbSuper, baseURL, toEmail, subject, bodyPlain, bodyHTML); err != nil {
+		return loginURL, err
+	}
+	return loginURL, nil
+}
+
+func sendAdminScopedInvitationEmail(r *http.Request, dbSuper *sql.DB, toEmail, toName, invitedByName, token string) (string, error) {
+	registerURL := buildAdminScopedInvitationURL(r, dbSuper, toEmail, token)
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	loginURL := strings.TrimRight(baseURL, "/") + "/login.html"
+	safeName := strings.TrimSpace(toName)
+	if safeName == "" {
+		safeName = "administrador"
+	}
+	inviter := strings.TrimSpace(invitedByName)
+	if inviter == "" {
+		inviter = "Un administrador"
+	}
+	subject, bodyPlain, bodyHTML, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyAdminScopedInvitation, map[string]string{
+		"name":            safeName,
+		"invited_by_name": inviter,
+		"register_url":    registerURL,
+		"login_url":       loginURL,
+	})
+	if err != nil {
+		return "", err
+	}
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"register_url":%q,"login_url":%q,"mail_mode":"test","invited_by_name":%q}`, registerURL, loginURL, inviter)
+		if err := captureEmpresaUsuarioMailNotification(dbSuper, "invitacion_admin_delegado", 0, toEmail, subject, bodyPlain, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
+			return registerURL, err
+		}
+		return registerURL, nil
+	}
+	if err := sendEmpresaUsuarioMailuMultipart(dbSuper, baseURL, toEmail, subject, bodyPlain, bodyHTML); err != nil {
+		return registerURL, err
+	}
+	return registerURL, nil
+}
+
+// sendAdminPasswordRecoveryEmail envía token de recuperación para administrador.
+func sendAdminPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, toEmail, toName, token string) (string, error) {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	resetHintURL := strings.TrimRight(baseURL, "/") + "/login.html?view=reset&email=" + url.QueryEscape(toEmail) + "&token_recuperacion=" + url.QueryEscape(token)
+	safeName := strings.TrimSpace(toName)
+	if safeName == "" {
+		safeName = "administrador"
+	}
+	subject, bodyPlain, bodyHTML, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyAdminPasswordRecovery, map[string]string{
+		"name":      safeName,
+		"token":     "",
+		"reset_url": resetHintURL,
+	})
+	if err != nil {
+		return "", err
+	}
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"reset_hint_url":%q,"mail_mode":"test"}`, resetHintURL)
+		if err := captureEmpresaUsuarioMailNotification(dbSuper, "recuperacion_password_admin", 0, toEmail, subject, bodyPlain, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
+			return resetHintURL, err
+		}
+		return resetHintURL, nil
+	}
+	if err := sendEmpresaUsuarioMailuMultipart(dbSuper, baseURL, toEmail, subject, bodyPlain, bodyHTML); err != nil {
+		return resetHintURL, err
+	}
+	return resetHintURL, nil
+}
+
+// SetBrowserSessionStateCookie emite una señal visible para el cliente que indica
+// si existe una sesión autenticada activa sin exponer el token real HttpOnly.
+func SetBrowserSessionStateCookie(w http.ResponseWriter, r *http.Request, active bool) {
+	if w == nil {
+		return
+	}
+
+	value := ""
+	maxAge := -1
+	if active {
+		value = "1"
+		maxAge = utils.SessionCookieMaxAge()
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     browserSessionStateCookieName,
+		Value:    value,
+		Path:     "/",
+		HttpOnly: false,
+		MaxAge:   maxAge,
+		Secure:   SessionCookieSecure(r),
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func firstForwardedValue(raw string) string {
+	return valueutil.FirstForwardedValue(raw)
+}
+
+func resolveOAuthScheme(r *http.Request) string {
+	if r == nil {
+		return "http"
+	}
+
+	if utils.RequestFromTrustedProxy(r) {
+		for _, header := range []string{"X-Forwarded-Proto", "X-Forwarded-Scheme"} {
+			value := strings.ToLower(firstForwardedValue(r.Header.Get(header)))
+			if value == "https" {
+				return "https"
+			}
+			if value == "http" {
+				return "http"
+			}
+		}
+	}
+
+	if r.TLS != nil {
+		return "https"
+	}
+
+	return "http"
+}
+
+func resolveOAuthHost(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+
+	if utils.RequestFromTrustedProxy(r) {
+		if host := firstForwardedValue(r.Header.Get("X-Forwarded-Host")); host != "" {
+			return host
+		}
+	}
+
+	return strings.TrimSpace(r.Host)
+}
+
+func splitHostPortSafe(rawHost string) string {
+	return valueutil.HostWithoutPort(rawHost)
+}
+
+func isLoopbackHost(rawHost string) bool {
+	host := strings.ToLower(splitHostPortSafe(rawHost))
+	if host == "" {
+		return false
+	}
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+func adaptConfiguredLoopbackRedirect(r *http.Request, configured string) string {
+	trimmed := strings.TrimSpace(configured)
+	if trimmed == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return trimmed
+	}
+
+	requestHost := resolveOAuthHost(r)
+	if requestHost == "" {
+		return trimmed
+	}
+
+	desiredScheme := resolveOAuthScheme(r)
+	if !isLoopbackHost(requestHost) {
+		desiredScheme = "https"
+	}
+
+	// Si host y esquema ya coinciden con el entorno actual, conservar configuración.
+	configHost := splitHostPortSafe(parsed.Host)
+	reqHost := splitHostPortSafe(requestHost)
+	if strings.EqualFold(configHost, reqHost) && strings.EqualFold(parsed.Scheme, desiredScheme) && parsed.Path == "/auth/google/callback" {
+		return trimmed
+	}
+
+	// Adaptar la URL al host/esquema real de la petición para que funcione
+	// tanto en local (localhost) como en VPS (dominio real).
+	parsed.Scheme = desiredScheme
+	parsed.Host = requestHost
+	parsed.Path = "/auth/google/callback"
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
+func resolveOAuthRedirectURL(r *http.Request, configuredRedirectURL string) string {
+	configured := adaptConfiguredLoopbackRedirect(r, configuredRedirectURL)
+	if configured != "" {
+		return configured
+	}
+
+	host := resolveOAuthHost(r)
+	if host == "" {
+		host = "localhost:8080"
+	}
+	scheme := resolveOAuthScheme(r)
+	if !isLoopbackHost(host) {
+		scheme = "https"
+	}
+
+	return scheme + "://" + host + "/auth/google/callback"
+}
+
+func isValidOAuthRedirectURL(raw string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return false
+	}
+	if parsed.Host == "" {
+		return false
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return false
+	}
+	return parsed.Path == "/auth/google/callback"
+}
+
+func setGoogleUsuarioFlowCookie(w http.ResponseWriter, r *http.Request, name, value string, maxAge int) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     name,
+		Value:    value,
+		Path:     "/auth/google",
+		HttpOnly: true,
+		MaxAge:   maxAge,
+		Secure:   SessionCookieSecure(r),
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func clearGoogleUsuarioFlowCookies(w http.ResponseWriter, r *http.Request) {
+	for _, name := range []string{
+		googleOAuthUsuarioFlowCookieName,
+		googleOAuthUsuarioEmpresaCookieName,
+		googleOAuthUsuarioInvitationCookieName,
+		googleOAuthUsuarioAcceptContractCookieName,
+	} {
+		setGoogleUsuarioFlowCookie(w, r, name, "", -1)
+	}
+}
+
+func googleUsuarioFlowActive(r *http.Request) bool {
+	ck, err := r.Cookie(googleOAuthUsuarioFlowCookieName)
+	return err == nil && strings.TrimSpace(ck.Value) == "1"
+}
+
+func googleUsuarioCookieValue(r *http.Request, name string) string {
+	ck, err := r.Cookie(name)
+	if err != nil {
+		return ""
+	}
+	decoded, err := url.QueryUnescape(strings.TrimSpace(ck.Value))
+	if err != nil {
+		return strings.TrimSpace(ck.Value)
+	}
+	return strings.TrimSpace(decoded)
+}
+
+// HandleGoogleLogin devuelve un http.HandlerFunc configurado con clientID y redirectURL
+func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if clientID == "" {
+			http.Error(w, "Acceso bloqueado: configuración incompleta (GOOGLE_CLIENT_ID no definido)", http.StatusInternalServerError)
+			return
+		}
+		log.Printf("handleGoogleLogin: oauth redirect requested (client configured=%t)", clientID != "")
+		state, _, challenge, err := beginGoogleOAuthFlow(w, r, false)
+		if err != nil {
+			log.Printf("handleGoogleLogin: no se pudo iniciar oauth: %v", err)
+			http.Error(w, "No se pudo iniciar el acceso seguro con Google", http.StatusInternalServerError)
+			return
+		}
+		effectiveRedirectURL := resolveOAuthRedirectURL(r, redirectURL)
+		vals := url.Values{
+			"client_id":              {clientID},
+			"redirect_uri":           {effectiveRedirectURL},
+			"response_type":          {"code"},
+			"scope":                  {"openid email profile"},
+			"include_granted_scopes": {"true"},
+			"access_type":            {"offline"},
+			"state":                  {state},
+			"code_challenge":         {challenge},
+			"code_challenge_method":  {"S256"},
+			// Forzar selección explícita de cuenta sin pedir consentimiento extra en cada login.
+			"prompt": {"select_account"},
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     googleOAuthRedirectCookieName,
+			Value:    url.QueryEscape(effectiveRedirectURL),
+			Path:     "/auth/google",
+			HttpOnly: true,
+			MaxAge:   600,
+			Secure:   SessionCookieSecure(r),
+			SameSite: http.SameSiteLaxMode,
+		})
+		authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + vals.Encode()
+		log.Printf("handleGoogleLogin: redirecting to OAuth provider")
+		http.Redirect(w, r, authURL, http.StatusFound)
+	}
+}
+
+// HandleGoogleUsuarioLogin inicia OAuth para usuarios operativos ya invitados por una empresa.
+func HandleGoogleUsuarioLogin(clientID, redirectURL string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if clientID == "" {
+			http.Error(w, "Acceso bloqueado: configuracion incompleta (GOOGLE_CLIENT_ID no definido)", http.StatusInternalServerError)
+			return
+		}
+		state, _, challenge, err := beginGoogleOAuthFlow(w, r, true)
+		if err != nil {
+			log.Printf("handleGoogleUsuarioLogin: no se pudo iniciar oauth: %v", err)
+			http.Error(w, "No se pudo iniciar el acceso seguro con Google", http.StatusInternalServerError)
+			return
+		}
+		effectiveRedirectURL := resolveOAuthRedirectURL(r, redirectURL)
+		vals := url.Values{
+			"client_id":              {clientID},
+			"redirect_uri":           {effectiveRedirectURL},
+			"response_type":          {"code"},
+			"scope":                  {"openid email profile"},
+			"include_granted_scopes": {"true"},
+			"access_type":            {"offline"},
+			"state":                  {state},
+			"code_challenge":         {challenge},
+			"code_challenge_method":  {"S256"},
+			"prompt":                 {"select_account"},
+		}
+
+		setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioFlowCookieName, "1", 600)
+		if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioEmpresaCookieName, strconv.FormatInt(empresaID, 10), 600)
+		} else {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioEmpresaCookieName, "", -1)
+		}
+		invitationToken := strings.TrimSpace(r.URL.Query().Get("token_invitacion"))
+		if invitationToken == "" {
+			invitationToken = strings.TrimSpace(r.URL.Query().Get("invitation_token"))
+		}
+		if invitationToken == "" {
+			invitationToken = strings.TrimSpace(r.URL.Query().Get("token_confirmacion"))
+		}
+		if invitationToken != "" {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioInvitationCookieName, url.QueryEscape(invitationToken), 600)
+		} else {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioInvitationCookieName, "", -1)
+		}
+		if strings.TrimSpace(r.URL.Query().Get("accept_contract")) == "1" {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioAcceptContractCookieName, "1", 600)
+		} else {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioAcceptContractCookieName, "", -1)
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     googleOAuthRedirectCookieName,
+			Value:    url.QueryEscape(effectiveRedirectURL),
+			Path:     "/auth/google",
+			HttpOnly: true,
+			MaxAge:   600,
+			Secure:   SessionCookieSecure(r),
+			SameSite: http.SameSiteLaxMode,
+		})
+		authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + vals.Encode()
+		log.Printf("handleGoogleUsuarioLogin: redirecting invited user to OAuth provider")
+		http.Redirect(w, r, authURL, http.StatusFound)
+	}
+}
+
+// HandleGoogleCallback procesa el callback OAuth y crea sesión/administrador
+func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientSecret, redirectURL string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		usuarioFlow, verifier, stateErr := validateAndConsumeGoogleOAuthState(w, r)
+		if stateErr != nil {
+			log.Printf("HandleGoogleCallback: callback OAuth rechazado: %v", stateErr)
+			http.Error(w, "Solicitud de acceso invalida o vencida", http.StatusBadRequest)
+			return
+		}
+		if errStr := q.Get("error"); errStr != "" {
+			http.Error(w, "error from provider: "+errStr, http.StatusBadRequest)
+			return
+		}
+		code := q.Get("code")
+		if code == "" {
+			http.Error(w, "code not found", http.StatusBadRequest)
+			return
+		}
+
+		effectiveRedirectURL := resolveOAuthRedirectURL(r, redirectURL)
+		if ck, err := r.Cookie(googleOAuthRedirectCookieName); err == nil {
+			decodedValue, decodeErr := url.QueryUnescape(strings.TrimSpace(ck.Value))
+			if decodeErr == nil && isValidOAuthRedirectURL(decodedValue) {
+				effectiveRedirectURL = decodedValue
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:     googleOAuthRedirectCookieName,
+				Value:    "",
+				Path:     "/auth/google",
+				HttpOnly: true,
+				MaxAge:   -1,
+				Secure:   SessionCookieSecure(r),
+				SameSite: http.SameSiteLaxMode,
+			})
+		}
+
+		tokenResp, err := auth.ExchangeCodeForTokenWithPKCE(r.Context(), code, clientID, clientSecret, effectiveRedirectURL, verifier)
+		if err != nil {
+			log.Println("token exchange error:", err)
+			http.Error(w, "token exchange failed", http.StatusInternalServerError)
+			return
+		}
+
+		userinfo, err := auth.FetchUserInfo(tokenResp.AccessToken)
+		if err != nil {
+			log.Println("fetch userinfo error:", err)
+			http.Error(w, "failed to fetch userinfo", http.StatusInternalServerError)
+			return
+		}
+		if !userinfo.EmailVerified || strings.TrimSpace(userinfo.Email) == "" {
+			log.Printf("HandleGoogleCallback: cuenta Google sin correo verificado")
+			http.Error(w, "La cuenta de Google debe tener un correo verificado", http.StatusForbidden)
+			return
+		}
+
+		if usuarioFlow && googleUsuarioFlowActive(r) {
+			clearGoogleUsuarioFlowCookies(w, r)
+			handleGoogleUsuarioCallback(w, r, dbEmpresas, dbSuper, userinfo)
+			return
+		}
+
+		// El alta publica y el OAuth solo dejan rol super al correo reservado del sistema.
+		existingAdmin, _ := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email)
+		roleToSet := utils.ManagedAdminRole(userinfo.Email, "administrador")
+		if existingAdmin != nil && existingAdmin.Role != "" {
+			roleToSet = utils.ManagedAdminRole(userinfo.Email, existingAdmin.Role)
+		}
+		if err := dbpkg.UpsertAdministrador(dbSuper, userinfo.Email, userinfo.Name, roleToSet, userinfo.Picture); err != nil {
+			log.Println("db upsert administradores error:", err)
+		}
+
+		if err := dbpkg.UpsertUser(dbEmpresas, userinfo.Email, userinfo.Name); err != nil {
+			log.Println("db upsert users error:", err)
+		}
+
+		if err := dbpkg.ProvisionDefaultEmpresaForUser(dbEmpresas, userinfo.Email, "Empresa de "+userinfo.Name); err != nil {
+			log.Println("db provision empresa error:", err)
+		}
+
+		if err := dbpkg.SuperContractSchemaReady(dbSuper); err != nil {
+			log.Println("contract schema unavailable:", err)
+			http.Error(w, "contract metadata unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		currentContract, err := dbpkg.GetCurrentSuperContract(dbSuper)
+		if err != nil || currentContract == nil {
+			log.Println("load current contract error:", err)
+			http.Error(w, "failed to load current contract", http.StatusInternalServerError)
+			return
+		}
+
+		// La aceptación se decide únicamente por registro persistido por administrador.
+		accepted := false
+		if adminNow, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email); err == nil && adminNow != nil {
+			acceptance, acceptanceErr := dbpkg.GetAdministradorContratoAceptacion(dbSuper, userinfo.Email)
+			if acceptanceErr == nil && adminNow.AceptaContrato == 1 && acceptance.Acepta && acceptance.Version >= currentContract.Version {
+				accepted = true
+			}
+		}
+
+		if accepted {
+			token, err := utils.GenerateSecureToken(32)
+			if err != nil {
+				log.Println("failed to generate session token:", err)
+				http.Error(w, "No se pudo crear la sesion", http.StatusInternalServerError)
+				return
+			}
+			ip := r.RemoteAddr
+			ua := r.UserAgent()
+			if err := dbpkg.CreateSession(dbSuper, userinfo.Email, ip, ua, token); err != nil {
+				log.Println("create session error:", err)
+			}
+			cookie := &http.Cookie{
+				Name:     "session_token",
+				Value:    token,
+				Path:     "/",
+				HttpOnly: true,
+				MaxAge:   utils.SessionCookieMaxAge(),
+				Secure:   SessionCookieSecure(r),
+				SameSite: http.SameSiteLaxMode,
+			}
+			http.SetCookie(w, cookie)
+			SetBrowserSessionStateCookie(w, r, true)
+
+			admin, err := dbpkg.GetAdminByEmailFull(dbSuper, userinfo.Email)
+			if err != nil || admin == nil {
+				log.Println("warning: no admin found, redirecting to seleccionar_empresa:", err)
+				http.Redirect(w, r, "/seleccionar_empresa.html", http.StatusFound)
+				return
+			}
+			admin, err = enforceManagedAdminRole(dbSuper, admin)
+			if err != nil {
+				log.Println("warning: failed to enforce managed role after google callback:", err)
+			}
+			http.Redirect(w, r, resolveAdminPostLoginRedirect(admin), http.StatusFound)
+			return
+		}
+
+		// Si no aceptó, redirigir a página de aceptación server-side con payload cifrado.
+		if userinfo.Email != "" {
+			next := "/seleccionar_empresa.html"
+			if roleToSet == "super_administrador" {
+				next = "/super_administrador.html"
+			}
+			payload := map[string]interface{}{
+				"email": userinfo.Email,
+				"exp":   time.Now().Add(10 * time.Minute).Unix(),
+				"next":  next,
+			}
+			pb, _ := json.Marshal(payload)
+			enc, err := utils.EncryptString(string(pb))
+			if err != nil {
+				log.Printf("failed to encrypt accept payload: %v", err)
+				http.Error(w, "failed to prepare contract acceptance", http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, "/accept.html?payload="+url.QueryEscape(enc), http.StatusFound)
+		} else {
+			http.Redirect(w, r, "/login.html", http.StatusFound)
+		}
+		return
+	}
+}
+
+func redirectGoogleUsuarioError(w http.ResponseWriter, r *http.Request, code, email string, empresaID int64, invitationToken string) {
+	target := "/login_usuario.html"
+	q := url.Values{}
+	if code != "" {
+		q.Set("google_error", code)
+	}
+	if email != "" {
+		q.Set("email", email)
+	}
+	if empresaID > 0 {
+		q.Set("empresa_id", strconv.FormatInt(empresaID, 10))
+	}
+	if strings.TrimSpace(invitationToken) != "" {
+		q.Set("token_invitacion", strings.TrimSpace(invitationToken))
+		q.Set("modo", "registro")
+	}
+	if encoded := q.Encode(); encoded != "" {
+		target += "?" + encoded
+	}
+	http.Redirect(w, r, target, http.StatusFound)
+}
+
+func resolveGoogleUsuarioFromCookies(r *http.Request, dbEmpresas *sql.DB, email string) (*dbpkg.EmpresaUsuario, int64, string, bool, error) {
+	empresaID := int64(0)
+	if rawEmpresaID := googleUsuarioCookieValue(r, googleOAuthUsuarioEmpresaCookieName); rawEmpresaID != "" {
+		if parsed, err := strconv.ParseInt(rawEmpresaID, 10, 64); err == nil && parsed > 0 {
+			empresaID = parsed
+		}
+	}
+	invitationToken := googleUsuarioCookieValue(r, googleOAuthUsuarioInvitationCookieName)
+	consumeInvitation := false
+
+	if invitationToken != "" {
+		item, err := dbpkg.GetEmpresaUsuarioByConfirmToken(dbEmpresas, invitationToken)
+		if err != nil {
+			return nil, empresaID, invitationToken, false, err
+		}
+		if empresaID > 0 && item.EmpresaID != empresaID {
+			return nil, empresaID, invitationToken, false, fmt.Errorf("invitacion invalida para la empresa indicada")
+		}
+		if !strings.EqualFold(strings.TrimSpace(item.Email), strings.TrimSpace(email)) {
+			return nil, empresaID, invitationToken, false, errors.New("invitacion invalida para el correo de Google")
+		}
+		if status, msg := validateEmpresaUsuarioInvitationToken(item, invitationToken, time.Now()); status != http.StatusOK {
+			return nil, empresaID, invitationToken, false, errors.New(msg)
+		}
+		return item, item.EmpresaID, invitationToken, true, nil
+	}
+	if empresaID <= 0 {
+		return nil, empresaID, invitationToken, false, errEmpresaUsuarioScopeRequired
+	}
+
+	item, err := resolveUniqueEmpresaUsuarioByEmail(dbEmpresas, email, empresaID)
+	if err != nil {
+		return nil, empresaID, invitationToken, false, err
+	}
+	if item.EmailConfirmado != 1 {
+		return item, item.EmpresaID, invitationToken, false, errors.New("invitacion pendiente")
+	}
+	return item, item.EmpresaID, invitationToken, consumeInvitation, nil
+}
+
+func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpresas *sql.DB, dbSuper *sql.DB, userinfo *auth.UserInfo) {
+	if userinfo == nil || strings.TrimSpace(userinfo.Email) == "" {
+		redirectGoogleUsuarioError(w, r, "google_sin_email", "", 0, "")
+		return
+	}
+	email := strings.TrimSpace(userinfo.Email)
+	if !userinfo.EmailVerified {
+		redirectGoogleUsuarioError(w, r, "email_no_verificado", email, 0, "")
+		return
+	}
+
+	item, empresaID, invitationToken, consumeInvitation, err := resolveGoogleUsuarioFromCookies(r, dbEmpresas, email)
+	if err != nil {
+		switch {
+		case errors.Is(err, errEmpresaUsuarioScopeRequired):
+			redirectGoogleUsuarioError(w, r, "empresa_requerida", email, empresaID, invitationToken)
+		case errors.Is(err, sql.ErrNoRows):
+			redirectGoogleUsuarioError(w, r, "sin_invitacion", email, empresaID, invitationToken)
+		case strings.Contains(strings.ToLower(err.Error()), "contrato"):
+			redirectGoogleUsuarioError(w, r, "contrato_requerido", email, empresaID, invitationToken)
+		case strings.Contains(strings.ToLower(err.Error()), "pendiente"):
+			redirectGoogleUsuarioError(w, r, "invitacion_pendiente", email, empresaID, invitationToken)
+		default:
+			log.Printf("[usuarios_empresa] google login denied email=%s empresa_id=%d error=%v", redactEmailForLog(email), empresaID, err)
+			redirectGoogleUsuarioError(w, r, "acceso_denegado", email, empresaID, invitationToken)
+		}
+		return
+	}
+	if item == nil {
+		redirectGoogleUsuarioError(w, r, "sin_invitacion", email, empresaID, invitationToken)
+		return
+	}
+	if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+		redirectGoogleUsuarioError(w, r, "usuario_inactivo", email, item.EmpresaID, invitationToken)
+		return
+	}
+
+	if consumeInvitation {
+		acceptContract := googleUsuarioCookieValue(r, googleOAuthUsuarioAcceptContractCookieName) == "1"
+		_, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmpresas, dbSuper, item, acceptContract)
+		if err != nil {
+			log.Printf("[usuarios_empresa] google login contract check failed empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
+			redirectGoogleUsuarioError(w, r, "contrato_error", email, item.EmpresaID, invitationToken)
+			return
+		}
+		if !accepted {
+			redirectGoogleUsuarioError(w, r, "contrato_requerido", email, item.EmpresaID, invitationToken)
+			return
+		}
+	}
+
+	if consumeInvitation {
+		if err := dbpkg.CompleteEmpresaUsuarioInvitationGoogle(dbEmpresas, item.EmpresaID, item.ID); err != nil {
+			log.Printf("[usuarios_empresa] google invitation completion failed empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
+			redirectGoogleUsuarioError(w, r, "invitacion_error", email, item.EmpresaID, invitationToken)
+			return
+		}
+		item.EmailConfirmado = 1
+		item.EmailConfirmadoEn = time.Now().Format("2006-01-02 15:04:05")
+		item.EmailConfirmToken = ""
+		item.EmailConfirmExpira = ""
+	}
+
+	if err := dbpkg.ClearEmpresaUsuarioLoginFailures(dbEmpresas, item.EmpresaID, item.ID); err != nil {
+		log.Printf("[usuarios_empresa] failed to clear failures after google login empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, redactEmailForLog(item.Email), err)
+	}
+	sessionResult, err := createEmpresaUsuarioSession(w, r, dbSuper, item)
+	if err != nil {
+		log.Printf("[usuarios_empresa] failed to create session (google usuario) empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
+		redirectGoogleUsuarioError(w, r, "sesion_error", email, item.EmpresaID, "")
+		return
+	}
+	warmEmpresaPermissionSnapshot(dbEmpresas, dbSuper, item)
+	http.Redirect(w, r, sessionResult.RedirectURL, http.StatusFound)
+}
+
+// ListAdministradoresHandler devuelve JSON con la lista de administradores (super DB)
+func ListAdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+		if err != nil {
+			http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+			return
+		}
+		if !adminCanManageScopedAdministradores(requesterAdmin, principalEmail) {
+			http.Error(w, "administradores fuera del alcance del administrador autenticado", http.StatusForbidden)
+			return
+		}
+		principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
+		admins, err := dbpkg.GetAdministradores(dbSuper)
+		if err != nil {
+			http.Error(w, "failed to query administradores", http.StatusInternalServerError)
+			return
+		}
+		if principalEmail != "" {
+			var filterErr error
+			admins, filterErr = filterAdministradoresForPrincipalScope(dbSuper, principalEmail, admins)
+			if filterErr != nil {
+				http.Error(w, "failed to filter administradores", http.StatusInternalServerError)
+				return
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		encodeJSONResponse(w, admins)
+	}
+}
+
+func adminCanManageScopedAdministradores(requesterAdmin *dbpkg.Admin, principalEmail string) bool {
+	if requesterAdmin == nil {
+		return false
+	}
+	if utils.IsSuperPanelRole(requesterAdmin.Role) {
+		return true
+	}
+	requesterEmail := strings.ToLower(strings.TrimSpace(requesterAdmin.Email))
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	return strings.EqualFold(strings.TrimSpace(requesterAdmin.Role), "administrador") &&
+		requesterEmail != "" &&
+		principalEmail != "" &&
+		requesterEmail == principalEmail
+}
+
+func administradoresRequestUsesPrincipalScope(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	return scope == "principal" || scope == "mis" || scope == "mios" || scope == "invitados"
+}
+
+func administradoresEffectivePrincipalScope(r *http.Request, requesterAdmin *dbpkg.Admin, principalEmail string) string {
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	if principalEmail != "" {
+		return principalEmail
+	}
+	if !administradoresRequestUsesPrincipalScope(r) || requesterAdmin == nil {
+		return ""
+	}
+	requesterEmail := strings.ToLower(strings.TrimSpace(requesterAdmin.Email))
+	if requesterEmail == "" {
+		return ""
+	}
+	return requesterEmail
+}
+
+func filterAdministradoresForPrincipalScope(dbSuper *sql.DB, principalEmail string, admins []dbpkg.Admin) ([]dbpkg.Admin, error) {
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	if principalEmail == "" {
+		return admins, nil
+	}
+	delegationStatusByAdmin := map[string]string{}
+	if dbSuper != nil {
+		delegations, err := dbpkg.ListAdminPrincipalDelegacionesByPrincipal(dbSuper, principalEmail)
+		if err != nil {
+			return nil, err
+		}
+		for _, delegation := range delegations {
+			email := strings.ToLower(strings.TrimSpace(delegation.AdminEmail))
+			if email == "" {
+				continue
+			}
+			delegationStatusByAdmin[email] = adminInvitationStatusFromDelegation(delegation.Estado)
+		}
+	}
+	filtered := make([]dbpkg.Admin, 0, len(admins))
+	for _, admin := range admins {
+		if strings.EqualFold(strings.TrimSpace(admin.Email), principalEmail) {
+			continue
+		}
+		if strings.EqualFold(strings.TrimSpace(admin.UsuarioCreador), principalEmail) {
+			admin.InvitationStatus = adminInvitationStatusFromAdmin(admin)
+			filtered = append(filtered, admin)
+			continue
+		}
+		if status, ok := delegationStatusByAdmin[strings.ToLower(strings.TrimSpace(admin.Email))]; ok {
+			admin.InvitationStatus = status
+			filtered = append(filtered, admin)
+			continue
+		}
+		ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, admin.Email)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			admin.InvitationStatus = adminInvitationStatusFromAdmin(admin)
+			filtered = append(filtered, admin)
+		}
+	}
+	return filtered, nil
+}
+
+func adminInvitationStatusFromAdmin(admin dbpkg.Admin) string {
+	if admin.EmailConfirmado == 1 {
+		return "aceptada"
+	}
+	return "pendiente"
+}
+
+func adminInvitationStatusFromDelegation(estado string) string {
+	switch strings.ToLower(strings.TrimSpace(estado)) {
+	case "activo", "activa", "aceptada":
+		return "aceptada"
+	case "revocada", "rechazada", "expirada":
+		return strings.ToLower(strings.TrimSpace(estado))
+	default:
+		return "pendiente"
+	}
+}
+
+// ListSesionesHandler devuelve JSON con la lista de sesiones (super DB)
+func ListSesionesHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sesiones, err := dbpkg.GetSesiones(dbSuper)
+		if err != nil {
+			http.Error(w, "failed to query sesiones", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		encodeJSONResponse(w, sesiones)
+	}
+}
+
+// AdministradoresHandler maneja CRUD de administradores y activar/desactivar
+func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+				return
+			}
+			if !adminCanManageScopedAdministradores(requesterAdmin, principalEmail) {
+				http.Error(w, "administradores fuera del alcance del administrador autenticado", http.StatusForbidden)
+				return
+			}
+			principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
+			admins, err := dbpkg.GetAdministradores(dbSuper)
+			if err != nil {
+				http.Error(w, "failed to query administradores", http.StatusInternalServerError)
+				return
+			}
+			if principalEmail != "" {
+				var filterErr error
+				admins, filterErr = filterAdministradoresForPrincipalScope(dbSuper, principalEmail, admins)
+				if filterErr != nil {
+					http.Error(w, "failed to filter administradores", http.StatusInternalServerError)
+					return
+				}
+			}
+			w.Header().Set("Content-Type", "application/json")
+			encodeJSONResponse(w, admins)
+			return
+		case http.MethodPost:
+			requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+				return
+			}
+			canManageScoped := adminCanManageScopedAdministradores(requesterAdmin, principalEmail)
+			if !canManageScoped {
+				http.Error(w, "solo el administrador principal puede agregar administradores de su empresa", http.StatusForbidden)
+				return
+			}
+			principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
+			var payload struct{ Email, Name, Role, Photo string }
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			payload.Email = strings.TrimSpace(payload.Email)
+			payload.Name = strings.TrimSpace(payload.Name)
+			payload.Photo = strings.TrimSpace(payload.Photo)
+			payload.Role = strings.ToLower(strings.TrimSpace(payload.Role))
+			if payload.Email == "" {
+				http.Error(w, "email required", http.StatusBadRequest)
+				return
+			}
+			if _, err := mail.ParseAddress(payload.Email); err != nil {
+				http.Error(w, "email invalido", http.StatusBadRequest)
+				return
+			}
+			if principalEmail != "" && strings.EqualFold(strings.TrimSpace(payload.Email), principalEmail) {
+				http.Error(w, "no puedes invitar tu propio correo como administrador delegado", http.StatusBadRequest)
+				return
+			}
+			if payload.Role == "" {
+				payload.Role = "administrador"
+			}
+			if !utils.IsSuperPanelRole(requesterAdmin.Role) || administradoresRequestUsesPrincipalScope(r) {
+				payload.Role = "administrador"
+			}
+			if payload.Role != "administrador" && payload.Role != "super_administrador" && payload.Role != utils.SuperControlRole {
+				http.Error(w, "rol invalido", http.StatusBadRequest)
+				return
+			}
+			if (payload.Role == "super_administrador" || payload.Role == utils.SuperControlRole) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+				http.Error(w, "solo un super administrador puede asignar roles super", http.StatusForbidden)
+				return
+			}
+			var existingAdmin *dbpkg.Admin
+			if existing, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email); err != nil {
+				if err != sql.ErrNoRows {
+					http.Error(w, "failed to validate administrador existente", http.StatusInternalServerError)
+					return
+				}
+			} else if existing != nil && existing.ID > 0 {
+				if existing.EmailConfirmado == 1 {
+					if principalEmail == "" {
+						roleChanged := !strings.EqualFold(strings.TrimSpace(existing.Role), payload.Role)
+						nameForUpdate := strings.TrimSpace(existing.Name)
+						if payload.Name != "" {
+							nameForUpdate = payload.Name
+						}
+						nameChanged := payload.Name != "" && !strings.EqualFold(strings.TrimSpace(existing.Name), payload.Name)
+						if roleChanged || nameChanged {
+							if utils.AdminShouldUseSuperRole(existing.Email) && !utils.AdminShouldUseSuperRole(requesterAdmin.Email) {
+								http.Error(w, "no se permite cambiar el rol del super administrador principal", http.StatusForbidden)
+								return
+							}
+							if utils.IsSuperControlRole(existing.Role) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+								http.Error(w, "solo un super administrador puede cambiar contralores super", http.StatusForbidden)
+								return
+							}
+							if (payload.Role == "super_administrador" || payload.Role == utils.SuperControlRole) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+								http.Error(w, "solo un super administrador puede asignar roles super", http.StatusForbidden)
+								return
+							}
+							if err := dbpkg.UpdateAdministrador(dbSuper, existing.ID, nameForUpdate, payload.Role); err != nil {
+								http.Error(w, "no se pudo actualizar el administrador", http.StatusInternalServerError)
+								return
+							}
+							if roleChanged {
+								if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, existing.Email); err != nil {
+									log.Println("AdministradoresHandler revoke sessions after role change error:", err)
+									http.Error(w, "no se pudo proteger las sesiones del administrador", http.StatusInternalServerError)
+									return
+								}
+								utils.InvalidateAuthCacheForAdmin(existing.Email)
+							}
+						}
+						message := "El administrador ya existe y su cuenta esta confirmada. No se envio una nueva invitacion."
+						if roleChanged {
+							message = "El administrador ya existe y su cuenta esta confirmada. Se actualizo su rol dentro del panel super administrador."
+						} else if nameChanged {
+							message = "El administrador ya existe y su cuenta esta confirmada. Se actualizo su nombre."
+						}
+						resp := map[string]interface{}{
+							"ok":                true,
+							"admin_exists":      true,
+							"already_confirmed": true,
+							"role_changed":      roleChanged,
+							"name_changed":      nameChanged,
+							"message":           message,
+						}
+						w.Header().Set("Content-Type", "application/json")
+						encodeJSONResponse(w, resp)
+						return
+					}
+					if _, err := dbpkg.UpsertAdminPrincipalDelegacionActiva(dbSuper, existing.Email, principalEmail, strings.TrimSpace(requesterAdmin.Email)); err != nil {
+						http.Error(w, "no se pudo compartir el acceso del administrador", http.StatusInternalServerError)
+						return
+					}
+					inviterName := strings.TrimSpace(requesterAdmin.Name)
+					if inviterName == "" {
+						inviterName = strings.TrimSpace(requesterAdmin.Email)
+					}
+					_, mailErr := sendAdminPortfolioDelegatedEmail(r, dbSuper, existing.Email, existing.Name, inviterName)
+					resp := map[string]interface{}{
+						"ok":         true,
+						"email_sent": mailErr == nil,
+						"message":    "El administrador ya estaba registrado. Desde ahora vera sus empresas y tambien las empresas que le compartiste.",
+					}
+					if mailErr != nil {
+						resp["message"] = "El acceso quedo activo, pero no se pudo enviar el aviso por correo."
+					}
+					w.Header().Set("Content-Type", "application/json")
+					encodeJSONResponse(w, resp)
+					return
+				}
+				if principalEmail != "" {
+					ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, existing.Email)
+					if err != nil {
+						http.Error(w, "failed to validate admin scope", http.StatusInternalServerError)
+						return
+					}
+					if !ok {
+						if strings.TrimSpace(existing.UsuarioCreador) != "" || existing.EmailConfirmado == 1 {
+							http.Error(w, "administrador fuera del alcance del administrador autenticado", http.StatusForbidden)
+							return
+						}
+					}
+				}
+				existingAdmin = existing
+			}
+			creatorEmail := ""
+			if principalEmail != "" && !strings.EqualFold(strings.TrimSpace(payload.Email), principalEmail) {
+				creatorEmail = principalEmail
+			}
+			if err := dbpkg.UpsertAdministradorConCreador(dbSuper, payload.Email, payload.Name, payload.Role, payload.Photo, creatorEmail); err != nil {
+				http.Error(w, "no se pudo guardar el administrador", http.StatusInternalServerError)
+				return
+			}
+			token, expira, tokenErr := newEmailConfirmationTokenAndExpiration()
+			if tokenErr != nil {
+				http.Error(w, "failed to generate invitation token", http.StatusInternalServerError)
+				return
+			}
+			if err := dbpkg.SetAdministradorConfirmToken(dbSuper, payload.Email, token, expira); err != nil {
+				http.Error(w, "no se pudo preparar la invitacion", http.StatusInternalServerError)
+				return
+			}
+			inviterName := strings.TrimSpace(requesterAdmin.Name)
+			if inviterName == "" {
+				inviterName = strings.TrimSpace(requesterAdmin.Email)
+			}
+			_, mailErr := sendAdminScopedInvitationEmail(r, dbSuper, payload.Email, payload.Name, inviterName, token)
+			resp := map[string]interface{}{
+				"ok":                true,
+				"email_sent":        mailErr == nil,
+				"invitation_resent": existingAdmin != nil,
+			}
+			if mailErr != nil {
+				resp["message"] = "El administrador quedo pendiente, pero no se pudo enviar la invitacion por correo."
+			} else if existingAdmin != nil {
+				resp["message"] = "Invitacion reenviada. El administrador debe aceptarla y registrarse antes de iniciar sesion."
+			} else {
+				resp["message"] = "Invitacion enviada. El administrador debe aceptarla y registrarse antes de iniciar sesion."
+			}
+			w.Header().Set("Content-Type", "application/json")
+			encodeJSONResponse(w, resp)
+			return
+		case http.MethodPut:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+				return
+			}
+			if !adminCanManageScopedAdministradores(requesterAdmin, principalEmail) {
+				http.Error(w, "administrador fuera del alcance del administrador autenticado", http.StatusForbidden)
+				return
+			}
+			principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
+			targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					http.Error(w, "administrador not found", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "failed to resolve administrador objetivo", http.StatusInternalServerError)
+				return
+			}
+			if requesterAdmin != nil && utils.AdminShouldUseSuperRole(targetAdmin.Email) && !utils.AdminShouldUseSuperRole(requesterAdmin.Email) {
+				http.Error(w, "no se permite cambiar el estado del super administrador principal", http.StatusForbidden)
+				return
+			}
+			if requesterAdmin != nil && utils.IsSuperControlRole(targetAdmin.Role) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+				http.Error(w, "solo un super administrador puede cambiar el estado de contralores super", http.StatusForbidden)
+				return
+			}
+			if principalEmail != "" {
+				if strings.EqualFold(strings.TrimSpace(targetAdmin.Email), principalEmail) {
+					http.Error(w, "no se permite cambiar el estado del administrador principal", http.StatusForbidden)
+					return
+				}
+				ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, targetAdmin.Email)
+				if err != nil {
+					http.Error(w, "failed to validate admin scope", http.StatusInternalServerError)
+					return
+				}
+				if !ok {
+					http.Error(w, "administrador fuera del alcance del administrador autenticado", http.StatusForbidden)
+					return
+				}
+				if !strings.EqualFold(strings.TrimSpace(targetAdmin.UsuarioCreador), principalEmail) {
+					http.Error(w, "este administrador conserva su cuenta propia; usa eliminar para revocar solo el acceso compartido", http.StatusConflict)
+					return
+				}
+			}
+			if q.Get("action") == "activar" {
+				estado := q.Get("estado")
+				if estado == "" {
+					activoStr := q.Get("activo")
+					if activoStr == "1" {
+						estado = "activo"
+					} else {
+						estado = "inactivo"
+					}
+				}
+				if err := dbpkg.SetAdministradorEstado(dbSuper, id, estado); err != nil {
+					http.Error(w, "no se pudo actualizar el estado del administrador", http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			http.Error(w, "no se permite editar administradores ni cambiar roles desde esta API; elimina y crea el registro si corresponde", http.StatusMethodNotAllowed)
+			return
+		case http.MethodDelete:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+				return
+			}
+			if !adminCanManageScopedAdministradores(requesterAdmin, principalEmail) {
+				http.Error(w, "solo el administrador principal puede eliminar administradores de su alcance", http.StatusForbidden)
+				return
+			}
+			principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
+			targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					http.Error(w, "administrador not found", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "failed to resolve administrador objetivo", http.StatusInternalServerError)
+				return
+			}
+			if utils.AdminShouldUseSuperRole(targetAdmin.Email) && !utils.AdminShouldUseSuperRole(requesterAdmin.Email) {
+				http.Error(w, "no se permite eliminar el super administrador principal", http.StatusForbidden)
+				return
+			}
+			if utils.IsSuperControlRole(targetAdmin.Role) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+				http.Error(w, "solo un super administrador puede eliminar contralores super", http.StatusForbidden)
+				return
+			}
+			if principalEmail != "" {
+				if strings.EqualFold(strings.TrimSpace(targetAdmin.Email), principalEmail) {
+					http.Error(w, "no se permite eliminar el administrador principal", http.StatusForbidden)
+					return
+				}
+				ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, targetAdmin.Email)
+				if err != nil {
+					http.Error(w, "failed to validate admin scope", http.StatusInternalServerError)
+					return
+				}
+				if !ok {
+					http.Error(w, "administrador fuera del alcance del administrador autenticado", http.StatusForbidden)
+					return
+				}
+				if !strings.EqualFold(strings.TrimSpace(targetAdmin.UsuarioCreador), principalEmail) {
+					if err := dbpkg.RevokeAdminPrincipalDelegacion(dbSuper, principalEmail, targetAdmin.Email, requesterAdmin.Email); err != nil {
+						http.Error(w, "no se pudo revocar el acceso compartido", http.StatusInternalServerError)
+						return
+					}
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+			}
+			if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, targetAdmin.Email); err != nil {
+				log.Println("AdministradoresHandler revoke sessions before delete error:", err)
+				http.Error(w, "no se pudieron revocar las sesiones del administrador", http.StatusInternalServerError)
+				return
+			}
+			if err := dbpkg.DeleteAdministrador(dbSuper, id); err != nil {
+				http.Error(w, "no se pudo eliminar el administrador", http.StatusInternalServerError)
+				return
+			}
+			utils.InvalidateAuthCacheForAdmin(targetAdmin.Email)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+// TiposEmpresasHandler maneja GET/POST/PUT/DELETE para tipos_de_empresas
+func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			tipos, err := dbpkg.GetTiposEmpresas(dbSuper)
+			if err != nil {
+				http.Error(w, "failed to query tipos_de_empresas", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			encodeJSONResponse(w, tipos)
+			return
+		case http.MethodPost:
+			var payload struct{ Nombre, Observaciones string }
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if payload.Nombre == "" {
+				http.Error(w, "nombre required", http.StatusBadRequest)
+				return
+			}
+			id, err := dbpkg.CreateTipoEmpresa(dbSuper, payload.Nombre, payload.Observaciones)
+			if err != nil {
+				http.Error(w, "no se pudo crear el tipo de empresa", http.StatusInternalServerError)
+				return
+			}
+			preconfig := dbpkg.DefaultTipoEmpresaPreconfiguracion(id, payload.Nombre)
+			preconfig.UsuarioCreador = "sistema.preconfiguracion"
+			preconfigID, preconfigErr := dbpkg.UpsertTipoEmpresaPreconfiguracion(dbSuper, preconfig)
+			if preconfigErr != nil {
+				log.Printf("warning: no se pudo crear preconfiguracion inicial para tipo_empresa_id=%d: %v", id, preconfigErr)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			response := map[string]interface{}{"id": id}
+			if preconfigErr == nil {
+				response["preconfiguracion_id"] = preconfigID
+			} else {
+				response["preconfiguracion_error"] = "No se pudo crear la preconfiguracion inicial."
+			}
+			encodeJSONResponse(w, response)
+			return
+		case http.MethodPut:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			// permitir activar/desactivar vía query param
+			if q.Get("action") == "activar" {
+				estado := q.Get("estado")
+				if estado == "" {
+					// soportar parámetro activo=1/0
+					activoStr := q.Get("activo")
+					if activoStr == "" {
+						http.Error(w, "estado or activo required", http.StatusBadRequest)
+						return
+					}
+					if activoStr == "1" {
+						estado = "activo"
+					} else {
+						estado = "inactivo"
+					}
+				}
+				if err := dbpkg.SetTipoEmpresaActivo(dbSuper, id, estado); err != nil {
+					http.Error(w, "no se pudo actualizar el estado del tipo de empresa", http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			var payloadUpdate struct{ Nombre, Observaciones string }
+			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.UpdateTipoEmpresa(dbSuper, id, payloadUpdate.Nombre, payloadUpdate.Observaciones); err != nil {
+				http.Error(w, "no se pudo actualizar el tipo de empresa", http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case http.MethodDelete:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.DeleteTipoEmpresa(dbSuper, id); err != nil {
+				http.Error(w, "no se pudo eliminar el tipo de empresa", http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}

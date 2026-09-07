@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Guia de Domotica</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/administrar_empresa/tutorial_domotica.css">
+</head>
+<body class="empresa-subpage">
+  <main class="guide-shell">
+    <header class="guide-head">
+      <div>
+        <p class="guide-kicker">Domotica PCS</p>
+		<h1>Tutorial de instalación y equipos</h1>
+		<p class="guide-intro">Instale el programa inicial en cada Raspberry, confirme el túnel seguro y luego conecte cada equipo a una estación y a una salida GPIO. La empresa, estación y Raspberry permanecen aisladas.</p>
+      </div>
+      <a class="btn secondary" href="/administrar_empresa/control_electrico.html">Volver a Domotica</a>
+    </header>
+
+    <section class="guide-grid" aria-label="Antes de empezar">
+      <article class="guide-card"><div class="guide-num">1</div><h2>Raspberry conectada</h2><p>Registra o selecciona la Raspberry de la empresa y confirma que su túnel aparezca como conectado.</p></article>
+      <article class="guide-card"><div class="guide-num">2</div><h2>Estación existente</h2><p>La habitación, mesa o estación debe existir antes de asociarle aparatos.</p></article>
+      <article class="guide-card"><div class="guide-num">3</div><h2>Salida física identificada</h2><p>Verifica el GPIO cableado al canal del relé antes de controlar una carga real.</p></article>
+    </section>
+
+    <section class="guide-card" aria-labelledby="gpioTitle">
+      <h2 id="gpioTitle">Los 40 pines: número físico y número GPIO BCM</h2>
+      <p>PCS usa la numeración <strong>BCM</strong>, no la posición física del conector. Por ejemplo, GPIO2 está en el pin físico 3. Nunca configure como salida los pines de 3,3 V, 5 V o GND.</p>
+      <div class="guide-pin-grid">
+        <figure class="guide-figure">
+          <img src="/img/raspberry-pi-40-pin-bcm.svg" alt="Diagrama exacto de los 40 pines de Raspberry Pi con número físico y GPIO BCM" loading="lazy">
+          <figcaption>Referencia exacta del conector de 40 pines. Los GPIO0 y GPIO1 se reservan normalmente para identificación HAT; evítelos para relés salvo diseño técnico verificado.</figcaption>
+        </figure>
+        <div>
+          <figure class="guide-figure">
+            <img src="/img/raspberry-pi-40-pin-tutorial.png" alt="Vista superior ilustrativa de una Raspberry Pi y su conector GPIO de 40 pines" loading="lazy">
+            <figcaption>Vista orientativa de la placa. Para cablear, use siempre el diagrama BCM numerado.</figcaption>
+          </figure>
+          <h2>Relé por canal</h2>
+          <ol class="guide-example">
+            <li>Anote el cable real: por ejemplo, canal 1 del relé conectado a GPIO2.</li>
+            <li>En PCS asigne <strong>Relé 1 → GPIO2</strong>; canal 2 puede ser GPIO3, y así sucesivamente según su cableado.</li>
+            <li>No suponga que GPIO0 equivale siempre a relé 1: el orden lo determina el cable instalado.</li>
+            <li>Use <strong>Probar GPIO</strong> sin carga crítica para confirmar cada canal y su polaridad.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="guide-card" aria-labelledby="sensorTitle">
+      <h2 id="sensorTitle">GPIO como sensor de entrada</h2>
+      <p>En <strong>Automatizaciones y alarmas</strong> seleccione la Raspberry, el GPIO de entrada, la resistencia pull-up/pull-down y el aparato de salida. La señal puede encender, apagar, encender por un temporizador o activar el aparato solamente durante su programación guardada. Todas las órdenes de encendido pasan por la cola de la empresa.</p>
+    </section>
+
+    <section class="guide-card" aria-label="Pasos para instalar y configurar Domótica">
+	  <article class="guide-step"><div class="guide-num">1</div><div><h2>Registre la Raspberry</h2><p>En <strong>Domótica y Energía Solar &gt; Configuración de domótica &gt; Controladores</strong>, agregue la Raspberry de esta empresa. La IP local es opcional cuando se usa el túnel saliente. Cada placa debe tener su propio registro e instalador.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">2</div><div><h2>Instale el agente: descarga o SSH</h2><p><strong>Método recomendado:</strong> desde el navegador de esa Raspberry pulse <strong>Generar instalador</strong> y ejecute <code>sudo sh ~/Downloads/instalar-pcs-domotica-*.sh</code>. <strong>Método alternativo:</strong> pulse <strong>Instalar por SSH</strong>, confirme la huella del equipo y suministre la credencial. El VPS solo puede usar una IP pública o una red VPN incluida explícitamente en <code>PCS_DOMOTICA_SSH_ALLOWED_CIDRS</code>; una IP LAN sin ruta no es alcanzable. Si decide guardar la credencial, las claves quedan cifradas y no vuelven a mostrarse.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">3</div><div><h2>Confirme conexión y recuperación</h2><p>El túnel HTTPS sale desde la Raspberry al VPS y se reconecta solo ante pérdida de red, Internet o reinicio. Tras reiniciar, PCS recupera únicamente los relés que estaban confirmados encendidos, de uno en uno y con el retardo configurado para la empresa (un segundo de forma predeterminada).</p></div></article>
+	  <article class="guide-step"><div class="guide-num">4</div><div><h2>Identifique cada salida GPIO</h2><p>En la tarjeta de la Raspberry pulse <strong>Probar GPIO</strong>. Cada botón envía un pulso de un segundo y vuelve a apagar la salida; úselo primero sin carga crítica. El pulso usa polaridad <strong>activa-baja</strong>, apropiada para el módulo PCS de 16 relés.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">5</div><div><h2>Agregue el equipo</h2><p>En <strong>Estaciones y aparatos</strong>, seleccione la estación y pulse <strong>Agregar aparato</strong>. Indique nombre, categoría, descripción, potencia nominal en watts y una foto opcional.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">6</div><div><h2>Asigne Raspberry y GPIO</h2><p>Elija la Raspberry y el GPIO BCM que llega al relé. Un GPIO solo puede pertenecer a un aparato activo de esa Raspberry. Verifique también la polaridad: para el módulo PCS de 16 relés normalmente se usa salida <strong>activa-baja</strong>.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">7</div><div><h2>Programe y audite</h2><p>Programe fechas y horas si aplica. El reporte de Domótica permite filtrar consumo por categoría/equipo y la bitácora conserva cada encendido, apagado y prueba técnica.</p></div></article>
+	  <article class="guide-step"><div class="guide-num">8</div><div><h2>Cree escenas</h2><p>En <strong>Automatizaciones</strong> cree una escena para dejar varios aparatos encendidos o apagados con una sola acción, por ejemplo “Cierre del local”. Los encendidos de la escena usan la misma cola eléctrica empresarial.</p></div></article>
+    </section>
+
+    <section class="guide-card" aria-labelledby="victronTitle">
+      <h2 id="victronTitle">Controladora solar Victron por VE.Direct</h2>
+      <p>Conecte el cable VE.Direct a USB en la Raspberry. El agente identifica automáticamente puertos serie válidos a <strong>19200 baudios, 8N1</strong>, valida el checksum de cada bloque y envía por el túnel voltaje de batería y panel, corriente, potencia solar, producción del día, etapa de carga y errores. Consulte <strong>Domótica y Energía Solar &gt; Paneles solares</strong>: el estado aparece verde como <strong>Conectado</strong> cuando hay telemetría reciente y rojo como <strong>Desconectado</strong> cuando deja de recibirse.</p>
+      <p>Una BlueSolar MPPT 75/15 no calcula por sí sola el porcentaje de carga SOC de la batería. PCS mostrará <strong>No disponible</strong>; para SOC real debe añadir un monitor Victron BMV o SmartShunt compatible.</p>
+    </section>
+
+    <aside class="guide-note"><strong>Seguridad eléctrica:</strong> no conecte cargas de red directamente a los pines GPIO. Use módulos de relé adecuados, fuente aislada, protección eléctrica y un instalador calificado para cargas de potencia.</aside>
+    <aside class="guide-note guide-ok"><strong>Comprobación:</strong> una tarjeta verde indica que la orden lógica enviada es encendido; una roja, apagado. Consulte la bitácora si el estado no cambia o la Raspberry está desconectada.</aside>
+    <div class="guide-actions"><a class="btn" href="/administrar_empresa/control_electrico.html?pagina=reles">Configurar equipos</a><a class="btn secondary" href="/administrar_empresa/control_electrico.html?pagina=raspberry">Ver Raspberrys</a></div>
+  </main>
+</body>
+</html>

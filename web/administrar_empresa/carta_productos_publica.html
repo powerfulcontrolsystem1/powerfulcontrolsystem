@@ -1,0 +1,1687 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Carta publica de productos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root {
+      --catalog-ink: var(--text);
+      --catalog-muted: var(--muted);
+      --catalog-line: var(--border);
+      --catalog-bg: var(--bg);
+      --catalog-panel: var(--surface);
+      --catalog-accent: var(--accent-2);
+      --catalog-accent-strong: color-mix(in srgb, var(--accent-2) 72%, var(--text) 28%);
+      --catalog-warn: var(--warning, #f59e0b);
+      --catalog-danger: var(--danger);
+      --catalog-soft: color-mix(in srgb, var(--surface-soft) 86%, var(--accent-2) 14%);
+      --catalog-shadow: 0 16px 34px color-mix(in srgb, #020617 16%, transparent);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--catalog-ink);
+      background: var(--catalog-bg);
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .catalog-admin {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--catalog-line);
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--catalog-accent);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 760px;
+      margin: 10px 0 0;
+      color: var(--catalog-muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border: 1px solid var(--catalog-line);
+      background: var(--catalog-panel);
+      color: var(--catalog-ink);
+      min-height: 40px;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover { border-color: color-mix(in srgb, var(--catalog-accent) 35%, var(--catalog-line)); }
+    .btn.primary {
+      background: var(--catalog-accent);
+      border-color: var(--catalog-accent);
+      color: var(--btn-primary-text, #fff);
+    }
+    .btn.primary:hover { background: var(--catalog-accent-strong); }
+    .btn.danger {
+      color: var(--catalog-danger);
+      border-color: color-mix(in srgb, var(--catalog-danger) 32%, var(--catalog-line));
+      background: color-mix(in srgb, var(--catalog-panel) 88%, var(--catalog-danger) 12%);
+    }
+    .btn.small {
+      min-height: 34px;
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(330px, 0.85fr) minmax(0, 1.35fr);
+      gap: 18px;
+      margin-top: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--catalog-panel);
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      box-shadow: var(--catalog-shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 17px 18px;
+      border-bottom: 1px solid var(--catalog-line);
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .panel-head p {
+      margin: 5px 0 0;
+      color: var(--catalog-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .panel-body { padding: 18px; }
+
+    .form-grid {
+      display: grid;
+      gap: 13px;
+    }
+
+    .two-cols {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 13px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--catalog-ink);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      background: var(--form-input-bg);
+      color: var(--catalog-ink);
+      font: inherit;
+      min-height: 40px;
+      padding: 9px 10px;
+      letter-spacing: 0;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 82px;
+      line-height: 1.45;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: 3px solid color-mix(in srgb, var(--catalog-accent) 18%, transparent);
+      border-color: var(--catalog-accent);
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--catalog-panel) 94%, var(--catalog-accent) 6%);
+    }
+
+    .switch-row input {
+      width: 20px;
+      min-height: 20px;
+    }
+
+    .public-url {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      background: var(--catalog-soft);
+      border: 1px solid color-mix(in srgb, var(--catalog-accent) 34%, var(--catalog-line));
+      border-radius: 8px;
+      color: var(--catalog-ink);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .public-url strong { font-size: 12px; text-transform: uppercase; }
+    .url-line {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .url-line code {
+      flex: 1;
+      min-width: 0;
+      font-size: 12px;
+      white-space: normal;
+    }
+
+    .qr-card {
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      background: var(--catalog-panel);
+      padding: 14px;
+    }
+
+    .qr-preview {
+      display: grid;
+      place-items: center;
+      background: var(--surface-soft);
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .qr-preview canvas {
+      width: min(100%, 240px);
+      height: auto;
+      aspect-ratio: 1;
+      background: #fff;
+      border: 8px solid #fff;
+      border-radius: 8px;
+      box-shadow: 0 10px 22px rgba(20, 33, 61, 0.08);
+    }
+
+    .qr-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .toolbar .search {
+      flex: 1 1 260px;
+      max-width: 460px;
+    }
+
+    .status {
+      min-height: 22px;
+      color: var(--catalog-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .status.error { color: var(--catalog-danger); }
+    .status.ok { color: var(--catalog-accent-strong); }
+
+    .product-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .product-row {
+      display: grid;
+      grid-template-columns: 76px minmax(0, 1fr) auto;
+      gap: 13px;
+      align-items: center;
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--catalog-panel);
+    }
+
+    .thumb {
+      width: 76px;
+      height: 76px;
+      border-radius: 8px;
+      background: var(--surface-soft);
+      border: 1px solid var(--catalog-line);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--catalog-muted);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .product-main h3 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .product-main p {
+      margin: 0;
+      color: var(--catalog-muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 4px 8px;
+      border: 1px solid var(--catalog-line);
+      background: var(--surface-soft);
+      color: var(--catalog-muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pill.active {
+      border-color: color-mix(in srgb, var(--catalog-accent) 40%, var(--catalog-line));
+      background: var(--catalog-soft);
+      color: var(--catalog-accent-strong);
+    }
+
+    .pill.inactive {
+      border-color: color-mix(in srgb, var(--catalog-warn) 42%, var(--catalog-line));
+      background: color-mix(in srgb, var(--catalog-panel) 86%, var(--catalog-warn) 14%);
+      color: var(--catalog-warn);
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      min-width: 210px;
+    }
+
+    .price {
+      font-weight: 900;
+      color: var(--catalog-ink);
+      font-size: 15px;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 160px;
+      text-align: center;
+      color: var(--catalog-muted);
+      border: 1px dashed var(--catalog-line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 18px;
+    }
+
+    .image-upload {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--catalog-panel) 94%, var(--catalog-accent) 6%);
+      padding: 12px;
+    }
+
+    .image-preview {
+      width: 96px;
+      height: 72px;
+      border: 1px solid var(--catalog-line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--catalog-muted);
+      font-weight: 900;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .image-preview.profile { height: 96px; }
+
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .image-controls {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .image-controls input[type="file"] {
+      padding: 7px;
+    }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .page-head { flex-direction: column; }
+      .actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 720px) {
+      .catalog-admin { padding: 14px; }
+      .two-cols { grid-template-columns: 1fr; }
+      .product-row {
+        grid-template-columns: 64px minmax(0, 1fr);
+      }
+      .thumb {
+        width: 64px;
+        height: 64px;
+      }
+      .row-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        min-width: 0;
+      }
+      .image-upload { grid-template-columns: 1fr; }
+      .url-line { flex-direction: column; align-items: stretch; }
+      .qr-actions { grid-template-columns: 1fr; }
+    }
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body>
+  <main class="catalog-admin">
+    <section class="page-head">
+      <div>
+        <p class="eyebrow">Administrar empresa / Productos</p>
+        <h1>Carta publica de productos</h1>
+        <p class="lead">Publica una carta externa de solo lectura con productos, precios y fotos. El cliente ve la informacion; no hay carrito, pedidos ni pagos en esta pagina.</p>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" id="btnRefresh">Actualizar</button>
+        <button class="btn primary" type="button" id="btnPreview">Visualizar carta publica</button>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Configuracion</h2>
+            <p>Define el enlace publico, el perfil visual y la seccion principal de la carta.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="form-grid">
+            <div class="public-url">
+              <strong>Enlace publico</strong>
+              <div class="url-line">
+                <code id="publicUrl">Cargando enlace...</code>
+                <button class="btn small" type="button" id="btnCopyUrl">Copiar</button>
+              </div>
+            </div>
+
+            <div class="qr-card">
+              <div>
+                <strong>QR para imprimir</strong>
+                <p class="status">Genera el codigo de la direccion publica de la carta y exportalo para avisos, mesas, recepcion o material impreso.</p>
+              </div>
+              <div class="qr-preview">
+                <canvas id="qrCanvas" width="320" height="320" aria-label="QR de la carta publica"></canvas>
+              </div>
+              <div class="two-cols">
+                <label>Tamano de exportacion
+                  <select id="qrExportSize">
+                    <option value="512">512 px</option>
+                    <option value="1024" selected>1024 px</option>
+                    <option value="2048">2048 px</option>
+                  </select>
+                </label>
+                <label>Nombre del archivo
+                  <input id="qrFileName" maxlength="80" placeholder="qr-carta-productos">
+                </label>
+              </div>
+              <div class="qr-actions">
+                <button class="btn small" type="button" id="btnDownloadQrPng">Descargar PNG</button>
+                <button class="btn small" type="button" id="btnDownloadQrSvg">Descargar SVG</button>
+                <button class="btn small" type="button" id="btnDownloadQrPdf">Descargar PDF</button>
+                <button class="btn small" type="button" id="btnPrintQr">Imprimir QR</button>
+              </div>
+              <div class="status" id="qrStatus"></div>
+            </div>
+
+            <div class="two-cols">
+              <label>Slug o subdominio
+                <input id="empresaSlug" maxlength="90" placeholder="mi-empresa">
+              </label>
+              <label>Moneda
+                <input id="moneda" maxlength="8" placeholder="COP">
+              </label>
+            </div>
+
+            <label>Nombre visible
+              <input id="nombreTienda" maxlength="160" placeholder="Carta de productos">
+            </label>
+
+            <label>Descripcion publica
+              <textarea id="descripcionTienda" maxlength="600" placeholder="Texto corto que acompana la carta publica."></textarea>
+            </label>
+
+            <div class="image-upload">
+              <div class="image-preview profile" id="perfilPreview">Perfil</div>
+              <div class="image-controls">
+                <label>Foto de perfil de la carta
+                  <input id="perfilUpload" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+                </label>
+                <button class="btn small" type="button" id="btnUploadPerfil">Subir perfil</button>
+                <label>URL de perfil
+                  <input id="logoUrl" placeholder="/uploads/empresas/.../perfil.jpg">
+                </label>
+                <div class="status" id="perfilStatus"></div>
+              </div>
+            </div>
+
+            <div class="image-upload">
+              <div class="image-preview" id="portadaPreview">Portada</div>
+              <div class="image-controls">
+                <label>Foto de portada de la carta
+                  <input id="portadaUpload" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+                </label>
+                <button class="btn small" type="button" id="btnUploadPortada">Subir portada</button>
+                <label>URL de portada
+                  <input id="bannerUrl" placeholder="/uploads/empresas/.../portada.jpg">
+                </label>
+                <div class="status" id="portadaStatus"></div>
+              </div>
+            </div>
+
+            <div class="two-cols">
+              <label>Color principal
+                <input id="colorPrimario" type="color" value="#0f766e">
+              </label>
+              <label>Dominio publico opcional
+                <input id="dominioPublico" placeholder="productos.midominio.com">
+              </label>
+            </div>
+
+            <label class="switch-row">
+              <span>Mostrar existencias publicadas</span>
+              <input id="mostrarStock" type="checkbox" checked>
+            </label>
+
+            <label class="switch-row">
+              <span>Mostrar formulario de contacto en la carta publica</span>
+              <input id="contactoFormularioActivo" type="checkbox" checked>
+            </label>
+
+            <label class="switch-row">
+              <span>Mostrar icono flotante de WhatsApp</span>
+              <input id="whatsappFlotanteActivo" type="checkbox">
+            </label>
+
+            <label>WhatsApp publico de la empresa
+              <input id="whatsappNumero" maxlength="32" placeholder="573001112233">
+            </label>
+
+            <hr>
+
+            <div class="two-cols">
+              <label>Slug de seccion
+                <input id="paginaSlug" maxlength="90" placeholder="productos">
+              </label>
+              <label>Nombre de seccion
+                <input id="paginaNombre" maxlength="150" placeholder="Productos">
+              </label>
+            </div>
+
+            <label>Descripcion de seccion
+              <textarea id="paginaDescripcion" maxlength="500" placeholder="Agrupa los productos que quieres mostrar en la carta."></textarea>
+            </label>
+
+            <button class="btn primary" type="button" id="btnSaveConfig">Guardar configuracion</button>
+            <div class="status" id="configStatus"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Productos publicados</h2>
+            <p>Selecciona productos del inventario, actualiza su precio publico u ocultalos sin borrar el producto original.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="toolbar">
+            <input class="search" id="searchProducts" placeholder="Buscar por nombre, SKU o categoria">
+            <select id="filterState" aria-label="Filtro de publicacion">
+              <option value="todos">Todos</option>
+              <option value="publicados">Publicados</option>
+              <option value="pendientes">Sin publicar</option>
+              <option value="ocultos">Ocultos</option>
+            </select>
+          </div>
+          <div class="status" id="listStatus"></div>
+          <div class="product-list" id="productList"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function() {
+      const state = {
+        empresaId: 0,
+        config: null,
+        pages: [],
+        items: [],
+        products: [],
+        activePage: null,
+        publicUrl: ''
+      };
+
+      const els = {
+        publicUrl: document.getElementById('publicUrl'),
+        empresaSlug: document.getElementById('empresaSlug'),
+        moneda: document.getElementById('moneda'),
+        nombreTienda: document.getElementById('nombreTienda'),
+        descripcionTienda: document.getElementById('descripcionTienda'),
+        logoUrl: document.getElementById('logoUrl'),
+        bannerUrl: document.getElementById('bannerUrl'),
+        perfilUpload: document.getElementById('perfilUpload'),
+        portadaUpload: document.getElementById('portadaUpload'),
+        btnUploadPerfil: document.getElementById('btnUploadPerfil'),
+        btnUploadPortada: document.getElementById('btnUploadPortada'),
+        perfilPreview: document.getElementById('perfilPreview'),
+        portadaPreview: document.getElementById('portadaPreview'),
+        perfilStatus: document.getElementById('perfilStatus'),
+        portadaStatus: document.getElementById('portadaStatus'),
+        colorPrimario: document.getElementById('colorPrimario'),
+        dominioPublico: document.getElementById('dominioPublico'),
+        mostrarStock: document.getElementById('mostrarStock'),
+        contactoFormularioActivo: document.getElementById('contactoFormularioActivo'),
+        whatsappFlotanteActivo: document.getElementById('whatsappFlotanteActivo'),
+        whatsappNumero: document.getElementById('whatsappNumero'),
+        paginaSlug: document.getElementById('paginaSlug'),
+        paginaNombre: document.getElementById('paginaNombre'),
+        paginaDescripcion: document.getElementById('paginaDescripcion'),
+        configStatus: document.getElementById('configStatus'),
+        listStatus: document.getElementById('listStatus'),
+        productList: document.getElementById('productList'),
+        searchProducts: document.getElementById('searchProducts'),
+        filterState: document.getElementById('filterState'),
+        qrCanvas: document.getElementById('qrCanvas'),
+        qrStatus: document.getElementById('qrStatus'),
+        qrExportSize: document.getElementById('qrExportSize'),
+        qrFileName: document.getElementById('qrFileName')
+      };
+
+      const qrState = { matrix: null, url: '' };
+
+      function parsePositiveInt(raw) {
+        const n = Number(String(raw || '').trim());
+        if (!Number.isFinite(n)) return 0;
+        const v = Math.trunc(n);
+        return v > 0 ? v : 0;
+      }
+
+      function resolveEmpresaId() {
+        try {
+          const params = new URLSearchParams(window.location.search || '');
+          const own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+          if (own > 0) return own;
+        } catch (_) {}
+        try {
+          let ctx = window.parent;
+          let depth = 0;
+          while (ctx && ctx !== window && depth < 4) {
+            try {
+              if (typeof ctx.__resolveEmpresaIdContext === 'function') {
+                const resolved = parsePositiveInt(ctx.__resolveEmpresaIdContext());
+                if (resolved > 0) return resolved;
+              }
+            } catch (_) {}
+            try {
+              const parentParams = new URLSearchParams(ctx.location.search || '');
+              const fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
+              if (fromParent > 0) return fromParent;
+            } catch (_) {}
+            try {
+              if (!ctx.parent || ctx.parent === ctx) break;
+              ctx = ctx.parent;
+            } catch (_) {
+              break;
+            }
+            depth += 1;
+          }
+        } catch (_) {}
+        try {
+          const candidates = [
+            sessionStorage.getItem('active_empresa_id'),
+            sessionStorage.getItem('empresa_id'),
+            localStorage.getItem('active_empresa_id'),
+            localStorage.getItem('empresa_id')
+          ];
+          for (const candidate of candidates) {
+            const parsed = parsePositiveInt(candidate);
+            if (parsed > 0) return parsed;
+          }
+        } catch (_) {}
+        return 0;
+      }
+
+      function setStatus(el, message, type) {
+        el.textContent = message || '';
+        el.className = 'status' + (type ? ' ' + type : '');
+      }
+
+      function setImagePreview(el, url, label) {
+        if (!el) return;
+        const clean = String(url || '').trim();
+        if (clean) {
+          el.innerHTML = '<img src="' + escapeHtml(clean) + '" alt="">';
+        } else {
+          el.textContent = label || 'Imagen';
+        }
+      }
+
+      function promptDownloadPreviousAsset(url, label) {
+        const clean = String(url || '').trim();
+        if (!clean) return;
+        const shouldDownload = confirm('Este registro ya tiene ' + (label || 'un archivo') + ' cargado. Al subir uno nuevo, el anterior se eliminara del sistema. Deseas descargar el archivo anterior antes de reemplazarlo?');
+        if (!shouldDownload) return;
+        const a = document.createElement('a');
+        a.href = clean;
+        a.download = '';
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 600);
+      }
+
+      function qrSafeFileName(ext) {
+        const base = slugify(els.qrFileName.value || els.nombreTienda.value || 'qr-carta-productos');
+        return (base || 'qr-carta-productos') + '.' + ext;
+      }
+
+      function qrEscapeXml(value) {
+        return String(value || '').replace(/[&<>"']/g, function(ch) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[ch];
+        });
+      }
+
+      function qrEscapePdf(value) {
+        return String(value || '').replace(/[\\()]/g, '\\$&').replace(/\r?\n/g, ' ');
+      }
+
+      function createQrMatrix(text) {
+        const bytes = Array.from(new TextEncoder().encode(String(text || '')));
+        const levels = [
+          { version: 1, size: 21, data: 19, ec: 7, blocks: 1, capacity: 17, align: [] },
+          { version: 2, size: 25, data: 34, ec: 10, blocks: 1, capacity: 32, align: [6, 18] },
+          { version: 3, size: 29, data: 55, ec: 15, blocks: 1, capacity: 53, align: [6, 22] },
+          { version: 4, size: 33, data: 80, ec: 20, blocks: 1, capacity: 78, align: [6, 26] },
+          { version: 5, size: 37, data: 108, ec: 26, blocks: 1, capacity: 106, align: [6, 30] },
+          { version: 6, size: 41, data: 136, ec: 18, blocks: 2, capacity: 134, align: [6, 34] },
+          { version: 7, size: 45, data: 156, ec: 20, blocks: 2, capacity: 154, align: [6, 22, 38] },
+          { version: 8, size: 49, data: 194, ec: 24, blocks: 2, capacity: 192, align: [6, 24, 42] },
+          { version: 9, size: 53, data: 232, ec: 30, blocks: 2, capacity: 230, align: [6, 26, 46] }
+        ];
+        const spec = levels.find(item => bytes.length <= item.capacity);
+        if (!spec) {
+          throw new Error('El enlace es demasiado largo para un QR local. Usa un dominio o slug mas corto.');
+        }
+
+        const bits = [];
+        const appendBits = (value, length) => {
+          for (let i = length - 1; i >= 0; i -= 1) bits.push((value >>> i) & 1);
+        };
+        appendBits(4, 4);
+        appendBits(bytes.length, 8);
+        bytes.forEach(byte => appendBits(byte, 8));
+        const maxBits = spec.data * 8;
+        appendBits(0, Math.min(4, maxBits - bits.length));
+        while (bits.length % 8) bits.push(0);
+        const data = [];
+        for (let i = 0; i < bits.length; i += 8) {
+          data.push(bits.slice(i, i + 8).reduce((acc, bit) => (acc << 1) | bit, 0));
+        }
+        for (let pad = 0; data.length < spec.data; pad += 1) {
+          data.push(pad % 2 === 0 ? 0xec : 0x11);
+        }
+
+        const gf = (() => {
+          const exp = new Array(512).fill(0);
+          const log = new Array(256).fill(0);
+          let x = 1;
+          for (let i = 0; i < 255; i += 1) {
+            exp[i] = x;
+            log[x] = i;
+            x <<= 1;
+            if (x & 0x100) x ^= 0x11d;
+          }
+          for (let i = 255; i < 512; i += 1) exp[i] = exp[i - 255];
+          return {
+            mul(a, b) {
+              if (!a || !b) return 0;
+              return exp[log[a] + log[b]];
+            },
+            exp
+          };
+        })();
+
+        function rsGenerator(degree) {
+          let gen = [1];
+          for (let i = 0; i < degree; i += 1) {
+            const next = new Array(gen.length + 1).fill(0);
+            for (let j = 0; j < gen.length; j += 1) {
+              next[j] ^= gen[j];
+              next[j + 1] ^= gf.mul(gen[j], gf.exp[i]);
+            }
+            gen = next;
+          }
+          return gen;
+        }
+
+        function rsRemainder(block, degree) {
+          const gen = rsGenerator(degree);
+          const rem = new Array(degree).fill(0);
+          block.forEach(byte => {
+            const factor = byte ^ rem.shift();
+            rem.push(0);
+            for (let i = 0; i < degree; i += 1) {
+              rem[i] ^= gf.mul(gen[i + 1], factor);
+            }
+          });
+          return rem;
+        }
+
+        const blockSize = spec.data / spec.blocks;
+        const blocks = [];
+        for (let i = 0; i < spec.blocks; i += 1) {
+          const chunk = data.slice(i * blockSize, (i + 1) * blockSize);
+          blocks.push({ data: chunk, ec: rsRemainder(chunk, spec.ec) });
+        }
+        const codewords = [];
+        for (let i = 0; i < blockSize; i += 1) blocks.forEach(block => codewords.push(block.data[i]));
+        for (let i = 0; i < spec.ec; i += 1) blocks.forEach(block => codewords.push(block.ec[i]));
+
+        function makeBase() {
+          const matrix = Array.from({ length: spec.size }, () => new Array(spec.size).fill(false));
+          const reserved = Array.from({ length: spec.size }, () => new Array(spec.size).fill(false));
+          const set = (x, y, value, reserve) => {
+            if (x < 0 || y < 0 || x >= spec.size || y >= spec.size) return;
+            matrix[y][x] = !!value;
+            if (reserve) reserved[y][x] = true;
+          };
+          const reserve = (x, y) => {
+            if (x >= 0 && y >= 0 && x < spec.size && y < spec.size) reserved[y][x] = true;
+          };
+          const finder = (x, y) => {
+            for (let dy = -1; dy <= 7; dy += 1) {
+              for (let dx = -1; dx <= 7; dx += 1) {
+                const xx = x + dx;
+                const yy = y + dy;
+                if (xx < 0 || yy < 0 || xx >= spec.size || yy >= spec.size) continue;
+                const inCore = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6;
+                const black = inCore && (dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4));
+                set(xx, yy, black, true);
+              }
+            }
+          };
+          finder(0, 0);
+          finder(spec.size - 7, 0);
+          finder(0, spec.size - 7);
+          for (let i = 8; i < spec.size - 8; i += 1) {
+            set(i, 6, i % 2 === 0, true);
+            set(6, i, i % 2 === 0, true);
+          }
+          spec.align.forEach(ax => {
+            spec.align.forEach(ay => {
+              if ((ax < 9 && ay < 9) || (ax > spec.size - 9 && ay < 9) || (ax < 9 && ay > spec.size - 9)) return;
+              for (let dy = -2; dy <= 2; dy += 1) {
+                for (let dx = -2; dx <= 2; dx += 1) {
+                  const d = Math.max(Math.abs(dx), Math.abs(dy));
+                  set(ax + dx, ay + dy, d !== 1, true);
+                }
+              }
+            });
+          });
+          set(8, spec.size - 8, true, true);
+          for (let i = 0; i < 9; i += 1) {
+            reserve(8, i);
+            reserve(i, 8);
+            reserve(spec.size - 1 - i, 8);
+            reserve(8, spec.size - 1 - i);
+          }
+          return { matrix, reserved };
+        }
+
+        const masks = [
+          (x, y) => (x + y) % 2 === 0,
+          (x, y) => y % 2 === 0,
+          (x) => x % 3 === 0,
+          (x, y) => (x + y) % 3 === 0,
+          (x, y) => (Math.floor(y / 2) + Math.floor(x / 3)) % 2 === 0,
+          (x, y) => ((x * y) % 2 + (x * y) % 3) === 0,
+          (x, y) => (((x * y) % 2 + (x * y) % 3) % 2) === 0,
+          (x, y) => (((x + y) % 2 + (x * y) % 3) % 2) === 0
+        ];
+
+        function placeData(base, maskIndex) {
+          const matrix = base.matrix.map(row => row.slice());
+          const reserved = base.reserved;
+          const allBits = [];
+          codewords.forEach(byte => appendByteBits(allBits, byte));
+          let bitIndex = 0;
+          let upward = true;
+          for (let right = spec.size - 1; right >= 1; right -= 2) {
+            if (right === 6) right -= 1;
+            for (let vert = 0; vert < spec.size; vert += 1) {
+              const y = upward ? spec.size - 1 - vert : vert;
+              for (let dx = 0; dx < 2; dx += 1) {
+                const x = right - dx;
+                if (reserved[y][x]) continue;
+                const bit = bitIndex < allBits.length ? allBits[bitIndex] === 1 : false;
+                matrix[y][x] = masks[maskIndex](x, y) ? !bit : bit;
+                bitIndex += 1;
+              }
+            }
+            upward = !upward;
+          }
+          writeFormat(matrix, maskIndex);
+          return matrix;
+        }
+
+        function appendByteBits(target, byte) {
+          for (let i = 7; i >= 0; i -= 1) target.push((byte >>> i) & 1);
+        }
+
+        function writeFormat(matrix, maskIndex) {
+          const bits = formatBits(maskIndex);
+          const bit = i => ((bits >>> i) & 1) === 1;
+          for (let i = 0; i <= 5; i += 1) matrix[8][i] = bit(i);
+          matrix[8][7] = bit(6);
+          matrix[8][8] = bit(7);
+          matrix[7][8] = bit(8);
+          for (let i = 9; i < 15; i += 1) matrix[14 - i][8] = bit(i);
+          for (let i = 0; i < 8; i += 1) matrix[spec.size - 1 - i][8] = bit(i);
+          for (let i = 8; i < 15; i += 1) matrix[8][spec.size - 15 + i] = bit(i);
+        }
+
+        function formatBits(maskIndex) {
+          const dataBits = (1 << 3) | maskIndex;
+          let rem = dataBits << 10;
+          for (let i = 14; i >= 10; i -= 1) {
+            if (((rem >>> i) & 1) !== 0) rem ^= 0x537 << (i - 10);
+          }
+          return ((dataBits << 10) | rem) ^ 0x5412;
+        }
+
+        function penalty(matrix) {
+          let score = 0;
+          const n = matrix.length;
+          for (let y = 0; y < n; y += 1) {
+            let runColor = matrix[y][0];
+            let run = 1;
+            for (let x = 1; x < n; x += 1) {
+              if (matrix[y][x] === runColor) {
+                run += 1;
+              } else {
+                if (run >= 5) score += 3 + run - 5;
+                runColor = matrix[y][x];
+                run = 1;
+              }
+            }
+            if (run >= 5) score += 3 + run - 5;
+          }
+          for (let x = 0; x < n; x += 1) {
+            let runColor = matrix[0][x];
+            let run = 1;
+            for (let y = 1; y < n; y += 1) {
+              if (matrix[y][x] === runColor) {
+                run += 1;
+              } else {
+                if (run >= 5) score += 3 + run - 5;
+                runColor = matrix[y][x];
+                run = 1;
+              }
+            }
+            if (run >= 5) score += 3 + run - 5;
+          }
+          for (let y = 0; y < n - 1; y += 1) {
+            for (let x = 0; x < n - 1; x += 1) {
+              const color = matrix[y][x];
+              if (matrix[y][x + 1] === color && matrix[y + 1][x] === color && matrix[y + 1][x + 1] === color) score += 3;
+            }
+          }
+          let dark = 0;
+          for (let y = 0; y < n; y += 1) for (let x = 0; x < n; x += 1) if (matrix[y][x]) dark += 1;
+          score += Math.floor(Math.abs((dark * 20 / (n * n)) - 10)) * 10;
+          return score;
+        }
+
+        const base = makeBase();
+        let best = null;
+        let bestScore = Infinity;
+        for (let mask = 0; mask < 8; mask += 1) {
+          const candidate = placeData(base, mask);
+          const score = penalty(candidate);
+          if (score < bestScore) {
+            best = candidate;
+            bestScore = score;
+          }
+        }
+        return best;
+      }
+
+      function drawQrCanvas(matrix, canvas, size) {
+        if (!matrix || !canvas) return;
+        const n = matrix.length;
+        const margin = 4;
+        const modules = n + margin * 2;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        const cell = size / modules;
+        ctx.fillStyle = '#14213d';
+        for (let y = 0; y < n; y += 1) {
+          for (let x = 0; x < n; x += 1) {
+            if (matrix[y][x]) ctx.fillRect(Math.round((x + margin) * cell), Math.round((y + margin) * cell), Math.ceil(cell), Math.ceil(cell));
+          }
+        }
+      }
+
+      function buildQrSvg(matrix, size, label, url) {
+        const n = matrix.length;
+        const margin = 4;
+        const modules = n + margin * 2;
+        const cell = size / modules;
+        const rects = [];
+        for (let y = 0; y < n; y += 1) {
+          for (let x = 0; x < n; x += 1) {
+            if (matrix[y][x]) {
+              rects.push('<rect x="' + ((x + margin) * cell).toFixed(3) + '" y="' + ((y + margin) * cell).toFixed(3) + '" width="' + cell.toFixed(3) + '" height="' + cell.toFixed(3) + '"/>');
+            }
+          }
+        }
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + (size + 96) + '" viewBox="0 0 ' + size + ' ' + (size + 96) + '" role="img" aria-label="QR de la carta publica">' +
+          '<rect width="100%" height="100%" fill="#ffffff"/>' +
+          '<g fill="#14213d">' + rects.join('') + '</g>' +
+          '<text x="' + (size / 2) + '" y="' + (size + 34) + '" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#14213d">' + qrEscapeXml(label || 'Carta publica') + '</text>' +
+          '<text x="' + (size / 2) + '" y="' + (size + 68) + '" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#607086">' + qrEscapeXml(url || '') + '</text>' +
+          '</svg>';
+      }
+
+      function buildQrPdf(matrix, label, url) {
+        const pageW = 612;
+        const pageH = 792;
+        const qrSize = 390;
+        const x0 = (pageW - qrSize) / 2;
+        const y0 = 292;
+        const n = matrix.length;
+        const margin = 4;
+        const cell = qrSize / (n + margin * 2);
+        const ops = ['1 1 1 rg 0 0 ' + pageW + ' ' + pageH + ' re f', '0.078 0.129 0.239 rg'];
+        for (let y = 0; y < n; y += 1) {
+          for (let x = 0; x < n; x += 1) {
+            if (!matrix[y][x]) continue;
+            const px = x0 + (x + margin) * cell;
+            const py = y0 + qrSize - (y + margin + 1) * cell;
+            ops.push(px.toFixed(3) + ' ' + py.toFixed(3) + ' ' + cell.toFixed(3) + ' ' + cell.toFixed(3) + ' re f');
+          }
+        }
+        ops.push('BT /F1 22 Tf 0.078 0.129 0.239 rg 72 238 Td (' + qrEscapePdf(label || 'Carta publica') + ') Tj ET');
+        ops.push('BT /F1 10 Tf 0.376 0.439 0.525 rg 72 218 Td (' + qrEscapePdf(url || '') + ') Tj ET');
+        const stream = ops.join('\n');
+        const objects = [
+          '1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj',
+          '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj',
+          '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + pageW + ' ' + pageH + '] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj',
+          '4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj',
+          '5 0 obj << /Length ' + stream.length + ' >> stream\n' + stream + '\nendstream endobj'
+        ];
+        let pdf = '%PDF-1.4\n';
+        const offsets = [0];
+        objects.forEach(obj => {
+          offsets.push(pdf.length);
+          pdf += obj + '\n';
+        });
+        const xref = pdf.length;
+        pdf += 'xref\n0 ' + (objects.length + 1) + '\n0000000000 65535 f \n';
+        for (let i = 1; i < offsets.length; i += 1) {
+          pdf += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+        }
+        pdf += 'trailer << /Size ' + (objects.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF';
+        return new Blob([pdf], { type: 'application/pdf' });
+      }
+
+      function refreshQr() {
+        if (!state.publicUrl) return;
+        try {
+          qrState.url = state.publicUrl;
+          qrState.matrix = createQrMatrix(state.publicUrl);
+          drawQrCanvas(qrState.matrix, els.qrCanvas, 320);
+          if (!els.qrFileName.value.trim()) els.qrFileName.value = 'qr-' + slugify(els.empresaSlug.value || els.nombreTienda.value || 'carta-productos');
+          setStatus(els.qrStatus, 'QR generado para el enlace publico actual.', 'ok');
+        } catch (err) {
+          qrState.matrix = null;
+          setStatus(els.qrStatus, err.message || 'No se pudo generar el QR.', 'error');
+        }
+      }
+
+      function requireQrMatrix() {
+        buildPublicUrl();
+        if (!qrState.matrix) throw new Error('Genera un enlace publico valido antes de exportar el QR.');
+        return qrState.matrix;
+      }
+
+      function slugify(value) {
+        return String(value || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .slice(0, 90) || 'productos';
+      }
+
+      function money(value, moneda) {
+        const amount = Number(value || 0);
+        const currency = String(moneda || state.config?.moneda || 'COP').trim() || 'COP';
+        try {
+          return new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency,
+            maximumFractionDigits: currency === 'COP' ? 0 : 2
+          }).format(amount);
+        } catch (_) {
+          return currency + ' ' + amount.toLocaleString('es-CO');
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, function(ch) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+        });
+      }
+
+      async function api(path, options) {
+        const res = await fetch(path, Object.assign({
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' }
+        }, options || {}));
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(text || ('HTTP ' + res.status));
+        }
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) return null;
+        return res.json();
+      }
+
+      function empresaQS(extra) {
+        const params = new URLSearchParams(extra || {});
+        params.set('empresa_id', String(state.empresaId));
+        params.set('perm_page', 'linkCartaProductosPublica');
+        return params.toString();
+      }
+
+      function pickActivePage() {
+        const activePages = state.pages.filter(p => String(p.estado || 'activo').toLowerCase() === 'activo');
+        const configured = activePages.find(p => slugify(p.slug) === slugify(els.paginaSlug.value));
+        state.activePage = configured || activePages[0] || state.pages[0] || null;
+        if (state.activePage) {
+          els.paginaSlug.value = state.activePage.slug || 'productos';
+          els.paginaNombre.value = state.activePage.nombre || 'Productos';
+          els.paginaDescripcion.value = state.activePage.descripcion || '';
+        }
+      }
+
+      function buildPublicUrl() {
+        const slug = slugify(els.empresaSlug.value || state.config?.empresa_slug || 'empresa');
+        const domain = String(els.dominioPublico.value || '').trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+        let url;
+        if (domain) {
+          url = 'https://' + domain + '/visualizar_productos_y_precios_publico.html?empresa_slug=' + encodeURIComponent(slug);
+        } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          url = window.location.origin + '/visualizar_productos_y_precios_publico.html?empresa_slug=' + encodeURIComponent(slug);
+        } else {
+          const host = window.location.host;
+          const parts = window.location.hostname.split('.');
+          if (parts.length >= 2) {
+            const base = parts.slice(-2).join('.');
+            const port = window.location.port ? ':' + window.location.port : '';
+            url = window.location.protocol + '//' + slug + '.' + base + port + '/visualizar_productos_y_precios_publico.html';
+          } else {
+            url = window.location.origin + '/' + slug + '/visualizar_productos_y_precios_publico.html';
+          }
+          if (host.indexOf('localhost') >= 0) {
+            url = window.location.origin + '/visualizar_productos_y_precios_publico.html?empresa_slug=' + encodeURIComponent(slug);
+          }
+        }
+        state.publicUrl = url;
+        els.publicUrl.textContent = url;
+        refreshQr();
+      }
+
+      function fillConfig() {
+        const cfg = state.config || {};
+        els.empresaSlug.value = cfg.empresa_slug || '';
+        els.moneda.value = cfg.moneda || 'COP';
+        els.nombreTienda.value = cfg.nombre_tienda || 'Carta de productos';
+        els.descripcionTienda.value = cfg.descripcion_tienda || '';
+        els.logoUrl.value = cfg.logo_url || '';
+        els.bannerUrl.value = cfg.banner_url || '';
+        setImagePreview(els.perfilPreview, els.logoUrl.value, 'Perfil');
+        setImagePreview(els.portadaPreview, els.bannerUrl.value, 'Portada');
+        els.colorPrimario.value = /^#[0-9a-f]{6}$/i.test(cfg.color_primario || '') ? cfg.color_primario : '#0f766e';
+        els.dominioPublico.value = cfg.dominio_publico || '';
+        els.mostrarStock.checked = cfg.mostrar_stock !== false;
+        els.contactoFormularioActivo.checked = cfg.contacto_formulario_activo !== false;
+        els.whatsappFlotanteActivo.checked = !!cfg.whatsapp_flotante_activo;
+        els.whatsappNumero.value = cfg.whatsapp_numero || '';
+        if (!els.paginaSlug.value) els.paginaSlug.value = 'productos';
+        if (!els.paginaNombre.value) els.paginaNombre.value = 'Productos';
+        buildPublicUrl();
+      }
+
+      function buildConfigPayload() {
+        const current = state.config || {};
+        const slug = slugify(els.empresaSlug.value || els.nombreTienda.value || 'empresa');
+        return {
+          empresa_id: state.empresaId,
+          empresa_slug: slug,
+          nombre_tienda: els.nombreTienda.value.trim() || 'Carta de productos',
+          descripcion_tienda: els.descripcionTienda.value.trim(),
+          logo_url: els.logoUrl.value.trim(),
+          banner_url: els.bannerUrl.value.trim(),
+          color_primario: els.colorPrimario.value || '#0f766e',
+          tema_visual: current.tema_visual || 'catalogo_publico',
+          moneda: (els.moneda.value.trim() || 'COP').toUpperCase(),
+          dominio_publico: els.dominioPublico.value.trim(),
+          mostrar_stock: !!els.mostrarStock.checked,
+          contacto_formulario_activo: !!els.contactoFormularioActivo.checked,
+          whatsapp_flotante_activo: !!els.whatsappFlotanteActivo.checked,
+          whatsapp_numero: els.whatsappNumero.value.trim(),
+          pedidos_restaurante_activo: !!current.pedidos_restaurante_activo,
+          pedidos_registro_opcional_cliente: current.pedidos_registro_opcional_cliente !== false,
+          pedidos_permitir_recoger_en_tienda: current.pedidos_permitir_recoger_en_tienda !== false,
+          pedidos_permitir_domicilio: current.pedidos_permitir_domicilio !== false,
+          pedidos_tracking_domiciliario: current.pedidos_tracking_domiciliario !== false,
+          pedidos_despacho_automatico: current.pedidos_despacho_automatico !== false,
+          pedidos_nombre_sistema: current.pedidos_nombre_sistema || '',
+          pedidos_tiempo_preparacion_minutos: Number(current.pedidos_tiempo_preparacion_minutos || 0),
+          wompi_activo: !!current.wompi_activo,
+          wompi_mode: current.wompi_mode || 'sandbox',
+          wompi_public_key: current.wompi_public_key || '',
+          wompi_private_key_ref: current.wompi_private_key_ref || '',
+          wompi_integrity_key_ref: current.wompi_integrity_key_ref || '',
+          wompi_event_key_ref: current.wompi_event_key_ref || '',
+          epayco_activo: !!current.epayco_activo,
+          epayco_mode: current.epayco_mode || 'sandbox',
+          epayco_public_key: current.epayco_public_key || '',
+          epayco_private_key_ref: current.epayco_private_key_ref || '',
+          epayco_customer_id: current.epayco_customer_id || '',
+          observaciones: current.observaciones || 'Configuracion de carta publica de productos'
+        };
+      }
+
+      async function saveConfig() {
+        setStatus(els.configStatus, 'Guardando configuracion...', '');
+        const payload = buildConfigPayload();
+        const savedCfg = await api('/api/empresa/venta_publica?action=config&' + empresaQS(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        state.config = savedCfg.config;
+        const pagePayload = {
+          empresa_id: state.empresaId,
+          id: state.activePage?.id || 0,
+          slug: slugify(els.paginaSlug.value || 'productos'),
+          nombre: els.paginaNombre.value.trim() || 'Productos',
+          descripcion: els.paginaDescripcion.value.trim(),
+          banner_url: els.bannerUrl.value.trim(),
+          orden_visual: 1,
+          estado: 'activo',
+          observaciones: 'Seccion principal para visualizar_productos_y_precios_publico'
+        };
+        const savedPage = await api('/api/empresa/venta_publica?action=paginas&' + empresaQS(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(pagePayload)
+        });
+        state.activePage = savedPage.page;
+        await loadData(false);
+        setStatus(els.configStatus, 'Configuracion guardada. La carta publica ya puede visualizarse.', 'ok');
+      }
+
+      async function ensurePage() {
+        if (state.activePage && state.activePage.id > 0) return state.activePage;
+        await saveConfig();
+        if (!state.activePage || !state.activePage.id) throw new Error('No se pudo crear la seccion publica');
+        return state.activePage;
+      }
+
+      async function uploadCartaImage(tipo) {
+        const isPortada = tipo === 'portada';
+        const input = isPortada ? els.portadaUpload : els.perfilUpload;
+        const statusEl = isPortada ? els.portadaStatus : els.perfilStatus;
+        const targetInput = isPortada ? els.bannerUrl : els.logoUrl;
+        const preview = isPortada ? els.portadaPreview : els.perfilPreview;
+        const btn = isPortada ? els.btnUploadPortada : els.btnUploadPerfil;
+        const file = input && input.files ? input.files[0] : null;
+        if (!file) {
+          setStatus(statusEl, 'Selecciona una imagen antes de subir.', 'error');
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          setStatus(statusEl, 'La imagen supera 10 MB.', 'error');
+          return;
+        }
+        if (isPortada) {
+          await ensurePage();
+        }
+        promptDownloadPreviousAsset(targetInput.value, isPortada ? 'foto de portada' : 'foto de perfil');
+        const form = new FormData();
+        form.append('empresa_id', String(state.empresaId));
+        form.append('tipo_imagen', tipo);
+        if (isPortada && state.activePage && state.activePage.id) {
+          form.append('pagina_id', String(state.activePage.id));
+        }
+        form.append('imagen', file);
+        btn.disabled = true;
+        setStatus(statusEl, 'Subiendo imagen...', '');
+        try {
+          const data = await api('/api/empresa/venta_publica?action=subir_imagen&' + empresaQS(), {
+            method: 'POST',
+            body: form
+          });
+          const imageUrl = data && data.image_url ? data.image_url : '';
+          if (!imageUrl) throw new Error('El servidor no devolvio la URL de la imagen.');
+          targetInput.value = imageUrl;
+          setImagePreview(preview, imageUrl, isPortada ? 'Portada' : 'Perfil');
+          if (data.config) state.config = data.config;
+          if (isPortada && state.activePage) state.activePage.banner_url = imageUrl;
+          input.value = '';
+          buildPublicUrl();
+          setStatus(statusEl, 'Imagen subida. La imagen anterior de esta empresa fue reemplazada si correspondia.', 'ok');
+        } catch (err) {
+          setStatus(statusEl, err.message || 'No se pudo subir la imagen.', 'error');
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      function itemForProduct(product) {
+        const id = Number(product.id || 0);
+        return state.items.find(item => Number(item.producto_id || 0) === id) || null;
+      }
+
+      function itemState(item) {
+        if (!item) return 'pendiente';
+        return String(item.estado || 'activo').toLowerCase() === 'activo' ? 'publicado' : 'oculto';
+      }
+
+      function filteredProducts() {
+        const query = String(els.searchProducts.value || '').trim().toLowerCase();
+        const filter = els.filterState.value;
+        return state.products.filter(product => {
+          const item = itemForProduct(product);
+          const status = itemState(item);
+          if (filter === 'publicados' && status !== 'publicado') return false;
+          if (filter === 'pendientes' && status !== 'pendiente') return false;
+          if (filter === 'ocultos' && status !== 'oculto') return false;
+          if (!query) return true;
+          const haystack = [product.nombre, product.sku, product.codigo_barras, product.categoria, product.descripcion].join(' ').toLowerCase();
+          return haystack.includes(query);
+        });
+      }
+
+      function renderProducts() {
+        const rows = filteredProducts();
+        if (!rows.length) {
+          els.productList.innerHTML = '<div class="empty">No hay productos para este filtro.</div>';
+          return;
+        }
+        els.productList.innerHTML = rows.map(product => {
+          const item = itemForProduct(product);
+          const status = itemState(item);
+          const img = product.imagen_url || item?.imagen_url || '';
+          const initials = String(product.nombre || 'P').slice(0, 2);
+          const thumb = img
+            ? '<img src="' + escapeHtml(img) + '" alt="">'
+            : '<span>' + escapeHtml(initials) + '</span>';
+          const statusPill = status === 'publicado'
+            ? '<span class="pill active">Publicado</span>'
+            : status === 'oculto'
+              ? '<span class="pill inactive">Oculto</span>'
+              : '<span class="pill">Sin publicar</span>';
+          const stockText = Number(product.stock_total || 0).toLocaleString('es-CO') + ' disp.';
+          const actions = status === 'publicado'
+            ? '<button class="btn small" data-action="sync" data-id="' + product.id + '">Actualizar</button><button class="btn small danger" data-action="hide" data-item="' + item.id + '">Ocultar</button>'
+            : status === 'oculto'
+              ? '<button class="btn small primary" data-action="show" data-item="' + item.id + '">Activar</button><button class="btn small" data-action="sync" data-id="' + product.id + '">Actualizar</button>'
+              : '<button class="btn small primary" data-action="publish" data-id="' + product.id + '">Publicar</button>';
+          return [
+            '<article class="product-row">',
+            '  <div class="thumb">' + thumb + '</div>',
+            '  <div class="product-main">',
+            '    <h3>' + escapeHtml(product.nombre || 'Producto') + '</h3>',
+            '    <p>' + escapeHtml(product.descripcion || product.categoria || 'Sin descripcion publica') + '</p>',
+            '    <div class="meta">',
+            statusPill,
+            '      <span class="pill">' + escapeHtml(product.sku || product.codigo_barras || 'Sin SKU') + '</span>',
+            '      <span class="pill">' + escapeHtml(stockText) + '</span>',
+            '    </div>',
+            '  </div>',
+            '  <div class="row-actions">',
+            '    <span class="price">' + money(item?.precio || product.precio, item?.moneda || els.moneda.value) + '</span>',
+            actions,
+            '  </div>',
+            '</article>'
+          ].join('');
+        }).join('');
+      }
+
+      function payloadFromProduct(product, item) {
+        return {
+          empresa_id: state.empresaId,
+          id: item?.id || 0,
+          pagina_id: state.activePage?.id || 0,
+          producto_id: Number(product.id || 0),
+          codigo_publico: product.sku || product.codigo_barras || ('PROD-' + product.id),
+          nombre: product.nombre || 'Producto',
+          descripcion: product.descripcion || product.categoria || '',
+          precio: Number(product.precio || 0),
+          moneda: (els.moneda.value.trim() || state.config?.moneda || 'COP').toUpperCase(),
+          imagen_url: product.imagen_url || '',
+          stock_publicado: Number(product.stock_total || 0),
+          orden_visual: item?.orden_visual || 0,
+          destacado: !!item?.destacado,
+          observaciones: 'Publicado desde carta_productos_publica'
+        };
+      }
+
+      async function publishProduct(productId) {
+        const product = state.products.find(p => Number(p.id) === Number(productId));
+        if (!product) return;
+        await ensurePage();
+        const item = itemForProduct(product);
+        const payload = payloadFromProduct(product, item);
+        const method = item ? 'PUT' : 'POST';
+        const action = item ? 'actualizar' : 'crear';
+        await api('/api/empresa/venta_publica?action=' + action + '&' + empresaQS(item ? { id: item.id } : {}), {
+          method,
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await loadData(false);
+        setStatus(els.listStatus, 'Producto sincronizado con la carta publica.', 'ok');
+      }
+
+      async function toggleItem(itemId, visible) {
+        await api('/api/empresa/venta_publica?action=' + (visible ? 'activar' : 'desactivar') + '&' + empresaQS({ id: itemId }), {
+          method: 'PUT',
+          headers: { 'Accept': 'application/json' }
+        });
+        await loadData(false);
+        setStatus(els.listStatus, visible ? 'Producto visible en la carta publica.' : 'Producto oculto de la carta publica.', 'ok');
+      }
+
+      async function loadData(showLoading) {
+        if (showLoading) {
+          setStatus(els.listStatus, 'Cargando productos y carta publica...', '');
+          setStatus(els.configStatus, '', '');
+        }
+        if (!state.empresaId) {
+          state.empresaId = resolveEmpresaId();
+        }
+        if (!state.empresaId) {
+          setStatus(els.listStatus, 'No se encontro empresa_id en el contexto actual.', 'error');
+          return;
+        }
+        const [configRes, pagesRes, itemsRes, productsRes] = await Promise.all([
+          api('/api/empresa/venta_publica?action=config&' + empresaQS()),
+          api('/api/empresa/venta_publica?action=paginas&include_inactive=1&' + empresaQS()),
+          api('/api/empresa/venta_publica?action=catalogo&include_inactive=1&limit=500&' + empresaQS()),
+          api('/api/empresa/productos?estado=activo&limit=500&' + empresaQS())
+        ]);
+        state.config = configRes.config || {};
+        state.pages = pagesRes.rows || [];
+        state.items = itemsRes.rows || [];
+        state.products = Array.isArray(productsRes) ? productsRes : (productsRes.rows || []);
+        fillConfig();
+        pickActivePage();
+        buildPublicUrl();
+        renderProducts();
+        setStatus(els.listStatus, state.products.length + ' productos cargados. ' + state.items.length + ' registros en carta publica.', 'ok');
+      }
+
+      document.getElementById('btnSaveConfig').addEventListener('click', async function() {
+        try {
+          await saveConfig();
+        } catch (err) {
+          setStatus(els.configStatus, err.message || 'No se pudo guardar la configuracion.', 'error');
+        }
+      });
+
+      document.getElementById('btnRefresh').addEventListener('click', function() {
+        loadData(true).catch(err => setStatus(els.listStatus, err.message, 'error'));
+      });
+
+      document.getElementById('btnPreview').addEventListener('click', function() {
+        buildPublicUrl();
+        window.open(state.publicUrl, '_blank', 'noopener');
+      });
+
+      document.getElementById('btnCopyUrl').addEventListener('click', async function() {
+        buildPublicUrl();
+        try {
+          await navigator.clipboard.writeText(state.publicUrl);
+          setStatus(els.configStatus, 'Enlace copiado.', 'ok');
+        } catch (_) {
+          setStatus(els.configStatus, 'No se pudo copiar automaticamente. El enlace esta visible arriba.', 'error');
+        }
+      });
+
+      els.btnUploadPerfil.addEventListener('click', function() {
+        uploadCartaImage('perfil').catch(err => setStatus(els.perfilStatus, err.message || 'No se pudo subir perfil.', 'error'));
+      });
+
+      els.btnUploadPortada.addEventListener('click', function() {
+        uploadCartaImage('portada').catch(err => setStatus(els.portadaStatus, err.message || 'No se pudo subir portada.', 'error'));
+      });
+
+      els.logoUrl.addEventListener('input', function() {
+        setImagePreview(els.perfilPreview, els.logoUrl.value, 'Perfil');
+      });
+
+      els.bannerUrl.addEventListener('input', function() {
+        setImagePreview(els.portadaPreview, els.bannerUrl.value, 'Portada');
+      });
+
+      document.getElementById('btnDownloadQrPng').addEventListener('click', function() {
+        try {
+          const matrix = requireQrMatrix();
+          const size = Number(els.qrExportSize.value || 1024);
+          const canvas = document.createElement('canvas');
+          drawQrCanvas(matrix, canvas, size);
+          canvas.toBlob(blob => {
+            if (blob) downloadBlob(blob, qrSafeFileName('png'));
+          }, 'image/png');
+        } catch (err) {
+          setStatus(els.qrStatus, err.message || 'No se pudo exportar PNG.', 'error');
+        }
+      });
+
+      document.getElementById('btnDownloadQrSvg').addEventListener('click', function() {
+        try {
+          const matrix = requireQrMatrix();
+          const size = Number(els.qrExportSize.value || 1024);
+          const svg = buildQrSvg(matrix, size, els.nombreTienda.value || 'Carta publica', state.publicUrl);
+          downloadBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), qrSafeFileName('svg'));
+        } catch (err) {
+          setStatus(els.qrStatus, err.message || 'No se pudo exportar SVG.', 'error');
+        }
+      });
+
+      document.getElementById('btnDownloadQrPdf').addEventListener('click', function() {
+        try {
+          const matrix = requireQrMatrix();
+          downloadBlob(buildQrPdf(matrix, els.nombreTienda.value || 'Carta publica', state.publicUrl), qrSafeFileName('pdf'));
+        } catch (err) {
+          setStatus(els.qrStatus, err.message || 'No se pudo exportar PDF.', 'error');
+        }
+      });
+
+      document.getElementById('btnPrintQr').addEventListener('click', function() {
+        try {
+          const matrix = requireQrMatrix();
+          const svg = buildQrSvg(matrix, 640, els.nombreTienda.value || 'Carta publica', state.publicUrl);
+          const printWin = window.open('', '_blank', 'noopener,width=780,height=900');
+          if (!printWin) throw new Error('No se pudo abrir la ventana de impresion.');
+          printWin.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Imprimir QR carta publica</title><style>body{font-family:Arial,sans-serif;margin:0;padding:32px;text-align:center;color:#14213d}svg{max-width:100%;height:auto}.note{margin-top:12px;color:#607086;font-size:14px}@media print{button{display:none}body{padding:0}}</style><script src="/js/ui_event_controls.js" defer><\/script></head><body data-auto-print-delay="300">' + svg + '<p class="note">Escanea el codigo para abrir la carta publica de productos y precios.</p><button data-window-action="print" aria-label="Imprimir">Imprimir</button></body></html>');
+          printWin.document.close();
+        } catch (err) {
+          setStatus(els.qrStatus, err.message || 'No se pudo preparar la impresion.', 'error');
+        }
+      });
+
+      ['input', 'change'].forEach(evt => {
+        [els.empresaSlug, els.dominioPublico, els.moneda].forEach(el => {
+          el.addEventListener(evt, buildPublicUrl);
+        });
+      });
+
+      els.nombreTienda.addEventListener('blur', function() {
+        if (!els.empresaSlug.value.trim()) els.empresaSlug.value = slugify(els.nombreTienda.value);
+        buildPublicUrl();
+      });
+
+      els.searchProducts.addEventListener('input', renderProducts);
+      els.filterState.addEventListener('change', renderProducts);
+
+      els.productList.addEventListener('click', async function(ev) {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        btn.disabled = true;
+        const action = btn.getAttribute('data-action');
+        try {
+          if (action === 'publish' || action === 'sync') {
+            await publishProduct(btn.getAttribute('data-id'));
+          } else if (action === 'hide') {
+            await toggleItem(btn.getAttribute('data-item'), false);
+          } else if (action === 'show') {
+            await toggleItem(btn.getAttribute('data-item'), true);
+          }
+        } catch (err) {
+          setStatus(els.listStatus, err.message || 'No se pudo completar la accion.', 'error');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      loadData(true).catch(err => {
+        setStatus(els.listStatus, err.message || 'No se pudo cargar la carta publica.', 'error');
+      });
+    })();
+  </script>
+</body>
+</html>

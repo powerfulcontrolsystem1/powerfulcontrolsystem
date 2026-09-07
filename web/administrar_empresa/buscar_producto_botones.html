@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Buscar productos por botones</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .product-button-catalog-page {
+      --catalog-accent: #2563eb;
+      --catalog-accent-2: #0f766e;
+      --catalog-ink: color-mix(in srgb, var(--text) 92%, #111827 8%);
+      --catalog-muted: color-mix(in srgb, var(--muted) 82%, var(--text) 18%);
+      --catalog-panel: color-mix(in srgb, var(--card) 92%, var(--surface, #ffffff) 8%);
+      --catalog-border: color-mix(in srgb, var(--border) 76%, var(--accent) 24%);
+    }
+
+    .product-button-catalog-page .empresa-module {
+      max-width: 1280px;
+    }
+
+    .product-catalog-hero {
+      align-items: center;
+      gap: 16px;
+      padding: 18px;
+      border: 1px solid var(--catalog-border);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--catalog-accent) 12%, transparent), transparent 44%),
+        linear-gradient(120deg, var(--catalog-panel), color-mix(in srgb, var(--catalog-panel) 82%, var(--catalog-accent-2) 18%));
+      box-shadow: 0 16px 38px color-mix(in srgb, var(--bg) 22%, transparent);
+    }
+
+    .product-catalog-hero h1 {
+      margin-bottom: 5px;
+      color: var(--catalog-ink);
+      font-weight: 900;
+    }
+
+    .product-catalog-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .product-catalog-search {
+      padding: 14px;
+      border: 1px solid var(--catalog-border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface, var(--card)) 86%, transparent);
+    }
+
+    .product-catalog-hint {
+      margin: 0;
+      color: var(--catalog-muted);
+      font-size: .9rem;
+      font-weight: 700;
+      line-height: 1.35;
+      text-align: right;
+    }
+
+    .product-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+      gap: 12px;
+      align-items: stretch;
+      min-height: 120px;
+    }
+
+    .product-pick-btn {
+      --product-tone: #2563eb;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 126px;
+      width: 100%;
+      padding: 14px;
+      border: 1px solid color-mix(in srgb, var(--product-tone) 58%, var(--border) 42%);
+      border-radius: 8px;
+      background:
+        linear-gradient(160deg, color-mix(in srgb, var(--product-tone) 22%, var(--card) 78%), var(--card) 62%),
+        var(--card);
+      color: var(--catalog-ink);
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 12px 26px color-mix(in srgb, var(--product-tone) 12%, transparent);
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .product-pick-btn:hover,
+    .product-pick-btn:focus-visible {
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--product-tone) 78%, var(--border) 22%);
+      box-shadow: 0 16px 34px color-mix(in srgb, var(--product-tone) 20%, transparent);
+      outline: none;
+    }
+
+    .product-pick-btn.is-selected {
+      background:
+        linear-gradient(160deg, color-mix(in srgb, var(--product-tone) 38%, var(--card) 62%), color-mix(in srgb, var(--product-tone) 12%, var(--card) 88%));
+      border-width: 2px;
+    }
+
+    .product-pick-btn.is-adding {
+      cursor: progress;
+      opacity: .78;
+      transform: translateY(0);
+    }
+
+    .product-button-catalog-page #btnAplicarSeleccion {
+      display: none;
+    }
+
+    .product-pick-name {
+      display: block;
+      color: var(--catalog-ink);
+      font-size: 1rem;
+      font-weight: 900;
+      line-height: 1.18;
+      overflow-wrap: anywhere;
+    }
+
+    .product-pick-meta {
+      display: grid;
+      gap: 4px;
+      color: var(--catalog-muted);
+      font-size: .78rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .product-pick-price {
+      color: color-mix(in srgb, var(--product-tone) 78%, var(--catalog-ink) 22%);
+      font-size: .98rem;
+      font-weight: 900;
+    }
+
+    .product-pick-qty {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 30px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--product-tone) 86%, #111827 14%);
+      color: #ffffff;
+      font-size: .78rem;
+      font-weight: 900;
+      box-shadow: 0 8px 18px color-mix(in srgb, var(--product-tone) 28%, transparent);
+    }
+
+    .product-touch-mode .empresa-module {
+      max-width: 1500px;
+    }
+
+    .product-touch-mode .product-catalog-hero {
+      padding: 22px;
+    }
+
+    .product-touch-mode .product-buttons-grid {
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .product-touch-mode .product-pick-btn {
+      min-height: 164px;
+      padding: 18px;
+      touch-action: manipulation;
+    }
+
+    .product-touch-mode .product-pick-name {
+      font-size: 1.12rem;
+      line-height: 1.22;
+    }
+
+    .product-touch-mode .product-pick-meta {
+      font-size: .92rem;
+    }
+
+    .product-touch-mode .product-pick-price {
+      font-size: 1.1rem;
+    }
+
+    .product-touch-mode .product-pick-qty {
+      min-width: 38px;
+      height: 38px;
+      font-size: .9rem;
+    }
+
+    .product-touch-mode .form-input,
+    .product-touch-mode .btn {
+      min-height: 52px;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 760px) {
+      .product-catalog-hero {
+        padding: 12px;
+      }
+
+      .product-catalog-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .product-catalog-hint {
+        text-align: left;
+      }
+
+      .product-buttons-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .product-pick-btn {
+        min-height: 116px;
+        padding: 11px;
+      }
+
+      .product-pick-name {
+        font-size: .88rem;
+      }
+
+      .product-pick-meta {
+        font-size: .68rem;
+      }
+
+      .product-touch-mode .product-buttons-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .product-touch-mode .product-pick-btn {
+        min-height: 148px;
+        padding: 14px;
+      }
+    }
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="super-page form-bg-dark empresa-subpage product-button-catalog-page">
+  <div class="container empresa-module">
+    <div class="empresa-module-header product-catalog-hero">
+      <div>
+        <h1 id="pageTitle">Buscar productos por botones</h1>
+        <p id="carritoContext" class="form-help" style="margin:0;">Cargando contexto del carrito...</p>
+      </div>
+      <div class="form-actions" style="margin:0;">
+        <button type="button" id="btnAplicarSeleccion" class="btn">Agregar selección al carrito</button>
+        <button type="button" id="btnSalir" class="btn secondary">Salir al carrito</button>
+      </div>
+    </div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Catálogo de productos por botones</h2>
+        <span id="catalogoTotal" class="form-help">Productos: 0</span>
+      </div>
+
+      <div class="product-catalog-toolbar">
+        <div class="product-catalog-search">
+          <label class="form-label" for="filtroProductoInput">Buscar producto</label>
+          <input id="filtroProductoInput" class="form-input" placeholder="Escribe el nombre del producto" autocomplete="off">
+        </div>
+        <p class="product-catalog-hint">Cada clic suma 1 unidad. Para cantidad 2, presiona el producto dos veces.</p>
+      </div>
+
+      <div id="productosButtonsGrid" class="product-buttons-grid">Cargando productos...</div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Estado del carrito</h2>
+        <span id="seleccionCount" class="form-help">Listo para agregar</span>
+      </div>
+      <div id="seleccionResumen" class="table-wrap">Presiona un producto para agregarlo automáticamente al carrito.</div>
+      <div id="pageMsg" class="form-help" ></div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      carritoID: 0,
+      carritoCodigo: '',
+      returnURL: '',
+      carrito: null,
+      carritoItems: [],
+      productos: [],
+      filtro: '',
+      seleccion: new Map(),
+      addingProductos: new Set(),
+      touchedItems: new Map(),
+      touchSeq: 0,
+      touchMode: false,
+      directSaleMode: false,
+      permPage: '',
+      bodegaID: 0
+    };
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function normalize(v) {
+      return (v || '').toString().trim();
+    }
+
+    function toNumber(v, fallback) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function escapeHtml(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById('pageMsg');
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    function formatAmount(value, moneda) {
+      const amount = Number(value || 0);
+      const m = normalize(moneda || 'COP') || 'COP';
+      return m + ' ' + amount.toFixed(2);
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      const t = await res.text();
+      let detail = t || ('HTTP ' + res.status);
+      try {
+        const parsed = JSON.parse(t);
+        detail = normalize(parsed.error) || normalize(parsed.message) || detail;
+      } catch (err) {}
+      throw new Error(detail);
+    }
+
+    function safeReturnURL(raw) {
+      const input = normalize(raw);
+      if (!input) return '';
+      if (input.startsWith('/administrar_empresa/carrito_de_compras.html')) return input;
+      const originPrefix = window.location.origin + '/administrar_empresa/carrito_de_compras.html';
+      if (input.startsWith(originPrefix)) {
+        return input.slice(window.location.origin.length);
+      }
+      return '';
+    }
+
+    function buildDefaultReturnURL() {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      if (state.carritoID > 0) params.set('carrito_id', String(state.carritoID));
+      if (state.carritoCodigo) params.set('carrito_codigo', state.carritoCodigo);
+
+      const estacionID = Number(getQueryParam('estacion_id') || 0);
+      const estacionNombre = normalize(getQueryParam('estacion_nombre') || '');
+      if (state.directSaleMode) params.set('modo', 'venta_directa');
+      if (state.directSaleMode) params.set('perm_page', 'linkVentaDirecta');
+      if (!state.directSaleMode && state.permPage) params.set('perm_page', state.permPage);
+      if (estacionID > 0) params.set('estacion_id', String(estacionID));
+      if (estacionNombre) params.set('estacion_nombre', estacionNombre);
+
+      return '/administrar_empresa/carrito_de_compras.html?' + params.toString();
+    }
+
+    function buildCarritoAPIURL(path, extraParams) {
+      const params = new URLSearchParams(extraParams || {});
+      params.set('empresa_id', String(state.empresaID));
+      if (state.directSaleMode) {
+        params.set('modo', 'venta_directa');
+        params.set('perm_page', 'linkVentaDirecta');
+      } else if (state.permPage) {
+        params.set('perm_page', state.permPage);
+      }
+      if (state.carritoCodigo) {
+        params.set('carrito_codigo', state.carritoCodigo);
+      }
+      return path + '?' + params.toString();
+    }
+
+    function getSelectedRows() {
+      const rows = [];
+      state.seleccion.forEach(function(qty, id) {
+        const cantidad = Number(qty || 0);
+        if (cantidad <= 0) return;
+        const producto = state.productos.find(function(p) { return Number(p.id) === Number(id); });
+        if (!producto) return;
+        rows.push({ producto: producto, cantidad: cantidad });
+      });
+      return rows;
+    }
+
+    function updateSelectionCount() {
+      const rows = getCarritoDisplayRows();
+      const totalUnidades = rows.reduce(function(acc, row) { return acc + Number(row.cantidad || 0); }, 0);
+      document.getElementById('seleccionCount').textContent = rows.length > 0
+        ? 'Productos en carrito: ' + rows.length + ' | Unidades: ' + totalUnidades.toFixed(2)
+        : 'Listo para agregar';
+    }
+
+    function itemTouchKey(item) {
+      return normalize(item.tipo_item || 'producto') + ':' + Number(item.referencia_id || 0);
+    }
+
+    function markItemTouched(productoID) {
+      const key = 'producto:' + Number(productoID || 0);
+      state.touchSeq += 1;
+      state.touchedItems.set(key, state.touchSeq);
+    }
+
+    function itemTimeValue(item) {
+      const raw = normalize(item.fecha_actualizacion || item.FechaActualizacion || item.fecha_creacion || item.FechaCreacion);
+      if (!raw) return 0;
+      const normalized = raw.indexOf('T') >= 0 ? raw : raw.replace(' ', 'T');
+      const ts = Date.parse(normalized);
+      return Number.isFinite(ts) ? ts : 0;
+    }
+
+    function getCarritoDisplayRows() {
+      const rows = Array.isArray(state.carritoItems) ? state.carritoItems.slice() : [];
+      return rows.filter(function(item) {
+        return normalize(item.estado || 'activo') !== 'inactivo' && normalize(item.tipo_item || 'producto') === 'producto';
+      }).sort(function(a, b) {
+        const touchA = Number(state.touchedItems.get(itemTouchKey(a)) || 0);
+        const touchB = Number(state.touchedItems.get(itemTouchKey(b)) || 0);
+        if (touchA !== touchB) return touchB - touchA;
+        const timeA = itemTimeValue(a);
+        const timeB = itemTimeValue(b);
+        if (timeA !== timeB) return timeB - timeA;
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
+    }
+
+    function renderSelectionTable() {
+      const box = document.getElementById('seleccionResumen');
+      const rows = getCarritoDisplayRows();
+      if (!rows.length) {
+        box.textContent = 'Presiona un producto para agregarlo automáticamente al carrito.';
+        updateSelectionCount();
+        return;
+      }
+
+      const moneda = (state.carrito && state.carrito.moneda) || 'COP';
+      const total = rows.reduce(function(acc, row) {
+        return acc + Number(row.total_linea || row.TotalLinea || (Number(row.precio_unitario || 0) * Number(row.cantidad || 0)));
+      }, 0);
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>Producto</th>' +
+        '<th>Precio</th>' +
+        '<th>Cantidad</th>' +
+        '<th>Subtotal</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      rows.forEach(function(row) {
+        const tr = document.createElement('tr');
+        const subtotal = Number(row.total_linea || row.TotalLinea || (Number(row.precio_unitario || 0) * Number(row.cantidad || 0)));
+        tr.innerHTML = '<td>' + escapeHtml(normalize(row.descripcion) || 'Producto') + '</td>' +
+          '<td>' + formatAmount(row.precio_unitario, moneda) + '</td>' +
+          '<td>' + Number(row.cantidad).toFixed(2) + '</td>' +
+          '<td>' + formatAmount(subtotal, moneda) + '</td>';
+        tbody.appendChild(tr);
+      });
+
+      const trTotal = document.createElement('tr');
+      trTotal.innerHTML = '<td colspan="3"><strong>Total carrito</strong></td><td><strong>' + formatAmount(total, moneda) + '</strong></td>';
+      tbody.appendChild(trTotal);
+
+      table.appendChild(tbody);
+      box.innerHTML = '';
+      box.appendChild(table);
+
+      updateSelectionCount();
+    }
+
+    function filterProducts() {
+      const q = normalize(state.filtro).toLowerCase();
+      if (!q) return state.productos;
+      return state.productos.filter(function(p) {
+        const name = normalize(p.nombre).toLowerCase();
+        const sku = normalize(p.sku).toLowerCase();
+        const cb = normalize(p.codigo_barras).toLowerCase();
+        return name.indexOf(q) >= 0 || sku.indexOf(q) >= 0 || cb.indexOf(q) >= 0;
+      });
+    }
+
+    function carritoQuantityForProduct(productID) {
+      return (Array.isArray(state.carritoItems) ? state.carritoItems : []).reduce(function(acc, item) {
+        if (normalize(item.estado || 'activo') === 'inactivo') return acc;
+        if (normalize(item.tipo_item || 'producto') !== 'producto') return acc;
+        if (Number(item.referencia_id || 0) !== Number(productID || 0)) return acc;
+        return acc + Number(item.cantidad || 0);
+      }, 0);
+    }
+
+    function renderProductsButtons() {
+      const box = document.getElementById('productosButtonsGrid');
+      const rows = filterProducts();
+
+      document.getElementById('catalogoTotal').textContent = 'Productos: ' + rows.length;
+
+      if (!rows.length) {
+        box.textContent = 'No hay productos activos para mostrar con ese filtro.';
+        return;
+      }
+
+      const tones = ['#2563eb', '#0f766e', '#7c3aed', '#be123c', '#b45309', '#047857', '#0369a1', '#9333ea', '#c2410c', '#15803d'];
+      box.innerHTML = rows.map(function(p, index) {
+        const qty = carritoQuantityForProduct(Number(p.id));
+        const isAdding = state.addingProductos.has(Number(p.id));
+        const badge = qty > 0 ? '<span class="product-pick-qty">x' + qty + '</span>' : '';
+        const tone = tones[(Number(p.id || index) + index) % tones.length];
+        return '<button type="button" class="product-pick-btn' + (qty > 0 ? ' is-selected' : '') + (isAdding ? ' is-adding' : '') + '" style="--product-tone:' + tone + ';" data-id="' + Number(p.id) + '"' + (isAdding ? ' disabled' : '') + '>' +
+          '<span class="product-pick-name">' + escapeHtml(normalize(p.nombre) || 'Producto') + '</span>' +
+          '<span class="product-pick-meta">' +
+            '<span>SKU: ' + escapeHtml(normalize(p.sku) || normalize(p.codigo_barras) || '-') + '</span>' +
+            '<span class="product-pick-price">' + escapeHtml(formatAmount(p.precio, (state.carrito && state.carrito.moneda) || 'COP')) + '</span>' +
+          '</span>' +
+          badge +
+        '</button>';
+      }).join('');
+
+      document.querySelectorAll('.product-pick-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          await addProductDirectToCarrito(id);
+        });
+      });
+    }
+
+    async function resolveCarrito() {
+      if (state.carritoID > 0) {
+        const res = await fetch(buildCarritoAPIURL('/api/empresa/carritos_compra', { id: String(state.carritoID) }), { credentials: 'same-origin' });
+        await ensureOk(res);
+        const payload = await res.json();
+        state.carrito = Array.isArray(payload)
+          ? (payload.find(function(c) { return Number(c.id || 0) === Number(state.carritoID); }) || null)
+          : payload;
+        if (!state.carrito || Number(state.carrito.id || 0) !== Number(state.carritoID)) {
+          throw new Error('No se encontró el carrito solicitado.');
+        }
+        if (state.carrito && state.carrito.codigo) {
+          state.carritoCodigo = normalize(state.carrito.codigo).toUpperCase();
+        }
+        return;
+      }
+
+      if (!state.carritoCodigo) {
+        throw new Error('carrito_id o carrito_codigo es obligatorio para buscar productos.');
+      }
+
+      const res = await fetch(buildCarritoAPIURL('/api/empresa/carritos_compra', { include_inactive: '1' }), { credentials: 'same-origin' });
+      await ensureOk(res);
+      const rows = await res.json();
+      const match = Array.isArray(rows) ? rows.find(function(c) {
+        return normalize(c.codigo).toUpperCase() === state.carritoCodigo;
+      }) : null;
+
+      if (!match) {
+        throw new Error('No se encontró el carrito solicitado.');
+      }
+
+      state.carrito = match;
+      state.carritoID = Number(match.id || 0);
+      state.carritoCodigo = normalize(match.codigo).toUpperCase();
+    }
+
+    async function loadProducts() {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      if (state.permPage) params.set('perm_page', state.permPage);
+      const res = await fetch('/api/empresa/productos?' + params.toString(), { credentials: 'same-origin' });
+      await ensureOk(res);
+      const rows = await res.json();
+      state.productos = Array.isArray(rows) ? rows : [];
+      state.productos.sort(function(a, b) {
+        return normalize(a.nombre).localeCompare(normalize(b.nombre), 'es', { sensitivity: 'base' });
+      });
+    }
+
+    async function getCurrentCarritoItems() {
+      const res = await fetch(buildCarritoAPIURL('/api/empresa/carritos_compra/items', {
+        carrito_id: String(state.carritoID),
+        include_inactive: '1'
+      }), { credentials: 'same-origin' });
+      await ensureOk(res);
+      const rows = await res.json();
+      return Array.isArray(rows) ? rows : [];
+    }
+
+    async function refreshCarritoItems() {
+      state.carritoItems = await getCurrentCarritoItems();
+      renderSelectionTable();
+      return state.carritoItems;
+    }
+
+    function buildProductoPayload(producto, cantidad, currentItem) {
+      const productCode = normalize(producto.codigo_barras) || normalize(producto.sku);
+      const existingQty = currentItem ? Number(currentItem.cantidad || 0) : 0;
+
+      return {
+        id: currentItem ? Number(currentItem.id || 0) : 0,
+        empresa_id: Number(state.empresaID),
+        carrito_id: Number(state.carritoID),
+        tipo_item: 'producto',
+        referencia_id: Number(producto.id || 0),
+        codigo_item: normalize((currentItem && currentItem.codigo_item) || productCode),
+        bodega_id: Number((currentItem && currentItem.bodega_id) || state.bodegaID || 0),
+        descripcion: normalize((currentItem && currentItem.descripcion) || producto.nombre || 'Producto'),
+        unidad_medida: normalize((currentItem && currentItem.unidad_medida) || producto.unidad_medida || 'unidad'),
+        cantidad: Number(existingQty + cantidad),
+        precio_unitario: Number((currentItem && currentItem.precio_unitario) || producto.precio || 0),
+        descuento_porcentaje: Number((currentItem && currentItem.descuento_porcentaje) || 0),
+        impuesto_porcentaje: Number((currentItem && currentItem.impuesto_porcentaje) || producto.impuesto_porcentaje || 0),
+        impuesto_codigo: normalize((currentItem && currentItem.impuesto_codigo) || 'IVA'),
+        observaciones: normalize((currentItem && currentItem.observaciones) || '')
+      };
+    }
+
+    async function saveProductoToCarrito(producto, cantidad, existingItems) {
+      const currentItem = existingItems.find(function(item) {
+        return normalize(item.tipo_item) === 'producto' &&
+          normalize(item.estado || 'activo') !== 'inactivo' &&
+          Number(item.referencia_id || 0) === Number(producto.id || 0);
+      });
+
+      const payload = buildProductoPayload(producto, cantidad, currentItem);
+      const method = currentItem ? 'PUT' : 'POST';
+      const res = await fetch(buildCarritoAPIURL('/api/empresa/carritos_compra/items'), {
+        method: method,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(res);
+      let saved = null;
+      try {
+        saved = await res.json();
+      } catch (err) {
+        saved = null;
+      }
+
+      if (currentItem) {
+        currentItem.cantidad = Number(payload.cantidad || 0);
+        currentItem.precio_unitario = Number(payload.precio_unitario || 0);
+        currentItem.total_linea = Number(saved && (saved.total_linea || saved.TotalLinea) || (payload.precio_unitario * payload.cantidad));
+        currentItem.fecha_actualizacion = new Date().toISOString();
+      } else {
+        existingItems.push({
+          id: Number(saved && (saved.id || saved.ID) || 0),
+          tipo_item: 'producto',
+          referencia_id: Number(producto.id || 0),
+          cantidad: Number(payload.cantidad || 0),
+          precio_unitario: Number(payload.precio_unitario || 0),
+          total_linea: Number(saved && (saved.total_linea || saved.TotalLinea) || (payload.precio_unitario * payload.cantidad)),
+          codigo_item: payload.codigo_item,
+          descripcion: payload.descripcion,
+          unidad_medida: payload.unidad_medida,
+          descuento_porcentaje: payload.descuento_porcentaje,
+          impuesto_porcentaje: payload.impuesto_porcentaje,
+          impuesto_codigo: payload.impuesto_codigo,
+          observaciones: payload.observaciones,
+          fecha_creacion: new Date().toISOString(),
+          fecha_actualizacion: new Date().toISOString(),
+          estado: 'activo'
+        });
+      }
+
+      return Number(payload.cantidad || 0);
+    }
+
+    async function addProductDirectToCarrito(productID) {
+      const producto = state.productos.find(function(p) {
+        return Number(p.id || 0) === Number(productID || 0);
+      });
+      if (!producto || state.addingProductos.has(Number(productID || 0))) return;
+
+      state.addingProductos.add(Number(productID));
+      renderProductsButtons();
+      setMessage('Agregando ' + (normalize(producto.nombre) || 'producto') + ' al carrito...', false);
+
+      try {
+        const existingItems = await getCurrentCarritoItems();
+        const nuevaCantidad = await saveProductoToCarrito(producto, 1, existingItems);
+        state.carritoItems = existingItems;
+        markItemTouched(producto.id);
+        state.seleccion.clear();
+        renderSelectionTable();
+        setMessage((normalize(producto.nombre) || 'Producto') + ' agregado al carrito. Cantidad actual: ' + nuevaCantidad.toFixed(2) + '.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo agregar el producto al carrito.', true);
+      } finally {
+        state.addingProductos.delete(Number(productID));
+        renderProductsButtons();
+      }
+    }
+
+    async function applySelectionToCarrito() {
+      const rows = getSelectedRows();
+      if (!rows.length) {
+        setMessage('No hay productos seleccionados para agregar.', true);
+        return;
+      }
+
+      const btn = document.getElementById('btnAplicarSeleccion');
+      btn.disabled = true;
+      const prevText = btn.textContent;
+      btn.textContent = 'Agregando...';
+
+      try {
+        const existingItems = await getCurrentCarritoItems();
+
+        for (const row of rows) {
+          await saveProductoToCarrito(row.producto, row.cantidad, existingItems);
+        }
+
+        const totalUnidades = rows.reduce(function(acc, row) { return acc + row.cantidad; }, 0);
+        state.seleccion.clear();
+        state.carritoItems = existingItems;
+        renderProductsButtons();
+        renderSelectionTable();
+        setMessage('Se agregaron ' + totalUnidades + ' unidades al carrito correctamente.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo agregar la selección al carrito.', true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prevText;
+      }
+    }
+
+    function exitToCarrito() {
+      if (getSelectedRows().length > 0) {
+        const ok = confirm('Tienes productos seleccionados sin agregar al carrito. ¿Deseas salir de todos modos?');
+        if (!ok) return;
+      }
+      window.location.href = state.returnURL || buildDefaultReturnURL();
+    }
+
+    function renderContext() {
+      const carritoName = state.carrito ? normalize(state.carrito.nombre) : '';
+      const carritoCode = state.carrito ? normalize(state.carrito.codigo) : '';
+      const moneda = state.carrito ? normalize(state.carrito.moneda || 'COP') : 'COP';
+
+      document.getElementById('pageTitle').textContent = 'Buscar productos por botones';
+      document.getElementById('carritoContext').textContent =
+        'Empresa ID: ' + state.empresaID +
+        ' | Carrito: ' + (carritoName || ('#' + state.carritoID)) +
+        ' | Código: ' + (carritoCode || '-') +
+        ' | Moneda: ' + (moneda || 'COP');
+    }
+
+    document.getElementById('filtroProductoInput').addEventListener('input', function() {
+      state.filtro = normalize(document.getElementById('filtroProductoInput').value);
+      renderProductsButtons();
+    });
+
+    document.getElementById('btnAplicarSeleccion').addEventListener('click', async function() {
+      await applySelectionToCarrito();
+    });
+
+    document.getElementById('btnSalir').addEventListener('click', function() {
+      exitToCarrito();
+    });
+
+    (async function init() {
+      const empresaID = Number(getQueryParam('empresa_id') || 0);
+      const carritoID = Number(getQueryParam('carrito_id') || 0);
+      const carritoCode = normalize(getQueryParam('carrito_codigo') || '').toUpperCase();
+      const returnURL = safeReturnURL(getQueryParam('return_url') || '');
+
+      if (!empresaID) {
+        setMessage('empresa_id es obligatorio en la URL.', true);
+        document.getElementById('productosButtonsGrid').textContent = 'Falta empresa_id en la URL.';
+        document.getElementById('btnAplicarSeleccion').disabled = true;
+        return;
+      }
+
+      state.empresaID = empresaID;
+      state.carritoID = carritoID;
+      state.carritoCodigo = carritoCode;
+      state.directSaleMode = normalize(getQueryParam('modo') || '').toLowerCase() === 'venta_directa';
+      state.permPage = normalize(getQueryParam('perm_page') || (state.directSaleMode ? 'linkVentaDirecta' : 'linkEstaciones'));
+      state.bodegaID = Math.max(0, Math.trunc(Number(getQueryParam('bodega_id') || 0) || 0));
+      state.returnURL = returnURL || buildDefaultReturnURL();
+      state.touchMode = getQueryParam('touch') === '1' || String(getQueryParam('touch') || '').toLowerCase() === 'true';
+      document.body.classList.toggle('product-touch-mode', state.touchMode);
+      document.body.classList.toggle('pos-touch-mode', state.touchMode);
+
+      try {
+        await resolveCarrito();
+        renderContext();
+        await loadProducts();
+        await refreshCarritoItems();
+        renderProductsButtons();
+      } catch (err) {
+        document.getElementById('productosButtonsGrid').textContent = 'No se pudo cargar el catálogo de productos.';
+        setMessage(err.message || 'Error cargando contexto de carrito/productos.', true);
+        document.getElementById('btnAplicarSeleccion').disabled = true;
+      }
+    })();
+  </script>
+</body>
+</html>
+

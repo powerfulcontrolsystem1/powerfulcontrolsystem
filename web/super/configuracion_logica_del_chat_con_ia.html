@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración lógica del chat con IA</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Configuración lógica del chat con IA</h1>
+      <p class="form-help">Define restricciones operativas del chat con IA para empresas y para el chat global del super administrador. Estos valores se guardan en la base <strong>superadministrador</strong>.</p>
+    </div>
+
+    <section class="card form advanced-card" data-brand="ai" id="empresaChatIACard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
+        Chat con IA de empresas
+      </h2>
+      <p class="form-help">Aplica a los chats de IA dentro del panel de cada empresa (restringidos por <strong>empresa_id</strong>).</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Habilitado</label>
+          <label class="mode-switch-row" for="empresaChatEnabled">
+            <span class="mode-label">Off</span>
+            <input id="empresaChatEnabled" type="checkbox" role="switch" aria-label="Habilitar chat IA de empresas">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está apagado, el chat empresarial rechazará nuevas consultas.</div>
+          <div id="empresaChatEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaMaxConsultas">Máximo de consultas por día (por empresa)</label>
+          <input id="empresaMaxConsultas" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="10">
+          <div class="form-help">0 = bloquea completamente el chat de empresas. Default: 10.</div>
+          <div id="empresaMaxConsultasStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Streaming (respuesta en vivo)</label>
+          <label class="mode-switch-row" for="empresaStreamingEnabled">
+            <span class="mode-label">Off</span>
+            <input id="empresaStreamingEnabled" type="checkbox" role="switch" aria-label="Habilitar streaming en chat IA de empresas">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está activo, el chat puede mostrar la respuesta en vivo (SSE). Si está apagado, siempre responde en modo normal.</div>
+          <div id="empresaStreamingEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Consultas DB para GPT-5.4 mini</label>
+          <label class="mode-switch-row" for="empresaDBQueryEnabled">
+            <span class="mode-label">Off</span>
+            <input id="empresaDBQueryEnabled" type="checkbox" role="switch" aria-label="Permitir consultas de lectura a la base de datos para el chat IA empresarial">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Activo por defecto. El servidor entrega a la IA consultas SELECT ya resueltas sobre tablas con empresa_id; no entrega credenciales ni permite SQL libre.</div>
+          <div id="empresaDBQueryEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="empresaDBQueryMaxTables">Maximo de tablas consultables por pregunta</label>
+          <input id="empresaDBQueryMaxTables" class="form-input" type="number" min="1" max="100" step="1" inputmode="numeric" placeholder="25">
+          <div class="form-help">Default: 25. Tope técnico: 100 tablas por pregunta.</div>
+          <div id="empresaDBQueryMaxTablesStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaDBQueryRows">Filas por tabla entregadas a la IA</label>
+          <input id="empresaDBQueryRows" class="form-input" type="number" min="1" max="30" step="1" inputmode="numeric" placeholder="8">
+          <div class="form-help">Default: 8. Tope técnico: 30 filas por tabla.</div>
+          <div id="empresaDBQueryRowsStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="empresaMaxGPT55Consultas">Máximo de consultas GPT-5.5 por día (por empresa)</label>
+          <input id="empresaMaxGPT55Consultas" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="2">
+          <div class="form-help">Aplica a consultas “premium” (documentos/imagenes/reportes) usando GPT-5.5. Default: 2. 0 = bloquea GPT-5.5 para empresas.</div>
+          <div id="empresaMaxGPT55ConsultasStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <div class="form-label">Nota</div>
+          <div class="form-help">El chat normal puede seguir usando GPT-5.4 mini para texto. GPT-5.5 se reserva para adjuntos o reportes avanzados.</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveEmpresaChatBtn" class="btn" type="button">Guardar chat IA de empresas</button>
+      </div>
+      <div id="empresaChatMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form advanced-card" data-brand="ai" id="portalChatIACard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path><path d="M2 12h20"></path><path d="M12 2c2.8 2.7 4.6 6.2 4.6 10S14.8 19.3 12 22c-2.8-2.7-4.6-6.2-4.6-10S9.2 4.7 12 2z"></path></svg>
+        Chat IA público del portal (index)
+      </h2>
+      <p class="form-help">Aplica al chat de la página pública <code>index.html</code> (visitantes sin iniciar sesión). Ideal para preguntas comerciales sobre Powerful Control System.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Habilitado</label>
+          <label class="mode-switch-row" for="portalChatEnabled">
+            <span class="mode-label">Off</span>
+            <input id="portalChatEnabled" type="checkbox" role="switch" aria-label="Habilitar chat público del portal">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está apagado, el endpoint público del chat responderá “deshabilitado”.</div>
+          <div id="portalChatEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <div class="form-label">Límite</div>
+          <div class="form-help">10 consultas por usuario cada 5 minutos (controlado por servidor).</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="savePortalChatBtn" class="btn" type="button">Guardar chat público</button>
+      </div>
+      <div id="portalChatMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form advanced-card" data-brand="ai" id="superChatIACard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M8 12h8"></path></svg>
+        Chat con IA global (Super Administrador)
+      </h2>
+      <p class="form-help">Aplica al chat global del super administrador. No afecta el switch global de IA del sistema, solo el acceso operativo a este chat.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Habilitado</label>
+          <label class="mode-switch-row" for="superChatEnabled">
+            <span class="mode-label">Off</span>
+            <input id="superChatEnabled" type="checkbox" role="switch" aria-label="Habilitar chat IA global super">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está apagado, el chat global rechazará nuevas consultas.</div>
+          <div id="superChatEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="superMaxConsultas">Máximo de consultas por día (super)</label>
+          <input id="superMaxConsultas" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="30">
+          <div class="form-help">0 = bloquea completamente el chat global. Default: 30.</div>
+          <div id="superMaxConsultasStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Streaming (respuesta en vivo)</label>
+          <label class="mode-switch-row" for="superStreamingEnabled">
+            <span class="mode-label">Off</span>
+            <input id="superStreamingEnabled" type="checkbox" role="switch" aria-label="Habilitar streaming en chat IA global">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">Si está activo, el chat global puede mostrar la respuesta en vivo (SSE).</div>
+          <div id="superStreamingEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <div class="form-label">Base de datos superadministrador (chat global)</div>
+          <div class="form-help">El chat global <strong>siempre</strong> incorpora, en cada consulta, el inventario de <strong>todas</strong> las tablas visibles en el esquema: número de filas, columnas (nombre y tipo) y reparto de administradores por rol. <strong>No</strong> se envían valores de fila, contraseñas, tokens ni contenidos de configuración sensibles.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaSoloLectura">Solo lectura: base de empresas</label>
+          <label class="mode-switch-row" for="empresaSoloLectura">
+            <span class="mode-label">Off</span>
+            <input id="empresaSoloLectura" type="checkbox" role="switch" aria-label="Habilitar en el chat global fragmentos de solo lectura de la base de empresas">
+            <span class="mode-label">On</span>
+          </label>
+          <div class="form-help">El servidor solo adjunta <strong>SELECT</strong> y agregados aprobados (listado de empresas, muestras de productos, finanzas, clientes, ventas). <strong>Prohíbe</strong> a la IA sugerir ediciones o <code>PCS_ACTION</code> de negocio; el prompt refuerza solo análisis y consulta informativa.</div>
+          <div id="empresaSoloLecturaStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveSuperChatBtn" class="btn" type="button">Guardar chat IA global</button>
+      </div>
+      <div id="superChatMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form advanced-card" data-brand="ai" id="openAIUsageCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M7 14l3-3 3 2 5-6"></path></svg>
+        Consumo OpenAI (hoy)
+      </h2>
+      <p class="form-help">Resumen del consumo acumulado de tokens del día para OpenAI. Este valor viene de la base de datos.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Super (tu sesión)</label>
+          <div id="openAiSuperMine" class="form-help">Cargando...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Super (todas las cuentas)</label>
+          <div id="openAiSuperAll" class="form-help">Cargando...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Empresas (todas)</label>
+          <div id="openAiEmpresasAll" class="form-help">Cargando...</div>
+        </div>
+      </div>
+      <div id="openAiUsageNote" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      function normalize(v){ return (v == null ? "" : String(v)).trim(); }
+      function toInt(v, fallback){
+        const n = Number(normalize(v));
+        if (!Number.isFinite(n)) return fallback;
+        const i = Math.floor(n);
+        if (i < 0) return 0;
+        return i;
+      }
+
+      async function apiFetch(url, options){
+        const res = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        const raw = await res.text();
+        if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+        return raw ? JSON.parse(raw) : {};
+      }
+
+      function renderStatus(el, info){
+        if (!el) return;
+        const updatedAt = normalize(info && info.updated_at);
+        const updatedBy = normalize(info && info.updated_by);
+        el.textContent = updatedAt ? ('Última actualización: ' + updatedAt + (updatedBy ? (' - ' + updatedBy) : '')) : 'Valor por defecto o no configurado todavía.';
+      }
+
+      async function load(){
+        const empresaMsg = document.getElementById('empresaChatMsg');
+        const superMsg = document.getElementById('superChatMsg');
+        const portalMsg = document.getElementById('portalChatMsg');
+        if (empresaMsg) empresaMsg.textContent = 'Cargando...';
+        if (superMsg) superMsg.textContent = 'Cargando...';
+        if (portalMsg) portalMsg.textContent = 'Cargando...';
+        try {
+          const data = await apiFetch('/super/api/config/chat_ia_logica');
+          const defaults = data.defaults || {};
+          const values = data.values || {};
+
+          const empEnabledInfo = values.empresa_enabled || {};
+          const empMaxInfo = values.empresa_max_consultas || {};
+          const empMaxGPT55Info = values.empresa_max_gpt55_consultas || {};
+          const empStreamingInfo = values.empresa_streaming_enabled || {};
+          const empDBQueryInfo = values.empresa_db_query_enabled || {};
+          const empDBQueryMaxTablesInfo = values.empresa_db_query_max_tables || {};
+          const empDBQueryRowsInfo = values.empresa_db_query_rows || {};
+          const supEnabledInfo = values.super_enabled || {};
+          const supMaxInfo = values.super_max_consultas || {};
+          const supStreamingInfo = values.super_streaming_enabled || {};
+          const empROInfo = values.empresa_solo_lectura || {};
+          const portalEnabledInfo = values.portal_enabled || {};
+
+          document.getElementById('empresaChatEnabled').checked = !!empEnabledInfo.value;
+          document.getElementById('superChatEnabled').checked = !!supEnabledInfo.value;
+          var empStreamEl = document.getElementById('empresaStreamingEnabled');
+          if (empStreamEl) empStreamEl.checked = !!empStreamingInfo.value;
+          var empDBQueryEl = document.getElementById('empresaDBQueryEnabled');
+          if (empDBQueryEl) empDBQueryEl.checked = empDBQueryInfo.value !== false;
+          var supStreamEl = document.getElementById('superStreamingEnabled');
+          if (supStreamEl) supStreamEl.checked = !!supStreamingInfo.value;
+          var portalEl = document.getElementById('portalChatEnabled');
+          if (portalEl) portalEl.checked = !!portalEnabledInfo.value;
+          var empRO = document.getElementById('empresaSoloLectura');
+          if (empRO) empRO.checked = !!empROInfo.value;
+
+          document.getElementById('empresaMaxConsultas').value = String(toInt(empMaxInfo.value, toInt(defaults.empresa_max_consultas, 10)));
+          var empMax55El = document.getElementById('empresaMaxGPT55Consultas');
+          if (empMax55El) empMax55El.value = String(toInt(empMaxGPT55Info.value, toInt(defaults.empresa_max_gpt55_consultas, 2)));
+          var empDBMaxTablesEl = document.getElementById('empresaDBQueryMaxTables');
+          if (empDBMaxTablesEl) empDBMaxTablesEl.value = String(toInt(empDBQueryMaxTablesInfo.value, toInt(defaults.empresa_db_query_max_tables, 25)));
+          var empDBRowsEl = document.getElementById('empresaDBQueryRows');
+          if (empDBRowsEl) empDBRowsEl.value = String(toInt(empDBQueryRowsInfo.value, toInt(defaults.empresa_db_query_rows, 8)));
+          document.getElementById('superMaxConsultas').value = String(toInt(supMaxInfo.value, toInt(defaults.super_max_consultas, 30)));
+
+          renderStatus(document.getElementById('empresaChatEnabledStatus'), empEnabledInfo);
+          renderStatus(document.getElementById('empresaMaxConsultasStatus'), empMaxInfo);
+          renderStatus(document.getElementById('empresaMaxGPT55ConsultasStatus'), empMaxGPT55Info);
+          renderStatus(document.getElementById('empresaStreamingEnabledStatus'), empStreamingInfo);
+          renderStatus(document.getElementById('empresaDBQueryEnabledStatus'), empDBQueryInfo);
+          renderStatus(document.getElementById('empresaDBQueryMaxTablesStatus'), empDBQueryMaxTablesInfo);
+          renderStatus(document.getElementById('empresaDBQueryRowsStatus'), empDBQueryRowsInfo);
+          renderStatus(document.getElementById('superChatEnabledStatus'), supEnabledInfo);
+          renderStatus(document.getElementById('superMaxConsultasStatus'), supMaxInfo);
+          renderStatus(document.getElementById('superStreamingEnabledStatus'), supStreamingInfo);
+          renderStatus(document.getElementById('empresaSoloLecturaStatus'), empROInfo);
+          renderStatus(document.getElementById('portalChatEnabledStatus'), portalEnabledInfo);
+
+          const usage = data.openai_usage_today || {};
+          const fechaUso = normalize(usage.fecha_uso);
+          const superMine = usage.super_admin || {};
+          const superAll = usage.super_todos || {};
+          const empAll = usage.empresas_todas || {};
+
+          document.getElementById('openAiSuperMine').textContent =
+            'Tokens: ' + String(superMine.tokens_total || 0) + ' — Consultas: ' + String(superMine.consultas_total || 0);
+          document.getElementById('openAiSuperAll').textContent =
+            'Tokens: ' + String(superAll.tokens_total || 0) + ' — Consultas: ' + String(superAll.consultas_total || 0);
+          document.getElementById('openAiEmpresasAll').textContent =
+            'Tokens: ' + String(empAll.tokens_total || 0) + ' — Consultas: ' + String(empAll.consultas_total || 0);
+          document.getElementById('openAiUsageNote').textContent = fechaUso ? ('Fecha uso: ' + fechaUso) : '';
+
+          if (empresaMsg) empresaMsg.textContent = 'Configuración cargada.';
+          if (superMsg) superMsg.textContent = 'Configuración cargada.';
+          if (portalMsg) portalMsg.textContent = 'Configuración cargada.';
+        } catch (err) {
+          if (empresaMsg) empresaMsg.textContent = err.message || 'No se pudo cargar la configuración.';
+          if (superMsg) superMsg.textContent = err.message || 'No se pudo cargar la configuración.';
+          if (portalMsg) portalMsg.textContent = err.message || 'No se pudo cargar la configuración.';
+        }
+      }
+
+      async function save(which){
+        const empresaMsg = document.getElementById('empresaChatMsg');
+        const superMsg = document.getElementById('superChatMsg');
+        const portalMsg = document.getElementById('portalChatMsg');
+        const isEmpresa = which === 'empresa';
+        const isPortal = which === 'portal';
+
+        const btn = document.getElementById(isEmpresa ? 'saveEmpresaChatBtn' : (isPortal ? 'savePortalChatBtn' : 'saveSuperChatBtn'));
+        const prev = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+        if (isEmpresa && empresaMsg) empresaMsg.textContent = 'Guardando...';
+        if (!isEmpresa && !isPortal && superMsg) superMsg.textContent = 'Guardando...';
+        if (isPortal && portalMsg) portalMsg.textContent = 'Guardando...';
+
+        try {
+          const elEmpRO = document.getElementById('empresaSoloLectura');
+          const elPortalEnabled = document.getElementById('portalChatEnabled');
+          const elEmpMax55 = document.getElementById('empresaMaxGPT55Consultas');
+          const elEmpStream = document.getElementById('empresaStreamingEnabled');
+          const elEmpDBQuery = document.getElementById('empresaDBQueryEnabled');
+          const elEmpDBMaxTables = document.getElementById('empresaDBQueryMaxTables');
+          const elEmpDBRows = document.getElementById('empresaDBQueryRows');
+          const elSupStream = document.getElementById('superStreamingEnabled');
+          const payload = {
+            empresa_enabled: !!document.getElementById('empresaChatEnabled').checked,
+            empresa_max_consultas: toInt(document.getElementById('empresaMaxConsultas').value, 10),
+            empresa_max_gpt55_consultas: elEmpMax55 ? toInt(elEmpMax55.value, 2) : 2,
+            empresa_streaming_enabled: elEmpStream ? !!elEmpStream.checked : false,
+            empresa_db_query_enabled: elEmpDBQuery ? !!elEmpDBQuery.checked : true,
+            empresa_db_query_max_tables: elEmpDBMaxTables ? toInt(elEmpDBMaxTables.value, 25) : 25,
+            empresa_db_query_rows: elEmpDBRows ? toInt(elEmpDBRows.value, 8) : 8,
+            super_enabled: !!document.getElementById('superChatEnabled').checked,
+            super_max_consultas: toInt(document.getElementById('superMaxConsultas').value, 30),
+            super_streaming_enabled: elSupStream ? !!elSupStream.checked : false,
+            portal_enabled: elPortalEnabled ? !!elPortalEnabled.checked : true,
+            super_contexto_amplio: true,
+            empresa_solo_lectura: elEmpRO ? !!elEmpRO.checked : false,
+          };
+          await apiFetch('/super/api/config/chat_ia_logica', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (isEmpresa && empresaMsg) empresaMsg.textContent = 'Guardado OK.';
+          if (!isEmpresa && !isPortal && superMsg) superMsg.textContent = 'Guardado OK.';
+          if (isPortal && portalMsg) portalMsg.textContent = 'Guardado OK.';
+          await load();
+        } catch (err) {
+          if (isEmpresa && empresaMsg) empresaMsg.textContent = err.message || 'No se pudo guardar.';
+          if (!isEmpresa && !isPortal && superMsg) superMsg.textContent = err.message || 'No se pudo guardar.';
+          if (isPortal && portalMsg) portalMsg.textContent = err.message || 'No se pudo guardar.';
+        } finally {
+          if (btn) { btn.disabled = false; btn.textContent = prev; }
+        }
+      }
+
+      document.getElementById('saveEmpresaChatBtn').addEventListener('click', function(){ save('empresa'); });
+      document.getElementById('saveSuperChatBtn').addEventListener('click', function(){ save('super'); });
+      document.getElementById('savePortalChatBtn').addEventListener('click', function(){ save('portal'); });
+      load();
+    })();
+  </script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

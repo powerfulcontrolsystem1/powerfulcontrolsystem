@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Centro de ayuda - Powerful Control System</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/help_navigation.js" defer></script>
+  <style>
+    html {
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+    .help-page {
+      background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 28%),
+        linear-gradient(180deg, var(--bg), var(--bg-alt));
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      width: 100%;
+    }
+    .help-page .container {
+      color: var(--text);
+    }
+    .help-page a {
+      color: color-mix(in srgb, var(--accent) 82%, var(--text) 18%);
+      text-decoration-thickness: 2px;
+      text-underline-offset: 3px;
+    }
+    .help-page a:hover,
+    .help-page a:focus-visible {
+      color: color-mix(in srgb, var(--accent-2) 76%, var(--text) 24%);
+    }
+    .help-page code {
+      background: color-mix(in srgb, var(--surface-soft) 78%, var(--accent) 8%);
+      border: 1px solid color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
+      border-radius: 6px;
+      color: color-mix(in srgb, var(--text) 88%, var(--accent-yellow) 12%);
+      display: inline-block;
+      font-weight: 800;
+      line-height: 1.35;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      padding: 1px 6px;
+      vertical-align: baseline;
+      white-space: normal;
+    }
+    .help-page :is(strong, h1, h2, h3, li) {
+      color: var(--text);
+    }
+    .help-page p {
+      color: var(--muted);
+    }
+    .help-back-bar {
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      border-bottom: 1px solid var(--border);
+      padding: 10px var(--page-gutter, 16px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(14px);
+    }
+    .help-hero {
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent-2) 11%, transparent)),
+        var(--surface);
+      border: 1px solid color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
+      border-radius: 8px;
+      box-shadow: 0 18px 36px color-mix(in srgb, #000 22%, transparent);
+      color: var(--text);
+      display: grid;
+      gap: 16px;
+      padding: 22px;
+    }
+    .help-hero h1 {
+      color: var(--text);
+      margin: 0;
+      font-size: clamp(1.8rem, 2.6vw, 2.7rem);
+      letter-spacing: 0;
+    }
+    .help-hero p { color: var(--muted); max-width: 980px; }
+    .help-search-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      max-width: 920px;
+    }
+    .help-layout {
+      align-items: start;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
+      margin-top: 16px;
+    }
+    .help-nav {
+      position: sticky;
+      top: 74px;
+    }
+    .help-nav,
+    .help-section {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .help-nav a {
+      align-items: center;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+      color: var(--text);
+      display: flex;
+      font-weight: 700;
+      justify-content: space-between;
+      padding: 10px 0;
+      text-decoration: none;
+    }
+    .help-nav a:hover,
+    .help-nav a:focus-visible {
+      color: color-mix(in srgb, var(--accent) 70%, var(--text) 30%);
+    }
+    .help-nav a span {
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 600;
+    }
+    .help-content {
+      display: grid;
+      gap: 14px;
+    }
+    .help-section {
+      scroll-margin-top: 88px;
+    }
+    .help-section h2 {
+      color: var(--text);
+      margin: 0 0 8px;
+      letter-spacing: 0;
+    }
+    .help-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    }
+    .help-mini-card {
+      background: color-mix(in srgb, var(--surface-soft) 88%, var(--surface) 12%);
+      border: 1px solid color-mix(in srgb, var(--border) 84%, var(--accent) 16%);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 12px;
+    }
+    .help-mini-card h3 {
+      color: var(--text);
+      font-size: 1rem;
+      margin: 0 0 6px;
+    }
+    .help-mini-card p,
+    .help-mini-card ul,
+    .help-mini-card ol {
+      margin-bottom: 0;
+    }
+    .help-route {
+      color: color-mix(in srgb, var(--muted) 80%, var(--accent) 20%);
+      display: block;
+      font-size: .88rem;
+      font-weight: 700;
+      margin-top: 6px;
+      word-break: break-word;
+    }
+    .help-step-list {
+      display: grid;
+      gap: 9px;
+      margin: 10px 0 0;
+      padding-left: 20px;
+    }
+    .help-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .help-chip-row a,
+    .help-chip-row span {
+      background: color-mix(in srgb, var(--surface-soft) 84%, var(--accent) 8%);
+      border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
+      border-radius: 999px;
+      color: var(--text);
+      font-size: .9rem;
+      font-weight: 700;
+      padding: 7px 10px;
+      text-decoration: none;
+    }
+    .help-chip-row a:hover,
+    .help-chip-row a:focus-visible {
+      background: color-mix(in srgb, var(--accent) 18%, var(--surface-soft) 82%);
+      border-color: color-mix(in srgb, var(--accent) 42%, var(--border) 58%);
+      color: var(--text);
+    }
+    .help-hidden {
+      display: none !important;
+    }
+    .help-empty-state {
+      background: color-mix(in srgb, var(--surface-soft) 90%, var(--danger) 6%);
+      border: 1px solid color-mix(in srgb, var(--border) 78%, var(--danger) 22%);
+      border-radius: 8px;
+      color: var(--text);
+      font-weight: 800;
+      padding: 12px;
+    }
+    html[data-theme^="light"] .help-page {
+      background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 28%),
+        linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg-alt) 92%, white 8%));
+    }
+    html[data-theme^="light"] .help-hero,
+    html[data-theme^="light"] .help-nav,
+    html[data-theme^="light"] .help-section {
+      box-shadow: 0 12px 28px color-mix(in srgb, var(--border) 34%, transparent);
+    }
+    html[data-theme="dark-absolute"] .help-hero,
+    html[data-theme="dark-absolute"] .help-nav,
+    html[data-theme="dark-absolute"] .help-section,
+    html[data-theme="dark-absolute"] .help-mini-card {
+      box-shadow: none;
+    }
+    @media (max-width: 860px) {
+      .help-search-row { grid-template-columns: 1fr; }
+      .help-layout { grid-template-columns: 1fr; }
+      .help-nav { position: static; }
+    }
+  </style>
+</head>
+<body class="empresa-subpage help-page">
+  <div class="container empresa-module">
+    <section class="help-hero">
+      <div>
+        <h1>Centro de ayuda Powerful Control System</h1>
+        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA, revisa APIs y resuelve bloqueos frecuentes sin romper el flujo diario.</p>
+      </div>
+      <div class="help-search-row">
+        <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, inventario...">
+        <button id="helpClear" class="btn secondary" type="button">Limpiar</button>
+      </div>
+      <div class="help-chip-row">
+        <a href="/ayuda/chat_ia.html">Ayuda Chat IA</a>
+        <a href="/ayuda/login_administradores.html">Ayuda login</a>
+        <a href="/ayuda/ayuda_apis.html">Ayuda APIs</a>
+        <a href="/ayuda/tutorial_nomina.html">Tutorial de nomina</a>
+        <a href="/administrar_empresa.html">Administrar empresa</a>
+        <a href="/super_administrador.html">Super administrador</a>
+      </div>
+    </section>
+
+    <div class="help-layout">
+      <nav class="card empresa-section help-nav" aria-label="Temas de ayuda">
+        <a href="#inicio">Inicio <span>base</span></a>
+        <a href="#roles">Roles y acceso <span>seguridad</span></a>
+        <a href="#acceso-usuarios">Acceso usuarios <span>login</span></a>
+        <a href="#super">Super administrador <span>plataforma</span></a>
+        <a href="#empresa">Administrar empresa <span>operacion</span></a>
+        <a href="#modulos-organizados">Modulos organizados <span>estructura</span></a>
+        <a href="#plantillas-2026">20 soluciones nuevas <span>negocio</span></a>
+        <a href="#productos">Productos e inventario <span>stock</span></a>
+        <a href="#ventas">Estaciones, carrito y caja <span>POS</span></a>
+        <a href="#nomina">Nomina <span>tutorial</span></a>
+        <a href="#operacion-conectada">Operacion conectada <span>servidor</span></a>
+        <a href="#pagos">Licencias y pagos <span>Epayco</span></a>
+        <a href="#dian">Facturacion DIAN <span>Colombia</span></a>
+        <a href="#ia">IA, voz y documentos <span>asistente</span></a>
+        <a href="#publico">Venta publica y red social <span>web</span></a>
+        <a href="#reportes">Reportes y auditoria <span>control</span></a>
+        <a href="#soporte-comunicaciones">Soporte y avisos <span>tickets</span></a>
+        <a href="#integraciones">Integraciones <span>servicios</span></a>
+        <a href="#energia-solar">Energia solar <span>monitoreo</span></a>
+        <a href="#apis">APIs <span>desarrollo</span></a>
+        <a href="#estado-operativo">Estado operativo <span>calidad</span></a>
+        <a href="#faq">Solucion de problemas <span>FAQ</span></a>
+      </nav>
+
+      <main class="help-content" id="helpContent">
+        <section id="inicio" class="card empresa-section help-section" data-help="inicio guia rapida rutas principales panel">
+          <h2>Inicio rápido</h2>
+          <p class="form-help">El sistema es una plataforma SaaS ERP/POS multiempresa. Cada registro operativo debe pertenecer a una empresa activa mediante <code>empresa_id</code>.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Rutas principales</h3>
+              <p><a href="/login.html">/login.html</a> para administradores, <a href="/login_usuario.html">/login_usuario.html</a> para operadores, <a href="/seleccionar_empresa.html">/seleccionar_empresa.html</a> para elegir empresa.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Orden recomendado</h3>
+              <ol class="help-step-list">
+                <li>Crear o seleccionar empresa.</li>
+                <li>Validar licencia activa.</li>
+                <li>Configurar usuarios, estaciones, productos, bodegas e impresoras.</li>
+                <li>Probar venta, pago, reporte y auditoria.</li>
+              </ol>
+            </article>
+            <article class="help-mini-card">
+              <h3>Principio de seguridad</h3>
+              <p>Si falta configuracion critica, el sistema debe explicar el requisito antes de continuar: bodega, formato de factura, cliente, pasarela, licencia o permisos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Acceso a esta ayuda</h3>
+              <p>La ayuda administrativa completa es privada y solo debe estar disponible para el rol <code>super_administrador</code>. Se abre desde el boton <strong>Ayuda super administrador</strong> del panel super. Los usuarios operativos usan ayudas contextuales o manuales de login.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="roles" class="card empresa-section help-section" data-help="roles permisos administrador usuario operador super acceso">
+          <h2>Roles y acceso</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Super administrador</h3>
+              <p>Administra plataforma, licencias, tipos de empresa, pagos, integraciones, IA, voz, auditoria, configuracion avanzada, ayuda privada y metricas globales.</p>
+              <span class="help-route">Ruta: /super_administrador.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Contralor super administrador</h3>
+              <p>Rol de supervision para controlar administradores, revisar seguridad, errores, metricas y reportes globales sin abrir toda la configuracion comercial o tecnica de la plataforma.</p>
+              <span class="help-route">Rol: control_super_administrador</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Administrador de empresa</h3>
+              <p>Configura y opera una empresa concreta: productos, usuarios, estaciones, caja, facturacion, reportes, venta publica y modulos.</p>
+              <span class="help-route">Ruta: /administrar_empresa.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Operadores</h3>
+              <p>Cajero, inventario, supervisor, vendedor, tecnico, lavador u otros roles dependen de permisos por modulo, pagina, accion y componente.</p>
+              <span class="help-route">Ruta: /login_usuario.html</span>
+            </article>
+          </div>
+          <h3 id="roles-empresa">Roles empresariales disponibles</h3>
+          <div class="help-grid">
+            <article id="rol-administrador_total" class="help-mini-card"><h3>Administrador total</h3><p>Acceso empresarial completo sobre las empresas autorizadas. Puede supervisar configuracion, usuarios, ventas, caja, inventario, reportes e integraciones segun licencia.</p><span class="help-route">Rol: administrador_total</span></article>
+            <article id="rol-admin_empresa" class="help-mini-card"><h3>Administrador de empresa</h3><p>Configura la empresa, crea usuarios, administra permisos, estaciones, productos, caja, facturacion, reportes y modulos activos.</p><span class="help-route">Rol: admin_empresa</span></article>
+            <article id="rol-supervisor_sucursal" class="help-mini-card"><h3>Supervisor de sucursal</h3><p>Supervisa la operacion diaria, estaciones, ventas, caja, personal y reportes sin administrar la plataforma global.</p><span class="help-route">Rol: supervisor_sucursal</span></article>
+            <article id="rol-cajero" class="help-mini-card"><h3>Cajero</h3><p>Opera carritos, ventas, cobros, facturacion operativa, caja propia y cierre de turno independiente por usuario.</p><span class="help-route">Rol: cajero</span></article>
+            <article id="rol-vendedor" class="help-mini-card"><h3>Vendedor</h3><p>Atiende clientes, cotiza, registra ventas operativas y consulta disponibilidad sin administrar caja ni configuracion avanzada.</p><span class="help-route">Rol: vendedor</span></article>
+            <article id="rol-recepcion" class="help-mini-card"><h3>Recepcion</h3><p>Atiende ingresos, salidas, clientes, estaciones y reservas cuando el tipo de empresa lo usa.</p><span class="help-route">Rol: recepcion</span></article>
+            <article id="rol-portero" class="help-mini-card"><h3>Portero</h3><p>Ve estaciones y puede activar estaciones disponibles. No entra al carrito, no cobra y no cambia configuracion.</p><span class="help-route">Rol: portero</span></article>
+            <article id="rol-servicio_limpieza" class="help-mini-card"><h3>Servicio de limpieza</h3><p>Ve estaciones asignadas y cambia el estado de sucia a limpia, registrando tiempos de aseo para reportes de control.</p><span class="help-route">Rol: servicio_limpieza</span></article>
+            <article id="rol-inventario" class="help-mini-card"><h3>Inventario</h3><p>Gestiona productos, servicios, bodegas, traslados, existencias, alertas y procesos de inventario autorizados.</p><span class="help-route">Rol: inventario</span></article>
+            <article id="rol-jefe_bodega" class="help-mini-card"><h3>Jefe de bodega</h3><p>Administra una o varias bodegas, existencias, traslados y control de stock sin operar caja ni ventas.</p><span class="help-route">Rol: jefe_bodega</span></article>
+            <article id="rol-responsable_bodega" class="help-mini-card"><h3>Responsable de bodega</h3><p>Gestiona la bodega asignada, existencias, traslados y control de stock sin operar caja ni ventas.</p><span class="help-route">Rol: responsable_bodega</span></article>
+            <article id="rol-compras" class="help-mini-card"><h3>Compras</h3><p>Gestiona proveedores, compras, recepcion de mercancia y soporte operativo de abastecimiento.</p><span class="help-route">Rol: compras</span></article>
+            <article id="rol-recursos_humanos" class="help-mini-card"><h3>Recursos humanos</h3><p>Gestiona horarios, asistencia, novedades y nomina operativa del personal autorizado.</p><span class="help-route">Rol: recursos_humanos</span></article>
+            <article id="rol-tecnico_solar" class="help-mini-card"><h3>Tecnico solar</h3><p>Consulta estado, lecturas, eventos y alertas del sistema de energia solar sin modificar configuracion critica.</p><span class="help-route">Rol: tecnico_solar</span></article>
+            <article id="rol-contabilidad" class="help-mini-card"><h3>Contabilidad</h3><p>Gestiona procesos contables, financieros, tributarios y reportes autorizados segun la matriz de permisos.</p><span class="help-route">Rol: contabilidad</span></article>
+            <article id="rol-contador" class="help-mini-card"><h3>Contador</h3><p>Consulta finanzas, impuestos y cumplimiento de la empresa en modo lectura, sin operar ventas, caja ni configuracion.</p><span class="help-route">Rol: contador</span></article>
+            <article id="rol-empresario" class="help-mini-card"><h3>Empresario</h3><p>Consulta resultados, indicadores y reportes ejecutivos sin operar ventas, caja, inventario ni configuracion.</p><span class="help-route">Rol: empresario</span></article>
+            <article id="rol-auditor" class="help-mini-card"><h3>Auditor</h3><p>Consulta trazabilidad, auditoria, reportes y cumplimiento sin ejecutar operacion diaria ni modificar datos.</p><span class="help-route">Rol: auditor</span></article>
+          </div>
+        </section>
+
+        <section id="acceso-usuarios" class="card empresa-section help-section" data-help="login usuario invitacion email clave acceso global empresa recuperar invitacion administrador">
+          <h2>Acceso de usuarios de empresa</h2>
+          <p class="form-help">Los usuarios operativos entran desde un portal unico. No necesitan subdominio de empresa: el sistema resuelve la empresa correcta por email, clave e invitacion valida.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Login global</h3>
+              <p>Usa <a href="/login_usuario.html">/login_usuario.html</a> para usuarios de cualquier empresa. Al iniciar sesion, el sistema redirige al panel de la empresa y carga rol/permisos efectivos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Registro por invitacion</h3>
+              <p>El administrador crea el usuario y envia una invitacion por correo. El usuario solo puede completar su primer acceso desde ese enlace, validando token, email y documento cuando aplique.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Recuperar invitacion</h3>
+              <p>Si el usuario borro el correo, puede solicitar reenvio de invitacion desde el login. La respuesta se mantiene enmascarada por seguridad.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Login administrador</h3>
+              <p>Los administradores de plataforma usan <a href="/login.html">/login.html</a>. En escritorio se muestra una ilustracion profesional decorativa sin afectar el formulario.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="super" class="card empresa-section help-section" data-help="super administrador licencias tipos empresas preconfiguracion ia voz pagos metricas">
+          <h2>Super administrador</h2>
+          <ol class="help-step-list">
+            <li>Usa <strong>Panel</strong> para ver estado general, metricas, empresas y alertas.</li>
+            <li>Usa <strong>Ayuda super administrador</strong> para abrir esta guia privada dentro del panel; no se muestra al rol <code>control_super_administrador</code> ni a administradores de empresa.</li>
+            <li>Usa <strong>Tipos de empresas</strong> y <strong>Preconfiguracion de tipos</strong> para preparar empresas nuevas con estaciones, productos, usuarios guia y reglas por tipo.</li>
+            <li>Usa <strong>Licencias</strong> para administrar planes, pruebas, valores, descuentos, vigencias, visibilidad y limite de documentos/ventas mensuales. Las licencias no limitan cajas simultaneas.</li>
+            <li>Usa <strong>Correos masivos</strong> para comunicar politicas, mantenimientos, actualizaciones o avisos importantes a administradores y usuarios.</li>
+            <li>Usa <strong>Configuración avanzada</strong> para Epayco, Gmail, OnlyOffice, RustDesk, voz IA, seguridad, base de datos y costos.</li>
+            <li>Usa <strong>Contexto IA negocio</strong> para editar el documento que la IA debe tomar como marco permanente de negocio.</li>
+          </ol>
+        </section>
+
+        <section id="empresa" class="card empresa-section help-section" data-help="administrar empresa panel clima favoritos configuracion estaciones usuarios">
+          <h2>Administrar empresa</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Panel empresarial</h3>
+              <p>Muestra bienvenida, clima, indicadores economicos, favoritos y accesos operativos. La ciudad se prioriza por GPS, navegador y luego datos registrados.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Configuración</h3>
+              <p>Agrupa chat/robot, impresoras, caja, estaciones, sensores, facturacion, Raspberry Pi, Backup profesional, identidad visual, apariencia y parametros por empresa.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Favoritos</h3>
+              <p>Las paginas de administrar empresa pueden agregarse a favoritos para aparecer debajo de clima e indicadores en el panel.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="modulos-organizados" class="card empresa-section help-section" data-help="modulos organizados fusion finanzas contabilidad centro financiero estructura">
+          <h2>Organizacion profesional de modulos</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Centro financiero y contable</h3>
+              <p>Finanzas operativas, Contabilidad Colombia, Suite contable Colombia, corte de caja, creditos, cartera y nomina se administran desde un unico centro para evitar duplicidad visual.</p>
+              <span class="help-route">Ruta: /administrar_empresa/finanzas_menu.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Compatibilidad</h3>
+              <p>Las rutas internas no se eliminan: se mantienen vivas para permisos, favoritos, enlaces antiguos y pruebas. La fusion es de navegacion y estructura, no de datos ni APIs.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Criterio de separacion</h3>
+              <p>Un modulo se separa cuando tiene permisos, licencia o datos propios. Si solo es una vista de trabajo del mismo dominio, se agrupa bajo un menu padre.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Modulos finos de roles</h3>
+              <p>El catalogo ahora separa CRM unificado, reservas hoteleras, chat/tareas, horarios, asistencia, vehiculos, hoja de vida operativa, GPS, nomina, reportes, auditoria, backups y OnlyOffice para controlar pagina, rol y API con mayor precision.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Compatibilidad de licencias</h3>
+              <p>Las licencias antiguas que habilitaban modulos amplios como ventas, seguridad, finanzas, inventario o clientes conservan acceso a las funciones separadas que antes dependian de esos grupos.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="plantillas-2026" class="card empresa-section help-section" data-help="20 plantillas nuevas industrias agencia viajes turismo eventos salon spa veterinaria clinica laboratorio colegio guarderia lavanderia taller transporte carga tms servicios tecnicos inmobiliaria seguridad privada club deportivo funeraria parque cooperativa capacitacion">
+          <h2>20 soluciones nuevas por negocio</h2>
+          <p class="form-help">Estas soluciones permiten vender y operar por industria sin crear 20 sistemas separados. Todas comparten el motor comun de modulos empresariales Colombia, permisos, licencias, diagnostico y auditoria por <code>empresa_id</code>.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Catalogo incluido</h3>
+              <p>Agencia de viajes, operador turistico, eventos, salon/spa, veterinaria, clinica, laboratorio, colegio, guarderia, lavanderia, taller mecanico, transporte de carga/TMS, servicios tecnicos, inmobiliaria, seguridad privada, club deportivo, funeraria, parque recreativo, cooperativa y capacitacion empresarial.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Motor comun</h3>
+              <p>Usan <code>empresa_modulos_colombia_*</code> con dashboard, registros, seguimiento, responsables, aprobaciones, evidencias, SLA, tareas, importacion/exportacion y reportes. La plantilla de cada industria solo cambia etiquetas, categorias, estados y ruta de trabajo.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Activacion</h3>
+              <p>Desde Super Administrador se auditan en <strong>Tipos de empresas</strong>, <strong>Preconfiguracion de tipos</strong>, <strong>Licencias</strong> y <strong>Permisos</strong>. El catalogo visible tiene prueba de 15 dias, planes mensuales COP 60000, COP 110000 y COP 200000, y planes anuales COP 600000, COP 1100000 y COP 2200000.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Operacion</h3>
+              <p>En Administrar empresa abre <strong>Soluciones por negocio</strong>. Cada tipo de negocio aparece como boton propio, abre su submenu profesional y luego el modulo operativo con configuracion, diagnostico y registros.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Pantallas conectadas</h3>
+              <p>Portada publica, descripcion de sistemas, elegir licencia, pagar licencia, seleccionar empresa, tipos de empresas y preconfiguraciones consumen el catalogo compartido para evitar listas repetidas.</p>
+              <span class="help-route">Catalogo: /api/public/plantillas_nuevas/catalogo</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Regla para soporte</h3>
+              <p>Antes de proponer un modulo nuevo por industria, revisa si el caso encaja en uno de estos plantillas y si basta con ajustar plantilla, permisos, licencia o preconfiguracion.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="nomina" class="card empresa-section help-section" data-help="nomina sueldos tutorial presentacion narracion audio pila dian empleados pagos">
+          <h2>Nomina de sueldos</h2>
+          <p class="form-help">El modulo de nomina consolida configuracion legal, empleados, sedes, asistencia, liquidacion, provisiones, pagos, desprendibles y preparacion de nomina electronica Colombia.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Presentacion guiada</h3>
+              <p>Abre el tutorial con diapositivas, numeros de pasos y narracion reproducible desde el navegador.</p>
+              <span class="help-route"><a href="/ayuda/tutorial_nomina.html">/ayuda/tutorial_nomina.html</a></span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Ruta operativa</h3>
+              <p>Desde Administrar empresa entra a Recursos humanos y abre Nomina. Tambien puedes usar el icono de ayuda dentro de la pagina de nomina.</p>
+              <span class="help-route">Ruta: /administrar_empresa/nomina_sueldos.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Orden recomendado</h3>
+              <ol class="help-step-list">
+                <li>Configurar parametros legales.</li>
+                <li>Registrar empleados, sedes y centros de costo.</li>
+                <li>Calcular nomina por periodo.</li>
+                <li>Revisar control contable, pagos y desprendibles.</li>
+                <li>Preparar nomina electronica DIAN cuando aplique.</li>
+              </ol>
+            </article>
+          </div>
+        </section>
+
+        <section id="productos" class="card empresa-section help-section" data-help="productos inventario bodega categorias servicios recetas codigo barras stock">
+          <h2>Productos e inventario</h2>
+          <ol class="help-step-list">
+            <li>Crea categorias, bodegas y productos antes de vender.</li>
+            <li>Para productos inventariables, asigna bodega principal o existencia en <code>inventario_existencias</code>.</li>
+            <li>Usa recetas para agrupar productos y servicios vendibles para mano de obra, tarifas, estaciones, lavados o atenciones.</li>
+            <li>El generador de codigos de barras se abre desde el submenu de productos.</li>
+            <li>Si un producto no entra al carrito, revisa bodega, existencia, estado activo, precio y empresa correcta.</li>
+          </ol>
+        </section>
+
+        <section id="ventas" class="card empresa-section help-section" data-help="estaciones carrito caja pago cerrar cancelar sensor motel mesas">
+          <h2>Estaciones, carrito y caja</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Estaciones</h3>
+              <p>Representan mesas, estaciones, sillas, bahias, cajas o puestos. El nombre cambia segun el tipo de empresa y su preconfiguracion.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Carrito</h3>
+              <p>Agrega productos por botones, lector de codigo de barras o busqueda. Venta directa y estaciones usan el mismo carrito unificado, plano, sin sombras y con fondo estructural mas oscuro que las tarjetas.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Venta directa</h3>
+              <p>Usa el carrito canonico <code>VENTA-DIRECTA-{empresa_id}-0</code>. El boton <strong>Pantalla completa</strong> expande la venta y luego cambia a <strong>Salir</strong> para regresar.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Caja y corte</h3>
+              <p>El corte de caja agrupa movimientos por caja abierta, cajero, efectivo esperado, tarjetas, otros medios, ventas de productos, servicios y alertas de sensor no facturadas.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Cajas simultaneas</h3>
+              <p>Las cajas simultaneas se controlan por configuracion de la empresa, no por licencia. Una empresa puede operar varias cajas; la licencia solo limita documentos/ventas emitidas. Cada pago debe seleccionar una caja abierta.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Sensores y tarifas por minutos</h3>
+              <p>Moteles y hoteles pueden activar estacion por sensor, tolerancias, cobro por fraccion, minutos extra y bloqueo de cancelacion tras margen configurado.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="operacion-conectada" class="card empresa-section help-section" data-help="conexion servidor online offline facturacion ventas pagos documentos">
+          <h2>Operacion conectada y modo offline controlado</h2>
+          <p class="form-help">El sistema prioriza la conexion activa con el servidor para proteger inventario, auditoria, caja, consecutivos fiscales y permisos por rol. Si una empresa activa modo offline del carrito, la caja puede vender e imprimir provisionalmente mientras sincroniza al volver internet.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Ventas y cobros</h3>
+              <p>Antes de cobrar, valida conexion, licencia activa, caja abierta, permisos del usuario, productos/servicios disponibles y metodo de pago habilitado. Si aparece modo sin internet, opera solo si el carrito tiene offline activo.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Facturacion electronica</h3>
+              <p>Si DIAN o el proveedor fiscal no responde, la emision se debe manejar como contingencia o reintento segun pais y configuracion. La factura real requiere trazabilidad de envio, acuse y estado documental.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Mensajes de conectividad</h3>
+              <p>Cuando se pierde internet se muestra aviso visible. Al regresar, el sistema informa la reconexion, sincroniza ventas offline pendientes y registra el evento en auditoria cuando aplica.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Backups locales</h3>
+              <p>Los backups empresariales configurados para equipo local se descargan en el computador o celular mientras la pagina este abierta con sesion activa.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Documentos locales</h3>
+              <p>OnlyOffice crea una sesion temporal de edicion y luego descarga el documento al dispositivo; no funciona como repositorio permanente del VPS.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="pagos" class="card empresa-section help-section" data-help="licencias epayco descuento prueba pago cero activar licencia">
+          <h2>Licencias y pagos</h2>
+          <ol class="help-step-list">
+            <li>Las licencias vencidas desactivan la empresa hasta renovacion o compra.</li>
+            <li>El catalogo comercial visible contiene 8 planes globales: prueba gratis 15 dias, prueba de 1 dia por COP 5000, mensuales COP 60000, COP 110000 y COP 200000, y anuales COP 600000, COP 1100000 y COP 2200000.</li>
+            <li>La compra adelantada de la misma licencia se limita desde Super Administrador; por defecto solo se permiten dos compras adicionales sobre la licencia activa.</li>
+            <li>Los codigos de descuento y licencias de prueba solo aplican una vez por empresa; una prueba vencida no se puede activar otra vez.</li>
+            <li>Si el valor final queda en cero, la licencia se activa sin pasar por Epayco y debe enviarse correo de confirmacion.</li>
+            <li>Si el pago comercial aprobado es mayor que cero, el sistema envia un solo correo con PDF de licencia y PDF de factura electronica emitida desde la empresa interna Powerful Control System. Si el descuento deja el total en cero, no se emite factura electronica.</li>
+            <li>Si hay pago Epayco o Wompi, la licencia se activa solo con estado aprobado, webhook valido o retorno con evidencia fuerte e idempotente.</li>
+            <li>Para cambiar entre sandbox y produccion, revisa las credenciales y modo Epayco en Super Administrador.</li>
+          </ol>
+        </section>
+
+        <section id="dian" class="card empresa-section help-section" data-help="dian facturacion electronica colombia firma resolucion conexion servidor notas credito">
+          <h2>Facturación electrónica DIAN</h2>
+          <p class="form-help">La facturacion electronica requiere datos fiscales completos, firma electronica, resolucion, prefijo, consecutivos, ambiente y pruebas de habilitacion cuando aplique.</p>
+          <ol class="help-step-list">
+            <li>Configura empresa, responsabilidad fiscal, correo, NIT, ciudad, direccion y certificado.</li>
+            <li>En <strong>Pruebas DIAN</strong> guarda el objetivo exacto que muestra el portal DIAN para la empresa: TestSetId, facturas, notas debito, notas credito y minimos aceptados. Para Powerful Control System el set cargado es 30 facturas, 10 notas debito, 10 notas credito y minimo aceptado 1 factura.</li>
+            <li>Usa <strong>Ejecutar set automatico</strong> para enviar el lote completo configurado. En simulacion no se marca habilitacion aprobada; la aprobacion solo queda cuando DIAN/proveedor devuelve acuse aceptado en ejecucion real.</li>
+            <li>Para el endpoint oficial SOAP/WCF de DIAN no se requiere token bearer. Si el sistema usa proveedor/API externa, entonces si debe configurar <code>token_emisor_ref</code>. En habilitacion real siempre se requiere <code>test_set_id</code>.</li>
+            <li>La emision requiere conexion activa con el servidor y DIAN/proveedor; si no hay conexion, no se debe continuar la operacion.</li>
+            <li>Cuando vuelva la conexion, procesa la cola de reintentos desde el modulo para enviar pendientes fallidos.</li>
+          </ol>
+        </section>
+
+        <section id="ia" class="card empresa-section help-section" data-help="ia chat robot secretaria voz documentos gpt auditoria contexto ayuda">
+          <h2>IA, voz y documentos</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Contexto de IA</h3>
+              <p>La IA usa auditoria en tiempo real, contexto de negocio, ayuda del sistema, datos consultados por backend y permisos de la empresa activa.</p>
+              <span class="help-route">Super: /super/contexto_ia_logica_negocio.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Chat, robot y secretaria</h3>
+              <p>Puede funcionar como chat cuadrado, robot 3D o secretaria 3D. La configuracion se administra por empresa en Configuración &gt; Configurar chat y robot.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Voz rapida o natural</h3>
+              <p>La voz rapida usa el navegador y responde antes. La voz natural usa Piper en VPS y puede desactivarse para liberar memoria.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Documentos dinamicos</h3>
+              <p>El chat puede generar contratos, reportes, facturas, actas, cotizaciones, Excel, Word, PDF, TXT o JSON cuando el contenido aplica.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="publico" class="card empresa-section help-section" data-help="venta publica subdominio red social tienda pasarela catalogo">
+          <h2>Venta publica y red social empresarial</h2>
+          <p class="form-help">Permite publicar paginas, catalogos, productos, red social empresarial y pagos por pasarela propia de cada empresa.</p>
+          <ol class="help-step-list">
+            <li>Configura pagina publica, productos visibles, textos, imagenes y pasarela.</li>
+            <li>Usa el boton de visitar pagina para comprobar la tienda o red social publicada.</li>
+            <li>Si falla publicar un post, revisa permisos, empresa activa, archivos adjuntos y auditoria del endpoint.</li>
+          </ol>
+        </section>
+
+        <section id="reportes" class="card empresa-section help-section" data-help="reportes auditoria backups exportar importar caja finanzas">
+          <h2>Reportes, auditoria y respaldos</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Reportes</h3>
+              <p>Consulta ventas, caja, inventario, finanzas, cartera, indicadores globales y exportaciones. Incluye reportes colombianos avanzados: ventas diarias POS, Kardex valorizado, balance de prueba, libros contables, exogena base, impuestos/retenciones y edades de cartera.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Auditoria</h3>
+              <p>Registra usuario, modulo, accion, request, estado y detalle. La IA usa auditoria como memoria operativa para diagnosticar.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Backups</h3>
+              <p>Permiten exportar/importar configuracion completa por empresa y generar evidencia antes de eliminar o purgar datos. El Backup profesional esta junto a Configuracion en el menu empresarial.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Compartir documentos</h3>
+              <p>Ventas, facturas, comprobantes, reportes y documentos pueden compartirse por WhatsApp o correo cuando la pantalla tenga documento/enlace disponible.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="soporte-comunicaciones" class="card empresa-section help-section" data-help="soporte tickets ayuda correos masivos mantenimiento licencias vencimiento avisos">
+          <h2>Soporte, comunicaciones y avisos</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Tickets de ayuda</h3>
+              <p>Desde el menu flotante de cada empresa se crea un ticket con asunto, mensaje, categoria, prioridad, contacto preferido, telefono opcional y contexto tecnico seguro de la pantalla activa.</p>
+              <span class="help-route">Super: /super/tickets_ayuda.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Correos masivos</h3>
+              <p>El super administrador puede enviar comunicados globales a administradores y usuarios. El sistema previsualiza destinatarios, deduplica correos y exige confirmacion antes de enviar.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Licencias por vencer</h3>
+              <p>Las alertas de vencimiento avisan por correo al administrador de la empresa segun dias configurados, evitando duplicados por licencia, empresa, fecha y umbral.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Mantenimiento programado</h3>
+              <p>Un aviso de mantenimiento puede mostrarse en el panel empresarial con fecha, hora y mensaje, separado del bloqueo real de mantenimiento del sistema.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="integraciones" class="card empresa-section help-section" data-help="integraciones onlyoffice rustdesk gmail recaptcha raspberry sensor">
+          <h2>Integraciones y utilidades</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>OnlyOffice y documentos</h3>
+              <p>Permiten crear Word, Excel o PowerPoint en una pantalla unica, editar con OnlyOffice y descargar el archivo al PC o celular. Configura URL, JWT y permisos cuando se use Document Server.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>RustDesk y soporte</h3>
+              <p>Sirve para soporte remoto controlado con trazabilidad de sesiones y acceso por empresa.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Raspberry Pi y sensores</h3>
+              <p>Se configura dentro de cada empresa. Puede activar estaciones, reportar ocupacion y alimentar cortes de caja.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Energia solar</h3>
+              <p>Monitorea Victron, SMA, SolarEdge o gateways locales por empresa, con baterias, BMS, lecturas, eventos y alertas por correo.</p>
+              <span class="help-route">Ruta: /administrar_empresa/energia_solar.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Utilidades</h3>
+              <p>El menu flotante mantiene calculadora, emisoras, noticias, tickets y cambio de apariencia.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Rappi por empresa</h3>
+              <p>Permite conectar tiendas Rappi por empresa, probar credenciales, consultar ordenes, tomar/rechazar pedidos y recibir webhooks firmados sin compartir secretos entre empresas.</p>
+              <span class="help-route">Ruta: /administrar_empresa/rappi.html</span>
+            </article>
+          </div>
+        </section>
+
+        <section id="energia-solar" class="card empresa-section help-section" data-help="energia solar victron sma solaredge baterias bms tecnico_solar alertas">
+          <h2>Energia solar</h2>
+          <p class="form-help">Modulo opcional por empresa para monitorear sistemas solares, baterias, BMS, inversores y alertas. Las preconfiguraciones lo incluyen apagado por defecto para que el administrador lo active cuando la empresa tenga equipos reales.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Proveedores base</h3>
+              <p>Victron VRM, SMA Sunny Portal, SolarEdge Monitoring y gateway local para Modbus, CAN-bus, RS485, MQTT o API privada.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Baterias</h3>
+              <p>Tesla Powerwall, BYD Battery-Box, Pylontech, Enphase IQ Battery y Victron Lithium quedan en el catalogo guia de preconfiguracion.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Roles</h3>
+              <p><code>tecnico_solar</code> consulta estado, lecturas, eventos y alertas. Administradores y supervisores configuran sistemas y reglas segun licencia y permisos efectivos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>API</h3>
+              <p>Usa <code>/api/empresa/energia_solar</code> con acciones <code>dashboard</code>, <code>catalogo</code>, <code>sistemas</code>, <code>alertas</code>, <code>lecturas</code>, <code>eventos</code> y <code>probar_alerta</code>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="apis" class="card empresa-section help-section" data-help="apis openapi endpoints integracion empresa_id seguridad carritos ventas super publicas">
+          <h2>Ayuda de APIs</h2>
+          <p class="form-help">Las APIs estan pensadas para integraciones empresariales, paneles internos y automatizaciones. Toda ruta empresarial debe validar sesion, permisos, licencia y aislamiento por <code>empresa_id</code>; nunca basta con ocultar botones en frontend.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Familias de rutas</h3>
+              <p><code>/api/public/*</code> es lectura publica controlada. <code>/super/api/*</code> es administracion global. <code>/api/empresa/*</code> opera datos de una empresa y exige alcance real del usuario.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Seguridad multiempresa</h3>
+              <p>Enviar <code>empresa_id</code> en query, header o payload no concede acceso. El backend resuelve el administrador autenticado y valida empresa, rol, licencia y permisos efectivos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Carritos y venta directa</h3>
+              <p>Los endpoints clave son <code>GET/POST/PUT/DELETE /api/empresa/carritos_compra</code> y <code>/api/empresa/carritos_compra/items</code>. Venta directa usa <code>modo=venta_directa</code> y <code>perm_page=linkVentaDirecta</code>.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>OpenAPI e inventario</h3>
+              <p>El inventario tecnico se genera en <code>documentos/api/openapi.generated.yaml</code>. Los contratos detallados por modulo viven en <code>documentos/gobernanza_tecnica/contratos</code>.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Errores esperados</h3>
+              <p><code>400</code> para datos incompletos, <code>401</code> sin sesion, <code>403</code> sin alcance/licencia/permiso, <code>404</code> si el recurso no pertenece a la empresa y <code>500</code> solo para fallos internos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Guia para integradores</h3>
+              <p>Antes de integrar, revisa la ayuda tecnica de APIs, la checklist multiempresa y el mapa de modulos.</p>
+              <span class="help-route">Documento: documentos/api/ayuda_apis.md</span>
+            </article>
+          </div>
+        </section>
+
+
+        <section id="estado-operativo" class="card empresa-section help-section" data-help="estado operativo modulos terminados errores estaciones carrito tarjetas dolar cop vps calidad">
+          <h2>Estado operativo de modulos</h2>
+          <p class="form-help">Actualizacion 2026-07-05: la plataforma tiene los modulos principales implementados u operativos, con roles finos, operacion conectada obligatoria, cajas simultaneas por configuracion empresarial, licencias limitadas por documentos/ventas, tickets propios, documentos locales, backups locales y comunicaciones globales. No se debe declarar cero errores absoluto sin pruebas integrales por rol, hardware real y proveedores externos.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Estaciones y carrito</h3>
+              <p>Al abrir una estacion, el carrito asociado debe cargar su tarifa o productos. Al pagar, se selecciona una caja abierta, el carrito se cierra y regresa automaticamente al mapa de estaciones.</p>
+              <span class="help-route">Rutas: /administrar_empresa/estaciones.html y /administrar_empresa/carrito_de_compras.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Tarjetas adaptables</h3>
+              <p>En Configuracion &gt; Configuracion de estaciones &gt; Apariencia de tarjetas, el tamano <strong>Se adapta al texto</strong> ajusta todas las tarjetas al mismo alto para que el contenido no se corte.</p>
+              <span class="help-route">Valor tecnico: auto_text</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Panel de empresa</h3>
+              <p>El panel de Administrar empresa ya no debe mostrar indicadores economicos o mercados; en su lugar conserva el clima, accesos rapidos y avisos operativos.</p>
+              <span class="help-route">Ruta: /administrar_empresa/panel.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Modulos sujetos a validacion</h3>
+              <p>Facturacion electronica multipais, impresoras, cajon monedero, RFID/NFC, GPS, mapas, SMTP, Epayco, OnlyOffice e IA dependen de credenciales, dispositivos o ambientes externos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Reporte documental</h3>
+              <p>El estado compacto por modulo esta en la documentacion tecnica del proyecto y debe revisarse antes de declarar una version estable para cliente.</p>
+              <span class="help-route">documentos/reporte_estado_modulos_2026-05-03.md</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Criterio de terminado</h3>
+              <p>Un modulo se considera listo para produccion cuando pasa pruebas de login, permisos, datos reales, flujo principal, reporte, auditoria y dependencias externas aplicables.</p>
+            </article>
+          </div>
+        </section>
+        <section id="faq" class="card empresa-section help-section" data-help="errores problemas frecuentes solucionar carrito licencia epayco recaptcha clima voz inventario">
+          <h2>Solución de problemas frecuentes</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>No aparece botón pagar</h3>
+              <p>Revisa licencia activa, configuracion de carrito, medios de pago visibles, formato de factura, caja abierta seleccionada e impresoras.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Producto no entra al carrito</h3>
+              <p>Valida bodega, existencia, producto activo, precio mayor o igual a cero, empresa_id correcto y permisos del usuario.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Epayco queda pendiente</h3>
+              <p>Comprueba estado en Epayco, webhook, referencia interna, evidencia de retorno, credenciales, modo sandbox/produccion y auditoria de pagos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>No permite abrir otra caja</h3>
+              <p>Revisa Configuracion de empresa &gt; Caja: si varias cajas estan desactivadas solo se permite una, y si existe limite interno de cajas debes cerrarla o aumentar ese valor. La licencia no limita cajas.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>La voz de IA es lenta</h3>
+              <p>Activa voz rapida del computador en Super Administrador &gt; Voz IA streaming. Esto apaga el servicio natural del VPS.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Clima muestra ciudad incorrecta</h3>
+              <p>Usa el boton GPS del panel o escribe ciudad y pais manualmente. El clima prioriza GPS confirmado, ciudad manual y ciudad registrada.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>reCAPTCHA falla</h3>
+              <p>Usa el boton reintentar, revisa conexion, dominio configurado y claves en configuracion avanzada.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var input = document.getElementById('helpSearch');
+      var clear = document.getElementById('helpClear');
+      var sections = Array.prototype.slice.call(document.querySelectorAll('.help-section'));
+
+      function normalize(value) {
+        return String(value || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+
+      function applyFilter() {
+        var q = normalize(input && input.value);
+        sections.forEach(function(section){
+          if (!q) {
+            section.classList.remove('help-hidden');
+            return;
+          }
+          var haystack = normalize(section.textContent + ' ' + (section.getAttribute('data-help') || ''));
+          section.classList.toggle('help-hidden', haystack.indexOf(q) < 0);
+        });
+        var visible = sections.some(function(section){
+          return !section.classList.contains('help-hidden');
+        });
+        var empty = document.getElementById('helpEmptyState');
+        if (!empty) {
+          empty = document.createElement('div');
+          empty.id = 'helpEmptyState';
+          empty.className = 'help-empty-state help-hidden';
+          empty.textContent = 'No se encontraron temas con esa busqueda.';
+          var content = document.getElementById('helpContent');
+          if (content) content.appendChild(empty);
+        }
+        empty.classList.toggle('help-hidden', visible || !q);
+      }
+
+      if (input) input.addEventListener('input', applyFilter);
+      if (clear) {
+        clear.addEventListener('click', function(){
+          if (input) input.value = '';
+          applyFilter();
+          if (input) input.focus();
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1375 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Corte de caja</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .cash-close-hero { display:grid; grid-template-columns:1fr; gap:8px; align-items:stretch; }
+    .cash-close-panel { border:1px solid var(--border); border-radius:8px; padding:8px; background:linear-gradient(135deg,var(--card),color-mix(in srgb, var(--surface-soft) 88%, var(--card))); box-shadow:none; color:var(--text); }
+    .cash-close-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .cash-close-actions.is-compact { display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:6px; margin:8px 0; }
+    .cash-close-actions.is-compact .btn { width:auto; justify-content:center; }
+    .cash-close-buttons-only{border:0;background:transparent;padding:0;margin-top:8px}
+    .cash-close-buttons-only .cash-close-actions{margin:0}
+    .cash-close-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px; }
+    .cash-kpi { border-radius:8px; padding:10px; background:color-mix(in srgb, var(--accent) 28%, var(--surface)); color:var(--text); min-height:74px; border:1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); }
+    .cash-kpi:nth-child(2) { background:color-mix(in srgb, var(--success) 26%, var(--surface)); border-color:color-mix(in srgb, var(--success) 30%, var(--border)); }
+    .cash-kpi:nth-child(3) { background:color-mix(in srgb, var(--accent-yellow) 20%, var(--surface)); border-color:color-mix(in srgb, var(--accent-yellow) 28%, var(--border)); }
+    .cash-kpi:nth-child(4) { background:color-mix(in srgb, var(--accent-2) 24%, var(--surface)); border-color:color-mix(in srgb, var(--accent-2) 30%, var(--border)); }
+    .cash-kpi span { display:block; font-size:.68rem; opacity:.8; }
+    .cash-kpi strong { display:block; font-size:1rem; margin-top:6px; }
+    .cash-kpi small { display:block; opacity:.75; margin-top:3px; font-size:.72rem; }
+    .cash-close-panel .form{display:grid;grid-template-columns:repeat(6,minmax(128px,1fr));gap:6px;align-items:end;max-width:none;width:100%;margin:0;padding:0;background:transparent!important;border:0!important;box-shadow:none!important}
+    .cash-close-panel .form::before{display:none!important;content:none!important}
+    .cash-close-panel .form-row{display:contents}
+    .cash-close-panel .form-col{min-width:0}
+    .cash-close-panel .form-col-wide{grid-column:span 2}
+    .cash-close-panel .form-label{margin-bottom:3px;font-size:.72rem}
+    .cash-close-panel .form-input{min-height:34px;padding:6px 8px}
+    .cash-close-panel .form-help{font-size:.8rem;line-height:1.2}
+    .corte-report-section[hidden], .corte-summary-grid[hidden] { display:none !important; }
+    .corte-caja-report.turno-operativo-sheet { margin-top:10px; border:1px solid #111827; border-radius:0; background:#fff !important; color:#111827; box-shadow:none; overflow:hidden; color-scheme:light; }
+    .corte-caja-report,.corte-caja-report * { color:#111827 !important; }
+    .corte-caja-report :is(div,section,article,header,footer,table,thead,tbody,tfoot,tr,th,td,p,span,strong,small,h1,h2,h3,h4) { background-color:#fff !important; }
+    .corte-caja-report .corte-report-header { padding:16px 18px 12px; border-bottom:2px solid #111827; margin-bottom:0; background:#fff; }
+    .corte-caja-report .corte-report-header h2 { margin:0 0 6px; color:#111827; font-size:1.22rem; }
+    .corte-caja-report .corte-report-header .form-help { color:#374151; margin:0; }
+    .corte-caja-report .corte-report-badge { align-self:flex-start; border:1px solid #111827; background:#fff; color:#111827; border-radius:0; padding:8px 10px; font-size:.82rem; }
+    .turno-report-company { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:start; padding:12px 18px; border-bottom:1px solid #d1d5db; background:#fff; margin:0; }
+    .turno-report-company h3 { margin:0; color:#111827; font-size:1.1rem; }
+    .turno-report-company p { margin:4px 0 0; color:#374151; font-size:.86rem; }
+    .turno-report-meta,.corte-summary-grid,.turno-detail-list { display:flex; flex-direction:column; gap:0; margin:0; border-top:0; }
+    .turno-report-meta div,.corte-summary-row,.turno-detail-row { display:grid; grid-template-columns:minmax(108px,.42fr) minmax(0,1fr); gap:10px; align-items:start; padding:7px 0; border-bottom:1px solid #d1d5db; background:#fff; }
+    .corte-summary-row { grid-template-columns:minmax(150px,.34fr) minmax(132px,.24fr) minmax(180px,1fr); }
+    .corte-caja-report .turno-report-panel { margin:12px 18px 0; border:1px solid #d1d5db; border-radius:0; background:#fff; padding:12px; }
+    .corte-caja-report .turno-report-panel h3 { margin:0 0 8px; color:#111827; font-size:1rem; }
+    .corte-caja-report .turno-report-panel:last-child { margin-bottom:18px; }
+    .corte-caja-report .corte-report-section .section-heading { margin:14px 18px 0; color:#111827; font-size:1rem; }
+    .corte-caja-report .turno-detail-line { display:block; color:#111827; font-weight:600; line-height:1.42; text-align:left; }
+    .corte-caja-report .turno-detail-line strong { color:#374151; font-weight:800; }
+    .turno-report-meta span,.corte-summary-row span,.turno-detail-row span { display:block; color:#374151; font-size:.72rem; font-weight:800; text-transform:uppercase; }
+    .turno-report-meta strong,.corte-summary-row strong,.turno-detail-row strong { display:block; color:#111827; font-size:.9rem; overflow-wrap:anywhere; }
+    .corte-summary-row strong { white-space:nowrap; overflow-wrap:normal; word-break:normal; }
+    .corte-summary-row small { color:#374151; font-size:.78rem; line-height:1.35; }
+    .turno-detail-list { border-top:0; gap:8px; }
+    .turno-detail-item { break-inside:avoid; border-top:1px solid var(--border); }
+    .turno-detail-item:first-child { border-top:0; }
+    .turno-detail-empty { padding:9px 0; color:#374151; background:#fff !important; }
+    .corte-caja-page .corte-final-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center; color:#111827; background:#fff !important; border:2px solid #111827; border-radius:0; padding:12px; }
+    .corte-caja-page .corte-final-note strong,
+    .corte-caja-page .corte-final-note span { color:#111827; }
+    .corte-caja-page .corte-final-note span { font-weight:900; }
+    .cash-close-stamp { border:1px dashed #9ca3af; border-radius:0; padding:10px 12px; font-size:.85rem; color:#374151; background:#fff !important; }
+    .corte-caja-page.print-preview-active { background:#f3f4f6; color:#111827; color-scheme:light; }
+    .corte-caja-page.print-preview-active .corte-caja-report {
+      width:min(100%, 8.5in);
+      max-width:8.5in;
+      min-height:11in;
+      margin:18px auto 34px;
+      padding:24px;
+      background:#fff !important;
+      color:#111827 !important;
+      border:1px solid #111827 !important;
+      box-shadow:none !important;
+    }
+    .corte-caja-page.print-preview-active .corte-caja-report .form-help,
+    .corte-caja-page.print-preview-active .corte-caja-report small {
+      color:#374151 !important;
+    }
+    .corte-caja-page.print-preview-active .corte-caja-report .empresa-section-title,
+    .corte-caja-page.print-preview-active .corte-caja-report h2,
+    .corte-caja-page.print-preview-active .corte-caja-report h3,
+    .corte-caja-page.print-preview-active .corte-caja-report strong {
+      color:#111827 !important;
+    }
+    .corte-caja-page.print-preview-active .corte-report-badge,
+    .corte-caja-page.print-preview-active .turno-report-company,
+    .corte-caja-page.print-preview-active .turno-report-meta div,
+    .corte-caja-page.print-preview-active .corte-summary-row,
+    .corte-caja-page.print-preview-active .turno-detail-row {
+      background:transparent !important;
+      color:#111827 !important;
+      border-color:#d1d5db !important;
+    }
+    .corte-caja-page.print-preview-active .corte-summary-row span,
+    .corte-caja-page.print-preview-active .corte-summary-row small,
+    .corte-caja-page.print-preview-active .turno-detail-row span,
+    .corte-caja-page.print-preview-active .turno-report-meta span,
+    .corte-caja-page.print-preview-active .turno-report-company p {
+      color:#374151 !important;
+    }
+    .corte-caja-page.print-preview-active .corte-summary-row strong,
+    .corte-caja-page.print-preview-active .turno-detail-row strong,
+    .corte-caja-page.print-preview-active .turno-report-meta strong,
+    .corte-caja-page.print-preview-active .turno-report-company h3 {
+      color:#111827 !important;
+    }
+    .corte-caja-page.print-preview-active .corte-final-note {
+      background:#fff !important;
+      color:#111827 !important;
+      border-color:#111827 !important;
+    }
+    .corte-caja-page.print-preview-active .corte-final-note strong,
+    .corte-caja-page.print-preview-active .corte-final-note span {
+      color:#111827 !important;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-caja-report {
+      width:80mm;
+      max-width:80mm;
+      min-height:auto;
+      padding:4mm;
+      font-size:11px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-report-header {
+      display:block;
+      margin-bottom:8px;
+      padding:0 0 8px;
+      background:#fff;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-report-header h2 {
+      font-size:15px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos #reportMeta,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-company p,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-meta strong,
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row small,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-detail-row strong {
+      font-size:10px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-meta {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      column-gap:6px;
+      row-gap:0;
+      border-top:1px solid #d1d5db;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-meta div {
+      display:block;
+      min-width:0;
+      padding:4px 0;
+      border-bottom:1px solid #d1d5db;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-grid .turno-report-panel {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      column-gap:6px;
+      row-gap:0;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-grid .turno-report-panel h3 {
+      grid-column:1 / -1;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row {
+      display:grid;
+      grid-template-columns:minmax(0,1fr);
+      gap:1px;
+      min-width:0;
+      padding:4px 0;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row strong {
+      display:block;
+      font-size:11px;
+      line-height:1.25;
+      white-space:nowrap;
+      overflow-wrap:normal;
+      word-break:normal;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row small {
+      display:block;
+      margin-top:2px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .turno-detail-list {
+      gap:6px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .turno-detail-item {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      column-gap:6px;
+      row-gap:2px;
+      padding:5px 0;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .turno-detail-line {
+      min-width:0;
+      font-size:10px;
+      line-height:1.28;
+      overflow-wrap:anywhere;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .turno-detail-line strong {
+      font-size:9px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-company,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-panel {
+      margin:8px 0 0;
+      padding:8px 0;
+      border-left:0;
+      border-right:0;
+      border-radius:0;
+      background:#fff;
+    }
+    .corte-caja-page.print-preview-active.report-print-ejecutivo .corte-report-section[data-section="items"],
+    .corte-caja-page.print-preview-active.report-print-ejecutivo .corte-report-section[data-section="sensores"] {
+      display:none !important;
+    }
+    .cash-close-actions .btn.success,
+    .cash-close-actions .btn.success:visited {
+      background:#15803d !important;
+      border-color:#166534 !important;
+      color:#fff !important;
+      font-weight:900;
+    }
+    .turno-field-config {
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px 10px;
+      align-items:center;
+      padding:8px 10px;
+      border:1px solid var(--border);
+      background:var(--surface-soft);
+    }
+    .turno-field-config strong { margin-right:4px; font-size:.86rem; }
+    .turno-field-config label {
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      margin:0;
+      font-size:.78rem;
+      font-weight:750;
+      color:var(--text);
+      white-space:nowrap;
+    }
+	.offline-report-option { margin:8px 0 0; }
+	.offline-report-option small { display:block; margin-left:24px; color:var(--muted); }
+    @media (max-width: 1100px) { .cash-close-panel .form{grid-template-columns:repeat(3,minmax(0,1fr))} }
+    @media (max-width: 860px) { .cash-close-hero { grid-template-columns:1fr; } .cash-close-panel .form{grid-template-columns:repeat(2,minmax(0,1fr))} .cash-close-panel .form-col-wide{grid-column:1 / -1} .turno-report-company { grid-template-columns:1fr; } .corte-summary-row { grid-template-columns:minmax(108px,.45fr) minmax(0,1fr); } .corte-summary-row small { grid-column:1 / -1; } }
+    @media print {
+      .no-print { display:none !important; }
+      body.corte-caja-page { background:white !important; color:#111827 !important; }
+      .corte-caja-page .corte-caja-report,
+      .corte-caja-page .corte-caja-report * { color:#111827 !important; box-shadow:none !important; text-shadow:none !important; }
+      .corte-caja-report { background:#fff !important; box-shadow:none !important; border:0 !important; }
+      .corte-caja-report .form-help,
+      .corte-caja-report small,
+      .corte-caja-report .turno-report-company p,
+      .corte-caja-report .turno-report-meta span { color:#475569 !important; }
+      .corte-caja-report .turno-report-company,
+      .corte-caja-report .turno-report-meta div,
+      .corte-caja-report .corte-summary-row,
+      .corte-caja-report .turno-detail-row { background:#fff !important; border-color:#cbd5e1 !important; }
+      .cash-close-stamp { break-inside:avoid; }
+      .corte-caja-page.report-print-pos .corte-caja-report { width:72mm !important; max-width:72mm !important; padding:0 !important; }
+      .corte-caja-page.report-print-pos .turno-report-meta { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:5px; }
+      .corte-caja-page.report-print-pos .corte-summary-grid .turno-report-panel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:5px; }
+      .corte-caja-page.report-print-pos .corte-summary-grid .turno-report-panel h3 { grid-column:1 / -1; }
+      .corte-caja-page.report-print-pos .corte-summary-row { display:grid; grid-template-columns:minmax(0,1fr); padding:3px 0; }
+      .corte-caja-page.report-print-pos .turno-detail-item { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:5px; row-gap:1px; padding:4px 0; }
+      .corte-caja-page.report-print-pos .turno-detail-line { font-size:9px; line-height:1.25; overflow-wrap:anywhere; }
+    }
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage corte-caja-page report-print-pos">
+  <div class="container">
+    <section class="card empresa-section no-print">
+      <div class="empresa-section-header">
+        <div>
+          <h1 id="pageTitle" class="empresa-section-title">Corte de caja</h1>
+          <p id="pageSubtitle" class="form-help">Cierra turno, concilia efectivo y genera el reporte.</p>
+        </div>
+        <div class="cash-close-actions">
+          <a id="btnVolverEstaciones" class="btn secondary" href="/administrar_empresa/estaciones.html" hidden>Regresar a estaciones</a>
+        </div>
+      </div>
+
+      <div class="cash-close-hero">
+        <div class="cash-close-panel">
+          <div class="form">
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="desde">Desde</label>
+                <input id="desde" type="datetime-local" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="hasta">Hasta</label>
+                <input id="hasta" type="datetime-local" class="form-input">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="usuario">Cajero / usuario</label>
+                <input id="usuario" class="form-input" placeholder="Vacio: todos los usuarios">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="cajaCodigo">Caja</label>
+                <input id="cajaCodigo" class="form-input" value="CAJA-PRINCIPAL">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="turno">Turno</label>
+                <select id="turno" class="form-input">
+                  <option value="general">General</option>
+                  <option value="manana">Manana</option>
+                  <option value="tarde">Tarde</option>
+                  <option value="noche">Noche</option>
+                  <option value="madrugada">Madrugada</option>
+                </select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="apertura">Efectivo inicial</label>
+                <input id="apertura" type="number" step="0.01" min="0" class="form-input" value="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="cajaFisica">Caja fisica contada</label>
+                <input id="cajaFisica" type="number" step="0.01" min="0" class="form-input" value="0">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="modoVista">Modo de visualizacion</label>
+                <select id="modoVista" class="form-input">
+                  <option value="pos">Ticket POS 80mm</option>
+                  <option value="carta">Carta completo</option>
+                  <option value="ejecutivo">Ejecutivo compacto</option>
+                </select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="umbralIncidencia">Umbral incidencia caja</label>
+                <input id="umbralIncidencia" type="number" step="0.01" min="0" class="form-input" value="1000">
+              </div>
+              <div class="form-col form-col-wide">
+                <label class="form-label" for="observaciones">Observaciones de cierre</label>
+                <input id="observaciones" class="form-input" placeholder="Ej: sobrante autorizado, cambio de turno, novedad de caja">
+              </div>
+            </div>
+          </div>
+
+          <div id="msg" class="form-help" style="margin-top:12px"></div>
+        </div>
+
+        <div class="cash-close-buttons-only no-print">
+          <div class="cash-close-actions is-compact">
+            <button id="btnGenerar" class="btn" type="button">Generar corte</button>
+            <button id="btnReporteMiTurno" class="btn secondary" type="button">Ver reporte de mi turno</button>
+            <button id="btnCorteAutomatico" class="btn secondary" type="button">Corte automatico</button>
+            <button id="btnCerrar" class="btn success" type="button" disabled>Guardar cierre</button>
+            <button id="btnCerrarImprimirSesion" class="btn success" type="button" disabled>Cerrar turno e imprimir reporte</button>
+            <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir seleccion</button>
+            <button id="btnTutorialTurno" class="btn secondary" type="button">Tutorial</button>
+          </div>
+          <label class="form-help" style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 8px">
+            <input id="mantenerSesionCierre" type="checkbox" style="margin-top:2px">
+            <span>Al cerrar turno, imprimir reportes pero no cerrar la sesión automáticamente.</span>
+          </label>
+		  <div class="turno-field-config offline-report-option">
+			<label>
+			  <input id="mostrarReporteOffline" type="checkbox" data-config-key="mostrar_ventas_offline" checked>
+			  Incluir reporte de ventas realizadas en modo offline
+			</label>
+			<small id="offlineEmpresaEstado">El modo offline se configura por empresa y está activo de forma predeterminada.</small>
+		  </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="report" class="empresa-section corte-caja-report turno-operativo-sheet">
+      <div class="corte-report-header">
+        <div>
+          <h2 id="reportTitle" class="empresa-section-title">Reporte de turno</h2>
+          <p id="reportMeta" class="form-help">Genera un corte para ver los datos del turno.</p>
+        </div>
+        <div class="corte-report-badge"><strong>Reporte de turno</strong></div>
+      </div>
+
+      <div id="turnoHeaderBox"></div>
+
+      <div class="corte-report-section" data-section="ventas">
+        <h3 class="section-heading">Detalle de ventas</h3>
+        <div id="ventasBox" class="table-wrap form-help">Sin datos generados.</div>
+      </div>
+
+	  <div class="corte-report-section" data-section="offline">
+		<h3 class="section-heading">Ventas realizadas en modo offline</h3>
+		<div id="offlineBox" class="table-wrap form-help">Sin datos generados.</div>
+	  </div>
+
+      <div id="summaryGrid" class="corte-summary-grid"></div>
+
+      <div class="corte-report-section" data-section="movimientos">
+        <h3 class="section-heading">Movimientos agrupados</h3>
+        <div id="movimientosBox" class="table-wrap form-help">Sin datos generados.</div>
+      </div>
+
+      <div class="corte-report-section" data-section="anulaciones">
+        <h3 class="section-heading">Anulaciones del turno</h3>
+        <div id="anulacionesBox" class="table-wrap form-help">Sin datos generados.</div>
+      </div>
+
+      <div class="corte-report-section" data-section="items">
+        <h3 class="section-heading">Productos y servicios</h3>
+        <div id="itemsBox" class="table-wrap form-help">Sin datos generados.</div>
+      </div>
+
+      <div class="corte-report-section" data-section="sensores">
+        <h3 class="section-heading">Estaciones ocupadas sin factura</h3>
+        <div id="sensoresBox" class="table-wrap form-help">Solo se evalua para empresas tipo motel con sensores configurados.</div>
+      </div>
+
+      <div class="corte-report-section" data-section="auditoria">
+        <h3 class="section-heading">Auditoria de cierre</h3>
+        <div class="cash-close-stamp">
+          <div><strong>Caja:</strong> <span id="auditCaja">CAJA-PRINCIPAL</span></div>
+          <div><strong>Turno:</strong> <span id="auditTurno">general</span></div>
+          <div><strong>Responsable:</strong> <span id="auditUsuario">Sistema</span></div>
+          <div><strong>Observaciones:</strong> <span id="auditObs">Sin observaciones.</span></div>
+          <div style="margin-top:18px"><strong>Firma responsable:</strong> ________________________________</div>
+        </div>
+      </div>
+
+      <div class="corte-final-note">
+        <strong>Efectivo esperado en caja:</strong>
+        <span id="efectivoFinal">COP 0.00</span>
+      </div>
+    </section>
+  </div>
+
+<script>
+  function parsePositiveInt(raw) {
+    var n = Number(String(raw || '').trim());
+    if (!Number.isFinite(n)) return 0;
+    n = Math.trunc(n);
+    return n > 0 ? n : 0;
+  }
+
+  function resolveEmpresaId() {
+    try {
+      var params = new URLSearchParams(window.location.search || '');
+      var own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+      if (own > 0) return own;
+    } catch (_) {}
+    try {
+      if (window.parent && window.parent !== window && typeof window.parent.__resolveEmpresaIdContext === 'function') {
+        var parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+        if (parentResolved > 0) return parentResolved;
+      }
+    } catch (_) {}
+    try {
+      var candidates = [sessionStorage.getItem('active_empresa_id'), sessionStorage.getItem('empresa_id'), localStorage.getItem('active_empresa_id'), localStorage.getItem('empresa_id')];
+      for (var i = 0; i < candidates.length; i += 1) {
+        var parsed = parsePositiveInt(candidates[i]);
+        if (parsed > 0) return parsed;
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  var empresaId = resolveEmpresaId();
+  var lastReport = null;
+  var automaticCierreCajaID = 0;
+  var automaticCajaSucursalID = 0;
+  var printFormat = 'pos';
+  var logoutAfterPrintPending = false;
+  var pageContext = resolvePageContext();
+  var advancedPrintConfig = {};
+  var reporteConfig = {
+    mostrar_encabezado: true,
+    mostrar_empresa_datos: true,
+    mostrar_fecha_hora: true,
+    mostrar_usuario_reporte: true,
+    mostrar_caja: true,
+    mostrar_consecutivo: true,
+    mostrar_resumen: true,
+    mostrar_numero_facturas: true,
+    mostrar_cantidad_ventas: true,
+    mostrar_total_descuentos: true,
+    mostrar_total_ventas: true,
+    mostrar_efectivo: true,
+    mostrar_debito: true,
+    mostrar_credito: true,
+    mostrar_transferencias: true,
+    mostrar_otros_medios: true,
+    mostrar_ingresos: true,
+    mostrar_egresos: true,
+    mostrar_anulaciones: true,
+    mostrar_devoluciones: true,
+    mostrar_caja_esperada: true,
+    mostrar_diferencia_caja: true,
+    mostrar_ventas_detalle: true,
+	mostrar_ventas_offline: true,
+    mostrar_detalle_fecha_entrada: true,
+    mostrar_detalle_fecha_salida: true,
+    mostrar_detalle_numero_venta: true,
+    mostrar_detalle_estacion: true,
+    mostrar_detalle_cajero: true,
+    mostrar_detalle_medio_pago: true,
+    mostrar_detalle_total: true,
+    mostrar_movimientos: true,
+    mostrar_items: true,
+    mostrar_total_productos: true,
+    mostrar_total_servicios: true,
+    mostrar_sensores_puertas: true,
+    mostrar_auditoria: true,
+    formato_impresion: 'pos'
+  };
+
+  function resolvePageContext() {
+    var params = new URLSearchParams(window.location.search || '');
+    var storedCajaCodigo = '';
+    var storedCajaNombre = '';
+    var storedCajaDescripcion = '';
+    try {
+      var storedEmpresa = Number(sessionStorage.getItem('pcs_caja_trabajo_empresa_id') || 0);
+      if (!storedEmpresa || !empresaId || storedEmpresa === Number(empresaId || 0)) {
+        storedCajaCodigo = String(sessionStorage.getItem('pcs_caja_trabajo_codigo') || '').trim();
+        storedCajaNombre = String(sessionStorage.getItem('pcs_caja_trabajo_nombre') || '').trim();
+        storedCajaDescripcion = String(sessionStorage.getItem('pcs_caja_trabajo_descripcion') || '').trim();
+      }
+    } catch (_) {}
+    return {
+      source: String(params.get('source') || '').trim().toLowerCase(),
+      returnTo: String(params.get('return_to') || '').trim().toLowerCase(),
+      autoGenerar: String(params.get('auto_generar') || '').trim() === '1',
+      cajaNombre: String(params.get('caja_nombre') || storedCajaNombre || '').trim(),
+      cajaCodigo: String(params.get('caja_codigo') || storedCajaCodigo || '').trim(),
+      cajaDescripcion: String(params.get('caja_descripcion') || storedCajaDescripcion || '').trim(),
+      cierreCajaID: Number(params.get('cierre_caja_id') || 0),
+      sucursalID: Number(params.get('sucursal_id') || 0),
+      usuario: String(params.get('usuario') || '').trim(),
+      turno: String(params.get('turno') || '').trim().toLowerCase(),
+      desde: String(params.get('desde') || '').trim(),
+      hasta: String(params.get('hasta') || '').trim()
+    };
+  }
+
+  function escapeHtml(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function normalizeCashCode(v) {
+    return String(v == null ? '' : v)
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Z0-9_-]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+  }
+
+  function cajaDisplayName(codigo, nombre) {
+    var code = normalizeCashCode(codigo || document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL') || 'CAJA-PRINCIPAL';
+    var name = String(nombre || pageContext.cajaNombre || '').trim();
+    if (name && name.toUpperCase().indexOf(code) === 0) return name;
+    return code + (name ? (' - ' + name) : '');
+  }
+
+  function setCajaDisplay(codigo, nombre, descripcion) {
+    var label = cajaDisplayName(codigo, nombre);
+    var title = document.getElementById('pageTitle');
+    if (title) title.textContent = 'Cierre de turno y corte de caja - ' + label;
+  }
+
+  function money(value, currency) {
+    var cur = String(currency || 'COP').trim() || 'COP';
+    try { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: cur, minimumFractionDigits: 2 }).format(Number(value || 0)); }
+    catch (_) { return cur + ' ' + Number(value || 0).toFixed(2); }
+  }
+
+  function formatDateTime(raw) {
+    var r = String(raw || '').trim();
+    if (!r) return '';
+    var d = new Date(r.indexOf('T') >= 0 ? r : r.replace(' ', 'T'));
+    if (Number.isNaN(d.getTime())) return r;
+    return d.toLocaleString('es-CO', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  async function requestJSON(url, options) {
+    var res = await fetch(url, Object.assign({ credentials:'same-origin' }, options || {}));
+    var text = await res.text();
+    var data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+    if (!res.ok) throw new Error((data && data.error) || (typeof data === 'string' ? data : '') || ('HTTP ' + res.status));
+    return data;
+  }
+
+  function parseStationPrefsValue(raw) {
+    var current = raw;
+    for (var i = 0; i < 5; i += 1) {
+      if (typeof current !== 'string') break;
+      var trimmed = current.trim();
+      if (!trimmed) return null;
+      try { current = JSON.parse(trimmed); } catch (_) { return null; }
+    }
+    return current && typeof current === 'object' ? current : null;
+  }
+
+  function readTouchModeFromStationConfig(cfg) {
+    var src = cfg && typeof cfg === 'object' ? cfg : {};
+    var ui = src.carrito_ui_global || src.carrito || src.carrito_configuracion_global || {};
+    if (!ui || typeof ui !== 'object') return false;
+    var alias = ui.pos_touch_ui && typeof ui.pos_touch_ui === 'object' ? ui.pos_touch_ui.enabled : ui.pos_touch_enabled;
+    return ui.modo_pantalla_tactil === undefined ? !!alias : !!ui.modo_pantalla_tactil;
+  }
+
+  function readOfflineModeFromStationConfig(cfg) {
+	var src = cfg && typeof cfg === 'object' ? cfg : {};
+	var ui = src.carrito_ui_global || src.carrito || src.carrito_configuracion_global || {};
+	if (!ui || typeof ui !== 'object') return true;
+	if (Object.prototype.hasOwnProperty.call(ui, 'facturacion_offline_habilitada')) return !!ui.facturacion_offline_habilitada;
+	if (Object.prototype.hasOwnProperty.call(ui, 'permitir_facturacion_offline')) return !!ui.permitir_facturacion_offline;
+	return true;
+  }
+
+  function applyOfflineCompanyStatus(enabled) {
+	var status = document.getElementById('offlineEmpresaEstado');
+	if (!status) return;
+	status.textContent = enabled
+	  ? 'Modo offline activo para esta empresa. El reporte se separa por caja y turno.'
+	  : 'Modo offline desactivado para esta empresa. El reporte conserva únicamente ventas offline históricas.';
+  }
+
+  function applyTouchPOSMode(enabled) {
+    document.body.classList.toggle('pos-touch-mode', !!enabled);
+    document.body.classList.toggle('corte-touch-mode', !!enabled);
+  }
+
+  async function cargarModoTactilPOS() {
+    if (!empresaId) return;
+    try {
+      var data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId));
+      var prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+      var pref = prefs.find(function(item) {
+        return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
+      });
+	  var stationConfig = parseStationPrefsValue(pref && pref.valor);
+	  applyTouchPOSMode(readTouchModeFromStationConfig(stationConfig));
+	  applyOfflineCompanyStatus(readOfflineModeFromStationConfig(stationConfig));
+    } catch (_) {
+      applyTouchPOSMode(false);
+	  var status = document.getElementById('offlineEmpresaEstado');
+	  if (status) status.textContent = 'No se pudo confirmar la configuración offline de la empresa.';
+    }
+  }
+
+  var DEFAULT_CORTE_PRINT_ITEMS = {
+    empresa: true,
+    fecha_hora: true,
+    usuario_reporte: true,
+    caja: true,
+    consecutivo: true,
+    detalle_fecha_entrada: true,
+    detalle_fecha_salida: true,
+    detalle_numero_venta: true,
+    detalle_estacion: true,
+    detalle_cajero: true,
+    detalle_medio_pago: true,
+    detalle_total: true
+  };
+
+  function parsePrintItemsJSON(raw, defaults) {
+    var base = Object.assign({}, defaults || {});
+    if (raw && typeof raw === 'object') return Object.assign(base, raw);
+    var text = String(raw || '').trim();
+    if (!text) return base;
+    try {
+      var parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return base;
+      Object.keys(base).forEach(function(key) {
+        if (Object.prototype.hasOwnProperty.call(parsed, key)) base[key] = parsed[key] !== false;
+      });
+    } catch (_) {}
+    return base;
+  }
+
+  function normalizePrintFontSize(value, fallback, min, max) {
+    var n = Number(value);
+    var base = Number(fallback);
+    if (!Number.isFinite(base)) base = min;
+    base = Math.max(min, Math.min(max, Math.trunc(base)));
+    if (!Number.isFinite(n)) return base;
+    n = Math.trunc(n);
+    if (n < min) return min;
+    if (n > max) return max;
+    return n;
+  }
+
+  function currentReportFontSize() {
+    var format = normalizePrintFormat(printFormat);
+    if (format === 'pos') {
+      return normalizePrintFontSize(advancedPrintConfig.impresion_reporte_fuente_pos, 11, 8, 16);
+    }
+    return normalizePrintFontSize(advancedPrintConfig.impresion_reporte_fuente_carta, 13, 10, 22);
+  }
+
+  function applyAdvancedPrintItems(items) {
+    var cfg = {
+      mostrar_empresa_datos: items.empresa !== false,
+      mostrar_fecha_hora: items.fecha_hora !== false,
+      mostrar_usuario_reporte: items.usuario_reporte !== false,
+      mostrar_caja: items.caja !== false,
+      mostrar_consecutivo: items.consecutivo !== false,
+      mostrar_detalle_fecha_entrada: items.detalle_fecha_entrada !== false,
+      mostrar_detalle_fecha_salida: items.detalle_fecha_salida !== false,
+      mostrar_detalle_numero_venta: items.detalle_numero_venta !== false,
+      mostrar_detalle_estacion: items.detalle_estacion !== false,
+      mostrar_detalle_cajero: items.detalle_cajero !== false,
+      mostrar_detalle_medio_pago: items.detalle_medio_pago !== false,
+      mostrar_detalle_total: items.detalle_total !== false
+    };
+    reporteConfig = Object.assign({}, reporteConfig, cfg);
+    document.querySelectorAll('[data-config-key]').forEach(function(box) {
+      var key = box.getAttribute('data-config-key');
+      if (Object.prototype.hasOwnProperty.call(cfg, key)) box.checked = !!cfg[key];
+    });
+    if (lastReport) {
+      lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, cfg);
+      renderReport(lastReport);
+    }
+  }
+
+  async function cargarConfigImpresionAvanzada() {
+    if (!empresaId) return;
+    try {
+      var cfg = await requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId));
+      advancedPrintConfig = cfg && typeof cfg === 'object' ? cfg : {};
+      var items = parsePrintItemsJSON(cfg && cfg.impresion_corte_items_json, DEFAULT_CORTE_PRINT_ITEMS);
+      applyAdvancedPrintItems(items);
+    } catch (_) {}
+  }
+
+  function selectedReports() {
+    var cfg = reporteConfig || {};
+    var out = [];
+    if (cfg.mostrar_resumen) out.push('resumen');
+    if (cfg.mostrar_ventas_detalle) out.push('ventas');
+	if (cfg.mostrar_ventas_offline !== false) out.push('offline');
+    if (cfg.mostrar_anulaciones) out.push('anulaciones');
+    if (cfg.mostrar_movimientos) out.push('movimientos');
+    if (cfg.mostrar_items) out.push('items');
+    if (cfg.mostrar_sensores_puertas) out.push('sensores');
+    if (cfg.mostrar_auditoria) out.push('auditoria');
+    return out.length ? out : ['resumen'];
+  }
+
+  function collectReporteConfig() {
+    var cfg = Object.assign({}, reporteConfig);
+    document.querySelectorAll('[data-config-key]').forEach(function(box) {
+      cfg[box.getAttribute('data-config-key')] = !!box.checked;
+    });
+    cfg.formato_impresion = normalizePrintFormat(document.getElementById('modoVista').value);
+    cfg.estado = 'activo';
+    return cfg;
+  }
+
+  function applyReporteConfig(cfg) {
+    reporteConfig = Object.assign({}, reporteConfig, cfg || {});
+    document.querySelectorAll('[data-config-key]').forEach(function(box) {
+      var key = box.getAttribute('data-config-key');
+      if (Object.prototype.hasOwnProperty.call(reporteConfig, key)) box.checked = !!reporteConfig[key];
+    });
+    if (reporteConfig.formato_impresion) {
+      document.getElementById('modoVista').value = normalizePrintFormat(reporteConfig.formato_impresion);
+      applyPrintFormat(reporteConfig.formato_impresion);
+    }
+    setPrintFormatLockedFromConfig();
+    if (lastReport) renderReport(lastReport);
+  }
+
+  function setPrintFormatLockedFromConfig() {
+    var select = document.getElementById('modoVista');
+    if (!select) return;
+    var lockedToPOS = normalizePrintFormat(reporteConfig.formato_impresion) === 'pos';
+    Array.prototype.forEach.call(select.options || [], function(option) {
+      option.disabled = lockedToPOS && option.value !== 'pos';
+    });
+    if (lockedToPOS) {
+      select.value = 'pos';
+      applyPrintFormat('pos');
+    }
+  }
+
+  async function cargarConfigReporte() {
+    if (!empresaId) return;
+    try {
+      var res = await requestJSON('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId));
+      if (res && res.configuracion) applyReporteConfig(res.configuracion);
+    } catch (_) {}
+    await cargarConfigImpresionAvanzada();
+  }
+
+  function normalizePrintFormat(value) {
+    var v = String(value || '').trim().toLowerCase();
+    if (v === 'pos' || v === 'ticket') return 'pos';
+    if (v === 'ejecutivo' || v === 'compacto') return 'ejecutivo';
+    return 'pos';
+  }
+
+  function applyPrintFormat(format) {
+    printFormat = normalizePrintFormat(format);
+    document.body.classList.toggle('report-print-pos', printFormat === 'pos');
+    document.body.classList.toggle('report-print-carta', printFormat !== 'pos');
+    document.body.classList.toggle('report-print-ejecutivo', printFormat === 'ejecutivo');
+    var report = document.getElementById('report');
+    if (report) report.style.fontSize = currentReportFontSize() + 'px';
+    var style = document.getElementById('dynamicPrintPageSize');
+    if (!style) { style = document.createElement('style'); style.id = 'dynamicPrintPageSize'; document.head.appendChild(style); }
+    if (printFormat === 'pos') {
+      style.textContent = '@media print{@page{size:80mm auto;margin:4mm}.corte-caja-page .corte-caja-report{width:72mm;font-size:' + currentReportFontSize() + 'px}.corte-caja-page .corte-summary-grid{grid-template-columns:1fr}.corte-caja-page .table{font-size:' + Math.max(8, currentReportFontSize() - 1) + 'px}.corte-caja-page .table th,.corte-caja-page .table td{padding:3px 2px}.corte-caja-page .corte-report-badge{display:none}.corte-caja-page .table thead{display:none}.corte-caja-page .table,.corte-caja-page .table tbody,.corte-caja-page .table tr,.corte-caja-page .table td{display:block;width:100%}.corte-caja-page .table tr{border:1px solid #cbd5e1;margin-bottom:6px;padding:4px;break-inside:avoid}.corte-caja-page .table td{border:0!important;padding:2px 0!important}.corte-caja-page .table td::before{content:attr(data-label) \": \";font-weight:800}}';
+    } else if (printFormat === 'ejecutivo') {
+      style.textContent = '@media print{@page{size:letter;margin:10mm}.corte-caja-page .corte-caja-report{font-size:' + currentReportFontSize() + 'px}.corte-caja-page .corte-report-section[data-section="items"],.corte-caja-page .corte-report-section[data-section="sensores"]{display:none!important}}';
+    } else {
+      style.textContent = '@media print{@page{size:letter;margin:12mm}.corte-caja-page .corte-caja-report{width:auto;font-size:' + currentReportFontSize() + 'px}}';
+    }
+  }
+
+  function setReportPrintPreview(active) {
+    document.body.classList.toggle('print-preview-active', !!active);
+  }
+
+  function setCloseButtonsDisabled(disabled) {
+    var closeBtn = document.getElementById('btnCerrar');
+    var closePrintLogoutBtn = document.getElementById('btnCerrarImprimirSesion');
+    if (closeBtn) closeBtn.disabled = !!disabled;
+    if (closePrintLogoutBtn) closePrintLogoutBtn.disabled = !!disabled;
+  }
+
+  function setPrintButtonDisabled(disabled) {
+    var printBtn = document.getElementById('btnImprimir');
+    if (printBtn) printBtn.disabled = !!disabled;
+  }
+
+  function scrollReportIntoView() {
+    var report = document.getElementById('report');
+    if (report && typeof report.scrollIntoView === 'function') {
+      report.scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+  }
+
+  function setDefaultDates() {
+    var now = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    document.getElementById('desde').value = toLocalInputValue(start);
+    document.getElementById('hasta').value = toLocalInputValue(now);
+  }
+
+  function toInputDateTimeValue(raw) {
+    var value = String(raw || '').trim();
+    if (!value) return '';
+    value = value.replace(' ', 'T');
+    if (value.length >= 19) return value.slice(0, 16);
+    if (value.length === 16) return value;
+    var parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return toLocalInputValue(parsed);
+  }
+
+  function applyPageContext() {
+    var title = document.getElementById('pageTitle');
+    var subtitle = document.getElementById('pageSubtitle');
+    var closeBtn = document.getElementById('btnCerrar');
+    var backBtn = document.getElementById('btnVolverEstaciones');
+
+    if (pageContext.cajaNombre || pageContext.cajaCodigo) {
+      setCajaDisplay(pageContext.cajaCodigo, pageContext.cajaNombre, pageContext.cajaDescripcion);
+      subtitle.textContent = 'Desde esta caja puedes generar el corte, cerrar turno e imprimir el reporte completo del cajero.';
+    }
+    if (pageContext.source === 'estaciones' && closeBtn) {
+      closeBtn.textContent = 'Cerrar turno';
+    }
+    if (backBtn && pageContext.returnTo === 'estaciones') {
+      backBtn.hidden = false;
+      backBtn.href = '/administrar_empresa/estaciones.html?empresa_id=' + encodeURIComponent(String(empresaId || 0));
+    }
+    if (pageContext.turno) {
+      document.getElementById('turno').value = pageContext.turno;
+    }
+    if (pageContext.usuario) {
+      document.getElementById('usuario').value = pageContext.usuario;
+    }
+    if (pageContext.cajaCodigo) {
+      document.getElementById('cajaCodigo').value = pageContext.cajaCodigo;
+      setCajaDisplay(pageContext.cajaCodigo, pageContext.cajaNombre, pageContext.cajaDescripcion);
+    }
+    if (pageContext.cierreCajaID > 0) {
+      automaticCierreCajaID = pageContext.cierreCajaID;
+    }
+    if (pageContext.sucursalID > 0) {
+      automaticCajaSucursalID = pageContext.sucursalID;
+    }
+    if (pageContext.desde) {
+      var desdeValue = toInputDateTimeValue(pageContext.desde);
+      if (desdeValue) document.getElementById('desde').value = desdeValue;
+    }
+    if (pageContext.hasta) {
+      var hastaValue = toInputDateTimeValue(pageContext.hasta);
+      if (hastaValue) document.getElementById('hasta').value = hastaValue;
+    }
+  }
+
+  async function preloadCajaDefaults() {
+    if (!empresaId) return;
+    try {
+      var data = await requestJSON('/api/empresa/configuracion_general?empresa_id=' + encodeURIComponent(empresaId));
+      var caja = data && data.caja ? data.caja : {};
+      var cajaCodigo = String(caja.caja_codigo || '').trim();
+      var cajaNombre = String(caja.caja_nombre || '').trim();
+      var cajaCodigoInput = document.getElementById('cajaCodigo');
+      var currentCajaCodigo = cajaCodigoInput ? String(cajaCodigoInput.value || '').trim() : '';
+      if (cajaCodigo && cajaCodigoInput && (!currentCajaCodigo || currentCajaCodigo === 'CAJA-PRINCIPAL')) {
+        cajaCodigoInput.value = cajaCodigo;
+      }
+      if (cajaNombre && !pageContext.cajaNombre) {
+        setCajaDisplay(cajaCodigoInput ? cajaCodigoInput.value : cajaCodigo, cajaNombre, '');
+      } else if (pageContext.cajaNombre || pageContext.cajaCodigo) {
+        setCajaDisplay(cajaCodigoInput ? cajaCodigoInput.value : pageContext.cajaCodigo, pageContext.cajaNombre, pageContext.cajaDescripcion);
+      }
+    } catch (_) {}
+  }
+
+  function toLocalInputValue(date) {
+    function pad(n) { return String(n).padStart(2, '0'); }
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
+
+  function updateQuickKpis(resumen) {
+    var kpiBox = document.getElementById('quickKpis');
+    if (!kpiBox) return;
+    var cur = resumen.moneda || 'COP';
+    var teorica = Number(resumen.efectivo_esperado_caja || 0);
+    var fisica = Number(document.getElementById('cajaFisica').value || 0);
+    var diff = teorica - fisica;
+    var cards = [
+      ['Ventas', money(resumen.ventas_total || 0, cur), String(resumen.ventas_cantidad || 0) + ' operaciones'],
+      ['Efectivo esperado', money(teorica, cur), 'Incluye apertura y movimientos'],
+      ['Anulaciones', money(resumen.ventas_anuladas_total || 0, cur), String(resumen.ventas_anuladas_cantidad || 0) + ' reversos'],
+      ['Diferencia', money(diff, cur), 'Teorica menos fisica']
+    ];
+    kpiBox.innerHTML = cards.map(function(card) {
+      return '<div class="cash-kpi"><span>' + escapeHtml(card[0]) + '</span><strong>' + escapeHtml(card[1]) + '</strong><small>' + escapeHtml(card[2]) + '</small></div>';
+    }).join('');
+  }
+
+  function reportConsecutivo(payload) {
+    var caja = payload && payload.caja_actual ? payload.caja_actual : {};
+    if (Number(caja.id || 0) > 0) return 'TURN-' + String(caja.id).padStart(6, '0');
+    var resumen = payload && payload.resumen ? payload.resumen : {};
+    var base = String((payload && payload.generado_en) || resumen.hasta || '').replace(/[^0-9]/g, '').slice(0, 12);
+    return 'TURN-' + String(resumen.empresa_id || empresaId || 0) + (base ? '-' + base : '');
+  }
+
+  function renderTurnoHeader(payload) {
+    var box = document.getElementById('turnoHeaderBox');
+    var resumen = payload && payload.resumen ? payload.resumen : {};
+    var cfg = Object.assign({}, reporteConfig, (payload && payload.configuracion_reporte) || {});
+    if (!cfg.mostrar_encabezado) {
+      box.innerHTML = '';
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    var empresaNombre = resumen.empresa_nombre || 'Empresa';
+    var nit = resumen.empresa_nit ? ('NIT: ' + resumen.empresa_nit) : ('Empresa ID: ' + (resumen.empresa_id || empresaId || ''));
+    var tipo = resumen.empresa_tipo ? resumen.empresa_tipo : 'No definido';
+    var caja = payload && payload.caja_actual ? payload.caja_actual : {};
+    var companyHtml = cfg.mostrar_empresa_datos
+      ? '<section class="turno-report-company"><div><h3>' + escapeHtml(empresaNombre) + '</h3><p>' + escapeHtml([nit, 'Tipo: ' + tipo].filter(Boolean).join(' | ')) + '</p></div><strong>Reporte operativo</strong></section>'
+      : '';
+    var meta = [];
+    if (cfg.mostrar_fecha_hora) meta.push(['Fecha y hora', formatDateTime(payload.generado_en || resumen.hasta)]);
+    if (cfg.mostrar_usuario_reporte) meta.push(['Usuario', resumen.usuario_filtro || (payload.caja_actual && payload.caja_actual.usuario) || 'Todos']);
+    if (cfg.mostrar_caja !== false) meta.push(['Caja', cajaDisplayName(caja.caja_codigo || document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL', pageContext.cajaNombre)]);
+    if (cfg.mostrar_consecutivo) meta.push(['Consecutivo', reportConsecutivo(payload)]);
+    var metaHtml = meta.length ? '<section class="turno-report-panel"><h3>Datos del turno</h3><div class="turno-report-meta">' + meta.map(function(row) {
+      return '<div><span>' + escapeHtml(row[0]) + '</span><strong>' + escapeHtml(row[1]) + '</strong></div>';
+    }).join('') + '</div></section>' : '';
+    box.innerHTML = companyHtml + metaHtml;
+  }
+
+  function renderSummary(resumen) {
+    var cur = resumen.moneda || 'COP';
+    var cfg = Object.assign({}, reporteConfig, (lastReport && lastReport.configuracion_reporte) || {});
+    var fisica = Number(document.getElementById('cajaFisica').value || 0);
+    var diferencia = Number(resumen.efectivo_esperado_caja || 0) - fisica;
+    var otrosMedios = Number(resumen.otros_medios_ventas || 0);
+    var cards = [];
+    function add(enabled, title, value, note) {
+      if (enabled) cards.push([title, value, note]);
+    }
+    add(cfg.mostrar_ingresos, 'Ingresos', money(resumen.ingresos_financieros || 0, cur), String(resumen.ingresos_cantidad || 0) + ' movimientos');
+    add(cfg.mostrar_egresos, 'Egresos', money(resumen.egresos_financieros || 0, cur), String(resumen.egresos_cantidad || 0) + ' movimientos');
+    add(cfg.mostrar_total_productos !== false, 'Total productos', money(resumen.total_productos || 0, cur), 'Productos vendidos');
+    add(cfg.mostrar_total_servicios !== false, 'Total servicios', money(resumen.total_servicios || 0, cur), 'Servicios vendidos');
+    add(cfg.mostrar_efectivo, 'Total efectivo', money(resumen.efectivo_ventas || 0, cur), 'Ventas en efectivo');
+    add(cfg.mostrar_credito, 'Total tarjeta credito', money(resumen.credito_ventas || 0, cur), 'Pagos credito');
+    add(cfg.mostrar_debito, 'Total tarjeta debito', money(resumen.debito_ventas || 0, cur), 'Pagos debito');
+    add(cfg.mostrar_otros_medios, 'Total otros', money(otrosMedios, cur), 'Otros medios de pago');
+    add(cfg.mostrar_numero_facturas, 'Facturas', String(resumen.numero_facturas || resumen.ventas_cantidad || 0), 'Comprobantes pagados');
+    add(cfg.mostrar_cantidad_ventas !== false, 'Cantidad de ventas', String(resumen.ventas_cantidad || 0), 'Ventas realizadas en el turno');
+    add(cfg.mostrar_total_descuentos !== false, 'Total descuentos', money(resumen.descuentos_total || 0, cur), Number(resumen.descuentos_cantidad || 0) > 0 ? String(resumen.descuentos_cantidad || 0) + ' venta(s) con descuento' : 'Sin descuentos aplicados');
+    add(cfg.mostrar_total_ventas, 'Ventas', money(resumen.ventas_total || 0, cur), 'Total del turno');
+	add(cfg.mostrar_ventas_offline !== false, 'Ventas offline', money(resumen.ventas_offline_total || 0, cur), String(resumen.ventas_offline_cantidad || 0) + ' venta(s) sincronizada(s)');
+    add(cfg.mostrar_transferencias, 'Transferencias', money(resumen.transferencias_ventas || 0, cur), 'Pagos bancarios');
+    add(cfg.mostrar_anulaciones, 'Anulaciones', money(resumen.ventas_anuladas_total || 0, cur), String(resumen.ventas_anuladas_cantidad || 0) + ' reversos');
+    add(cfg.mostrar_devoluciones, 'Devoluciones', money(resumen.devoluciones_total || 0, cur), 'Valor devuelto');
+    add(cfg.mostrar_caja_esperada, 'Debe haber en caja', money(resumen.efectivo_esperado_caja || 0, cur), 'Efectivo esperado');
+    add(cfg.mostrar_diferencia_caja, 'Diferencia caja', money(diferencia, cur), 'Teorica menos fisica');
+    if (!cards.length) cards.push(['Resumen', 'Sin metricas activas', 'Activa checks en configuracion']);
+    document.getElementById('summaryGrid').innerHTML = '<section class="turno-report-panel"><h3>Resumen financiero</h3>' + cards.map(function(card) {
+      return '<div class="corte-summary-row"><span>' + escapeHtml(card[0]) + '</span><strong>' + escapeHtml(card[1]) + '</strong><small>' + escapeHtml(card[2]) + '</small></div>';
+    }).join('') + '</section>';
+    document.getElementById('efectivoFinal').textContent = money(resumen.efectivo_esperado_caja || 0, cur);
+    updateQuickKpis(resumen);
+  }
+
+  function renderTable(boxId, columns, rows, emptyText) {
+    var box = document.getElementById(boxId);
+    if (!Array.isArray(rows) || !rows.length) {
+      box.className = 'turno-detail-empty form-help';
+      box.textContent = emptyText;
+      return;
+    }
+    box.className = 'turno-report-panel turno-detail-list';
+    var html = rows.map(function(row) {
+      return '<article class="turno-detail-item">' + columns.map(function(c) {
+        var value = typeof c.value === 'function' ? c.value(row) : row[c.key];
+        return '<span class="turno-detail-line"><strong>' + escapeHtml(c.label) + ':</strong> ' + escapeHtml(value) + '</span>';
+      }).join('') + '</article>';
+    }).join('');
+    box.innerHTML = html;
+  }
+
+  function applySectionVisibility(payload) {
+    var enabled = payload && payload.secciones ? payload.secciones : {};
+    var cfg = Object.assign({}, reporteConfig, (payload && payload.configuracion_reporte) || {});
+    var reports = selectedReports();
+    reports.forEach(function(r) { enabled[r] = true; });
+    if (!cfg.mostrar_resumen) enabled.resumen = false;
+    if (!cfg.mostrar_ventas_detalle) enabled.ventas = false;
+	if (cfg.mostrar_ventas_offline === false) enabled.offline = false;
+    if (!cfg.mostrar_anulaciones && !cfg.mostrar_devoluciones) enabled.anulaciones = false;
+    if (!cfg.mostrar_movimientos && !cfg.mostrar_ingresos && !cfg.mostrar_egresos) enabled.movimientos = false;
+    if (!cfg.mostrar_items) enabled.items = false;
+    if (!cfg.mostrar_sensores_puertas) enabled.sensores = false;
+    if (!cfg.mostrar_auditoria) enabled.auditoria = false;
+    document.getElementById('turnoHeaderBox').hidden = !cfg.mostrar_encabezado;
+    document.getElementById('summaryGrid').hidden = enabled.resumen === false;
+    document.querySelectorAll('.corte-report-section[data-section]').forEach(function(section) {
+      var key = section.getAttribute('data-section');
+      section.hidden = !enabled[key];
+    });
+  }
+
+  function renderReport(payload) {
+    var resumen = payload.resumen || {};
+    var cur = resumen.moneda || 'COP';
+    if (payload.configuracion_reporte) reporteConfig = Object.assign({}, reporteConfig, payload.configuracion_reporte);
+    document.getElementById('reportTitle').textContent = 'Reporte de turno - ' + (resumen.empresa_nombre || 'Empresa');
+    document.getElementById('reportMeta').textContent = 'Periodo: ' + formatDateTime(resumen.desde) + ' a ' + formatDateTime(resumen.hasta) + ' | Vista: ' + printFormat;
+    renderTurnoHeader(payload);
+    renderSummary(resumen);
+
+    renderTable('movimientosBox', [
+      { label:'Tipo', key:'tipo' }, { label:'Metodo', key:'metodo' }, { label:'Categoria', key:'categoria' }, { label:'Usuario', key:'usuario' }, { label:'Cantidad', key:'cantidad' }, { label:'Total', value:function(r){ return money(r.total || 0, cur); } }
+    ], payload.movimientos || [], 'No hay movimientos financieros agrupados en este rango.');
+
+    var cfg = Object.assign({}, reporteConfig, payload.configuracion_reporte || {});
+    var ventaCols = [];
+    if (cfg.mostrar_detalle_fecha_entrada !== false) ventaCols.push({ label:'Entrada', value:function(r){ return formatDateTime(r.fecha_entrada || r.fecha_pago); } });
+    if (cfg.mostrar_detalle_fecha_salida !== false) ventaCols.push({ label:'Salida', value:function(r){ return formatDateTime(r.fecha_salida || r.fecha_pago); } });
+    if (cfg.mostrar_detalle_numero_venta !== false) ventaCols.push({ label:'Numero venta', key:'codigo' });
+    if (cfg.mostrar_detalle_estacion !== false) ventaCols.push({ label:'Estacion', value:function(r){ return r.estacion_nombre || r.nombre || ''; } });
+    if (cfg.mostrar_detalle_cajero !== false) ventaCols.push({ label:'Cajero', key:'cajero' });
+    if (cfg.mostrar_detalle_medio_pago !== false) ventaCols.push({ label:'Medio', key:'metodo_pago' });
+    if (cfg.mostrar_detalle_total !== false) ventaCols.push({ label:'Total', value:function(r){ return money((r.total_pagado || r.total || 0), r.moneda || cur); } });
+    if (!ventaCols.length) ventaCols.push({ label:'Venta', value:function(r){ return r.codigo || r.id || ''; } });
+    renderTable('ventasBox', ventaCols, payload.ventas || [], 'No hay ventas facturadas en este rango.');
+
+	renderTable('offlineBox', [
+	  { label:'Venta', key:'codigo' },
+	  { label:'Capturada sin internet', value:function(r){ return formatDateTime(r.fecha_offline || r.fecha_pago); } },
+	  { label:'Sincronizada', value:function(r){ return formatDateTime(r.fecha_sync); } },
+	  { label:'Caja', key:'caja_codigo' },
+	  { label:'Turno', key:'caja_turno' },
+	  { label:'Cajero', key:'cajero' },
+	  { label:'Estación', key:'estacion_nombre' },
+	  { label:'Medio', key:'metodo_pago' },
+	  { label:'Documento', value:function(r){ return r.documento_codigo || 'Venta POS sincronizada'; } },
+	  { label:'Total', value:function(r){ return money(r.total || 0, r.moneda || cur); } }
+	], payload.ventas_offline || [], 'No hay ventas sincronizadas desde modo offline para esta caja y rango.');
+
+    renderTable('anulacionesBox', [
+      { label:'Fecha', value:function(r){ return formatDateTime(r.fecha_pago); } }, { label:'Codigo', key:'codigo' }, { label:'Estacion', value:function(r){ return r.estacion_nombre || r.nombre || ''; } }, { label:'Responsable', key:'cajero' }, { label:'Metodo', key:'metodo_pago' }, { label:'Anulado', value:function(r){ return money((r.devolucion || r.total_pagado || r.total || 0), r.moneda || cur); } }
+    ], payload.anulaciones || [], 'No hay anulaciones en este rango.');
+
+    renderTable('itemsBox', [
+      { label:'Tipo', key:'tipo' }, { label:'Cantidad', value:function(r){ return Number(r.cantidad || 0).toFixed(2); } }, { label:'Total', value:function(r){ return money(r.total || 0, cur); } }
+    ], payload.items_por_tipo || [], 'No hay items vendidos en este rango.');
+
+    renderTable('sensoresBox', [
+      { label:'Estacion', value:function(r){ return r.estacion_nombre || ('Estacion ' + r.estacion_id); } }, { label:'Sensor', key:'device_id' }, { label:'Estado', key:'estado_sensor' }, { label:'Ultima lectura', value:function(r){ return formatDateTime(r.ultima_lectura); } }, { label:'Observacion', key:'motivo' }
+    ], payload.sensores_sin_factura || [], 'No hay estaciones ocupadas por sensor sin factura en este corte.');
+
+    document.getElementById('auditCaja').textContent = cajaDisplayName(document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL', pageContext.cajaNombre);
+    document.getElementById('auditTurno').textContent = document.getElementById('turno').value || 'general';
+    document.getElementById('auditUsuario').textContent = document.getElementById('usuario').value || 'Todos';
+    document.getElementById('auditObs').textContent = document.getElementById('observaciones').value || 'Sin observaciones.';
+    applySectionVisibility(payload);
+  }
+
+  function buildParams() {
+    var params = new URLSearchParams();
+    params.set('empresa_id', String(empresaId));
+    params.set('desde', document.getElementById('desde').value || '');
+    params.set('hasta', document.getElementById('hasta').value || '');
+    params.set('usuario', document.getElementById('usuario').value || '');
+    params.set('apertura_efectivo', document.getElementById('apertura').value || '0');
+    params.set('caja_codigo', document.getElementById('cajaCodigo').value || '');
+    params.set('turno', document.getElementById('turno').value || '');
+    params.set('reportes', selectedReports().join(','));
+    return params;
+  }
+
+  function buildAutomaticParams(actionName) {
+    var params = new URLSearchParams();
+    params.set('empresa_id', String(empresaId));
+    params.set('action', actionName || 'mi_caja_actual');
+    params.set('solo_usuario_actual', '1');
+    params.set('mi_caja_actual', '1');
+    params.set('reportes', selectedReports().join(','));
+    if (automaticCierreCajaID > 0) params.set('cierre_caja_id', String(automaticCierreCajaID));
+    var cajaCodigo = String(document.getElementById('cajaCodigo').value || '').trim();
+    var turno = String(document.getElementById('turno').value || '').trim();
+    if (cajaCodigo) params.set('caja_codigo', cajaCodigo);
+    if (turno) params.set('turno', turno);
+    if (automaticCajaSucursalID > 0) params.set('sucursal_id', String(automaticCajaSucursalID));
+    return params;
+  }
+
+  function applyAutomaticCajaContext(payload) {
+    var caja = payload && payload.caja_actual ? payload.caja_actual : {};
+    var resumen = payload && payload.resumen ? payload.resumen : {};
+    automaticCierreCajaID = Number(caja.id || 0);
+    automaticCajaSucursalID = Number(caja.sucursal_id || 0);
+    var desde = toInputDateTimeValue(caja.fecha_apertura || resumen.desde || '');
+    var hasta = toInputDateTimeValue(resumen.hasta || payload.generado_en || '');
+    if (desde) document.getElementById('desde').value = desde;
+    if (hasta) document.getElementById('hasta').value = hasta;
+    if (caja.usuario || resumen.usuario_filtro) document.getElementById('usuario').value = caja.usuario || resumen.usuario_filtro;
+    if (caja.caja_codigo) document.getElementById('cajaCodigo').value = caja.caja_codigo;
+    setCajaDisplay(caja.caja_codigo || document.getElementById('cajaCodigo').value, pageContext.cajaNombre, pageContext.cajaDescripcion);
+    if (caja.turno) document.getElementById('turno').value = caja.turno;
+    if (typeof resumen.apertura_efectivo !== 'undefined') document.getElementById('apertura').value = String(Number(resumen.apertura_efectivo || 0));
+  }
+
+  async function generar() {
+    var msg = document.getElementById('msg');
+    msg.textContent = '';
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
+    try {
+      applyPrintFormat(document.getElementById('modoVista').value);
+      reporteConfig = collectReporteConfig();
+      automaticCierreCajaID = 0;
+      automaticCajaSucursalID = 0;
+      setReportPrintPreview(false);
+      msg.textContent = 'Generando corte...';
+      lastReport = await requestJSON('/api/empresa/corte_caja?' + buildParams().toString());
+      lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
+      renderReport(lastReport);
+      setPrintButtonDisabled(false);
+      setCloseButtonsDisabled(false);
+      msg.textContent = 'Corte generado correctamente. Revisa caja fisica antes de guardar cierre.';
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo generar el corte.';
+      setPrintButtonDisabled(true);
+      setCloseButtonsDisabled(true);
+    }
+  }
+
+  async function generarReporteMiTurno() {
+    var msg = document.getElementById('msg');
+    msg.textContent = '';
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
+    try {
+      applyPrintFormat(document.getElementById('modoVista').value);
+      reporteConfig = collectReporteConfig();
+      automaticCierreCajaID = 0;
+      automaticCajaSucursalID = 0;
+      msg.textContent = 'Cargando reporte del turno del usuario actual...';
+      lastReport = await requestJSON('/api/empresa/corte_caja?' + buildAutomaticParams('reporte_mi_turno').toString());
+      lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
+      applyAutomaticCajaContext(lastReport);
+      renderReport(lastReport);
+      setReportPrintPreview(true);
+      scrollReportIntoView();
+      setPrintButtonDisabled(false);
+      setCloseButtonsDisabled(true);
+      var caja = lastReport && lastReport.caja_actual ? lastReport.caja_actual : {};
+      msg.textContent = automaticCierreCajaID > 0
+        ? 'Reporte de mi turno listo para ' + (caja.caja_codigo || 'la caja') + '. Puedes imprimirlo sin cerrar el turno.'
+        : 'No se encontro una caja abierta para el usuario actual. Abre caja o revisa el filtro antes de imprimir.';
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo cargar el reporte de mi turno.';
+      setPrintButtonDisabled(true);
+      setCloseButtonsDisabled(true);
+    }
+  }
+
+  async function generarCorteAutomatico() {
+    var msg = document.getElementById('msg');
+    msg.textContent = '';
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
+    try {
+      applyPrintFormat(document.getElementById('modoVista').value);
+      reporteConfig = collectReporteConfig();
+      setReportPrintPreview(false);
+      msg.textContent = 'Analizando caja abierta del usuario actual...';
+      lastReport = await requestJSON('/api/empresa/corte_caja?' + buildAutomaticParams().toString());
+      lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
+      applyAutomaticCajaContext(lastReport);
+      renderReport(lastReport);
+      setPrintButtonDisabled(false);
+      setCloseButtonsDisabled(automaticCierreCajaID <= 0);
+      var caja = lastReport && lastReport.caja_actual ? lastReport.caja_actual : {};
+      msg.textContent = automaticCierreCajaID > 0
+        ? 'Corte automatico listo desde la apertura de ' + (caja.caja_codigo || 'la caja') + ' hasta este momento.'
+        : 'No se encontro una caja abierta para el usuario actual. Revisa apertura de caja antes de cerrar turno.';
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo generar el corte automatico.';
+      setPrintButtonDisabled(true);
+      setCloseButtonsDisabled(true);
+    }
+  }
+
+  async function logoutUsuarioActual() {
+    var msg = document.getElementById('msg');
+    try {
+      if (msg) msg.textContent = 'Cerrando sesion del usuario...';
+      await fetch('/auth/logout', { method:'POST', credentials:'include', redirect:'manual' });
+    } catch (_) {}
+    window.location.href = '/login.html';
+  }
+
+  function printReportAndLogout() {
+    if (logoutAfterPrintPending) return;
+    logoutAfterPrintPending = true;
+    var done = false;
+    var finish = function() {
+      if (done) return;
+      done = true;
+      logoutAfterPrintPending = false;
+      window.removeEventListener('afterprint', finish);
+      setTimeout(logoutUsuarioActual, 300);
+    };
+    window.addEventListener('afterprint', finish, { once:true });
+    setTimeout(finish, 15000);
+    window.print();
+  }
+
+  function mostrarTutorialTurno() {
+    window.alert([
+      'Tutorial de turno y corte de caja',
+      '',
+      '1. El turno inicia cuando el trabajador ingresa al sistema.',
+      '2. Durante el turno, el sistema registra ventas, pagos, anulaciones, productos y movimientos según los permisos del usuario.',
+	  '3. El check de modo offline agrega un desglose de las ventas capturadas sin internet y sincronizadas para esta caja.',
+	  '4. Al presionar "Cerrar turno e imprimir reporte", se usan los reportes seleccionados para el corte.',
+	  '5. Luego se imprime el reporte del usuario que está cerrando el turno. Si hay reportes activos, se incluyen en la impresión configurada.',
+	  '6. Al finalizar la impresión, por defecto el sistema cierra la sesión del usuario.',
+	  '7. Si marcas "no cerrar la sesión", el sistema imprime y guarda el cierre sin sacar al usuario.'
+    ].join('\n'));
+  }
+
+  async function cerrarCorte(options) {
+    options = options || {};
+    var msg = document.getElementById('msg');
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
+    if (!lastReport) { await generarCorteAutomatico(); if (!lastReport) return; }
+    if (lastReport && lastReport.caja_actual && Number(lastReport.caja_actual.id || 0) > 0) {
+      applyAutomaticCajaContext(lastReport);
+    }
+    var keepSession = !!(document.getElementById('mantenerSesionCierre') && document.getElementById('mantenerSesionCierre').checked);
+    var logoutAfterPrint = !!(options.logoutAfterPrint && !keepSession);
+    var ok = window.confirm(logoutAfterPrint
+      ? 'Cerrar turno, imprimir el reporte y cerrar la sesion del usuario?'
+      : 'Guardar cierre de caja con los reportes seleccionados?');
+    if (!ok) return;
+    var payload = {
+      desde: document.getElementById('desde').value || '',
+      hasta: document.getElementById('hasta').value || '',
+      usuario: document.getElementById('usuario').value || '',
+      apertura_efectivo: Number(document.getElementById('apertura').value || 0),
+      caja_fisica: Number(document.getElementById('cajaFisica').value || 0),
+      cierre_caja_id: automaticCierreCajaID > 0 ? automaticCierreCajaID : 0,
+      caja_codigo: document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL',
+      turno: document.getElementById('turno').value || 'general',
+      reportes: selectedReports(),
+      imprimir_auto: true,
+      observaciones: document.getElementById('observaciones').value || '',
+      umbral_incidencia: Number(document.getElementById('umbralIncidencia').value || 0)
+    };
+    try {
+      msg.textContent = 'Guardando cierre...';
+      var res = await requestJSON('/api/empresa/corte_caja?empresa_id=' + encodeURIComponent(empresaId), {
+        method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(payload)
+      });
+      lastReport = res && res.reporte ? res.reporte : lastReport;
+      renderReport(lastReport);
+      setCloseButtonsDisabled(true);
+      document.getElementById('btnCerrar').textContent = 'Turno cerrado';
+      document.getElementById('btnCerrarImprimirSesion').textContent = 'Turno cerrado';
+      automaticCierreCajaID = 0;
+      msg.textContent = 'Cierre guardado correctamente. ID: ' + (res && res.cierre_id ? res.cierre_id : 'registrado');
+      if (res && res.imprimir_auto) {
+        if (logoutAfterPrint) {
+          msg.textContent += ' Imprimiendo reporte; al finalizar se cerrara la sesion.';
+          printReportAndLogout();
+        } else {
+          window.print();
+        }
+      } else if (logoutAfterPrint) {
+        await logoutUsuarioActual();
+      }
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo guardar el cierre.';
+    }
+  }
+
+  async function preloadAccount() {
+    try {
+      var account = await requestJSON('/api/account');
+      var email = (account && (account.email || account.user_email || account.admin_email)) || '';
+      if (email && !document.getElementById('usuario').value) document.getElementById('usuario').value = email;
+    } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    setDefaultDates();
+    applyPageContext();
+    applyPrintFormat(document.getElementById('modoVista').value);
+    cargarModoTactilPOS();
+    cargarConfigReporte();
+    Promise.allSettled([preloadAccount(), preloadCajaDefaults()]).then(function() {
+      if (pageContext.autoGenerar) {
+        generarCorteAutomatico();
+      }
+    });
+    document.getElementById('btnGenerar').addEventListener('click', generar);
+    document.getElementById('btnReporteMiTurno').addEventListener('click', generarReporteMiTurno);
+    document.getElementById('btnCorteAutomatico').addEventListener('click', generarCorteAutomatico);
+    document.getElementById('btnCerrar').addEventListener('click', cerrarCorte);
+    document.getElementById('btnCerrarImprimirSesion').addEventListener('click', function() { cerrarCorte({ logoutAfterPrint:true }); });
+    document.getElementById('btnImprimir').addEventListener('click', function() { if (lastReport) { applyPrintFormat(document.getElementById('modoVista').value); renderReport(lastReport); window.print(); } });
+    document.getElementById('btnTutorialTurno').addEventListener('click', mostrarTutorialTurno);
+    document.getElementById('cajaCodigo').addEventListener('input', function() { setCajaDisplay(this.value, pageContext.cajaNombre, pageContext.cajaDescripcion); });
+    document.getElementById('modoVista').addEventListener('change', function() { applyPrintFormat(this.value); reporteConfig.formato_impresion = normalizePrintFormat(this.value); if (lastReport) renderReport(lastReport); });
+    document.getElementById('cajaFisica').addEventListener('input', function() { if (lastReport) updateQuickKpis(lastReport.resumen || {}); });
+    document.querySelectorAll('[data-config-key]').forEach(function(box) {
+      box.addEventListener('change', function() {
+        reporteConfig = collectReporteConfig();
+        if (lastReport) {
+          lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
+          renderReport(lastReport);
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

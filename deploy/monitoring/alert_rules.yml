@@ -1,0 +1,140 @@
+groups:
+  - name: pcs_vps_capacity
+    rules:
+      - alert: PCSDiscoVPSAlto
+        expr: 100 - ((node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} * 100) / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) >= 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disco VPS por encima del 80%"
+          description: "El montaje {{ $labels.mountpoint }} esta en {{ $value | printf \"%.1f\" }}%."
+      - alert: PCSMemoriaAlta
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 >= 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memoria VPS por encima del 85%"
+          description: "Uso de memoria en {{ $value | printf \"%.1f\" }}%."
+      - alert: PCSBackendCaido
+        expr: up{job=~"pcs-backend|pcs-staging-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend PCS sin respuesta"
+          description: "El job {{ $labels.job }} no responde a Prometheus."
+      - alert: PCSPostgreSQLNoDisponible
+        expr: pcs_postgres_ready{job=~"pcs-backend|pcs-staging-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL PCS no disponible"
+          description: "La base {{ $labels.database }} del job {{ $labels.job }} no supera la prueba acotada de disponibilidad."
+      - alert: PCSWorkerSinLatido
+        expr: pcs_worker_heartbeat_query_success{job=~"pcs-backend|pcs-staging-backend"} == 0 or pcs_worker_heartbeat_age_seconds{job=~"pcs-backend|pcs-staging-backend"} < 0 or pcs_worker_heartbeat_age_seconds{job=~"pcs-backend|pcs-staging-backend"} > 120
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Worker durable PCS sin latido"
+          description: "El job {{ $labels.job }} no observa una ejecucion reciente del worker durable."
+      - alert: PCSColaDurableAcumulada
+        expr: pcs_async_jobs_ready_total{job=~"pcs-backend|pcs-staging-backend"} > 100 or pcs_outbox_ready_total{job=~"pcs-backend|pcs-staging-backend"} > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cola durable PCS acumulada"
+          description: "El job {{ $labels.job }} mantiene mas de 100 elementos listos durante 10 minutos."
+      - alert: PCSCarrilOperativoSaturado
+        expr: pcs_queue_lane_saturation_percent{job=~"pcs-backend|pcs-staging-backend"} >= 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Carril operativo PCS saturado"
+          description: "El carril {{ $labels.lane }} del job {{ $labels.job }} permanece en {{ $value | printf \"%.1f\" }}% del umbral configurado."
+      - alert: PCSLeaseDurableVencido
+        expr: pcs_async_jobs_expired_leases_total{job=~"pcs-backend|pcs-staging-backend"} > 0 or pcs_outbox_expired_leases_total{job=~"pcs-backend|pcs-staging-backend"} > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Lease durable PCS vencido"
+          description: "El job {{ $labels.job }} detecto trabajo en procesamiento con lease vencido."
+      - alert: PCSConsultaObservabilidadFallida
+        expr: pcs_observability_query_success{job=~"pcs-backend|pcs-staging-backend"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consulta operativa PCS fallida"
+          description: "La fuente {{ $labels.source }} del job {{ $labels.job }} no puede consultar sus agregados operativos."
+      - alert: PCSSoporteIAPurgaVencida
+        expr: pcs_support_purge_stale_total{job=~"pcs-backend|pcs-staging-backend"} > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Depuracion de soporte IA detenida"
+          description: "El job {{ $labels.job }} mantiene {{ $value | printf \"%.0f\" }} saga(s) de depuracion pendientes por al menos 15 minutos. Aplicar el runbook sin borrar archivos ni filas manualmente."
+      - alert: PCSAntivirusSoportesSinConfigurar
+        expr: pcs_support_antivirus_required{job=~"pcs-backend|pcs-staging-backend"} == 1 and on(job) pcs_support_antivirus_configured{job=~"pcs-backend|pcs-staging-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Antivirus obligatorio de soportes sin configurar"
+          description: "El job {{ $labels.job }} exige antivirus pero no tiene endpoint clamd configurado; las cargas deben permanecer cerradas."
+      - alert: PCSAntivirusSoportesNoDisponible
+        expr: increase(pcs_support_antivirus_scans_total{job=~"pcs-backend|pcs-staging-backend",result="unavailable"}[10m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Antivirus de soportes no disponible"
+          description: "El job {{ $labels.job }} registro fallos de analisis antivirus en los ultimos 10 minutos."
+      - alert: PCSAntivirusSoportesOmitido
+        expr: increase(pcs_support_antivirus_scans_total{job=~"pcs-backend|pcs-staging-backend",result="bypassed"}[10m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Carga de soporte omitio antivirus"
+          description: "El job {{ $labels.job }} acepto una carga con antivirus opcional desactivado; revisar la politica antes del piloto."
+      - alert: PCSAntivirusSoportesDetectoMalware
+        expr: increase(pcs_support_antivirus_scans_total{job=~"pcs-backend|pcs-staging-backend",result="malware"}[5m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Malware bloqueado en soporte de compra"
+          description: "El job {{ $labels.job }} bloqueo al menos un archivo; revisar auditoria agregada sin extraer ni abrir el adjunto."
+      - alert: PCSExtraccionIASoportesProveedorFallando
+        expr: increase(pcs_support_ai_extractions_total{job=~"pcs-backend|pcs-staging-backend",result="provider_error"}[10m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Proveedor IA de soportes con fallos"
+          description: "El job {{ $labels.job }} registro fallos del proveedor IA; el soporte debe conservar su estado anterior."
+      - alert: PCSExtraccionIASoportesRespuestaInvalida
+        expr: increase(pcs_support_ai_extractions_total{job=~"pcs-backend|pcs-staging-backend",result="invalid_response"}[10m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Respuesta IA de soporte invalida"
+          description: "El job {{ $labels.job }} rechazo una respuesta fuera del contrato; no debe persistir datos extraidos."
+      - alert: PCSExtraccionIASoportesPersistenciaFallida
+        expr: increase(pcs_support_ai_extractions_total{job=~"pcs-backend|pcs-staging-backend",result="persistence_error"}[10m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Persistencia de extraccion IA fallida"
+          description: "El job {{ $labels.job }} obtuvo una extraccion valida pero no pudo guardarla; revisar base y auditoria sin repetir a ciegas."
+      - alert: PCSSoporteArchivoIntegridadFallida
+        expr: increase(pcs_support_file_integrity_failures_total{job=~"pcs-backend|pcs-staging-backend"}[10m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Integridad de archivo privado de soporte fallida"
+          description: "El job {{ $labels.job }} rechazo un archivo alterado, sobredimensionado o con hash invalido. Suspender su descarga y extraccion IA."

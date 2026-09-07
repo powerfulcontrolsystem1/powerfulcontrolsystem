@@ -1,0 +1,1890 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Facturas electrónicas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/vendor/qrcode.min.js"></script>
+  <script src="/js/print_documents.js"></script>
+  <script src="/js/ui_event_controls.js" defer></script>
+  <style>
+    .fe-compact-header{padding:14px 16px}
+    .fe-compact-header h1,.fe-compact-header h2{margin:3px 0 5px}
+    .fe-compact-header .page-header-lead{font-size:.92rem;line-height:1.35}
+    .fe-compact-header .empresa-module-overview,.fe-compact-header .empresa-module-kpis{gap:8px}
+    .fe-compact-header .empresa-module-kpi,.fe-compact-header .kpi-box{padding:8px 10px;min-height:0}
+    .fe-compact-filter{padding:10px 12px;width:100%;max-width:none}
+    .fe-compact-filter .empresa-section-header{margin-bottom:6px}
+    .fe-compact-filter .page-header-lead{display:none}
+    .fe-filter-grid{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:7px;align-items:end}
+    .fe-filter-grid .form-col{min-width:0}
+    .fe-compact-filter .form-label{margin-bottom:3px;font-size:.78rem}
+    .fe-compact-filter .form-input{min-height:34px;padding:6px 8px;font-size:.86rem}
+    .fe-compact-filter .form-actions{margin-top:8px;gap:6px}
+    .fe-compact-filter .form-actions .btn{min-height:32px;padding:6px 9px;font-size:.82rem}
+    .fe-view-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 0}
+    .fe-font-control{display:flex;align-items:center;gap:8px;min-width:220px}
+    .fe-font-control input{width:140px}
+    .fe-actions-cell{white-space:nowrap}
+    .fe-only-action{min-width:104px}
+    .fe-share-dropdown{display:inline-block;position:relative}
+    .fe-share-dropdown summary{list-style:none;cursor:pointer}
+    .fe-share-dropdown summary::-webkit-details-marker{display:none}
+    .fe-share-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:grid;gap:4px;min-width:170px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow)}
+    .fe-share-menu .btn{width:100%;justify-content:flex-start}
+    .fe-export-dropdown{display:inline-block;position:relative}
+    .fe-export-dropdown summary{list-style:none;cursor:pointer}
+    .fe-export-dropdown summary::-webkit-details-marker{display:none}
+    .fe-export-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:18;display:grid;gap:4px;min-width:150px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow)}
+    .fe-export-menu .btn{width:100%;justify-content:flex-start}
+    .fe-result-summary[hidden]{display:none}
+    .fe-result-summary{padding:12px 14px}
+    .fe-result-summary .empresa-module-kpis{gap:8px}
+    .fe-result-summary .kpi-box{padding:9px 10px;min-height:0}
+    .fe-result-summary .kpi-box strong{display:block;font-size:1.04rem}
+    .fe-result-summary .kpi-box small{display:block;color:var(--muted);font-weight:700;margin-top:2px}
+    #facturasTable th,#facturasTable td{padding:6px 8px;line-height:1.18;vertical-align:middle}
+    #facturasTable .btn{min-height:30px;padding:5px 8px;border-radius:6px;font-size:.82rem;line-height:1.1}
+    #facturasTable .icon,.fe-export-menu .icon,.fe-actions-cell .icon,.fe-compact-filter .form-actions .icon,.fe-compact-filter summary.btn .icon{width:14px!important;height:14px!important;max-width:14px!important;max-height:14px!important;flex:0 0 14px;margin-right:4px;object-fit:contain}
+    .fe-actions-cell{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+    .fe-actions-cell .btn,.fe-export-menu .btn,.form-actions .btn{display:inline-flex;align-items:center;justify-content:center;gap:4px}
+    .fe-compact-filter summary.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px}
+    .fe-share-dropdown summary{min-width:34px}
+    .fe-share-dropdown summary .icon{margin:0;width:13px;height:13px}
+    .fe-cashier-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .fe-filter-check{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0;background:transparent;border:0;box-shadow:none;color:var(--text);font-weight:700}
+    .fe-filter-check input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+    .fe-current-user-hint{margin-top:4px;color:var(--muted);font-size:.78rem;line-height:1.25}
+    .factura-print-preview{background:#f3f4f6;padding:18px;overflow:auto}
+    .factura-print-sheet{background:#fff;color:#111;border:1px solid #d1d5db;max-width:960px;margin:0 auto;padding:22px;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
+    .factura-print-head{display:flex;justify-content:space-between;gap:18px;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:14px}
+    .factura-print-logo{display:flex;gap:14px;align-items:flex-start}
+    .factura-print-logo img{max-width:120px;max-height:70px;object-fit:contain}
+    .factura-print-kicker{font-size:11px;text-transform:uppercase;letter-spacing:0;color:#4b5563}
+    .factura-print-sheet h3{margin:2px 0 4px;font-size:24px;letter-spacing:0}
+    .factura-print-sheet p{margin:0;line-height:1.42}
+    .factura-print-company{text-align:right;max-width:390px;font-size:12px}
+    .factura-print-company strong,.factura-print-company span{display:block}
+    .factura-print-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid #111;margin:14px 0}
+    .factura-print-strip div{padding:9px 10px;border-right:1px solid #111}
+    .factura-print-strip div:last-child{border-right:0}
+    .factura-print-strip span{display:block;font-size:11px;color:#4b5563;text-transform:uppercase}
+    .factura-print-strip strong{display:block;overflow-wrap:anywhere}
+    .factura-print-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .factura-print-panel{border:1px solid #9ca3af;padding:12px;background:#fff}
+    .factura-print-panel--full{margin-bottom:12px}
+    .factura-print-panel h4{margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:0}
+    .factura-print-panel dl{margin:0}
+    .factura-print-panel dl>div,.factura-print-doc-meta>div{display:flex;justify-content:space-between;gap:14px;padding:5px 0;border-top:1px solid #e5e7eb}
+    .factura-print-panel dl>div:first-child,.factura-print-doc-meta>div:first-child{border-top:0}
+    .factura-print-panel dt{color:#4b5563}
+    .factura-print-panel dd{margin:0;text-align:right;font-weight:700;overflow-wrap:anywhere}
+    .factura-print-note,.factura-print-legal{border-top:1px dashed #9ca3af;margin-top:12px;padding-top:10px;white-space:pre-wrap}
+    .factura-print-table{width:100%;border-collapse:collapse;margin:12px 0;color:#111;background:#fff}
+    .factura-print-table th,.factura-print-table td{border:1px solid #111;padding:8px 9px;text-align:left;vertical-align:top}
+    .factura-print-table th{background:#eef2f7;text-transform:uppercase;font-size:11px;letter-spacing:0}
+    .factura-print-table td:last-child,.factura-print-table th:last-child{text-align:right}
+    .factura-print-total-table{width:360px;max-width:100%;margin:12px 0 0 auto;border-collapse:collapse;color:#111}
+    .factura-print-total-table th,.factura-print-total-table td{border:1px solid #111;padding:8px 10px}
+    .factura-print-total-table th{text-align:left;background:#eef2f7;text-transform:uppercase;font-size:11px}
+    .factura-print-total-table td{text-align:right;font-weight:900}
+    .factura-print-compacta{max-width:760px;padding:18px}
+    .factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .factura-print-pos-preview{max-width:330px;font-family:Consolas,"Courier New",monospace;font-size:var(--fe-pos-font,11px);padding:12px}
+    .factura-print-pos-preview .factura-print-head{display:block;text-align:center;border-bottom:1px dashed #111}
+    .factura-print-pos-preview .factura-print-logo{display:block}
+    .factura-print-pos-preview .factura-print-logo img{margin:0 auto 6px;max-width:190px}
+    .factura-print-pos-preview h3{font-size:16px}
+    .factura-print-pos-preview .factura-print-company{text-align:center;max-width:none}
+    .factura-print-pos-preview .factura-print-strip,.factura-print-pos-preview .factura-print-grid{display:block;border:0}
+    .factura-print-pos-preview .factura-print-strip div,.factura-print-pos-preview .factura-print-panel{border:0;border-top:1px dashed #111;padding:7px 0}
+    .factura-print-pos-preview .factura-print-panel dl>div{font-size:1em}
+    .fe-cancel-dialog{width:min(560px,calc(100vw - 28px));padding:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+    .fe-cancel-dialog::backdrop{background:rgba(15,23,42,.64)}
+    .fe-cancel-dialog form{display:grid;gap:14px;padding:20px}
+    .fe-cancel-dialog h3,.fe-cancel-dialog p{margin:0}
+    .fe-cancel-dialog textarea{min-height:96px;resize:vertical}
+    .fe-cancel-dialog .form-actions{margin:0;justify-content:flex-end}
+    @media (max-width:1100px){.fe-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media (max-width:760px){.fe-filter-grid{grid-template-columns:1fr}.factura-print-head,.factura-print-grid{display:block}.factura-print-company{text-align:left;max-width:none;margin-top:10px}.factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section fe-compact-filter">
+      <div class="empresa-section-header">
+        <h2>Filtros de búsqueda</h2>
+      </div>
+      <p class="page-header-lead" style="margin:0 0 14px;">
+        Filtra por tipo, estado, cliente o rango de fechas para responder más rápido a consultas operativas, contables o fiscales.
+      </p>
+      <form id="filtrosForm" class="form">
+        <div class="fe-filter-grid">
+          <div class="form-col">
+            <label class="form-label" for="tipoDocumento">Tipo</label>
+            <select id="tipoDocumento" class="form-input">
+              <option value="">Todos</option>
+              <option value="comprobante_pago">Ventas</option>
+              <option value="factura_electronica">Facturas electrónicas</option>
+              <option value="nota_credito">Notas crédito</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="estadoDocumento">Estado documento</label>
+            <select id="estadoDocumento" class="form-input">
+              <option value="">Todos</option>
+              <option value="borrador">Borrador</option>
+              <option value="emitida">Emitida</option>
+              <option value="anulada">Anulada</option>
+              <option value="ajustada">Ajustada</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="clienteFiltro">Cliente</label>
+            <input id="clienteFiltro" class="form-input" placeholder="Nombre, correo o documento">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="documentoFiltro">Documento</label>
+            <input id="documentoFiltro" class="form-input" placeholder="Código, número legal o validación">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fechaDesde">Fecha desde</label>
+            <input id="fechaDesde" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fechaHasta">Fecha hasta</label>
+            <input id="fechaHasta" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="busquedaGlobal">Búsqueda libre</label>
+            <input id="busquedaGlobal" class="form-input" placeholder="Observaciones, cliente, código...">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cajeroFiltro">Cajero</label>
+            <select id="cajeroFiltro" class="form-input">
+              <option value="">Todos los usuarios</option>
+            </select>
+            <div id="usuarioActualHint" class="fe-current-user-hint">Usuario actual: detectando...</div>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Opciones</label>
+            <label class="fe-filter-check" for="includeInactive">
+              <input id="includeInactive" type="checkbox">
+              <span>Incluir inactivos</span>
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="modoVisualizacionFactura">Vista e impresion</label>
+            <select id="modoVisualizacionFactura" class="form-input">
+              <option value="carta">Carta completa</option>
+              <option value="compacta">Compacta ejecutiva</option>
+              <option value="pos">Ticket POS 80mm</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button id="btnBuscar" type="submit" class="btn"><img class="icon" src="/img/analytics-color.svg" alt="">Buscar documentos</button>
+          <button id="btnLimpiar" type="button" class="btn secondary"><img class="icon" src="/img/settings-color.svg" alt="">Limpiar filtros</button>
+          <details class="fe-export-dropdown">
+            <summary class="btn secondary"><img class="icon" src="/img/excel.svg" alt="">Exportar</summary>
+            <div class="fe-export-menu">
+              <button id="btnExportCsv" type="button" class="btn secondary" aria-label="Exportar resultados en CSV" title="Exportar resultados en CSV"><img class="icon" src="/img/invoice.svg" alt="">CSV</button>
+              <button id="btnExportExcel" type="button" class="btn secondary" aria-label="Exportar resultados en Excel" title="Exportar resultados en Excel"><img class="icon" src="/img/excel.svg" alt="">Excel</button>
+            </div>
+          </details>
+        </div>
+      </form>
+    </section>
+
+    <section id="resultSummary" class="card empresa-section fe-result-summary" hidden>
+      <div class="empresa-module-kpis">
+        <div class="kpi-box">
+          <span class="kpi-label">Ventas</span>
+          <strong id="kpiVentasCount">0</strong>
+          <small id="kpiVentasMonto">$0</small>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Facturas electrónicas</span>
+          <strong id="kpiFacturasCount">0</strong>
+          <small id="kpiFacturasMonto">$0</small>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Ventas anuladas</span>
+          <strong id="kpiVentasAnuladasCount">0</strong>
+          <small id="kpiVentasAnuladasMonto">$0</small>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Facturas anuladas</span>
+          <strong id="kpiFacturasAnuladasCount">0</strong>
+          <small id="kpiFacturasAnuladasMonto">$0</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Resultados</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="facturasTable">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Código</th>
+              <th>Número legal</th>
+              <th>Cliente</th>
+              <th>Cajero</th>
+              <th>Total</th>
+              <th>Estado doc.</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <dialog id="feCancelDialog" class="fe-cancel-dialog" aria-labelledby="feCancelDialogTitle">
+    <form id="feCancelForm" novalidate>
+      <h3 id="feCancelDialogTitle">Anular documento</h3>
+      <p id="feCancelDialogDescription"></p>
+      <div class="form-col">
+        <label class="form-label" for="feCancelConfirmation">Confirmación</label>
+        <input id="feCancelConfirmation" class="form-input" autocomplete="off" placeholder="Escribe ANULAR" required>
+        <div class="form-help">Escribe exactamente ANULAR para habilitar la operación.</div>
+      </div>
+      <div class="form-col">
+        <label class="form-label" for="feCancelReason">Motivo de anulación</label>
+        <textarea id="feCancelReason" class="form-input" minlength="10" placeholder="Describe el motivo (mínimo 10 caracteres)" required></textarea>
+      </div>
+      <div id="feCancelMessage" class="form-help" role="status" aria-live="polite"></div>
+      <div class="form-actions">
+        <button id="feCancelDismiss" type="button" class="btn secondary">Cancelar</button>
+        <button id="feCancelSubmit" type="submit" class="btn danger" disabled>Confirmar anulación</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    (function () {
+      function getQueryParam(name) {
+        var params = new URLSearchParams(window.location.search || "");
+        return params.get(name);
+      }
+
+      function normalize(value) {
+        return String(value || "").trim();
+      }
+
+      function isOfficialDIANDocumentKey(value) {
+        return /^[0-9a-f]{96}$/i.test(normalize(value));
+      }
+
+      function documentCustomerLabel(item) {
+        item = item || {};
+        var explicit = normalize(item.cliente_nombre) || normalize(item.cliente_email);
+        if (explicit) return explicit;
+        var tipo = normalize(item.tipo_documento).toLowerCase();
+        return (tipo === "factura_electronica" || tipo === "nota_credito" || tipo === "nota_debito") ? "Consumidor final" : "Sin cliente";
+      }
+
+      function escapeHtml(raw) {
+        return String(raw || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function formatMoney(value, moneda) {
+        var amount = Number(value || 0);
+        var currency = normalize(moneda).toUpperCase() || "COP";
+        try {
+          return new Intl.NumberFormat("es-CO", {
+            style: "currency",
+            currency: currency,
+            maximumFractionDigits: 2
+          }).format(amount);
+        } catch (err) {
+          return amount.toFixed(2) + " " + currency;
+        }
+      }
+
+      function formatDate(value) {
+        var raw = normalize(value);
+        if (!raw) return "-";
+        var datePart = raw.length >= 10 ? raw.slice(0, 10) : raw;
+        var bits = datePart.split("-");
+        if (bits.length === 3) {
+          return bits[2] + "/" + bits[1] + "/" + bits[0];
+        }
+        return datePart;
+      }
+
+      function statusBadge(estado) {
+        var norm = normalize(estado).toLowerCase();
+        if (norm === "emitida") return '<span class="badge low">emitida</span>';
+        if (norm === "anulada") return '<span class="badge urgent">anulada</span>';
+        if (norm === "ajustada") return '<span class="badge mid">ajustada</span>';
+        return '<span class="badge high">' + escapeHtml(norm || "borrador") + "</span>";
+      }
+
+      function typeLabel(tipo) {
+        var norm = normalize(tipo).toLowerCase();
+        if (norm === "comprobante_pago") return "Venta sola";
+        if (norm === "factura_electronica") return "Factura electrónica";
+        if (norm === "nota_credito") return "Nota crédito";
+        return normalize(tipo) || "-";
+      }
+
+      function ventaDocumentoBase(codigo) {
+        var base = normalize(codigo).toUpperCase().replace(/\s+/g, "");
+        if (base.indexOf("CP-") === 0 || base.indexOf("FV-") === 0) {
+          base = base.slice(3);
+        }
+        return base;
+      }
+
+      function facturaAsociadaParaVenta(item) {
+        if (!item || normalize(item.tipo_documento).toLowerCase() !== "comprobante_pago") return null;
+        var base = ventaDocumentoBase(item.documento_codigo);
+        if (!base) return null;
+        var facturaCodigo = "FV-" + base;
+        return state.index["factura_electronica::" + facturaCodigo] || null;
+      }
+
+      function visibleTypeLabel(item) {
+		if (facturaAsociadaParaVenta(item)) return "Venta (factura asociada)";
+        return typeLabel(item && item.tipo_documento);
+      }
+
+      function storageKey(name) {
+        return "pcs_facturas_electronicas_" + name + "_" + String(empresaID || "global");
+      }
+
+      function safeStorageGet(key) {
+        try { return window.localStorage.getItem(key) || ""; } catch (_) { return ""; }
+      }
+
+      function safeStorageSet(key, value) {
+        try { window.localStorage.setItem(key, value); } catch (_) {}
+      }
+
+      function apiRequest(url, options) {
+        return fetch(url, Object.assign({ credentials: "same-origin" }, options || {})).then(function (resp) {
+          if (!resp.ok) {
+            return resp.text().then(function (text) {
+              throw new Error(text || ("HTTP " + resp.status));
+            });
+          }
+          if (resp.status === 204) {
+            return null;
+          }
+          return resp.json();
+        });
+      }
+
+      var empresaID = Number(getQueryParam("empresa_id") || getQueryParam("id") || 0);
+      var pageTitle = document.getElementById("pageTitle");
+      var empresaInfo = document.getElementById("empresaInfo");
+      var messageBox = document.getElementById("messageBox");
+      var facturasBody = document.querySelector("#facturasTable tbody");
+      var detalleFactura = document.getElementById("detalleFactura");
+      var printPreview = document.getElementById("printPreview");
+      var resultSummary = document.getElementById("resultSummary");
+
+      var state = {
+        items: [],
+        index: Object.create(null),
+        selectedKey: "",
+        empresaNombre: "",
+        cfg: null,
+        viewMode: "carta",
+        fontSizeOverride: 0,
+        canCancelInvoices: false,
+        canRetryDIAN: false,
+        currentUserEmail: "",
+        currentRole: "",
+        cajeroFilterLocked: false,
+        usuariosEmpresa: []
+      };
+
+      function currentViewMode() {
+        var el = document.getElementById("modoVisualizacionFactura");
+        var v = normalize(el && el.value).toLowerCase();
+        if (v === "pos" || v === "compacta") return v;
+        return "carta";
+      }
+
+      function restoreSavedViewMode() {
+        var el = document.getElementById("modoVisualizacionFactura");
+        if (!el) return;
+        var saved = normalize(safeStorageGet(storageKey("vista_impresion"))).toLowerCase();
+        if (saved === "pos" || saved === "compacta" || saved === "carta") {
+          el.value = saved;
+          state.viewMode = saved;
+        }
+      }
+
+      function normalizePrintFontSize(value, fallback, min, max) {
+        var n = Number(value);
+        var base = Number(fallback);
+        if (!Number.isFinite(base)) base = min;
+        base = Math.max(min, Math.min(max, Math.trunc(base)));
+        if (!Number.isFinite(n)) return base;
+        n = Math.trunc(n);
+        if (n < min) return min;
+        if (n > max) return max;
+        return n;
+      }
+
+      function facturaPrintFontSize(cfg, formato) {
+        cfg = cfg || {};
+        if (state && Number(state.fontSizeOverride) > 0) {
+          return normalizePrintFontSize(state.fontSizeOverride, formato === "pos" ? 11 : 13, formato === "pos" ? 8 : 10, formato === "pos" ? 16 : 22);
+        }
+        return formato === "pos"
+          ? normalizePrintFontSize(cfg.impresion_factura_fuente_pos, 11, 8, 16)
+          : normalizePrintFontSize(cfg.impresion_factura_fuente_carta, 13, 10, 22);
+      }
+
+      function updateFontSizeControl() {
+        var formato = currentViewMode();
+        var input = document.getElementById("facturaFontSize");
+        var label = document.getElementById("facturaFontSizeValue");
+        if (!input || !label) return;
+        input.min = formato === "pos" ? "8" : "10";
+        input.max = formato === "pos" ? "16" : "22";
+        var size = facturaPrintFontSize(state.cfg || {}, formato);
+        input.value = String(size);
+        label.textContent = String(size) + " px";
+        if (printPreview) {
+          printPreview.style.fontSize = String(size) + "px";
+          printPreview.style.setProperty("--fe-pos-font", String(size) + "px");
+        }
+      }
+
+      function safeUrl(raw) {
+        var v = normalize(raw);
+        if (!v) return "";
+        var lower = v.toLowerCase();
+        if (v.indexOf("/") === 0) {
+          return window.location.origin.replace(/\/$/, "") + v;
+        }
+        if (lower.indexOf("http://") === 0 || lower.indexOf("https://") === 0) {
+          return v;
+        }
+        return "";
+      }
+
+      function safeQRImageUrl(raw) {
+        var v = normalize(raw);
+        if (!v) return "";
+        var lower = v.toLowerCase();
+        if (lower.indexOf("data:image/") === 0) return v;
+        return safeUrl(v);
+      }
+
+      function normalizeCountryCodeForInvoiceQR(item) {
+        var raw = normalize(item && (item.pais_codigo || item.pais || item.country)).toLowerCase();
+        if (!raw) return "";
+        if (raw === "co" || raw === "col" || raw === "colombia") return "co";
+        return raw;
+      }
+
+      function isColombiaElectronicFiscalDocument(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        var country = normalizeCountryCodeForInvoiceQR(item);
+        return (tipo === "factura_electronica" || tipo === "nota_credito" || tipo === "nota_debito") && (!country || country === "co");
+      }
+
+      function electronicInvoiceValidationKey(item) {
+        return normalize(
+          item && (
+            item.cufe ||
+            item.cude ||
+            item.codigo_validacion ||
+            item.uuid ||
+            item.document_key ||
+            item.documentkey ||
+            item.xml_document_key ||
+            item.clave_acceso
+          )
+        );
+      }
+
+      function electronicInvoiceDianURL(item) {
+        var explicitURL = normalize(item && (item.qr_url || item.url_qr || item.url_consulta_dian || item.dian_qr_url || item.consulta_url));
+        if (/^https?:\/\//i.test(explicitURL)) return explicitURL;
+        var country = normalizeCountryCodeForInvoiceQR(item);
+        if (country && country !== "co") return "";
+        var key = electronicInvoiceValidationKey(item);
+        if (!key) return "";
+        var ambiente = normalize(item && (item.ambiente_fe || item.ambiente || item.environment)).toLowerCase();
+        var base = ambiente.indexOf("hab") >= 0 || ambiente.indexOf("test") >= 0 || ambiente.indexOf("prueba") >= 0
+          ? "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey="
+          : "https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=";
+        return base + encodeURIComponent(key);
+      }
+
+      function getQRCodeGenerator() {
+        if (typeof window !== "undefined" && window.QRCode) return window.QRCode;
+        if (typeof globalThis !== "undefined" && globalThis.QRCode) return globalThis.QRCode;
+        if (typeof QRCode !== "undefined") return QRCode;
+        return null;
+      }
+
+      function generateQRDataURL(payload, size) {
+        return new Promise(function(resolve) {
+          var value = normalize(payload);
+          var generator = getQRCodeGenerator();
+          if (!value || !generator || typeof generator.toCanvas !== "function") {
+            resolve("");
+            return;
+          }
+          try {
+            var canvas = document.createElement("canvas");
+            generator.toCanvas(canvas, value, { width: Number(size || 180), margin: 1, errorCorrectionLevel: "M" }, function(err) {
+              if (err) {
+                resolve("");
+                return;
+              }
+              try {
+                resolve(canvas.toDataURL("image/png"));
+              } catch (_) {
+                resolve("");
+              }
+            });
+          } catch (_) {
+            resolve("");
+          }
+        });
+      }
+
+      function getPrintableDocumentQR(item) {
+        return item && item.__pcs_print_qr ? item.__pcs_print_qr : null;
+      }
+
+      async function preparePrintableDocumentQR(item, format) {
+        if (!isColombiaElectronicFiscalDocument(item)) return null;
+        var key = electronicInvoiceValidationKey(item);
+        var url = electronicInvoiceDianURL(item);
+        if (!key || !url) {
+          return {
+            label: "QR DIAN pendiente",
+            value: "Falta CUFE/CUDE o codigo de validacion para construir el QR DIAN.",
+            caption: "No entregue esta representacion grafica como factura electronica valida hasta tener validacion DIAN."
+          };
+        }
+        var image = await generateQRDataURL(url, format === "pos" ? 140 : 190);
+        return {
+          src: image,
+          label: "Consultar factura electronica DIAN",
+          value: "CUFE/CUDE: " + key,
+          url: url,
+          caption: "Escanee para verificar el documento electronico en DIAN."
+        };
+      }
+
+      function printableQRHTML(qr) {
+        if (!qr || typeof qr !== "object") return "";
+        var src = safeQRImageUrl(qr.src || qr.image || qr.imageUrl || qr.dataURL || "");
+        var label = normalize(qr.label) || "Consultar documento electronico";
+        var value = normalize(qr.value || qr.code);
+        var url = normalize(qr.url || qr.href);
+        var caption = normalize(qr.caption);
+        if (!src && !value && !url) return "";
+        return '<section class="factura-print-qr">' +
+          (src ? '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml(label) + '">' : '') +
+          '<strong>' + escapeHtml(label) + '</strong>' +
+          (value ? '<span>' + escapeHtml(value) + '</span>' : '') +
+          (url ? '<span>' + escapeHtml(url) + '</span>' : '') +
+          (caption ? '<span>' + escapeHtml(caption) + '</span>' : '') +
+          '</section>';
+      }
+
+      function companyLegalLines(cfg) {
+        cfg = cfg && typeof cfg === "object" ? cfg : {};
+        var lines = [];
+        var razon = normalize(cfg.razon_social) || normalize(cfg.nombre_comercial) || "";
+        var nit = normalize(cfg.nit) || "";
+        if (razon) lines.push(razon);
+        if (nit) lines.push("NIT: " + nit + (normalize(cfg.digito_verificacion) ? ("-" + normalize(cfg.digito_verificacion)) : ""));
+        var dir = normalize(cfg.direccion_fiscal);
+        if (dir) lines.push("Dirección: " + dir);
+        var tel = normalize(cfg.telefono_facturacion);
+        if (tel) lines.push("Tel: " + tel);
+        var mail = normalize(cfg.email_facturacion);
+        if (mail) lines.push("Email: " + mail);
+        return lines;
+      }
+
+      function buildLegalBlock(cfg) {
+        cfg = cfg && typeof cfg === "object" ? cfg : {};
+        var notas = normalize(cfg.notas_legales);
+        var pie = normalize(cfg.pie_factura);
+        var out = [];
+        if (notas) out.push(notas);
+        if (pie) out.push(pie);
+        return out.join("\n\n");
+      }
+
+      function printItemsConfig(cfg) {
+        cfg = cfg && typeof cfg === "object" ? cfg : {};
+        if (window.PCSPrint && typeof window.PCSPrint.printItemsFromConfig === "function") {
+          return window.PCSPrint.printItemsFromConfig(cfg);
+        }
+        try { return JSON.parse(normalize(cfg.impresion_recibo_items_json) || "{}"); } catch (e) { return {}; }
+      }
+
+      function printFieldEnabled(items, key, item) {
+        if (window.PCSPrint && typeof window.PCSPrint.printItemEnabled === "function") {
+          return window.PCSPrint.printItemEnabled(items, key, item);
+        }
+        return !items || items[key] !== false;
+      }
+
+      function totalEnLetras(item) {
+        if (window.PCSPrint && typeof window.PCSPrint.amountToWords === "function") {
+          return window.PCSPrint.amountToWords(Number(item && item.monto_total || 0), normalize(item && item.moneda) || "COP");
+        }
+        return "";
+      }
+
+      function exportValue(value) {
+        return normalize(value).replace(/\r?\n/g, " ");
+      }
+
+      function exportRows() {
+        return (state.items || []).map(function(item) {
+          return {
+            fecha: formatDate(item.fecha_documento || item.fecha_creacion),
+            tipo: exportValue(item.tipo_documento),
+            codigo: exportValue(item.documento_codigo),
+            numero_legal: exportValue(item.numero_legal),
+            cliente: exportValue(documentCustomerLabel(item)),
+            documento_cliente: exportValue(item.cliente_documento),
+            total: Number(item.monto_total || 0).toFixed(2),
+            moneda: exportValue(item.moneda || "COP"),
+            estado_documento: exportValue(item.estado_documento),
+            estado: exportValue(item.estado || "activo"),
+            cufe_cude: exportValue(electronicInvoiceValidationKey(item)),
+            pais: exportValue(item.pais_codigo),
+            ambiente: exportValue(item.ambiente_fe),
+            observaciones: exportValue(item.observaciones)
+          };
+        });
+      }
+
+      function downloadTextFile(filename, mime, text) {
+        var blob = new Blob([text], { type: mime + ";charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+      }
+
+      function exportSearch(format) {
+        var rows = exportRows();
+        if (!rows.length) {
+          showMessage("No hay resultados para exportar.", "error");
+          return;
+        }
+        var headers = Object.keys(rows[0]);
+        if (format === "xls") {
+          var html = '<table><thead><tr>' + headers.map(function(h){ return '<th>' + escapeHtml(h) + '</th>'; }).join("") + '</tr></thead><tbody>' +
+            rows.map(function(row) {
+              return '<tr>' + headers.map(function(h){ return '<td>' + escapeHtml(row[h]) + '</td>'; }).join("") + '</tr>';
+            }).join("") + '</tbody></table>';
+          downloadTextFile("facturas_electronicas_" + String(empresaID) + ".xls", "application/vnd.ms-excel", html);
+          showMessage("Exportacion Excel generada.", "ok");
+          return;
+        }
+        var csv = headers.join(",") + "\n" + rows.map(function(row) {
+          return headers.map(function(h) {
+            return '"' + String(row[h] == null ? "" : row[h]).replace(/"/g, '""') + '"';
+          }).join(",");
+        }).join("\n");
+        downloadTextFile("facturas_electronicas_" + String(empresaID) + ".csv", "text/csv", csv);
+        showMessage("Exportacion CSV generada.", "ok");
+      }
+
+      function showMessage(text, type) {
+        messageBox.textContent = text || "";
+        messageBox.classList.remove("value-negative", "value-positive");
+        if (type === "error") {
+          messageBox.classList.add("value-negative");
+          return;
+        }
+        if (type === "ok") {
+          messageBox.classList.add("value-positive");
+          return;
+        }
+      }
+
+      function makeKey(item) {
+        return normalize(item.tipo_documento).toLowerCase() + "::" + normalize(item.documento_codigo).toUpperCase();
+      }
+
+      function updateKPIs() {
+        var summary = {
+          ventas: { count: 0, amount: 0 },
+          facturas: { count: 0, amount: 0 },
+          ventasAnuladas: { count: 0, amount: 0 },
+          facturasAnuladas: { count: 0, amount: 0 }
+        };
+
+        state.items.forEach(function (item) {
+          var tipo = normalize(item.tipo_documento).toLowerCase();
+          var estadoDoc = normalize(item.estado_documento).toLowerCase();
+          var estado = normalize(item.estado).toLowerCase();
+          var amount = Number(item.monto_total || 0);
+          var anulada = estadoDoc === "anulada" || estado === "inactivo";
+          var bucket = null;
+
+          if (tipo === "factura_electronica") {
+            bucket = anulada ? summary.facturasAnuladas : summary.facturas;
+          } else if (tipo === "comprobante_pago") {
+            bucket = anulada ? summary.ventasAnuladas : summary.ventas;
+          }
+
+          if (!bucket) return;
+          bucket.count += 1;
+          bucket.amount += Number.isFinite(amount) ? amount : 0;
+        });
+
+        function setSummary(idCount, idAmount, data) {
+          var countEl = document.getElementById(idCount);
+          var amountEl = document.getElementById(idAmount);
+          if (countEl) countEl.textContent = String(data.count);
+          if (amountEl) amountEl.textContent = formatMoney(data.amount, "COP");
+        }
+
+        setSummary("kpiVentasCount", "kpiVentasMonto", summary.ventas);
+        setSummary("kpiFacturasCount", "kpiFacturasMonto", summary.facturas);
+        setSummary("kpiVentasAnuladasCount", "kpiVentasAnuladasMonto", summary.ventasAnuladas);
+        setSummary("kpiFacturasAnuladasCount", "kpiFacturasAnuladasMonto", summary.facturasAnuladas);
+        if (resultSummary) resultSummary.hidden = false;
+      }
+
+      function renderDetalle(item) {
+        if (!item) {
+          if (detalleFactura) detalleFactura.textContent = "Selecciona un documento para ver su detalle.";
+          var vbtn0 = document.getElementById("btnVisualizarSeleccionado");
+          if (vbtn0) vbtn0.disabled = true;
+          var abtn0 = document.getElementById("btnAnularSeleccionado");
+          if (abtn0) abtn0.disabled = true;
+          renderPrintPreview(null);
+          updateFontSizeControl();
+          return;
+        }
+
+        var cliente = documentCustomerLabel(item);
+        var clienteEmail = normalize(item.cliente_email) || "Sin correo";
+        var clienteDocumento = normalize(item.cliente_documento) || "Sin documento";
+
+        if (detalleFactura) detalleFactura.innerHTML =
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Tipo:</strong> ' + escapeHtml(item.tipo_documento || "") + '</div>' +
+            '<div class="form-col"><strong>Código:</strong> ' + escapeHtml(item.documento_codigo || "") + '</div>' +
+            '<div class="form-col"><strong>Número legal:</strong> ' + escapeHtml(item.numero_legal || "") + '</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Cliente:</strong> ' + escapeHtml(cliente) + '</div>' +
+            '<div class="form-col"><strong>Correo:</strong> ' + escapeHtml(clienteEmail) + '</div>' +
+            '<div class="form-col"><strong>Documento:</strong> ' + escapeHtml(clienteDocumento) + '</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Fecha:</strong> ' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</div>' +
+            '<div class="form-col"><strong>Total:</strong> ' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</div>' +
+            '<div class="form-col"><strong>Estado:</strong> ' + statusBadge(item.estado_documento) + '</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Código validación:</strong> ' + escapeHtml(item.codigo_validacion || "") + '</div>' +
+            '<div class="form-col"><strong>Pais:</strong> ' + escapeHtml(item.pais_codigo || "") + '</div>' +
+            '<div class="form-col"><strong>Ambiente:</strong> ' + escapeHtml(item.ambiente_fe || "") + '</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Observaciones:</strong> ' + escapeHtml(item.observaciones || "-") + '</div>' +
+          '</div>';
+
+        var vbtn = document.getElementById("btnVisualizarSeleccionado");
+        if (vbtn) {
+          vbtn.disabled = false;
+          vbtn.setAttribute("data-key", makeKey(item));
+        }
+        var abtn = document.getElementById("btnAnularSeleccionado");
+        if (abtn) {
+          var cancelInfo = cancelAvailability(item);
+          abtn.disabled = !cancelInfo.enabled;
+          abtn.setAttribute("data-key", makeKey(item));
+          abtn.title = cancelInfo.reason;
+        }
+        renderPrintPreview(item);
+        updateFontSizeControl();
+      }
+
+      function canCancelInvoice(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        var estado = normalize(item && item.estado_documento).toLowerCase();
+        if (!state.canCancelInvoices) return false;
+        if (tipo !== "factura_electronica") return false;
+        if (estado !== "emitida") return false;
+        if (normalize(item && item.estado).toLowerCase() === "inactivo") return false;
+        if (!isOfficialDIANDocumentKey(item && item.codigo_validacion)) return false;
+        if (item && item.fuente_fiscal_disponible !== true) return false;
+        return true;
+      }
+
+      function canCancelSale(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        var estadoDoc = normalize(item && item.estado_documento).toLowerCase();
+        var estado = normalize(item && item.estado).toLowerCase();
+        if (!state.canCancelInvoices) return false;
+        if (tipo !== "comprobante_pago") return false;
+        if (estadoDoc === "anulada" || estado === "inactivo") return false;
+        return true;
+      }
+
+      function cancelAvailability(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        var estadoDoc = normalize(item && item.estado_documento).toLowerCase();
+        if (!state.canCancelInvoices) {
+          return { enabled: false, visible: false, reason: "Tu rol no tiene permiso para anular documentos." };
+        }
+        if (tipo === "factura_electronica") {
+          if (canCancelInvoice(item)) return { enabled: true, visible: true, reason: "Anular factura electronica con nota credito." };
+          if (estadoDoc === "anulada") return { enabled: false, visible: true, reason: "Factura ya anulada." };
+          if (estadoDoc === "emitida" && !isOfficialDIANDocumentKey(item && item.codigo_validacion)) {
+            return { enabled: false, visible: true, reason: "La factura aún no tiene un CUFE oficial DIAN para relacionar la nota crédito." };
+          }
+          if (estadoDoc === "emitida" && item && item.fuente_fiscal_disponible !== true) {
+            return { enabled: false, visible: true, reason: "Documento histórico sin fuente fiscal inmutable; no se puede fabricar una nota crédito segura." };
+          }
+          return { enabled: false, visible: true, reason: "Solo se anulan facturas electronicas emitidas y aceptadas por DIAN." };
+        }
+        if (tipo === "comprobante_pago") {
+          if (canCancelSale(item)) return { enabled: true, visible: true, reason: "Anular venta simple." };
+          return { enabled: false, visible: true, reason: "Venta ya anulada o inactiva." };
+        }
+        return { enabled: false, visible: true, reason: "Este tipo de documento no se anula desde esta accion." };
+      }
+
+      function retryDIANAvailability(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        var estadoDoc = normalize(item && item.estado_documento).toLowerCase();
+        var estado = normalize(item && item.estado).toLowerCase();
+        var notaPendiente = tipo === "nota_credito" && !normalize(item && item.codigo_validacion);
+        if (tipo !== "factura_electronica" && tipo !== "nota_credito") {
+          return { enabled: false, visible: false, reason: "Solo aplica a facturas o notas crédito electrónicas." };
+        }
+        if (!state.canRetryDIAN) {
+          return { enabled: false, visible: false, reason: "Tu rol no tiene permiso para reenviar facturas a DIAN." };
+        }
+        if (estado === "inactivo" || estadoDoc === "anulada") {
+          return { enabled: false, visible: false, reason: "La factura anulada o inactiva no se reenvia a DIAN." };
+        }
+        if (estadoDoc === "pendiente_emision" || estadoDoc === "fallida" || estadoDoc === "rechazada") {
+          return { enabled: true, visible: true, reason: "Reintentar el envio fiscal de este documento pendiente." };
+        }
+		if (notaPendiente && estadoDoc === "emitida") {
+			return { enabled: true, visible: true, reason: "Reintentar esta nota crédito sin aceptación DIAN." };
+		}
+        return { enabled: false, visible: false, reason: "El documento no esta pendiente de envio fiscal." };
+      }
+
+      function getPrintableDocumentMeta(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        if (tipo === "comprobante_pago") {
+          return {
+            title: "Comprobante de pago",
+            subtitle: "Documento comercial interno sin envio a DIAN",
+            accentClass: "comprobante",
+            validationText: "No aplica",
+            ambienteText: "No aplica"
+          };
+        }
+        if (tipo === "nota_credito") {
+          return {
+            title: "Nota crédito",
+            subtitle: "Documento de ajuste del ciclo de facturación",
+            accentClass: "nota-credito",
+            validationText: normalize(item && item.codigo_validacion) || "Pendiente",
+            ambienteText: normalize(item && item.ambiente_fe) || "Pendiente"
+          };
+        }
+        return {
+          title: "Factura electrónica",
+          subtitle: "Documento fiscal con trazabilidad de facturación electrónica",
+          accentClass: "factura",
+          validationText: normalize(item && item.codigo_validacion) || "Pendiente",
+          ambienteText: normalize(item && item.ambiente_fe) || "Pendiente"
+        };
+      }
+
+      function buildPrintableDocumentBody(item, forcedMode) {
+        var meta = getPrintableDocumentMeta(item);
+        var viewMode = forcedMode || currentViewMode();
+        var cliente = normalize(item && item.cliente_nombre) || "Consumidor final";
+        var clienteEmail = normalize(item && item.cliente_email) || "No registrado";
+        var clienteDocumento = normalize(item && item.cliente_documento) || "No registrado";
+        var numeroLegal = normalize(item && item.numero_legal) || normalize(item && item.documento_codigo) || "Pendiente";
+        var cfg = state.cfg || {};
+        var printItems = printItemsConfig(cfg);
+        var showEmpresa = printFieldEnabled(printItems, "empresa", item);
+        var showLegal = printFieldEnabled(printItems, "notas_legales", item);
+        var totalWords = printFieldEnabled(printItems, "total_en_letras", item) ? totalEnLetras(item) : "";
+        var empresaLabel = normalize(state.empresaNombre) || normalize(cfg.razon_social) || normalize(cfg.nombre_comercial) || ("Empresa #" + String(empresaID || ""));
+        var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
+        var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
+        var systemLogoUrl = window.location.origin.replace(/\/$/, "") + "/img/logo.png";
+        var resolvedLogos = window.PCSPrint && window.PCSPrint.resolveDocumentLogos
+          ? window.PCSPrint.resolveDocumentLogos(cfg, "factura")
+          : (logoUrl ? [{ src: logoUrl, alt: "Logo empresa" }] : []);
+        if (!resolvedLogos.length && showLogo) resolvedLogos = [{ src: systemLogoUrl, alt: "Logo del sistema" }];
+        var logoHtml = resolvedLogos.map(function(logo) {
+          var src = safeUrl(logo && logo.src);
+          if (!src) return "";
+          return '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml((logo && logo.alt) || "Logo") + '" data-fallback-src="' + escapeHtml(systemLogoUrl) + '">';
+        }).join("");
+        var legalBlock = showLegal ? buildLegalBlock(cfg) : "";
+        var observaciones = normalize(item && item.observaciones) || "Sin observaciones registradas.";
+        var qrBlock = printFieldEnabled(printItems, "qr_dian", item) ? printableQRHTML(getPrintableDocumentQR(item)) : "";
+        var strip = [
+          printFieldEnabled(printItems, "codigo", item) ? '<div><span>Codigo</span><strong>' + escapeHtml(item.documento_codigo || "") + '</strong></div>' : '',
+          printFieldEnabled(printItems, "numero_legal", item) ? '<div><span>Numero legal</span><strong>' + escapeHtml(numeroLegal) + '</strong></div>' : '',
+          printFieldEnabled(printItems, "fecha", item) ? '<div><span>Fecha</span><strong>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</strong></div>' : '',
+          printFieldEnabled(printItems, "estado", item) ? '<div><span>Estado</span><strong>' + escapeHtml(item.estado_documento || "borrador") + '</strong></div>' : ''
+        ].filter(Boolean).join("");
+        var clienteRows = [
+          printFieldEnabled(printItems, "cliente", item) ? '<div><dt>Nombre</dt><dd>' + escapeHtml(cliente) + '</dd></div>' : '',
+          printFieldEnabled(printItems, "cliente_email", item) ? '<div><dt>Correo</dt><dd>' + escapeHtml(clienteEmail) + '</dd></div>' : '',
+          printFieldEnabled(printItems, "cliente_documento", item) ? '<div><dt>Documento</dt><dd>' + escapeHtml(clienteDocumento) + '</dd></div>' : ''
+        ].filter(Boolean).join("");
+        var resumenRows = [
+          printFieldEnabled(printItems, "total", item) ? '<div><dt>Total</dt><dd>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</dd></div>' : '',
+          totalWords ? '<div><dt>Total en letras</dt><dd>' + escapeHtml(totalWords) + '</dd></div>' : '',
+          printFieldEnabled(printItems, "moneda", item) ? '<div><dt>Moneda</dt><dd>' + escapeHtml(item.moneda || "COP") + '</dd></div>' : '',
+          printFieldEnabled(printItems, "periodo", item) ? '<div><dt>Periodo</dt><dd>' + escapeHtml(item.periodo_contable || "No definido") + '</dd></div>' : ''
+        ].filter(Boolean).join("");
+        var controlRows = [
+          printFieldEnabled(printItems, "tipo_documento", item) ? '<div><dt>Tipo</dt><dd>' + escapeHtml(item.tipo_documento || "") + '</dd></div>' : '',
+          printFieldEnabled(printItems, "codigo_validacion", item) ? '<div><dt>Codigo validacion</dt><dd>' + escapeHtml(meta.validationText) + '</dd></div>' : '',
+          printFieldEnabled(printItems, "pais", item) ? '<div><dt>Pais</dt><dd>' + escapeHtml(item.pais_codigo || "No aplica") + '</dd></div>' : '',
+          printFieldEnabled(printItems, "ambiente", item) ? '<div><dt>Ambiente</dt><dd>' + escapeHtml(meta.ambienteText) + '</dd></div>' : ''
+        ].filter(Boolean).join("");
+        var documentoTabla = printFieldEnabled(printItems, "items", item) ? (
+          '<table class="factura-print-table">' +
+            '<thead><tr><th>Codigo</th><th>Descripcion</th><th>Cant.</th><th>Vr unitario</th><th>Total</th></tr></thead>' +
+            '<tbody><tr>' +
+              '<td>' + escapeHtml(item.documento_codigo || "") + '</td>' +
+              '<td>' + escapeHtml(meta.title + " " + numeroLegal) + '</td>' +
+              '<td>1</td>' +
+              '<td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td>' +
+              '<td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td>' +
+            '</tr></tbody>' +
+          '</table>'
+        ) : "";
+        var tablaTotales = printFieldEnabled(printItems, "total", item) ? (
+          '<table class="factura-print-total-table">' +
+            '<tbody>' +
+              '<tr><th>Subtotal</th><td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td></tr>' +
+              '<tr><th>Impuestos</th><td>' + escapeHtml(formatMoney(0, item.moneda || "COP")) + '</td></tr>' +
+              '<tr><th>Total</th><td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td></tr>' +
+            '</tbody>' +
+          '</table>'
+        ) : "";
+
+        return '' +
+          '<article class="factura-print-sheet ' + escapeHtml(meta.accentClass) + (viewMode === "compacta" ? " factura-print-compacta" : "") + (viewMode === "pos" ? " factura-print-pos-preview" : "") + '">' +
+            '<header class="factura-print-head">' +
+              '<div class="factura-print-logo">' +
+                (showEmpresa ? logoHtml : '') +
+                '<div>' +
+                  '<span class="factura-print-kicker">Documento de venta</span>' +
+                  '<h3>' + escapeHtml(meta.title) + '</h3>' +
+                  '<p>' + escapeHtml(meta.subtitle) + '</p>' +
+                '</div>' +
+              '</div>' +
+              (showEmpresa ? '<div class="factura-print-company">' +
+                '<strong>' + escapeHtml(empresaLabel) + '</strong>' +
+                '<span>' + escapeHtml(companyLegalLines(cfg).join(" · ") || ("ID empresa " + String(empresaID || 0))) + '</span>' +
+              '</div>' : '') +
+            '</header>' +
+            (strip ? '<section class="factura-print-strip">' + strip + '</section>' : '') +
+            '<div class="factura-print-grid">' +
+              (clienteRows ? '<section class="factura-print-panel">' +
+                '<h4>Cliente</h4>' +
+                '<dl>' + clienteRows + '</dl>' +
+              '</section>' : '') +
+              (resumenRows ? '<section class="factura-print-panel">' +
+                '<h4>Resumen financiero</h4>' +
+                '<dl>' + resumenRows + '</dl>' +
+              '</section>' : '') +
+            '</div>' +
+            documentoTabla +
+            tablaTotales +
+            (controlRows ? '<section class="factura-print-panel factura-print-panel--full">' +
+              '<h4>Control documental</h4>' +
+              '<dl class="factura-print-doc-meta">' + controlRows + '</dl>' +
+            '</section>' : '') +
+            (printFieldEnabled(printItems, "observaciones", item) ? '<section class="factura-print-note">' +
+              '<strong>Observaciones</strong>' +
+              '<p>' + escapeHtml(observaciones) + '</p>' +
+            '</section>' : '') +
+            qrBlock +
+            (legalBlock ? ('<section class="factura-print-legal">' + escapeHtml(legalBlock) + '</section>') : '') +
+          '</article>';
+      }
+
+      function buildPrintableDocumentPage(item) {
+        var cfg = state.cfg || {};
+        var printItems = printItemsConfig(cfg);
+        var formato = currentViewMode();
+        if (formato === "pos") {
+          var lines = companyLegalLines(cfg);
+          var showEmpresa = printFieldEnabled(printItems, "empresa", item);
+          var showLogo = cfg.mostrar_logo_factura !== false && cfg.mostrar_logo !== false;
+          var logoUrl = showLogo ? safeUrl(cfg.logo_factura_url || cfg.logo_url) : "";
+          var notas = printFieldEnabled(printItems, "notas_legales", item) ? normalize(cfg.notas_legales) : "";
+          var pie = printFieldEnabled(printItems, "notas_legales", item) ? normalize(cfg.pie_factura) : "";
+          var numeroLegal = normalize(item && item.numero_legal) || normalize(item && item.documento_codigo) || "Pendiente";
+          var qrBlock = printFieldEnabled(printItems, "qr_dian", item) ? printableQRHTML(getPrintableDocumentQR(item)) : "";
+          if (window.PCSPrint) {
+            return window.PCSPrint.buildDocument({
+              title: getPrintableDocumentMeta(item).title,
+              kind: normalize(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "comprobante",
+              format: "pos",
+              printConfig: cfg,
+              logos: showEmpresa ? window.PCSPrint.resolveDocumentLogos(cfg, "factura") : [],
+              company: showEmpresa ? (lines[0] || "Empresa") : "",
+              subtitle: showEmpresa ? lines.slice(1).join(" | ") : "",
+              badge: "POS",
+              meta: [
+                printFieldEnabled(printItems, "codigo", item) ? { label: "Codigo", value: item && item.documento_codigo } : null,
+                printFieldEnabled(printItems, "numero_legal", item) ? { label: "Numero legal", value: numeroLegal } : null,
+                printFieldEnabled(printItems, "fecha", item) ? { label: "Fecha", value: formatDate(item && (item.fecha_documento || item.fecha_creacion)) } : null,
+                printFieldEnabled(printItems, "estado", item) ? { label: "Estado", value: item && item.estado_documento } : null,
+                printFieldEnabled(printItems, "cliente", item) ? { label: "Cliente", value: normalize(item && item.cliente_nombre) || normalize(item && item.cliente_email) } : null,
+                printFieldEnabled(printItems, "ambiente", item) ? { label: "Ambiente", value: item && item.ambiente_fe } : null
+              ],
+              totalLabel: printFieldEnabled(printItems, "total", item) ? "Total documento" : "",
+              totalValue: printFieldEnabled(printItems, "total", item) ? formatMoney(item && item.monto_total, (item && item.moneda) || "COP") : "",
+              totalWords: printFieldEnabled(printItems, "total_en_letras", item) ? totalEnLetras(item) : "",
+              note: [notas, pie, normalize(item && item.codigo_validacion) ? ("Validacion: " + normalize(item && item.codigo_validacion)) : ""].filter(Boolean).join("\n"),
+              qr: printFieldEnabled(printItems, "qr_dian", item) ? getPrintableDocumentQR(item) : null,
+              signatures: false,
+              closeAfterPrint: false
+            });
+          }
+          return '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
+            '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+            '<title>' + escapeHtml((item && item.documento_codigo) || "Recibo") + '</title>' +
+            '<style>body{font-family:monospace;padding:12px;color:#111;font-size:' + facturaPrintFontSize(cfg, "pos") + 'px}h1{font-size:18px;margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}.factura-print-qr{text-align:center;border-top:1px dashed #999;margin-top:10px;padding-top:8px}.factura-print-qr img{width:92px;height:92px;display:block;margin:0 auto 5px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;font-size:9px;overflow-wrap:anywhere}</style>' +
+            '<script src="/js/ui_event_controls.js" defer><\/script>' +
+            '</head><body data-auto-print-delay="250">' +
+            (logoUrl ? ('<img src="' + escapeHtml(logoUrl) + '" alt="Logo">') : '') +
+            '<h1>' + escapeHtml(getPrintableDocumentMeta(item).title) + '</h1>' +
+            (lines.length ? ('<p><strong>' + escapeHtml(lines[0]) + '</strong><br><small>' + escapeHtml(lines.slice(1).join(" | ")) + '</small></p>') : '') +
+            '<hr>' +
+            '<p>Código: <strong>' + escapeHtml(item.documento_codigo || "") + '</strong><br>Número legal: <strong>' + escapeHtml(numeroLegal) + '</strong><br>Fecha: ' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</p>' +
+            '<hr>' +
+            '<p><strong>Total:</strong> ' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</p>' +
+            (notas ? ('<hr><small>' + escapeHtml(notas) + '</small>') : '') +
+            (pie ? ('<p><small>' + escapeHtml(pie) + '</small></p>') : '') +
+            qrBlock +
+            '</body></html>';
+        }
+
+        return '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
+          '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+          '<title>' + escapeHtml((item && item.documento_codigo) || "Documento") + '</title>' +
+          '<link rel="stylesheet" href="' + escapeHtml(window.location.origin.replace(/\/$/, "") + "/estilos.css") + '">' +
+          '<style>' +
+            '*{box-sizing:border-box}html{background:#fff}body{margin:0;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;color-scheme:light;font-size:' + facturaPrintFontSize(cfg, formato) + 'px;line-height:1.38}' +
+            '.factura-print-shell{max-width:' + (formato === "compacta" ? "780" : "1120") + 'px;margin:0 auto;padding:28px 18px 42px;background:#fff;}' +
+            '.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;}' +
+            '.factura-print-sheet{border:1px solid #111827;border-top:4px solid #111827;background:#fff;color:#111827;overflow:hidden}' +
+            '.factura-print-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:20px 22px 16px;border-bottom:1px solid #111827}' +
+            '.factura-print-logo{display:flex;align-items:flex-start;gap:14px;min-width:0}.factura-print-logo img{display:block;width:auto;max-width:112px;max-height:58px;object-fit:contain;flex:0 0 auto}' +
+            '.factura-print-kicker{display:inline-block;border:1px solid #111827;padding:3px 7px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}' +
+            '.factura-print-head h3{margin:7px 0 3px;font-size:22px;line-height:1.15}.factura-print-head p{margin:0;color:#374151}' +
+            '.factura-print-company{flex:0 1 42%;min-width:210px;text-align:right}.factura-print-company strong,.factura-print-company span{display:block;overflow-wrap:anywhere}.factura-print-company span{margin-top:4px;font-size:10px;color:#374151;line-height:1.45}' +
+            '.factura-print-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid #111827}.factura-print-strip div{min-width:0;padding:10px 12px;border-right:1px solid #d1d5db}.factura-print-strip div:last-child{border-right:0}.factura-print-strip span{display:block;font-size:9px;color:#4b5563;text-transform:uppercase}.factura-print-strip strong{display:block;margin-top:2px;overflow-wrap:anywhere;word-break:break-word}' +
+            '.factura-print-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px 16px 0}.factura-print-panel{min-width:0;border:1px solid #9ca3af;padding:11px 12px;background:#fff}.factura-print-panel--full{margin:12px 16px 0}.factura-print-panel h4{margin:0 0 7px;font-size:11px;text-transform:uppercase}.factura-print-panel dl,.factura-print-doc-meta{margin:0}.factura-print-panel dl>div,.factura-print-doc-meta>div{display:grid;grid-template-columns:minmax(92px,34%) minmax(0,1fr);gap:10px;padding:5px 0;border-top:1px solid #e5e7eb}.factura-print-panel dl>div:first-child,.factura-print-doc-meta>div:first-child{border-top:0}.factura-print-panel dt,.factura-print-doc-meta dt{color:#4b5563}.factura-print-panel dd,.factura-print-doc-meta dd{min-width:0;margin:0;text-align:right;font-weight:700;overflow-wrap:anywhere;word-break:break-word}' +
+            '.factura-print-table{width:calc(100% - 48px)!important;max-width:calc(100% - 48px)!important;margin:12px 24px!important;border-collapse:collapse;table-layout:fixed;font-size:10px}.factura-print-table th,.factura-print-table td{border:1px solid #111827;padding:7px 6px;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}.factura-print-table th{background:#eef2f7;font-size:8px;text-transform:uppercase}.factura-print-table th:nth-child(1){width:21%}.factura-print-table th:nth-child(2){width:33%}.factura-print-table th:nth-child(3){width:9%}.factura-print-table th:nth-child(4),.factura-print-table th:nth-child(5){width:18.5%}.factura-print-table th:nth-child(n+3),.factura-print-table td:nth-child(n+3){text-align:right}' +
+            '.factura-print-total-table{width:310px;max-width:calc(100% - 32px);margin:0 16px 0 auto;border-collapse:collapse}.factura-print-total-table th,.factura-print-total-table td{border:1px solid #111827;padding:7px 9px}.factura-print-total-table th{text-align:left;background:#eef2f7;font-size:9px;text-transform:uppercase}.factura-print-total-table td{text-align:right;font-weight:800}' +
+            '.factura-print-note,.factura-print-legal{margin:12px 16px 0;padding:10px 12px;border:1px dashed #9ca3af;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.factura-print-note p{margin:4px 0 0}' +
+            '.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}' +
+            '.factura-print-qr{text-align:center;border-top:1px dashed #9ca3af;margin-top:16px;padding:14px 12px 0;color:#111827}.factura-print-qr img{width:132px;height:132px;object-fit:contain;display:block;margin:0 auto 7px;image-rendering:pixelated}.factura-print-qr strong,.factura-print-qr span{display:block;max-width:100%;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.35;overflow-wrap:anywhere;word-break:break-word}' +
+            '@page{size:A4;margin:11mm}@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{max-width:none;padding:0}.factura-print-head,.factura-print-grid,.factura-print-panel,.factura-print-table tr,.factura-print-total-table,.factura-print-note,.factura-print-qr{break-inside:avoid;page-break-inside:avoid}}' +
+          '</style><script src="/js/ui_event_controls.js" defer><\/script></head><body>' +
+          '<div class="factura-print-shell">' +
+            '<div class="factura-print-toolbar">' +
+              '<button type="button" class="btn" data-window-action="print">Imprimir ahora</button>' +
+              '<button type="button" class="btn secondary" data-window-action="close">Cerrar</button>' +
+            '</div>' +
+            buildPrintableDocumentBody(item, formato) +
+          '</div></body></html>';
+      }
+
+      function loadEmpresaConfigAvanzada() {
+        return apiRequest('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(String(empresaID)))
+          .then(function(cfg) { state.cfg = cfg || {}; })
+          .catch(function() { state.cfg = state.cfg || {}; });
+      }
+
+      function loadPermissionContext() {
+        return apiRequest('/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(String(empresaID)))
+          .then(function(ctx) {
+            state.canCancelInvoices = false;
+            state.canRetryDIAN = false;
+            state.currentUserEmail = normalize(ctx && (ctx.admin_email || ctx.usuario_email || ctx.email)).toLowerCase();
+            state.currentRole = normalize(ctx && (ctx.rol_efectivo || ctx.rol || ctx.role)).toLowerCase();
+            var mods = Array.isArray(ctx && ctx.modulos) ? ctx.modulos : [];
+            for (var i = 0; i < mods.length; i += 1) {
+              var row = mods[i] || {};
+              if (normalize(row.modulo).toLowerCase() === "facturacion") {
+                state.canCancelInvoices = row.delete === true || (row.acciones && row.acciones.D === true);
+                state.canRetryDIAN = row.update === true || (row.acciones && row.acciones.U === true);
+                break;
+              }
+            }
+            applyCajeroAutoFilter();
+          })
+          .catch(function() { state.canCancelInvoices = false; state.canRetryDIAN = false; });
+      }
+
+      function loadEmpresaUsuarios() {
+        return apiRequest('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(String(empresaID)))
+          .then(function(items) {
+            state.usuariosEmpresa = Array.isArray(items) ? items : [];
+            populateCajerosList();
+          })
+          .catch(function() {
+            state.usuariosEmpresa = [];
+            populateCajerosList();
+          });
+      }
+
+      function renderPrintPreview(item) {
+        if (!printPreview) return;
+        if (!item) {
+          printPreview.className = "factura-print-preview-empty";
+          printPreview.textContent = "Selecciona un documento para ver cómo saldrá impreso.";
+          return;
+        }
+        printPreview.className = "factura-print-preview";
+        printPreview.innerHTML = buildPrintableDocumentBody(item, currentViewMode());
+        updateFontSizeControl();
+      }
+
+      function renderTable() {
+        state.index = Object.create(null);
+
+        if (!state.items.length) {
+          facturasBody.innerHTML = '<tr><td colspan="10">No se encontraron documentos para los filtros seleccionados.</td></tr>';
+          renderDetalle(null);
+          updateKPIs();
+          populateCajerosList();
+          return;
+        }
+
+        state.items.forEach(function(item) {
+          state.index[makeKey(item)] = item;
+        });
+
+        var rows = state.items.map(function (item) {
+          var key = makeKey(item);
+
+          var clienteLabel = documentCustomerLabel(item);
+          var cajeroLabel = normalize(item.usuario_creador) || "-";
+
+          var cancelInfo = cancelAvailability(item);
+          var cancelActionHTML = cancelInfo.visible === false ? '' :
+            '<button type="button" class="btn danger fe-only-action" data-action="anular" data-key="' + escapeHtml(key) + '"' + (cancelInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(cancelInfo.reason) + '"><img class="icon" src="/img/shield-security-color.svg" alt="">Anular</button>';
+          var retryInfo = retryDIANAvailability(item);
+          var retryActionHTML = retryInfo.visible === false ? '' :
+            '<button type="button" class="btn fe-only-action" data-action="reenviar_dian" data-key="' + escapeHtml(key) + '"' + (retryInfo.enabled ? '' : ' disabled') + ' title="' + escapeHtml(retryInfo.reason) + '"><img class="icon" src="/img/invoice.svg" alt="">Reenviar DIAN</button>';
+          var artifactType = normalize(item.tipo_documento).toLowerCase();
+          var artifactActionHTML = (artifactType === "factura_electronica" || artifactType === "nota_credito")
+            ? '<button type="button" class="btn secondary fe-only-action" data-action="artefactos" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/invoice.svg" alt="">Archivos fiscales</button>'
+            : '';
+          return '<tr data-key="' + escapeHtml(key) + '">' +
+            '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
+            '<td>' + escapeHtml(visibleTypeLabel(item)) + '</td>' +
+            '<td>' + escapeHtml(item.documento_codigo || "") + '</td>' +
+            '<td>' + escapeHtml(item.numero_legal || "") + '</td>' +
+            '<td>' + escapeHtml(clienteLabel) + '</td>' +
+            '<td class="fe-cashier-cell" title="' + escapeHtml(cajeroLabel) + '">' + escapeHtml(cajeroLabel) + '</td>' +
+            '<td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td>' +
+            '<td>' + statusBadge(item.estado_documento) + '</td>' +
+            '<td>' + escapeHtml(item.estado || "activo") + '</td>' +
+            '<td class="fe-actions-cell">' +
+              '<button type="button" class="btn secondary fe-only-action" data-action="imprimir" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/print-color.svg" alt="">Visualizar</button>' +
+              artifactActionHTML +
+              retryActionHTML +
+              cancelActionHTML +
+              ' <details class="fe-share-dropdown">' +
+                '<summary class="btn secondary" title="Compartir"><img class="icon" src="/img/network-color.svg" alt=""><span class="sr-only">Compartir</span></summary>' +
+                '<div class="fe-share-menu">' +
+                  '<button type="button" class="btn secondary" data-action="enviar" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/invoice.svg" alt="">Correo</button>' +
+                  '<button type="button" class="btn secondary" data-action="compartir_whatsapp" data-key="' + escapeHtml(key) + '"><img class="icon" src="/img/network-color.svg" alt="">WhatsApp</button>' +
+                '</div>' +
+              '</details>' +
+            '</td>' +
+          '</tr>';
+        });
+
+        facturasBody.innerHTML = rows.join("");
+        updateKPIs();
+        populateCajerosList();
+
+        if (state.selectedKey && state.index[state.selectedKey]) {
+          renderDetalle(state.index[state.selectedKey]);
+        } else {
+          state.selectedKey = makeKey(state.items[0]);
+          renderDetalle(state.items[0]);
+        }
+      }
+
+      function buildQueryString() {
+        var params = new URLSearchParams();
+        params.set("action", "documentos");
+        params.set("empresa_id", String(empresaID));
+
+        var tipoDocumento = normalize(document.getElementById("tipoDocumento").value);
+        var estadoDocumento = normalize(document.getElementById("estadoDocumento").value);
+        var cliente = normalize(document.getElementById("clienteFiltro").value);
+        var documento = normalize(document.getElementById("documentoFiltro").value);
+        var fechaDesde = normalize(document.getElementById("fechaDesde").value);
+        var fechaHasta = normalize(document.getElementById("fechaHasta").value);
+        var q = normalize(document.getElementById("busquedaGlobal").value);
+        var cajero = normalize(document.getElementById("cajeroFiltro").value);
+
+        if (tipoDocumento) params.set("tipo_documento", tipoDocumento);
+        if (estadoDocumento) params.set("estado_documento", estadoDocumento);
+        if (cliente) params.set("cliente", cliente);
+        if (documento) params.set("documento", documento);
+        if (cajero) params.set("cajero", cajero);
+        if (fechaDesde) params.set("fecha_desde", fechaDesde);
+        if (fechaHasta) params.set("fecha_hasta", fechaHasta);
+        if (q) params.set("q", q);
+        if (document.getElementById("includeInactive").checked) {
+          params.set("include_inactive", "1");
+        }
+
+        return params.toString();
+      }
+
+      function setDefaultDateRange() {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = String(now.getMonth() + 1).padStart(2, "0");
+        var day = String(now.getDate()).padStart(2, "0");
+        var firstDay = year + "-" + month + "-01";
+        var today = year + "-" + month + "-" + day;
+        document.getElementById("fechaDesde").value = firstDay;
+        document.getElementById("fechaHasta").value = today;
+      }
+
+      function clearFilters() {
+        document.getElementById("tipoDocumento").value = "";
+        document.getElementById("estadoDocumento").value = "";
+        document.getElementById("clienteFiltro").value = "";
+        document.getElementById("documentoFiltro").value = "";
+        document.getElementById("busquedaGlobal").value = "";
+        var cajeroFiltro = document.getElementById("cajeroFiltro");
+        if (cajeroFiltro && !state.cajeroFilterLocked) cajeroFiltro.value = "";
+        document.getElementById("includeInactive").checked = false;
+        setDefaultDateRange();
+        applyCajeroAutoFilter();
+      }
+
+      function applyCajeroAutoFilter() {
+        var cajeroFiltro = document.getElementById("cajeroFiltro");
+        var hint = document.getElementById("usuarioActualHint");
+        if (!cajeroFiltro) return;
+        var isCajero = normalize(state.currentRole).toLowerCase() === "cajero";
+        state.cajeroFilterLocked = !!(isCajero && state.currentUserEmail);
+        if (state.cajeroFilterLocked) {
+          cajeroFiltro.value = state.currentUserEmail;
+          cajeroFiltro.disabled = true;
+          cajeroFiltro.title = "Filtro automatico por el cajero de la sesion.";
+        } else {
+          cajeroFiltro.disabled = false;
+          cajeroFiltro.title = "Filtra por correo o usuario que creo la venta/factura.";
+        }
+        if (hint) {
+          hint.textContent = state.currentUserEmail
+            ? ("Usuario actual: " + state.currentUserEmail + (state.cajeroFilterLocked ? " (filtro automático)" : ""))
+            : "Usuario actual: no detectado";
+        }
+        populateCajerosList();
+      }
+
+      function populateCajerosList() {
+        var select = document.getElementById("cajeroFiltro");
+        if (!select) return;
+        var previous = normalize(select.value);
+        var seen = Object.create(null);
+        var options = ['<option value="">Todos los usuarios</option>'];
+        function addOption(value, label, extra) {
+          value = normalize(value);
+          if (!value) return;
+          var key = value.toLowerCase();
+          if (seen[key]) return;
+          seen[key] = true;
+          options.push('<option value="' + escapeHtml(value) + '">' + escapeHtml(label || value) + (extra ? ' - ' + escapeHtml(extra) : '') + '</option>');
+        }
+        addOption(state.currentUserEmail, state.currentUserEmail, "usuario actual");
+        (state.usuariosEmpresa || []).forEach(function(user) {
+          var email = normalize(user && (user.email || user.usuario_email || user.correo));
+          var nombre = normalize(user && (user.nombre || user.nombre_completo || user.name));
+          var rol = normalize(user && (user.rol_nombre || user.rol || user.role));
+          addOption(email, nombre ? (nombre + " <" + email + ">") : email, rol);
+        });
+        (state.items || []).forEach(function(item) {
+          var cajero = normalize(item && item.usuario_creador);
+          addOption(cajero, cajero, "en resultados");
+        });
+        select.innerHTML = options.join("");
+        if (state.cajeroFilterLocked && state.currentUserEmail) {
+          select.value = state.currentUserEmail;
+        } else if (previous && Array.from(select.options).some(function(opt) { return opt.value === previous; })) {
+          select.value = previous;
+        }
+      }
+
+      function applyFiltersFromQueryParams() {
+        try {
+          var tipo = normalize(getQueryParam("tipo_documento"));
+          var estado = normalize(getQueryParam("estado_documento"));
+          var cliente = normalize(getQueryParam("cliente"));
+          var documento = normalize(getQueryParam("documento"));
+          var autoPrint = normalize(getQueryParam("auto_print"));
+          var fechaDesde = normalize(getQueryParam("fecha_desde"));
+          var fechaHasta = normalize(getQueryParam("fecha_hasta"));
+          var q = normalize(getQueryParam("q"));
+          var cajero = normalize(getQueryParam("cajero"));
+          var includeInactive = normalize(getQueryParam("include_inactive"));
+
+          if (tipo) document.getElementById("tipoDocumento").value = tipo;
+          if (estado) document.getElementById("estadoDocumento").value = estado;
+          if (cliente) document.getElementById("clienteFiltro").value = cliente;
+          if (documento) document.getElementById("documentoFiltro").value = documento;
+          if (fechaDesde) document.getElementById("fechaDesde").value = fechaDesde;
+          if (fechaHasta) document.getElementById("fechaHasta").value = fechaHasta;
+          if (q) document.getElementById("busquedaGlobal").value = q;
+          if (cajero && !state.cajeroFilterLocked) document.getElementById("cajeroFiltro").value = cajero;
+          if (includeInactive) document.getElementById("includeInactive").checked = includeInactive === "1" || includeInactive.toLowerCase() === "true";
+          if (autoPrint) {
+            state.autoPrintRequested = autoPrint === "1" || autoPrint.toLowerCase() === "true";
+          }
+        } catch (e) {
+          // no-op
+        }
+      }
+
+      async function printInvoice(item) {
+        if (!item) return;
+        item.__pcs_print_qr = await preparePrintableDocumentQR(item, currentViewMode());
+        var html = buildPrintableDocumentPage(item);
+        if (window.Blob && window.URL && typeof window.URL.createObjectURL === "function") {
+          var blobUrl = "";
+          try {
+            var blob = new Blob([html], { type: "text/html;charset=utf-8" });
+            blobUrl = window.URL.createObjectURL(blob);
+            var blobWin = window.open(blobUrl, "pcs_factura_electronica_print", "width=980,height=760,scrollbars=yes,resizable=yes");
+            if (!blobWin) {
+              window.URL.revokeObjectURL(blobUrl);
+              showMessage("No se pudo abrir la ventana de impresión. Revisa el bloqueador de popups.", "error");
+              return;
+            }
+            try { blobWin.focus(); } catch (_) {}
+            window.setTimeout(function () {
+              try { window.URL.revokeObjectURL(blobUrl); } catch (_) {}
+            }, 60000);
+            showMessage("Vista de factura abierta correctamente.", "ok");
+            return;
+          } catch (blobErr) {
+            if (blobUrl) {
+              try { window.URL.revokeObjectURL(blobUrl); } catch (_) {}
+            }
+          }
+        }
+
+        var win = window.open("", "pcs_factura_electronica_print", "width=980,height=760,scrollbars=yes,resizable=yes");
+        if (!win) {
+          showMessage("No se pudo abrir la ventana de impresión. Revisa el bloqueador de popups.", "error");
+          return;
+        }
+
+        try {
+          win.document.open();
+          win.document.write(html);
+          win.document.close();
+          try { win.opener = null; } catch (_) {}
+          try { win.focus(); } catch (_) {}
+          showMessage("Vista de factura abierta correctamente.", "ok");
+        } catch (err) {
+          try { win.close(); } catch (_) {}
+          showMessage("No se pudo renderizar la factura en la ventana de impresion: " + (err && err.message ? err.message : err), "error");
+        }
+      }
+
+      function resendInvoiceEmail(item) {
+        var correoSugerido = normalize(item.cliente_email);
+        var correo = window.prompt("Correo destino (deja vacio para usar el correo del cliente):", correoSugerido);
+        if (correo === null) return;
+
+        var nombreSugerido = normalize(item.cliente_nombre);
+        var nombre = window.prompt("Nombre del cliente (opcional):", nombreSugerido);
+        if (nombre === null) return;
+
+        var payload = {
+          empresa_id: empresaID,
+          tipo_documento: item.tipo_documento,
+          documento_codigo: item.documento_codigo,
+          cliente_id: Number(item.entidad_relacionada_id || 0),
+          cliente_email: normalize(correo),
+          cliente_nombre: normalize(nombre)
+        };
+
+        apiRequest("/api/empresa/facturacion_electronica?action=reenviar_correo&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function (out) {
+          var envio = out && out.factura_email ? out.factura_email : null;
+          if (envio && envio.enviado) {
+            showMessage("Correo enviado a " + (envio.destinatario || "destinatario"), "ok");
+            return;
+          }
+          if (envio && envio.error) {
+            showMessage("No se pudo enviar correo: " + envio.error, "error");
+            return;
+          }
+          showMessage("Intento de envio procesado.", "ok");
+        }).catch(function (err) {
+          showMessage(err.message || "No se pudo reenviar el correo", "error");
+        });
+      }
+
+      function retryInvoiceDIAN(item) {
+        var availability = retryDIANAvailability(item);
+        if (!availability.enabled) {
+          showMessage(availability.reason, "error");
+          return;
+        }
+        var code = normalize(item.documento_codigo) || normalize(item.numero_legal);
+        if (!window.confirm("Se reenviará el documento " + code + " a DIAN. Solo continúa si corresponde al mismo documento pendiente y no tiene acuse aceptado. ¿Deseas continuar?")) {
+          return;
+        }
+        var payload = {
+          empresa_id: empresaID,
+          tipo_documento: item.tipo_documento,
+          documento_codigo: item.documento_codigo
+        };
+        apiRequest("/api/empresa/facturacion_electronica?action=reenviar_dian&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function(out) {
+          var fiscal = out && out.integracion_fiscal ? out.integracion_fiscal : {};
+          var estado = normalize(fiscal.estado_envio || fiscal.estado || "pendiente");
+          var detalle = normalize(fiscal.error || fiscal.mensaje || fiscal.mensaje_recepcion);
+          showMessage("Reenvio DIAN procesado. Estado: " + estado + (detalle ? ". Detalle: " + detalle : "") + ". Consulta el acuse antes de anular o reenviar de nuevo.", out && out.ok ? "ok" : "error");
+          return runSearch();
+        }).catch(function(err) {
+          showMessage(err.message || "No se pudo reenviar la factura a DIAN", "error");
+        });
+      }
+
+      function downloadFiscalArtifacts(item) {
+        if (!item) return;
+        var params = new URLSearchParams();
+        params.set("action", "artefactos");
+        params.set("empresa_id", String(empresaID));
+        params.set("tipo_documento", normalize(item.tipo_documento) || "factura_electronica");
+        params.set("documento_codigo", normalize(item.documento_codigo));
+        apiRequest("/api/empresa/facturacion_electronica?" + params.toString()).then(function(out) {
+          var items = Array.isArray(out && out.items) ? out.items : [];
+          if (!items.length) {
+            showMessage("Este documento todavía no tiene XML, acuse o PDF fiscal persistido.", "error");
+            return;
+          }
+          items.forEach(function(artifact, index) {
+            window.setTimeout(function() {
+              var link = document.createElement("a");
+              link.href = artifact.download_url;
+              link.download = "";
+              link.rel = "noopener";
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+            }, index * 180);
+          });
+          showMessage("Descarga de " + items.length + " archivo(s) fiscal(es) iniciada.", "ok");
+        }).catch(function(err) {
+          showMessage(err.message || "No se pudieron descargar los archivos fiscales", "error");
+        });
+      }
+
+      function shareInvoice(item, channel) {
+        if (!item) return;
+        var docUrl = new URL("/administrar_empresa/facturas_electronicas.html", window.location.origin);
+        docUrl.searchParams.set("empresa_id", String(empresaID));
+        if (normalize(item.tipo_documento)) docUrl.searchParams.set("tipo_documento", normalize(item.tipo_documento));
+        if (normalize(item.documento_codigo)) docUrl.searchParams.set("documento", normalize(item.documento_codigo));
+        var meta = getPrintableDocumentMeta(item);
+        var total = formatMoney(item.monto_total, item.moneda || "COP");
+        var company = normalize(state.empresaNombre) || normalize((state.cfg || {}).razon_social) || normalize((state.cfg || {}).nombre_comercial);
+        var message = [
+          "Cliente: " + (normalize(item.cliente_nombre) || normalize(item.cliente_email) || "Consumidor final"),
+          "Estado: " + (normalize(item.estado_documento) || "borrador")
+        ].join("\n");
+        if (window.PCSPrint && typeof window.PCSPrint.shareDocument === "function") {
+          window.PCSPrint.shareDocument({
+            channel: channel,
+            title: meta.title,
+            code: normalize(item.numero_legal) || normalize(item.documento_codigo),
+            total: total,
+            company: company,
+            message: message,
+            url: docUrl.toString()
+          });
+          return;
+        }
+        var body = encodeURIComponent(meta.title + "\nCodigo: " + (normalize(item.numero_legal) || normalize(item.documento_codigo)) + "\nTotal: " + total + "\n" + message + "\nEnlace: " + docUrl.toString());
+        var href = channel === "whatsapp" ? ("https://wa.me/?text=" + body) : ("mailto:?subject=" + encodeURIComponent(meta.title) + "&body=" + body);
+        window.open(href, "_blank", "noopener,noreferrer");
+      }
+
+      var cancelDialogItem = null;
+      var cancelDialogBusy = false;
+
+      function setCancelDialogMessage(text, isError) {
+        var box = document.getElementById("feCancelMessage");
+        if (!box) return;
+        box.textContent = text || "";
+        box.style.color = isError ? "#ef5350" : "";
+      }
+
+      function updateCancelSubmitState() {
+        var submitButton = document.getElementById("feCancelSubmit");
+        if (!submitButton) return;
+        var confirmation = normalize(document.getElementById("feCancelConfirmation").value);
+        var motivo = normalize(document.getElementById("feCancelReason").value);
+        submitButton.disabled = cancelDialogBusy || !cancelDialogItem || confirmation !== "ANULAR" || motivo.length < 10;
+      }
+
+      function closeCancelDialog() {
+        if (cancelDialogBusy) return;
+        var dialog = document.getElementById("feCancelDialog");
+        cancelDialogItem = null;
+        updateCancelSubmitState();
+        if (dialog && dialog.open) dialog.close();
+      }
+
+      function cancelInvoice(item) {
+        var cancelInfo = cancelAvailability(item);
+        if (!item || !cancelInfo.enabled) {
+          showMessage(cancelInfo.reason || "El documento seleccionado no se puede anular desde esta bandeja.", "error");
+          return;
+        }
+        var tipo = normalize(item.tipo_documento).toLowerCase();
+        var code = normalize(item.numero_legal) || normalize(item.documento_codigo);
+        var facturaElectronica = tipo === "factura_electronica";
+        var dialog = document.getElementById("feCancelDialog");
+        cancelDialogItem = item;
+        document.getElementById("feCancelDialogTitle").textContent = facturaElectronica ? "Anular factura mediante nota crédito" : "Anular venta";
+        document.getElementById("feCancelDialogDescription").textContent = facturaElectronica
+          ? ("Se generará una nota crédito electrónica total para " + code + ".")
+          : ("Se anulará la venta " + code + " y se registrará su trazabilidad contable interna.");
+        document.getElementById("feCancelConfirmation").value = "";
+        document.getElementById("feCancelReason").value = "";
+        setCancelDialogMessage("", false);
+        updateCancelSubmitState();
+        if (dialog && typeof dialog.showModal === "function") {
+          dialog.showModal();
+          document.getElementById("feCancelConfirmation").focus();
+          return;
+        }
+        showMessage("El navegador no permite abrir el diálogo seguro de anulación.", "error");
+      }
+
+      function submitCancelInvoice(event) {
+        event.preventDefault();
+        if (cancelDialogBusy || !cancelDialogItem) return;
+        var confirmation = normalize(document.getElementById("feCancelConfirmation").value);
+        var motivo = normalize(document.getElementById("feCancelReason").value);
+        if (confirmation !== "ANULAR") {
+          setCancelDialogMessage("Escribe exactamente ANULAR para continuar.", true);
+          return;
+        }
+        if (motivo.length < 10) {
+          setCancelDialogMessage("El motivo debe tener mínimo 10 caracteres.", true);
+          return;
+        }
+        var item = cancelDialogItem;
+        var tipo = normalize(item.tipo_documento).toLowerCase();
+        var code = normalize(item.numero_legal) || normalize(item.documento_codigo);
+        var facturaElectronica = tipo === "factura_electronica";
+        cancelDialogBusy = true;
+        updateCancelSubmitState();
+        setCancelDialogMessage(facturaElectronica ? "Generando nota crédito de anulación..." : "Anulando venta...", false);
+        showMessage(facturaElectronica ? "Generando nota credito de anulacion..." : "Anulando venta...");
+        var action = facturaElectronica ? "anular_factura_nota_credito" : "anular_venta";
+        apiRequest("/api/empresa/facturacion_electronica?action=" + action + "&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: empresaID,
+            tipo_documento: facturaElectronica ? "factura_electronica" : "comprobante_pago",
+            documento_codigo: item.documento_codigo,
+            observaciones: motivo
+          })
+        }).then(function(out) {
+          var nota = out && out.nota_credito ? out.nota_credito : null;
+          cancelDialogBusy = false;
+          closeCancelDialog();
+          if (facturaElectronica && !(out && out.anulacion_confirmada_dian === true)) {
+            var estadoDIAN = normalize(out && out.integracion_fiscal && out.integracion_fiscal.estado_envio) || "pendiente";
+            return runSearch().then(function () {
+              showMessage("Nota crédito creada, pero DIAN no confirmó la anulación (estado: " + estadoDIAN + "). Revise el buzón y la consola DIAN antes de reintentar.", "error");
+            });
+          }
+          showMessage(facturaElectronica ? ("Factura anulada por nota crédito aceptada " + (nota && nota.numero_legal ? nota.numero_legal : "")) : "Venta anulada correctamente.", "ok");
+          return runSearch();
+        }).catch(function(err) {
+          cancelDialogBusy = false;
+          updateCancelSubmitState();
+          var message = err.message || "No se pudo anular el documento.";
+          setCancelDialogMessage(message, true);
+          showMessage(message, "error");
+        });
+      }
+
+      function runSearch() {
+        showMessage("");
+        var query = buildQueryString();
+        return apiRequest("/api/empresa/facturacion_electronica?" + query)
+          .then(function (data) {
+            state.items = Array.isArray(data && data.items) ? data.items : [];
+            renderTable();
+            tryAutoPrintIfRequested();
+          })
+          .catch(function (err) {
+            state.items = [];
+            renderTable();
+            showMessage(err.message || "No se pudo consultar documentos", "error");
+          });
+      }
+
+      function tryAutoPrintIfRequested() {
+        if (!state.autoPrintRequested || state.autoPrintDone) return;
+        var needle = normalize(getQueryParam("documento")).toLowerCase();
+        if (!needle) return;
+        var found = null;
+        for (var i = 0; i < (state.items || []).length; i++) {
+          var it = state.items[i] || {};
+          var codigo = normalize(it.documento_codigo).toLowerCase();
+          var legal = normalize(it.numero_legal).toLowerCase();
+          var valid = normalize(it.codigo_validacion).toLowerCase();
+          if (codigo === needle || legal === needle || valid === needle) {
+            found = it;
+            break;
+          }
+          if (codigo && codigo.indexOf(needle) >= 0) { found = it; break; }
+          if (legal && legal.indexOf(needle) >= 0) { found = it; break; }
+        }
+        if (!found) return;
+        state.autoPrintDone = true;
+        state.selectedKey = makeKey(found);
+        renderDetalle(found);
+        printInvoice(found).catch(function(err) {
+          showMessage((err && err.message) || "No se pudo preparar la visualizacion de la factura.", "error");
+        });
+      }
+
+      function loadEmpresa() {
+        if (empresaInfo) empresaInfo.textContent = "Empresa ID: " + String(empresaID);
+        return apiRequest("/super/api/empresas?id=" + encodeURIComponent(String(empresaID)))
+          .then(function (empresa) {
+            if (empresa && empresa.nombre) {
+              state.empresaNombre = empresa.nombre;
+              if (pageTitle) pageTitle.textContent = "Facturas electrónicas - " + empresa.nombre;
+              if (empresaInfo) empresaInfo.textContent = "Empresa: " + empresa.nombre + " (ID " + empresaID + ")";
+            }
+          })
+          .catch(function () {
+            // No bloquea la vista si falla la consulta del nombre.
+          });
+      }
+
+      document.getElementById("filtrosForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        runSearch();
+      });
+
+      document.getElementById("btnLimpiar").addEventListener("click", function () {
+        clearFilters();
+        runSearch();
+      });
+
+      document.getElementById("btnExportCsv").addEventListener("click", function () {
+        exportSearch("csv");
+      });
+
+      document.getElementById("btnExportExcel").addEventListener("click", function () {
+        exportSearch("xls");
+      });
+
+      facturasBody.addEventListener("click", function (event) {
+        var button = event.target.closest("button[data-action]");
+        if (!button) return;
+
+        var action = normalize(button.getAttribute("data-action")).toLowerCase();
+        var key = normalize(button.getAttribute("data-key"));
+        var item = state.index[key];
+        if (!item) return;
+
+        state.selectedKey = key;
+        if (action === "ver") {
+          renderDetalle(item);
+          return;
+        }
+        if (action === "enviar") {
+          resendInvoiceEmail(item);
+          return;
+        }
+        if (action === "reenviar_dian") {
+          retryInvoiceDIAN(item);
+          return;
+        }
+        if (action === "artefactos") {
+          downloadFiscalArtifacts(item);
+          return;
+        }
+        if (action === "compartir_whatsapp") {
+          shareInvoice(item, "whatsapp");
+          return;
+        }
+        if (action === "compartir_correo") {
+          shareInvoice(item, "email");
+          return;
+        }
+        if (action === "anular") {
+          cancelInvoice(item);
+          return;
+        }
+        if (action === "imprimir") {
+          printInvoice(item).catch(function(err) {
+            showMessage((err && err.message) || "No se pudo preparar la visualizacion de la factura.", "error");
+          });
+        }
+      });
+
+      var btnVisualizarSeleccionado = document.getElementById("btnVisualizarSeleccionado");
+      if (btnVisualizarSeleccionado) {
+        btnVisualizarSeleccionado.addEventListener("click", function () {
+          var key = normalize(btnVisualizarSeleccionado.getAttribute("data-key"));
+          var item = key && state.index ? state.index[key] : null;
+          if (!item && state.selectedKey && state.index && state.index[state.selectedKey]) {
+            item = state.index[state.selectedKey];
+          }
+          if (!item) return;
+          printInvoice(item).catch(function(err) {
+            showMessage((err && err.message) || "No se pudo preparar la visualizacion de la factura.", "error");
+          });
+        });
+      }
+
+      var btnAnularSeleccionado = document.getElementById("btnAnularSeleccionado");
+      if (btnAnularSeleccionado) {
+        btnAnularSeleccionado.addEventListener("click", function () {
+          var key = normalize(btnAnularSeleccionado.getAttribute("data-key"));
+          var item = key && state.index ? state.index[key] : null;
+          if (!item && state.selectedKey && state.index && state.index[state.selectedKey]) {
+            item = state.index[state.selectedKey];
+          }
+          cancelInvoice(item);
+        });
+      }
+
+      var facturaFontSize = document.getElementById("facturaFontSize");
+      if (facturaFontSize) {
+        facturaFontSize.addEventListener("input", function () {
+          state.fontSizeOverride = Number(facturaFontSize.value || 0);
+          updateFontSizeControl();
+          if (state.selectedKey && state.index && state.index[state.selectedKey]) {
+            renderPrintPreview(state.index[state.selectedKey]);
+          }
+        });
+      }
+
+      var modoVisualizacionFactura = document.getElementById("modoVisualizacionFactura");
+      if (modoVisualizacionFactura) {
+        modoVisualizacionFactura.addEventListener("change", function () {
+          state.viewMode = currentViewMode();
+          safeStorageSet(storageKey("vista_impresion"), state.viewMode);
+          state.fontSizeOverride = 0;
+          updateFontSizeControl();
+          if (state.selectedKey && state.index && state.index[state.selectedKey]) {
+            renderDetalle(state.index[state.selectedKey]);
+          }
+        });
+      }
+
+      document.getElementById("feCancelForm").addEventListener("submit", submitCancelInvoice);
+      document.getElementById("feCancelDismiss").addEventListener("click", closeCancelDialog);
+      document.getElementById("feCancelConfirmation").addEventListener("input", updateCancelSubmitState);
+      document.getElementById("feCancelReason").addEventListener("input", updateCancelSubmitState);
+      document.getElementById("feCancelDialog").addEventListener("cancel", function (event) {
+        if (cancelDialogBusy) {
+          event.preventDefault();
+          return;
+        }
+        cancelDialogItem = null;
+        updateCancelSubmitState();
+      });
+      document.getElementById("feCancelDialog").addEventListener("close", function () {
+        if (!cancelDialogBusy) {
+          cancelDialogItem = null;
+          updateCancelSubmitState();
+        }
+      });
+
+      function init() {
+        if (!empresaID) {
+          showMessage("empresa_id es obligatorio en la URL", "error");
+          return;
+        }
+        state.autoPrintRequested = false;
+        state.autoPrintDone = false;
+        clearFilters();
+        restoreSavedViewMode();
+        applyFiltersFromQueryParams();
+        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada(), loadPermissionContext(), loadEmpresaUsuarios()]).finally(runSearch);
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1757 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Centro de habilitación DIAN</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    html{min-height:100%;height:auto;overflow-y:auto}
+    body.dian-test-page{min-height:100%;height:auto;overflow-y:auto;padding-bottom:18px}
+    body.dian-test-page .container{padding-top:0}
+    body.dian-test-page .container>.card:first-child{margin-top:0}
+    .dian-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+    .dian-status-item{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;min-height:70px}
+    .dian-status-label{display:block;color:var(--muted);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .dian-status-value{display:block;color:var(--text);font-size:1rem;font-weight:900;margin-top:6px;overflow-wrap:anywhere}
+    #feDianStatusGrid{gap:6px;margin-top:8px}
+    #feDianStatusGrid .dian-status-item{padding:6px 8px;min-height:44px;border-radius:7px}
+    #feDianStatusGrid .dian-status-label{font-size:.64rem;line-height:1;letter-spacing:.025em}
+    #feDianStatusGrid .dian-status-value{font-size:.78rem;font-weight:850;line-height:1.18;margin-top:3px}
+    #feDianStatusTestSet,#feDianStatusRango{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:.7rem;font-weight:800}
+    .dian-test-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+    .dian-test-actions .btn{min-height:42px}
+    .dian-portal-summary{margin-top:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);overflow:hidden}
+    .dian-portal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--border)}
+    .dian-portal-head h3{margin:0;color:var(--text);font-size:1rem;letter-spacing:0}
+    .dian-portal-head p{margin:4px 0 0;color:var(--muted);font-size:.85rem}
+    .dian-portal-sensitive-toggle{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:.84rem;font-weight:800}
+    .dian-portal-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0}
+    .dian-portal-section{padding:12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .dian-portal-section:nth-child(2n){border-right:0}
+    .dian-portal-section h4{margin:0 0 8px;color:var(--text);font-size:.86rem;letter-spacing:0}
+    .dian-portal-kv{display:grid;grid-template-columns:minmax(130px,.75fr) minmax(0,1.25fr);gap:6px 10px;align-items:start}
+    .dian-portal-kv dt{color:var(--muted);font-size:.76rem;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
+    .dian-portal-kv dd{margin:0;color:var(--text);font-size:.88rem;font-weight:750;overflow-wrap:anywhere}
+    .dian-portal-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .dian-portal-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:8px;min-height:58px}
+    .dian-portal-metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
+    .dian-portal-metric strong{display:block;margin-top:5px;color:var(--text);font-size:1rem}
+    .dian-progress-panel{margin-top:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px}
+    .dian-progress-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .dian-progress-head h3{margin:0;color:var(--text);font-size:1rem;letter-spacing:0}
+    .dian-progress-head p{margin:4px 0 0;color:var(--muted);font-size:.86rem;line-height:1.4}
+    .dian-progress-percent{font-size:1.7rem;font-weight:950;color:var(--text);line-height:1;white-space:nowrap}
+    .dian-progress-track{position:relative;margin-top:12px;height:18px;border:1px solid var(--border);border-radius:999px;background:var(--surface);overflow:hidden}
+    .dian-progress-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#38bdf8,#22c55e);transition:width .28s ease}
+    .dian-progress-milestones{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+    .dian-progress-step{display:flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:7px 8px;color:var(--muted);font-size:.78rem;font-weight:800;min-height:42px}
+    .dian-progress-step::before{content:"";width:10px;height:10px;border-radius:999px;background:var(--border);flex:0 0 auto}
+    .dian-progress-step.done{color:var(--text);border-color:color-mix(in srgb,var(--success) 34%,var(--border));background:color-mix(in srgb,var(--success) 12%,var(--surface))}
+    .dian-progress-step.done::before{background:var(--success)}
+    .dian-progress-step.pending{color:var(--muted)}
+    .dian-result-table{width:100%;border-collapse:collapse;margin-top:12px;color:var(--text)}
+    .dian-result-table th,.dian-result-table td{border-bottom:1px solid var(--border);padding:8px 6px;text-align:left;vertical-align:top;font-size:.86rem}
+    .dian-result-table th{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+    .dian-track-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .dian-track-table-wrap{margin-top:10px;overflow:auto}
+    .dian-track-key{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:.78rem;overflow-wrap:anywhere;max-width:260px}
+    .dian-track-empty{border:1px dashed var(--border);border-radius:8px;background:var(--surface-soft);padding:14px;color:var(--muted);text-align:center;margin-top:10px}
+    .dian-track-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .dian-track-actions .btn{min-height:34px;padding:7px 10px}
+    .dian-readable-result{margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;color:var(--text);white-space:normal}
+    .dian-readable-result.is-empty{display:none}
+    .dian-readable-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+    .dian-readable-item{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:8px;min-height:52px}
+    .dian-readable-item span{display:block;color:var(--muted);font-size:.74rem;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
+    .dian-readable-item strong{display:block;margin-top:5px;color:var(--text);font-size:.9rem;overflow-wrap:anywhere}
+    .dian-readable-note{margin-top:8px;color:var(--muted);font-size:.86rem;line-height:1.45}
+    .dian-readable-note ul{margin:7px 0 0 18px;padding:0}
+    .dian-readable-detail{margin-top:10px;border-top:1px solid var(--border);padding-top:8px;color:var(--muted)}
+    .dian-readable-detail summary{cursor:pointer;font-weight:850;color:var(--text)}
+    .dian-readable-detail pre{margin:8px 0 0;max-height:260px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)}
+    .dian-pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:4px 8px;border:1px solid var(--border);background:var(--surface);font-weight:800;font-size:.75rem}
+    .dian-pill.ok{background:color-mix(in srgb,var(--success) 20%,var(--surface));border-color:color-mix(in srgb,var(--success) 42%,var(--border));color:color-mix(in srgb,var(--success) 78%,var(--text))}
+    .dian-pill.warn{background:color-mix(in srgb,var(--accent-yellow,#facc15) 18%,var(--surface));border-color:color-mix(in srgb,var(--accent-yellow,#facc15) 44%,var(--border));color:color-mix(in srgb,#b7791f 72%,var(--text))}
+    .dian-pill.error{background:color-mix(in srgb,var(--danger) 16%,var(--surface));border-color:color-mix(in srgb,var(--danger) 40%,var(--border));color:color-mix(in srgb,var(--danger) 78%,var(--text))}
+    .dian-source-note{border-left:4px solid var(--accent);padding:8px 10px;background:var(--surface-soft);border-radius:8px;color:var(--muted);font-size:.86rem}
+    .dian-production-panel{margin-top:12px;border:2px solid color-mix(in srgb,var(--accent) 45%,var(--border));border-radius:8px;background:color-mix(in srgb,var(--accent) 8%,var(--surface));padding:14px}
+    .dian-production-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .dian-production-check{display:flex;align-items:flex-start;gap:12px;color:var(--text);font-size:1.1rem;font-weight:950;line-height:1.25}
+    .dian-production-check input{width:26px;height:26px;flex:0 0 auto;margin-top:1px;accent-color:var(--success)}
+    .dian-production-check small{display:block;margin-top:5px;color:var(--muted);font-size:.9rem;font-weight:650;line-height:1.4}
+    .dian-production-state{border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);font-size:.82rem;font-weight:900;padding:6px 10px;white-space:nowrap}
+    .dian-production-state.on{border-color:color-mix(in srgb,var(--success) 44%,var(--border));background:color-mix(in srgb,var(--success) 14%,var(--surface))}
+    .dian-production-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    .dian-production-info{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px}
+    .dian-production-info strong{display:block;color:var(--text);font-size:.94rem}
+    .dian-production-info p{margin:6px 0 0;color:var(--muted);font-size:.88rem;line-height:1.45}
+    .dian-production-accounting{margin-top:10px;color:var(--muted);font-size:.9rem;line-height:1.45}
+    .dian-production-warning{display:none;margin-top:12px;border:1px solid color-mix(in srgb,var(--accent-yellow,#facc15) 54%,var(--border));border-radius:8px;background:color-mix(in srgb,var(--accent-yellow,#facc15) 13%,var(--surface));padding:12px;color:var(--text);font-size:.94rem;line-height:1.45}
+    .dian-production-warning.is-visible{display:block}
+    .dian-production-warning strong{display:block;margin-bottom:5px;color:var(--text)}
+    .dian-production-warning a{font-weight:900}
+    .dian-console-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .dian-console-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .dian-console-toggle{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.86rem;font-weight:700}
+    .dian-console{margin-top:12px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--surface) 88%,#020617 12%);min-height:220px;max-height:440px;overflow:auto;padding:10px;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+    .dian-console-empty{display:flex;align-items:center;justify-content:center;min-height:190px;color:var(--muted);font-family:inherit;font-size:.9rem;text-align:center}
+    .dian-console-entry{border:1px solid color-mix(in srgb,var(--border) 82%,transparent);border-radius:8px;background:color-mix(in srgb,var(--surface-soft) 78%,transparent);margin-bottom:10px;overflow:hidden}
+    .dian-console-entry:last-child{margin-bottom:0}
+    .dian-console-entry.ok{border-left:4px solid var(--success)}
+    .dian-console-entry.warn{border-left:4px solid var(--accent-yellow,#facc15)}
+    .dian-console-entry.error{border-left:4px solid var(--danger)}
+    .dian-console-help{margin:0 10px 10px;border:2px solid #dc2626;border-radius:8px;background:color-mix(in srgb,#dc2626 10%,var(--surface));padding:10px 12px;color:#dc2626;font-family:inherit}
+    .dian-console-help strong{display:block;font-size:1.08rem;font-weight:950;line-height:1.25}
+    .dian-console-help span{display:block;margin-top:6px;color:color-mix(in srgb,#dc2626 82%,var(--text));font-size:.92rem;font-weight:850;line-height:1.4;white-space:normal}
+    .dian-console-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid color-mix(in srgb,var(--border) 72%,transparent)}
+    .dian-console-title{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+    .dian-console-title strong{color:var(--text);font-size:.86rem;overflow-wrap:anywhere}
+    .dian-console-meta{color:var(--muted);font-size:.76rem;white-space:nowrap}
+    .dian-console-body{margin:0;padding:10px;color:var(--text);font-size:.78rem;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
+    .dian-confirm-backdrop{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.58);padding:18px}
+    .dian-confirm-backdrop.is-visible{display:flex}
+    .dian-confirm-box{width:min(520px,100%);border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 18px 60px rgba(0,0,0,.28);padding:18px}
+    .dian-confirm-box h3{margin:0;color:var(--text);font-size:1.05rem;letter-spacing:0}
+    .dian-confirm-box p{margin:10px 0 0;color:var(--muted);font-size:.92rem;line-height:1.45}
+    .dian-confirm-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:16px}
+    @media (max-width:900px){.dian-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-test-actions{grid-template-columns:1fr 1fr}.dian-portal-sections{grid-template-columns:1fr}.dian-portal-section{border-right:0}.dian-portal-metric-grid,.dian-progress-milestones,.dian-readable-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:560px){.dian-status-grid,.dian-test-actions,.dian-readable-grid,.dian-production-grid{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:1fr}.dian-progress-percent{font-size:1.45rem}.dian-track-key{max-width:180px}}
+  </style>
+</head>
+<body class="super-page form-bg-dark dian-test-page">
+  <div class="container">
+    <div class="card">
+      <h2>Estado del centro DIAN</h2>
+      <p class="form-help">
+        Usa esta página para validar configuración y credenciales, consultar trazabilidad y ejecutar el set de habilitación de Colombia. La factura comercial real se origina únicamente en una venta pagada; los ajustes y demás familias permanecen bloqueados hasta tener su fuente fiscal y adaptador propios.
+      </p>
+      <div class="dian-status-grid" id="feDianStatusGrid">
+        <div class="dian-status-item"><span class="dian-status-label">Ambiente</span><span id="feDianStatusAmbiente" class="dian-status-value">Cargando</span></div>
+        <div class="dian-status-item"><span class="dian-status-label">Estado DIAN</span><span id="feDianStatusEstado" class="dian-status-value">Cargando</span></div>
+        <div class="dian-status-item"><span class="dian-status-label">TestSetId</span><span id="feDianStatusTestSet" class="dian-status-value">Cargando</span></div>
+        <div class="dian-status-item"><span class="dian-status-label">Rango</span><span id="feDianStatusRango" class="dian-status-value">Cargando</span></div>
+      </div>
+      <div class="dian-progress-panel" aria-label="Porcentaje de validaciones DIAN de la sesion actual">
+        <div class="dian-progress-head">
+          <div>
+            <h3>Validaciones de la sesion actual</h3>
+            <p id="feDianProgressStage">Cargando estado del proceso.</p>
+          </div>
+          <div id="feDianProgressPercent" class="dian-progress-percent">0%</div>
+        </div>
+        <div class="dian-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Validaciones DIAN ejecutadas en esta sesion">
+          <div id="feDianProgressFill" class="dian-progress-fill"></div>
+        </div>
+        <div id="feDianProgressMilestones" class="dian-progress-milestones"></div>
+        <p class="form-help">El 100 % solo resume las comprobaciones ejecutadas en esta sesion; no certifica por si solo que todas las familias documentales esten listas para produccion.</p>
+      </div>
+      <div class="form-actions">
+        <button id="btnDianRecargarConfig" type="button" class="btn secondary">Recargar configuracion</button>
+        <button id="btnDianValidarCredenciales" type="button" class="btn secondary">Validar credenciales</button>
+        <button id="btnDianConsultarRango" type="button" class="btn secondary">Consultar clave tecnica DIAN</button>
+        <button id="btnDianDiagnostico" type="button" class="btn secondary">Diagnóstico DIAN</button>
+      </div>
+      <div id="feDianConfigMsg" class="form-help"></div>
+      <div id="feDianPortalResumen" class="dian-portal-summary"></div>
+    </div>
+
+    <div class="card">
+      <h2>Set de habilitación DIAN</h2>
+      <p class="dian-source-note">
+        El objetivo del set debe coincidir exactamente con lo que muestre el portal de habilitación DIAN para esta empresa. Si no existe un objetivo guardado, el envío automático permanece bloqueado.
+      </p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Descripcion modo de operacion</label>
+          <input id="feDianModoDescripcion" class="form-input" placeholder="Set SW Propio">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Fecha de inicio</label>
+          <input id="feDianModoFechaInicio" class="form-input" type="datetime-local">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Fecha de termino</label>
+          <input id="feDianModoFechaTermino" class="form-input" type="datetime-local">
+        </div>
+        <div class="form-col">
+          <label class="form-label">TestSetId / ZipKey DIAN</label>
+          <input id="feDianTestSetId" class="form-input" placeholder="Pega aqui el identificador del set DIAN">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Facturas electronicas asignadas por DIAN</label>
+          <input id="feDianSetFacturas" class="form-input" type="number" min="0" value="0">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Notas debito asignadas por DIAN</label>
+          <input id="feDianSetNotasDebito" class="form-input" type="number" min="0" value="0">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Notas credito asignadas por DIAN</label>
+          <input id="feDianSetNotasCredito" class="form-input" type="number" min="0" value="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Documentos requeridos</label>
+          <input id="feDianSetTotalRequerido" class="form-input" type="number" min="0" value="0">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Aceptados requeridos</label>
+          <input id="feDianSetAceptadosTotal" class="form-input" type="number" min="0" value="1">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Facturas aceptadas</label>
+          <input id="feDianSetAceptadasFacturas" class="form-input" type="number" min="0" value="1">
+        </div>
+        <div class="form-col">
+          <label class="form-label">ND / NC aceptadas</label>
+          <div style="display:flex;gap:8px"><input id="feDianSetAceptadasND" class="form-input" type="number" min="0" value="0"><input id="feDianSetAceptadasNC" class="form-input" type="number" min="0" value="0"></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Maximo de envios en esta ejecucion</label>
+          <input id="feDianSetMaxEnvios" class="form-input" type="number" min="1" placeholder="Vacio = todo el set">
+        </div>
+        <div class="form-col">
+          <label class="form-label">URL produccion DIAN/proveedor</label>
+          <input id="feDianProduccionURL" class="form-input" placeholder="Configurar antes de activar produccion local">
+        </div>
+      </div>
+      <div class="dian-production-panel" id="feDianProductionPanel">
+        <div class="dian-production-head">
+          <label class="dian-production-check" for="feDianConfirmarHabilitado">
+            <input id="feDianConfirmarHabilitado" type="checkbox">
+            <span>
+              DIAN ya habilito esta empresa para produccion
+              <small>Marca esto solo cuando el portal DIAN ya muestre la empresa habilitada y tengas resolucion, prefijo y rango reales de produccion.</small>
+            </span>
+          </label>
+          <span id="feDianProductionState" class="dian-production-state">Produccion local sin activar</span>
+        </div>
+        <div class="dian-production-grid">
+          <div class="dian-production-info">
+            <strong>Si NO esta activo</strong>
+            <p>PCS mantiene el ambiente de habilitacion/pruebas. Los envios se usan para validar DIAN y no deben tratarse como facturas fiscales reales para clientes.</p>
+          </div>
+          <div class="dian-production-info">
+            <strong>Si esta activo</strong>
+            <p>PCS cambia la configuracion local a produccion. Al cerrar ventas con facturacion electronica activa, los documentos salen como emision fiscal real y quedan listos para trazabilidad contable.</p>
+          </div>
+        </div>
+        <div class="dian-production-accounting">
+          Importante: este cambio no inventa contabilidad por si solo. Permite que las ventas reales emitidas electronicamente alimenten los consecutivos, documentos fiscales, reportes y asientos/conciliaciones que el sistema tenga configurados para la empresa.
+        </div>
+        <div id="feDianProductionResolutionWarning" class="dian-production-warning">
+          <strong>Antes de facturar en produccion necesitas numeracion real.</strong>
+          Debes solicitar en MUISCA una nueva resolucion/autorizacion de numeracion para factura electronica, asociar prefijos y rangos en el portal DIAN, y luego registrar esos datos en PCS.
+          <a id="feDianProductionTutorialLink" href="/administrar_empresa/facturacion_electronica_tutorial_dian.html">Ver Tutorial DIAN de facturacion electronica</a>.
+        </div>
+      </div>
+      <div class="dian-test-actions">
+        <button id="btnDianGuardarObjetivo" type="button" class="btn secondary">Guardar objetivo DIAN</button>
+        <button id="btnDianPruebas" type="button" class="btn">Ejecutar set automatico</button>
+        <button id="btnDianEnviarFactura" type="button" class="btn secondary" disabled title="La factura comercial real solo se emite desde una venta pagada con fuente fiscal inmutable">Factura manual no disponible</button>
+        <button id="btnDianEnviarND" type="button" class="btn secondary" disabled title="Requiere una fuente fiscal inmutable de ajuste y referencia DIAN aceptada">Nota debito no disponible</button>
+        <button id="btnDianEnviarNC" type="button" class="btn secondary" disabled title="Requiere una fuente fiscal inmutable de ajuste y referencia DIAN aceptada">Nota credito no disponible</button>
+      </div>
+      <div id="feDianPruebasMsg" class="form-help"></div>
+      <div id="feDianResumenResultado" class="dian-status-grid"></div>
+      <div id="feDianDetalleResultado"></div>
+      <div id="feDianPruebasResultado" class="dian-readable-result is-empty"></div>
+    </div>
+
+    <div class="card">
+      <h2>Historial TrackId / ZipKey DIAN</h2>
+      <p class="form-help">
+        Guarda cada identificador real recibido desde DIAN y permite reconsultar GetStatusZip aunque la consola se haya limpiado o el navegador se cierre.
+      </p>
+      <div class="dian-track-toolbar">
+        <div id="feDianTrackMsg" class="form-help">Cargando historial DIAN...</div>
+        <div class="dian-track-actions">
+          <button id="btnDianTrackRecargar" type="button" class="btn secondary">Recargar historial</button>
+        </div>
+      </div>
+      <div id="feDianTrackHistorial"></div>
+    </div>
+
+    <div class="card">
+      <h2>Consola DIAN</h2>
+      <p class="form-help">
+        Bitacora visible de las respuestas reales que llegan desde DIAN/proveedor por medio del backend. Los datos sensibles se ocultan automaticamente.
+      </p>
+      <div class="dian-console-toolbar">
+        <div class="dian-console-toggle">
+          <input id="feDianConsoleAutoScroll" type="checkbox" checked>
+          <span>Auto-scroll</span>
+        </div>
+        <div class="dian-console-actions">
+          <button id="btnDianConsoleCopiar" type="button" class="btn secondary">Copiar consola</button>
+          <button id="btnDianConsoleLimpiar" type="button" class="btn secondary">Limpiar consola</button>
+        </div>
+      </div>
+      <div id="feDianConsole" class="dian-console" aria-live="polite">
+        <div class="dian-console-empty">Ejecuta una validacion, diagnostico o envio DIAN para ver aqui la respuesta.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Conexion DIAN/proveedor</h2>
+      <p class="form-help">
+        La facturacion electronica requiere conexion activa con el servidor y con DIAN/proveedor. Usa estas acciones para revisar disponibilidad y reprocesar cola.
+      </p>
+      <div class="form-actions">
+        <button id="btnDianCheckConexion" class="btn secondary" type="button">Probar conexion</button>
+        <button id="btnDianProcesarCola" class="btn" type="button">Procesar cola</button>
+      </div>
+      <div id="feDianOfflineMsg" class="form-help"></div>
+    </div>
+
+    <div class="card">
+      <h2>Revision documental manual</h2>
+      <p class="form-help">
+        La emision comercial real nace exclusivamente de una venta pagada con fuente fiscal inmutable. Este formulario queda visible solo como referencia de soporte y no puede emitir, anular ni ajustar documentos fiscales.
+      </p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Codigo documento</label>
+          <input id="op_documento_codigo" class="form-input" placeholder="FAC-1001">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Tipo documento electronico</label>
+          <select id="op_tipo_documento" class="form-input" disabled>
+            <option value="factura_electronica">Factura electronica de venta</option>
+            <option value="nota_credito" disabled>Nota credito (fuente de ajuste pendiente)</option>
+            <option value="nota_debito" disabled>Nota debito (fuente de ajuste pendiente)</option>
+            <option value="documento_soporte" disabled>Documento soporte (usar borrador contable estructurado)</option>
+			<option value="nomina_electronica" disabled>N&oacute;mina electr&oacute;nica (flujo mensual separado)</option>
+            <option value="documento_equivalente_pos" disabled>Documento equivalente POS (adaptador DIAN pendiente)</option>
+            <option value="eventos_radian_recepcion" disabled>Eventos RADIAN (adaptador DIAN pendiente)</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado actual</label>
+          <select id="op_estado_actual" class="form-input">
+            <option value="borrador">borrador</option>
+            <option value="emitida">emitida</option>
+            <option value="anulada">anulada</option>
+            <option value="ajustada">ajustada</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Periodo contable</label>
+          <input id="op_periodo_contable" class="form-input" placeholder="2026-04">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Monto total</label>
+          <input id="op_monto_total" type="number" step="0.01" class="form-input" placeholder="120000">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <input id="op_moneda" class="form-input" value="COP">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="op_observaciones">Observaciones / motivo de anulacion</label>
+          <textarea id="op_observaciones" class="form-input" rows="3" placeholder="Para anular una factura, describe el motivo con minimo 10 caracteres."></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Cliente ID</label>
+          <input id="op_cliente_id" type="number" class="form-input" placeholder="ID interno del cliente">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Correo cliente (opcional)</label>
+          <input id="op_cliente_email" type="email" class="form-input" placeholder="cliente@correo.com">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre cliente (opcional)</label>
+          <input id="op_cliente_nombre" class="form-input" placeholder="Nombre del cliente">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="btnEmitirDocumento" class="btn" disabled title="La emision comercial se origina en una venta pagada">Emision manual no disponible</button>
+        <button type="button" id="btnAnularDocumento" class="btn secondary" disabled title="Requiere una nota credito con fuente fiscal inmutable y acuse DIAN">Anulacion manual no disponible</button>
+        <button type="button" id="btnEmitirFactura" class="btn secondary" disabled title="La factura comercial se origina en una venta pagada">Factura manual no disponible</button>
+        <button type="button" id="btnEmitirNC" class="btn secondary" disabled title="Requiere una fuente fiscal inmutable de ajuste">Nota credito no disponible</button>
+        <button type="button" id="btnEmitirND" class="btn secondary" disabled title="Requiere una fuente fiscal inmutable de ajuste">Nota debito no disponible</button>
+        <button type="button" id="btnEmitirSoporte" class="btn secondary" disabled title="La emisión se realiza desde el borrador contable estructurado, con preflight y confirmación">Usar módulo de documento soporte</button>
+		<button type="button" id="btnEmitirNominaElectronica" class="btn secondary" disabled title="La emisi&oacute;n fiscal de n&oacute;mina solo se confirma desde N&oacute;mina y sueldos">N&oacute;mina: usar flujo mensual</button>
+		<a class="btn secondary" href="/administrar_empresa/nomina_sueldos.html?seccion=dian">Abrir N&oacute;mina y sueldos</a>
+        <button type="button" id="btnEmitirPOSElectronico" class="btn secondary" disabled title="Requiere el adaptador oficial de documento equivalente">POS no disponible</button>
+        <button type="button" id="btnEmitirRadian" class="btn secondary" disabled title="Requiere el adaptador oficial de eventos RADIAN">RADIAN no disponible</button>
+      </div>
+      <div id="op_msg" class="form-help"></div>
+      <div id="op_resultado" class="dian-readable-result is-empty"></div>
+    </div>
+  </div>
+  <div id="feDianConfirmOverlay" class="dian-confirm-backdrop" aria-hidden="true">
+    <div class="dian-confirm-box" role="dialog" aria-modal="true" aria-labelledby="feDianConfirmTitle">
+      <h3 id="feDianConfirmTitle">Confirmar envio real DIAN</h3>
+      <p id="feDianConfirmText">Esta accion enviara documentos reales al ambiente de habilitacion DIAN.</p>
+      <div class="dian-confirm-actions">
+        <button id="feDianConfirmCancel" type="button" class="btn secondary">Cancelar</button>
+        <button id="feDianConfirmAccept" type="button" class="btn">Enviar a DIAN</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: Number(new URLSearchParams(window.location.search).get("empresa_id") || new URLSearchParams(window.location.search).get("id") || 0),
+      dianConfig: null,
+      ultimoResultado: null,
+      dianValidationOk: false,
+      dianConsole: [],
+      dianConsoleAutoScroll: true,
+      dianBatchSize: 3,
+      dianTrackHistory: []
+    };
+
+    const DIAN_ERROR_HELP = [
+      { match: /fab05c|identificador del software.*rango|software.*no corresponde.*rango/i, title: "FAB05c: software no asociado al rango DIAN", help: "Asocia en el portal DIAN de produccion el prefijo/rango al Software ID correcto. En PCS revisa Software ID, prefijo, resolucion, rango y ambiente." },
+      { match: /fad06|cufe/i, title: "FAD06: CUFE no coincide", help: "Consulta de nuevo la clave tecnica con GetNumberingRange y valida prefijo, numero legal, fecha/hora, impuestos, totales, NIT emisor y documento del cliente." },
+      { match: /fad05|rango de numeracion|resolucion|numeraci[oó]n.*no/i, title: "FAD05: numeracion o resolucion no valida", help: "Confirma que la resolucion este vigente, asociada al software, y que el consecutivo este dentro del rango autorizado." },
+      { match: /fad10|softwaresecuritycode|security code/i, title: "FAD10: codigo de seguridad del software invalido", help: "Revisa Software ID, PIN tecnico y numero completo de factura usado para calcular el SoftwareSecurityCode." },
+      { match: /fak61|party|cliente|customer/i, title: "FAK61: datos del cliente o estructura Party", help: "Corrige tipo de persona, tipo y numero de documento, municipio, direccion, regimen y responsabilidades fiscales del cliente." },
+      { match: /ze02|signature|firma|digest/i, title: "ZE02: firma digital invalida", help: "Revisa que el certificado P12/PFX este vigente, tenga llave privada, corresponda al NIT emisor y que la clave sea correcta." },
+      { match: /vencid|expired|expiration|expir/i, title: "Vencimiento de firma o resolucion", help: "Renueva la firma digital o la autorizacion de numeracion, carga los nuevos datos en PCS y vuelve a consultar clave tecnica DIAN." },
+      { match: /regla:\s*90|procesado anteriormente/i, title: "Regla 90: documento procesado anteriormente", help: "DIAN ya recibio ese documento. Consulta el CUFE/TrackId antes de reenviar para no duplicar consecutivos." },
+      { match: /rut01|rut/i, title: "RUT01: validacion RUT", help: "Verifica NIT, DV, razon social y datos fiscales. Si DIAN indica servicio RUT no disponible, reintenta mas tarde." }
+    ];
+    let dianConfirmResolve = null;
+
+    function txt(v) {
+      return (v || "").toString().trim();
+    }
+
+    function setText(id, text, isError) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function labelReadableValue(value, emptyText) {
+      if (Array.isArray(value)) return value.length ? value.join(", ") : (emptyText || "Sin datos");
+      if (value === true) return "Sí";
+      if (value === false) return "No";
+      if (value === null || typeof value === "undefined" || txt(value) === "") return emptyText || "Sin datos";
+      return txt(value);
+    }
+
+    function buildReadableResultHTML(data) {
+      if (!data || typeof data !== "object") return "";
+      const cards = [
+        ["Estado", data.ok === false ? "Observado" : "Correcto"],
+        ["Ambiente", data.ambiente || data.tipo_ambiente || "No informado"],
+        ["Configuración", data.configurada === true ? "Completa" : (data.configurada === false ? "Pendiente" : "Revisada")],
+        ["Preparación", data.estado_preparacion || data.estado || data.status || "Validada"],
+        ["Empresa", data.empresa_id ? ("#" + data.empresa_id) : "Actual"],
+        ["Operaciones", labelReadableValue(data.wsdl_operaciones_conectadas || data.operaciones_conectadas, "Sin dato")]
+      ];
+      const faltantes = Array.isArray(data.faltantes_configuracion) ? data.faltantes_configuracion : [];
+      const brechas = Array.isArray(data.brechas_tecnicas) ? data.brechas_tecnicas : [];
+      let html = '<div><strong>' + escapeHTML(data.ok === false ? "Resultado observado" : "Resultado correcto") + '</strong></div>';
+      html += '<div class="dian-readable-grid">' + cards.map(function(item) {
+        return '<div class="dian-readable-item"><span>' + escapeHTML(item[0]) + '</span><strong>' + escapeHTML(item[1]) + '</strong></div>';
+      }).join("") + '</div>';
+      html += '<div class="dian-readable-note"><strong>Siguiente paso:</strong> ' + escapeHTML(data.siguiente_fase || data.message || data.mensaje || "Continuar con el flujo DIAN correspondiente.") + '</div>';
+      html += '<div class="dian-readable-note"><strong>Campos pendientes:</strong> ' + (faltantes.length ? '<ul>' + faltantes.map(function(item) { return '<li>' + escapeHTML(item) + '</li>'; }).join("") + '</ul>' : 'Sin campos pendientes.') + '</div>';
+      if (brechas.length) {
+        html += '<div class="dian-readable-note"><strong>Observaciones técnicas:</strong><ul>' + brechas.map(function(item) { return '<li>' + escapeHTML(item) + '</li>'; }).join("") + '</ul></div>';
+      }
+      html += '<details class="dian-readable-detail"><summary>Ver detalle técnico</summary><pre>' + escapeHTML(formatConsolePayload(data)) + '</pre></details>';
+      return html;
+    }
+
+    function setJSON(id, data) {
+      const box = document.getElementById(id);
+      if (!box) return;
+      if (!data) {
+        box.innerHTML = "";
+        box.classList.add("is-empty");
+        return;
+      }
+      box.classList.remove("is-empty");
+      box.innerHTML = buildReadableResultHTML(data) || '<details class="dian-readable-detail" open><summary>Detalle técnico</summary><pre>' + escapeHTML(formatConsolePayload(data)) + '</pre></details>';
+    }
+
+    function closeDianConfirm(accepted) {
+      const overlay = document.getElementById("feDianConfirmOverlay");
+      if (overlay) {
+        overlay.classList.remove("is-visible");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+      const resolve = dianConfirmResolve;
+      dianConfirmResolve = null;
+      if (resolve) resolve(!!accepted);
+    }
+
+    function confirmarDianAccion(message, detail) {
+      const overlay = document.getElementById("feDianConfirmOverlay");
+      const text = document.getElementById("feDianConfirmText");
+      const accept = document.getElementById("feDianConfirmAccept");
+      if (!overlay || !text || !accept) {
+        return Promise.resolve(window.confirm(message));
+      }
+      text.textContent = message + (detail ? " " + detail : "");
+      overlay.classList.add("is-visible");
+      overlay.setAttribute("aria-hidden", "false");
+      accept.focus();
+      return new Promise(function(resolve) {
+        dianConfirmResolve = resolve;
+      });
+    }
+
+    function isSensitiveDianKey(key) {
+      key = String(key || "");
+      if (/^certificado_/.test(key) && !/^certificado_(vencimiento|alerta_dias|alerta_email|alerta_ultimo_envio)/.test(key)) return true;
+      if (/^(raw_response|raw_xml|request_resumen|respuesta_envio_json|respuesta_acuse_json|xml|xml_firmado|xml_ubl_base)$/i.test(key)) return true;
+      return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|llave_tecnica|software_pin/i.test(key);
+    }
+
+    function sanitizeDianConsoleValue(value, key) {
+      if (isSensitiveDianKey(key)) return "[oculto]";
+      if (Array.isArray(value)) return value.map(function(item) { return sanitizeDianConsoleValue(item, ""); });
+      if (value && typeof value === "object") {
+        const out = {};
+        Object.keys(value).forEach(function(childKey) {
+          out[childKey] = sanitizeDianConsoleValue(value[childKey], childKey);
+        });
+        return out;
+      }
+      if (typeof value === "string") {
+        if (/-----BEGIN [A-Z ]+-----/.test(value)) return "[certificado oculto]";
+        if (value.length > 8000) return value.slice(0, 8000) + "\n...[respuesta truncada en consola]";
+      }
+      return value;
+    }
+
+    function formatConsolePayload(data) {
+      try {
+        return JSON.stringify(sanitizeDianConsoleValue(data, ""), null, 2);
+      } catch (_) {
+        return String(data == null ? "" : data);
+      }
+    }
+
+    function renderDianConsole() {
+      const box = document.getElementById("feDianConsole");
+      if (!box) return;
+      if (!state.dianConsole.length) {
+        box.innerHTML = '<div class="dian-console-empty">Ejecuta una validacion, diagnostico o envio DIAN para ver aqui la respuesta.</div>';
+        return;
+      }
+      box.innerHTML = state.dianConsole.map(function(entry) {
+        const cls = entry.ok ? "ok" : (entry.error ? "error" : "warn");
+        const status = entry.httpStatus ? ("HTTP " + entry.httpStatus) : "local";
+        const duration = typeof entry.durationMs === "number" ? (" · " + entry.durationMs + " ms") : "";
+        const help = getDianErrorHelp(entry.payload);
+        return '<article class="dian-console-entry ' + cls + '">' +
+          '<div class="dian-console-head">' +
+            '<div class="dian-console-title">' + renderPill(entry.ok ? "ok" : (entry.error ? "error" : "pendiente")) + '<strong>' + escapeHTML(entry.label || "Respuesta DIAN") + '</strong></div>' +
+            '<span class="dian-console-meta">' + escapeHTML(entry.time || "") + ' · ' + escapeHTML(status) + escapeHTML(duration) + '</span>' +
+          '</div>' +
+          (help ? '<div class="dian-console-help"><strong>' + escapeHTML(help.title) + '</strong><span>' + escapeHTML(help.help) + '</span></div>' : '') +
+          '<pre class="dian-console-body">' + escapeHTML(formatConsolePayload(entry.payload)) + '</pre>' +
+        '</article>';
+      }).join("");
+      if (state.dianConsoleAutoScroll) box.scrollTop = box.scrollHeight;
+    }
+
+    function addDianConsoleEntry(label, payload, options) {
+      options = options || {};
+      const dianHelp = getDianErrorHelp(payload);
+      state.dianConsole.push({
+        label: label || "Respuesta DIAN",
+        payload: payload,
+        httpStatus: options.httpStatus || 0,
+        durationMs: options.durationMs,
+        ok: !!options.ok,
+        error: !!options.error || !!dianHelp,
+        time: new Date().toLocaleTimeString("es-CO", { hour12: false })
+      });
+      if (state.dianConsole.length > 60) state.dianConsole = state.dianConsole.slice(-60);
+      renderDianConsole();
+    }
+
+    function getDianErrorHelp(payload) {
+      const text = collectDianText(payload).join(" \n ");
+      if (!text) return null;
+      for (let i = 0; i < DIAN_ERROR_HELP.length; i += 1) {
+        if (DIAN_ERROR_HELP[i].match.test(text)) return DIAN_ERROR_HELP[i];
+      }
+      if (/rechazo|rechazado|error|fault|no acept/i.test(text)) {
+        return {
+          title: "DIAN rechazo el documento",
+          help: "Lee el mensaje exacto, corrige configuracion, firma, resolucion, rango, cliente, impuestos o totales y reintenta desde esta consola."
+        };
+      }
+      return null;
+    }
+
+    function collectDianText(value, out) {
+      out = out || [];
+      if (value == null) return out;
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        out.push(String(value));
+        return out;
+      }
+      if (Array.isArray(value)) {
+        value.forEach(function(item) { collectDianText(item, out); });
+        return out;
+      }
+      if (typeof value === "object") {
+        ["error", "motivo", "mensaje", "message", "acuse_mensaje", "status_description", "status_message", "estado_dian", "acuse_estado", "respuesta_dian", "raw_response"].forEach(function(key) {
+          if (Object.prototype.hasOwnProperty.call(value, key)) collectDianText(value[key], out);
+        });
+      }
+      return out;
+    }
+
+    function clearDianConsole() {
+      state.dianConsole = [];
+      renderDianConsole();
+    }
+
+    async function copyDianConsole() {
+      const text = state.dianConsole.map(function(entry) {
+        return "[" + entry.time + "] " + entry.label + " HTTP " + (entry.httpStatus || "local") + "\n" + formatConsolePayload(entry.payload);
+      }).join("\n\n");
+      if (!text) {
+        setText("feDianPruebasMsg", "La consola DIAN esta vacia.", true);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        setText("feDianPruebasMsg", "Consola DIAN copiada al portapapeles.", false);
+      } catch (_) {
+        setText("feDianPruebasMsg", "No se pudo copiar automaticamente; selecciona el texto de la consola.", true);
+      }
+    }
+
+    function setValue(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value == null ? "" : String(value);
+    }
+
+    function setStatusValue(id, value, emptyText) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = txt(value) || emptyText || "No configurado";
+    }
+
+    function lowerValue(value) {
+      return txt(value).toLowerCase();
+    }
+
+    function dianFieldConfigured(cfg, field) {
+      cfg = cfg || {};
+      if (txt(cfg[field])) return true;
+      const flag = cfg[field + "_configurado"];
+      return flag === true || Number(flag || 0) === 1 || lowerValue(flag) === "true";
+    }
+
+    function dianConfiguredLabel(cfg, field, emptyText) {
+      const value = txt((cfg || {})[field]);
+      if (value) return value;
+      return dianFieldConfigured(cfg, field) ? "Configurado (oculto)" : (emptyText || "No configurado");
+    }
+
+    function dianOperationalStatus(cfg) {
+      cfg = cfg || {};
+      if (hasDianProduccionLocal(cfg)) return "Produccion local activa";
+      return txt(cfg.estado_dian || cfg.estado) || "No configurado";
+    }
+
+    function hasDianBaseConfig(cfg) {
+      cfg = cfg || {};
+      const softwareReady = (dianFieldConfigured(cfg, "software_id") || dianFieldConfigured(cfg, "software_id_compartido_ref")) &&
+        (dianFieldConfigured(cfg, "software_pin") || dianFieldConfigured(cfg, "software_pin_compartido_ref"));
+      const rangeReady = txt(cfg.prefijo) && txt(cfg.resolucion_numero) && Number(cfg.rango_desde || 0) > 0 && Number(cfg.rango_hasta || 0) > 0;
+      return !!(cfg.id && txt(cfg.nit) && txt(cfg.url_dian) && softwareReady && rangeReady && dianFieldConfigured(cfg, "llave_tecnica"));
+    }
+
+    function hasDianFirma(cfg) {
+      cfg = cfg || {};
+      return dianFieldConfigured(cfg, "certificado_url") && dianFieldConfigured(cfg, "certificado_clave_ref");
+    }
+
+    function hasDianTestSet(cfg) {
+      cfg = cfg || {};
+      return dianFieldConfigured(cfg, "test_set_id") || !!txt((document.getElementById("feDianTestSetId") || {}).value);
+    }
+
+    function hasDianObjetivo() {
+      const facturas = numberInputValue("feDianSetFacturas", 0);
+      const debito = numberInputValue("feDianSetNotasDebito", 0);
+      const credito = numberInputValue("feDianSetNotasCredito", 0);
+      const total = numberInputValue("feDianSetTotalRequerido", facturas + debito + credito);
+      const aceptados = numberInputValue("feDianSetAceptadosTotal", 0) +
+        numberInputValue("feDianSetAceptadasFacturas", 0) +
+        numberInputValue("feDianSetAceptadasND", 0) +
+        numberInputValue("feDianSetAceptadasNC", 0);
+      return total > 0 && (facturas + debito + credito) > 0 && aceptados > 0;
+    }
+
+    function hasDianEnvioReal(result) {
+      result = result || state.ultimoResultado || {};
+      const resumen = result.resumen || {};
+      const detalles = Array.isArray(result.detalles) ? result.detalles : [];
+      const historial = Array.isArray(state.dianTrackHistory) ? state.dianTrackHistory : [];
+      return !!(Number(result.procesados || 0) > 0 ||
+        Number(resumen.enviado || 0) > 0 ||
+        Number(resumen.aceptado || 0) > 0 ||
+        detalles.some(function(row) { return txt(row.track_id) || txt(row.zip_key) || lowerValue(row.estado_dian) === "enviado"; }) ||
+        historial.some(function(row) {
+          const estado = lowerValue(row.acuse_estado || row.estado_dian);
+          return !!txt(row.documento_codigo) && ["enviado", "aceptado", "rechazado"].indexOf(estado) >= 0;
+        }));
+    }
+
+    function hasDianAcuseFinal(cfg, result) {
+      cfg = cfg || state.dianConfig || {};
+      result = result || state.ultimoResultado || {};
+      const resumen = result.resumen || {};
+      const detalles = Array.isArray(result.detalles) ? result.detalles : [];
+      const historial = Array.isArray(state.dianTrackHistory) ? state.dianTrackHistory : [];
+      if (result.habilitacion_aprobada === true) return true;
+      if (Number(resumen.aceptado || 0) > 0 && detalles.some(function(row) {
+        return lowerValue(row.acuse_estado || row.estado_dian) === "aceptado" &&
+          !!txt(row.documento_codigo);
+      })) return true;
+      return historial.some(function(row) {
+        return lowerValue(row.acuse_estado || row.estado_dian) === "aceptado" && !!txt(row.documento_codigo);
+      });
+    }
+
+    function hasDianProduccionLocal(cfg) {
+      cfg = cfg || state.dianConfig || {};
+      // El ambiente de transporte no certifica que PCS este listo para facturar.
+      // El indicador dedicado sobrevive a los cambios posteriores del estado
+      // de envio. El estado legado se conserva solo para la migracion inicial.
+      return cfg.produccion_local_activa === true ||
+        Number(cfg.produccion_local_activa || 0) === 1 ||
+        lowerValue(cfg.estado_dian || cfg.estado) === "produccion_local_activa";
+    }
+
+    function updateDianProgress() {
+      const cfg = state.dianConfig || {};
+      const result = state.ultimoResultado || {};
+      const productionReady = hasDianProduccionLocal(cfg);
+      const acuseReady = hasDianAcuseFinal(cfg, result);
+      const validationReady = state.dianValidationOk;
+      const steps = [
+        { key: "base", label: "Configuracion base", weight: 15, done: hasDianBaseConfig(cfg) },
+        { key: "firma", label: "Firma digital", weight: 15, done: hasDianFirma(cfg) },
+        { key: "testset", label: "TestSetId", weight: 10, done: hasDianTestSet(cfg) },
+        { key: "objetivo", label: "Objetivo del set", weight: 10, done: hasDianObjetivo() },
+        { key: "credenciales", label: "Credenciales validadas", weight: 15, done: validationReady },
+        { key: "envio", label: "Envio real a DIAN", weight: 15, done: hasDianEnvioReal(result) || acuseReady },
+        { key: "acuse", label: "Acuse final aceptado", weight: 15, done: acuseReady },
+        { key: "produccion", label: "Produccion local activa", weight: 5, done: productionReady }
+      ];
+      let percent = steps.reduce(function(sum, step) {
+        return sum + (step.done ? step.weight : 0);
+      }, 0);
+      percent = Math.max(0, Math.min(100, percent));
+      const firstPending = steps.find(function(step) { return !step.done; });
+      const stage = firstPending
+        ? "Siguiente paso: " + firstPending.label + "."
+        : "Validaciones de esta sesion completas. La salida a produccion exige una venta pagada aceptada y las familias no implementadas siguen bloqueadas.";
+      const percentEl = document.getElementById("feDianProgressPercent");
+      const fillEl = document.getElementById("feDianProgressFill");
+      const stageEl = document.getElementById("feDianProgressStage");
+      const trackEl = document.querySelector(".dian-progress-track");
+      const milestonesEl = document.getElementById("feDianProgressMilestones");
+      if (percentEl) percentEl.textContent = percent + "%";
+      if (fillEl) fillEl.style.width = percent + "%";
+      if (stageEl) stageEl.textContent = stage;
+      if (trackEl) trackEl.setAttribute("aria-valuenow", String(percent));
+      if (milestonesEl) {
+        milestonesEl.innerHTML = steps.map(function(step) {
+          return '<div class="dian-progress-step ' + (step.done ? "done" : "pending") + '">' + escapeHTML(step.label) + '</div>';
+        }).join("");
+      }
+    }
+
+    function updateDianProductionCheckHint() {
+      const input = document.getElementById("feDianConfirmarHabilitado");
+      const stateEl = document.getElementById("feDianProductionState");
+      const warningEl = document.getElementById("feDianProductionResolutionWarning");
+      const tutorialLink = document.getElementById("feDianProductionTutorialLink");
+      if (!input || !stateEl) return;
+      const active = !!input.checked;
+      stateEl.textContent = active ? "Listo para activar produccion local" : "Produccion local sin activar";
+      stateEl.className = "dian-production-state" + (active ? " on" : "");
+      if (warningEl) warningEl.className = "dian-production-warning" + (active ? " is-visible" : "");
+      if (tutorialLink) {
+        const href = "/administrar_empresa/facturacion_electronica_tutorial_dian.html" + (state.empresaID ? ("?empresa_id=" + encodeURIComponent(state.empresaID)) : "");
+        tutorialLink.setAttribute("href", href);
+      }
+    }
+
+    function portalValue(value, emptyText) {
+      const v = txt(value);
+      return v || emptyText || "No registrado";
+    }
+
+    function portalDateValue(value) {
+      const v = txt(value);
+      if (!v) return "No registrado";
+      // Authorization dates are calendar dates, not UTC instants.
+      const calendar = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+      if (calendar) return Number(calendar[3]) + "/" + Number(calendar[2]) + "/" + calendar[1];
+      const parsed = new Date(v);
+      if (!Number.isNaN(parsed.getTime())) return parsed.toLocaleDateString("es-CO");
+      return v;
+    }
+
+    function sensitivePreview(value) {
+      const v = txt(value);
+      if (!v) return "No registrado";
+      if (v.length <= 4) return "****";
+      return "****" + v.slice(-4);
+    }
+
+    function portalSensitiveSpan(value) {
+      const v = txt(value);
+      if (!v) return "No registrado";
+      return '<span class="dian-portal-sensitive" data-full="' + escapeHTML(v) + '" data-mask="' + escapeHTML(sensitivePreview(v)) + '">' + escapeHTML(sensitivePreview(v)) + '</span>';
+    }
+
+    function portalKV(label, value, sensitive) {
+      return '<dt>' + escapeHTML(label) + '</dt><dd>' + (sensitive ? portalSensitiveSpan(value) : escapeHTML(portalValue(value))) + '</dd>';
+    }
+
+    function portalMetric(label, value) {
+      return '<div class="dian-portal-metric"><span>' + escapeHTML(label) + '</span><strong>' + escapeHTML(portalValue(value, "0")) + '</strong></div>';
+    }
+
+    function updatePortalSensitiveVisibility() {
+      const show = !!(document.getElementById("feDianPortalMostrarSensibles") && document.getElementById("feDianPortalMostrarSensibles").checked);
+      document.querySelectorAll(".dian-portal-sensitive").forEach(function(el) {
+        el.textContent = show ? (el.getAttribute("data-full") || "") : (el.getAttribute("data-mask") || "****");
+      });
+    }
+
+    function renderDianPortalResumen(cfg) {
+      const box = document.getElementById("feDianPortalResumen");
+      if (!box) return;
+      cfg = cfg || {};
+      if (!cfg.id) {
+        box.innerHTML = '<div class="dian-portal-head"><div><h3>Resumen portal DIAN</h3><p>No hay configuracion DIAN cargada para mostrar.</p></div></div>';
+        return;
+      }
+      const totalDocs = Number(cfg.set_documentos_requeridos || 0) || (Number(cfg.set_facturas_requeridas || 0) + Number(cfg.set_notas_debito_requeridas || 0) + Number(cfg.set_notas_credito_requeridas || 0));
+      const aceptadosTotal = Number(cfg.set_documentos_aceptados_requeridos || 0);
+      const softwareNombre = cfg.nombre_software || cfg.software_nombre || cfg.nombre_comercial || cfg.razon_social || "Powerful Control System";
+      box.innerHTML =
+        '<div class="dian-portal-head">' +
+          '<div><h3>Resumen portal DIAN</h3><p>Datos guardados para comparar con el set de pruebas de factura electronica.</p></div>' +
+        '</div>' +
+        '<div class="dian-portal-sections">' +
+          '<section class="dian-portal-section"><h4>Contribuyente y set</h4><dl class="dian-portal-kv">' +
+            portalKV("UserName", cfg.razon_social || cfg.nombre_comercial || cfg.nit) +
+            portalKV("Tipo", cfg.tipo_persona || cfg.tipo_contribuyente || cfg.tipo_documento_emisor || "Persona Natural") +
+            portalKV("Estado operativo", dianOperationalStatus(cfg)) +
+            portalKV("TestSetId", dianConfiguredLabel(cfg, "test_set_id")) +
+            portalKV("Modo", cfg.modo_operacion_descripcion || "Set SW Propio") +
+            '<dt>Inicio</dt><dd>' + escapeHTML(portalDateValue(cfg.modo_operacion_fecha_inicio)) + '</dd>' +
+            '<dt>Termino</dt><dd>' + escapeHTML(portalDateValue(cfg.modo_operacion_fecha_termino)) + '</dd>' +
+          '</dl></section>' +
+          '<section class="dian-portal-section"><h4>Rango de numeracion</h4><dl class="dian-portal-kv">' +
+            portalKV("Prefijo", cfg.prefijo || "SETP") +
+            portalKV("Resolucion", cfg.resolucion_numero) +
+            portalKV("Rango desde", cfg.rango_desde) +
+            portalKV("Rango hasta", cfg.rango_hasta) +
+            '<dt>Fecha desde</dt><dd>' + escapeHTML(portalDateValue(cfg.resolucion_fecha_desde)) + '</dd>' +
+            '<dt>Fecha hasta</dt><dd>' + escapeHTML(portalDateValue(cfg.resolucion_fecha_hasta)) + '</dd>' +
+            portalKV("Consecutivo actual", cfg.consecutivo_actual) +
+          '</dl></section>' +
+          '<section class="dian-portal-section"><h4>Informacion del software</h4><dl class="dian-portal-kv">' +
+            portalKV("Identificacion", dianConfiguredLabel(cfg, "software_id")) +
+            portalKV("Nombre", softwareNombre) +
+            portalKV("Clave tecnica", dianConfiguredLabel(cfg, "llave_tecnica")) +
+            portalKV("PIN", dianConfiguredLabel(cfg, "software_pin")) +
+            portalKV("URL", cfg.url_dian) +
+          '</dl></section>' +
+          '<section class="dian-portal-section"><h4>Documentos requeridos</h4><div class="dian-portal-metric-grid">' +
+            portalMetric("Documentos", totalDocs) +
+            portalMetric("Facturas", cfg.set_facturas_requeridas) +
+            portalMetric("Notas debito", cfg.set_notas_debito_requeridas) +
+            portalMetric("Notas credito", cfg.set_notas_credito_requeridas) +
+          '</div><h4 style="margin-top:12px">Aceptados requeridos</h4><div class="dian-portal-metric-grid">' +
+            portalMetric("Documentos", aceptadosTotal) +
+            portalMetric("Facturas", cfg.set_facturas_aceptadas_requeridas) +
+            portalMetric("Notas debito", cfg.set_notas_debito_aceptadas_requeridas) +
+            portalMetric("Notas credito", cfg.set_notas_credito_aceptadas_requeridas) +
+          '</div></section>' +
+        '</div>';
+    }
+
+    function asDateTimeLocal(raw) {
+      raw = txt(raw);
+      if (!raw) return "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw + "T00:00";
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) return raw.slice(0, 16);
+      const parsed = new Date(raw);
+      if (!Number.isNaN(parsed.getTime())) {
+        const pad = function(n) { return String(n).padStart(2, "0"); };
+        return parsed.getFullYear() + "-" + pad(parsed.getMonth() + 1) + "-" + pad(parsed.getDate()) + "T" + pad(parsed.getHours()) + ":" + pad(parsed.getMinutes());
+      }
+      return raw;
+    }
+
+    function resultClass(value) {
+      const v = txt(value).toLowerCase();
+      if (v === "aceptado" || v === "ok" || v === "simulado" || v === "true") return "ok";
+      if (v === "rechazado" || v === "error" || v === "contingencia" || v === "false") return "error";
+      return "warn";
+    }
+
+    function renderPill(value) {
+      const label = txt(value) || "pendiente";
+      return '<span class="dian-pill ' + resultClass(label) + '">' + escapeHTML(label) + '</span>';
+    }
+
+    function escapeHTML(raw) {
+      return txt(raw).replace(/[&<>"']/g, function(ch) {
+        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch;
+      });
+    }
+
+    async function readJSONResponse(res) {
+      const textBody = await res.text();
+      let data = null;
+      if (textBody) {
+        try {
+          data = JSON.parse(textBody);
+        } catch (_) {
+          data = { error: textBody };
+        }
+      }
+      if (!res.ok) {
+        const msg = data && (data.motivo || data.error || data.message) ? (data.motivo || data.error || data.message) : ("HTTP " + res.status);
+        const err = new Error(msg);
+        err.data = data;
+        throw err;
+      }
+      return data || {};
+    }
+
+    async function dianFetchJSON(url, options, label) {
+      const started = Date.now();
+      let res = null;
+      try {
+        res = await fetch(url, options || {});
+        const data = await readJSONResponse(res);
+        const rejected = !!(data && data.ok === false);
+        addDianConsoleEntry(label, {
+          url: url,
+          respuesta: data
+        }, {
+          httpStatus: res.status,
+          durationMs: Date.now() - started,
+          ok: res.ok && !rejected,
+          error: !res.ok || rejected
+        });
+        return data;
+      } catch (err) {
+        addDianConsoleEntry(label, {
+          url: url,
+          error: err && err.message ? err.message : "Error consultando DIAN",
+          respuesta: err && err.data ? err.data : null
+        }, { httpStatus: res ? res.status : 0, durationMs: Date.now() - started, error: true });
+        throw err;
+      }
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return res;
+      const t = await res.text();
+      throw new Error(t || ("HTTP " + res.status));
+    }
+
+    function renderDianConfigStatus(cfg) {
+      cfg = cfg || {};
+      state.dianConfig = cfg;
+      setStatusValue("feDianStatusAmbiente", cfg.tipo_ambiente);
+      setStatusValue("feDianStatusEstado", dianOperationalStatus(cfg));
+      setStatusValue("feDianStatusTestSet", dianConfiguredLabel(cfg, "test_set_id"));
+      const rango = cfg.rango_desde || cfg.rango_hasta
+        ? [cfg.prefijo || "SETP", cfg.rango_desde || "?", "-", cfg.rango_hasta || "?", " sig.", cfg.consecutivo_actual || cfg.rango_desde || "?"].join(" ")
+        : "";
+      setStatusValue("feDianStatusRango", rango);
+      renderDianPortalResumen(cfg);
+      setValue("feDianModoDescripcion", cfg.modo_operacion_descripcion || "");
+      setValue("feDianModoFechaInicio", asDateTimeLocal(cfg.modo_operacion_fecha_inicio));
+      setValue("feDianModoFechaTermino", asDateTimeLocal(cfg.modo_operacion_fecha_termino));
+      setValue("feDianTestSetId", cfg.test_set_id || "");
+      if (Number(cfg.set_facturas_requeridas || 0) || Number(cfg.set_notas_debito_requeridas || 0) || Number(cfg.set_notas_credito_requeridas || 0)) {
+        setValue("feDianSetFacturas", Number(cfg.set_facturas_requeridas || 0));
+        setValue("feDianSetNotasDebito", Number(cfg.set_notas_debito_requeridas || 0));
+        setValue("feDianSetNotasCredito", Number(cfg.set_notas_credito_requeridas || 0));
+        setValue("feDianSetTotalRequerido", Number(cfg.set_documentos_requeridos || 0));
+      }
+      if (Number(cfg.set_documentos_aceptados_requeridos || 0) || Number(cfg.set_facturas_aceptadas_requeridas || 0) || Number(cfg.set_notas_debito_aceptadas_requeridas || 0) || Number(cfg.set_notas_credito_aceptadas_requeridas || 0)) {
+        setValue("feDianSetAceptadosTotal", Number(cfg.set_documentos_aceptados_requeridos || 0));
+        setValue("feDianSetAceptadasFacturas", Number(cfg.set_facturas_aceptadas_requeridas || 0));
+        setValue("feDianSetAceptadasND", Number(cfg.set_notas_debito_aceptadas_requeridas || 0));
+        setValue("feDianSetAceptadasNC", Number(cfg.set_notas_credito_aceptadas_requeridas || 0));
+      }
+      const productionCheck = document.getElementById("feDianConfirmarHabilitado");
+      if (productionCheck) {
+        productionCheck.checked = hasDianProduccionLocal(cfg);
+      }
+      updateDianProductionCheckHint();
+      updateDianProgress();
+    }
+
+    async function loadDianConfigStatus() {
+      if (!state.empresaID) return null;
+      setText("feDianConfigMsg", "Cargando configuracion DIAN...", false);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?empresa_id=" + encodeURIComponent(state.empresaID) + "&include_inactive=1&limit=1";
+        const data = await dianFetchJSON(url, { credentials: "same-origin" }, "Cargar configuracion DIAN");
+        const item = Array.isArray(data) && data.length ? data[0] : {};
+        renderDianConfigStatus(item);
+        setText("feDianConfigMsg", item && item.id ? "Configuracion DIAN lista para validar." : "Registra primero la configuracion DIAN Colombia.", !(item && item.id));
+        return item;
+      } catch (err) {
+        renderDianConfigStatus({});
+        setText("feDianConfigMsg", err && err.message ? err.message : "No se pudo cargar configuracion DIAN.", true);
+        return null;
+      }
+    }
+
+    async function validarDianCredenciales() {
+      setText("feDianConfigMsg", "Validando credenciales y firma DIAN...", false);
+      setJSON("feDianPruebasResultado", null);
+      try {
+        const payload = { empresa_id: Number(state.empresaID), test_set_id: txt(document.getElementById("feDianTestSetId").value) };
+        const url = "/api/empresa/facturacion_electronica/dian?action=validar_credenciales&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await dianFetchJSON(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        }, "Validar credenciales DIAN");
+        setJSON("feDianPruebasResultado", data);
+        state.dianValidationOk = !!(data && data.ok);
+        updateDianProgress();
+        setText("feDianConfigMsg", data && data.ok ? "Credenciales DIAN listas." : "Hay datos pendientes antes de enviar a DIAN.", !(data && data.ok));
+      } catch (err) {
+        state.dianValidationOk = false;
+        updateDianProgress();
+        setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
+        setText("feDianConfigMsg", err && err.message ? err.message : "No se pudo validar credenciales DIAN.", true);
+      }
+    }
+
+    function numberInputValue(id, fallback) {
+      const el = document.getElementById(id);
+      const value = el ? Number(el.value || 0) : 0;
+      if (!Number.isFinite(value) || value < 0) return fallback;
+      return Math.trunc(value);
+    }
+
+    function refreshDianObjectiveProgress() {
+      updateDianProgress();
+    }
+
+    function collectDianSetPayloadBase() {
+      const facturas = numberInputValue("feDianSetFacturas", 0);
+      const notasDebito = numberInputValue("feDianSetNotasDebito", 0);
+      const notasCredito = numberInputValue("feDianSetNotasCredito", 0);
+      const totalManual = numberInputValue("feDianSetTotalRequerido", facturas + notasDebito + notasCredito);
+      const maxEnvios = numberInputValue("feDianSetMaxEnvios", 0);
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        test_set_id: txt(document.getElementById("feDianTestSetId").value),
+        facturas_electronicas: facturas,
+        notas_debito: notasDebito,
+        notas_credito: notasCredito,
+        total_documentos: Math.max(totalManual, facturas + notasDebito + notasCredito),
+        set_documentos_aceptados_requeridos: numberInputValue("feDianSetAceptadosTotal", 0),
+        set_facturas_aceptadas_requeridas: numberInputValue("feDianSetAceptadasFacturas", 0),
+        set_notas_debito_aceptadas_requeridas: numberInputValue("feDianSetAceptadasND", 0),
+        set_notas_credito_aceptadas_requeridas: numberInputValue("feDianSetAceptadasNC", 0)
+      };
+      if (maxEnvios > 0) payload.max_envios = maxEnvios;
+      return payload;
+    }
+
+    function collectDianObjetivoPayload() {
+      const cfg = state.dianConfig || {};
+      const facturas = numberInputValue("feDianSetFacturas", 0);
+      const notasDebito = numberInputValue("feDianSetNotasDebito", 0);
+      const notasCredito = numberInputValue("feDianSetNotasCredito", 0);
+      const total = numberInputValue("feDianSetTotalRequerido", facturas + notasDebito + notasCredito);
+      return Object.assign({}, cfg, {
+        empresa_id: Number(state.empresaID),
+        modo_operacion_descripcion: txt(document.getElementById("feDianModoDescripcion").value),
+        modo_operacion_fecha_inicio: txt(document.getElementById("feDianModoFechaInicio").value),
+        modo_operacion_fecha_termino: txt(document.getElementById("feDianModoFechaTermino").value),
+        test_set_id: txt(document.getElementById("feDianTestSetId").value),
+        set_documentos_requeridos: total || (facturas + notasDebito + notasCredito),
+        set_facturas_requeridas: facturas,
+        set_notas_debito_requeridas: notasDebito,
+        set_notas_credito_requeridas: notasCredito,
+        set_documentos_aceptados_requeridos: numberInputValue("feDianSetAceptadosTotal", 0),
+        set_facturas_aceptadas_requeridas: numberInputValue("feDianSetAceptadasFacturas", 0),
+        set_notas_debito_aceptadas_requeridas: numberInputValue("feDianSetAceptadasND", 0),
+        set_notas_credito_aceptadas_requeridas: numberInputValue("feDianSetAceptadasNC", 0),
+        estado: cfg.estado || "activo"
+      });
+    }
+
+    async function guardarDianObjetivo() {
+      const payload = collectDianObjetivoPayload();
+      if (!payload.id) {
+        setText("feDianPruebasMsg", "Primero guarda la configuracion DIAN Colombia base.", true);
+        return;
+      }
+      if (!payload.set_documentos_requeridos || payload.set_documentos_requeridos < (payload.set_facturas_requeridas + payload.set_notas_debito_requeridas + payload.set_notas_credito_requeridas)) {
+        payload.set_documentos_requeridos = payload.set_facturas_requeridas + payload.set_notas_debito_requeridas + payload.set_notas_credito_requeridas;
+      }
+      setText("feDianPruebasMsg", "Guardando objetivo DIAN...", false);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?empresa_id=" + encodeURIComponent(state.empresaID) + "&id=" + encodeURIComponent(payload.id);
+        const data = await dianFetchJSON(url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        }, "Guardar objetivo DIAN");
+        if (data && data.item) renderDianConfigStatus(data.item);
+        updateDianProgress();
+        setText("feDianPruebasMsg", "Objetivo DIAN guardado.", false);
+      } catch (err) {
+        setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo guardar objetivo DIAN.", true);
+      }
+    }
+
+    function collectOperacionPayload(action) {
+      const rawMonto = Number(document.getElementById("op_monto_total").value || 0);
+      const rawClienteID = Number(document.getElementById("op_cliente_id").value || 0);
+      const clienteID = Number.isFinite(rawClienteID) && rawClienteID > 0 ? Math.trunc(rawClienteID) : 0;
+      const tipoDocumento = txt(document.getElementById("op_tipo_documento").value) || "factura_electronica";
+      let documentoCodigo = txt(document.getElementById("op_documento_codigo").value);
+      if (!documentoCodigo) {
+        documentoCodigo = buildOperacionDocumentoCodigo(action, tipoDocumento);
+        setValue("op_documento_codigo", documentoCodigo);
+      }
+      return {
+        empresa_id: Number(state.empresaID),
+        entidad_id: clienteID,
+        cliente_id: clienteID,
+        cliente_email: txt(document.getElementById("op_cliente_email").value),
+        cliente_nombre: txt(document.getElementById("op_cliente_nombre").value),
+        pais_codigo: "CO",
+        tipo_documento: tipoDocumento,
+        documento_codigo: documentoCodigo,
+        estado_actual: txt(document.getElementById("op_estado_actual").value),
+        monto_total: Number.isFinite(rawMonto) && rawMonto > 0 ? rawMonto : 0,
+        moneda: txt(document.getElementById("op_moneda").value).toUpperCase() || "COP",
+        periodo_contable: txt(document.getElementById("op_periodo_contable").value),
+        observaciones: txt(document.getElementById("op_observaciones").value) || ("operacion " + action + " desde pruebas DIAN")
+      };
+    }
+
+    function buildOperacionDocumentoCodigo(action, tipoDocumento) {
+      const prefijos = {
+        factura_electronica: "FE",
+        nota_credito: "NC",
+        nota_debito: "ND",
+        documento_soporte: "DS",
+        nomina_electronica: "NE",
+        documento_equivalente_pos: "POS"
+      };
+      const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
+      const prefijo = prefijos[tipoDocumento] || "DOC";
+      return prefijo + "-" + stamp + "-" + txt(action).toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 8);
+    }
+
+    async function ejecutarDianDiagnostico() {
+      setText("feDianPruebasMsg", "Consultando diagnostico DIAN...", false);
+      setJSON("feDianPruebasResultado", null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=diagnostico_oficial&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await dianFetchJSON(url, { credentials: "same-origin" }, "Diagnostico oficial DIAN");
+        setJSON("feDianPruebasResultado", data);
+        setText("feDianPruebasMsg", "Diagnostico DIAN cargado.", false);
+      } catch (err) {
+        setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
+        setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo consultar DIAN", true);
+      }
+    }
+
+    function renderDianRunResult(data) {
+      state.ultimoResultado = data || null;
+      const summary = document.getElementById("feDianResumenResultado");
+      const details = document.getElementById("feDianDetalleResultado");
+      if (summary) {
+        const resumen = data && data.resumen ? data.resumen : {};
+        const objetivo = data && data.objetivo ? data.objetivo : {};
+        const requisito = data && data.requisito_set_dian ? data.requisito_set_dian : {};
+        summary.innerHTML = [
+          ["Estado", data && data.habilitacion_aprobada ? "Aprobado" : (data && data.ok ? "Ejecutado" : "Observado")],
+          ["Procesados", data && typeof data.procesados !== "undefined" ? data.procesados : 0],
+          ["Aceptados", resumen.aceptado || 0],
+          ["Objetivo", [objetivo.facturas_electronicas || 0, "FE,", objetivo.notas_debito || 0, "ND,", objetivo.notas_credito || 0, "NC"].join(" ")],
+          ["Minimo aceptado", [requisito.facturas_electronicas_aceptadas_minimo || 0, "FE,", requisito.notas_debito_aceptadas_minimo || 0, "ND,", requisito.notas_credito_aceptadas_minimo || 0, "NC"].join(" ")]
+        ].map(function(item) {
+          return '<div class="dian-status-item"><span class="dian-status-label">' + escapeHTML(item[0]) + '</span><span class="dian-status-value">' + escapeHTML(item[1]) + '</span></div>';
+        }).join("");
+      }
+      updateDianProgress();
+      if (!details) return;
+      const rows = data && Array.isArray(data.detalles) ? data.detalles : [];
+      if (!rows.length) {
+        details.innerHTML = "";
+        return;
+      }
+      details.innerHTML = '<table class="dian-result-table"><thead><tr>' +
+        '<th>#</th><th>Documento</th><th>Tipo</th><th>DIAN</th><th>Acuse</th><th>Mensaje</th><th>Track</th>' +
+        '</tr></thead><tbody>' + rows.map(function(row, index) {
+          return '<tr>' +
+            '<td>' + escapeHTML(row.indice || index + 1) + '</td>' +
+            '<td>' + escapeHTML(row.documento_codigo) + '</td>' +
+            '<td>' + escapeHTML(row.tipo_documento) + '</td>' +
+            '<td>' + renderPill(row.estado_dian) + '</td>' +
+            '<td>' + renderPill(row.acuse_estado) + '</td>' +
+            '<td>' + escapeHTML(row.mensaje_recepcion || row.error || "Resultado recibido") + '</td>' +
+            '<td>' + escapeHTML(row.track_id || "") + '</td>' +
+          '</tr>';
+        }).join("") + '</tbody></table>';
+    }
+
+    function renderDianTrackHistory(items) {
+      const box = document.getElementById("feDianTrackHistorial");
+      if (!box) return;
+      items = Array.isArray(items) ? items : [];
+      state.dianTrackHistory = items;
+      if (!items.length) {
+        box.innerHTML = '<div class="dian-track-empty">Aun no hay TrackId/ZipKey guardados para esta empresa.</div>';
+        updateDianProgress();
+        return;
+      }
+      box.innerHTML = '<div class="dian-track-table-wrap"><table class="dian-result-table"><thead><tr>' +
+        '<th>Fecha</th><th>Documento</th><th>Tipo</th><th>Estado</th><th>Mensaje DIAN</th><th>TrackId / ZipKey</th><th>Acciones</th>' +
+        '</tr></thead><tbody>' + items.map(function(row) {
+          const track = txt(row.track_id || row.zip_key);
+          const normalizedTrack = track.toLowerCase();
+          const syntheticAudit = normalizedTrack.indexOf("sync:") === 0 || normalizedTrack.indexOf("audit:") === 0;
+          const reconsultable = row && row.reconsultable !== false && !syntheticAudit;
+          const trackLabel = syntheticAudit ? "Respuesta DIAN auditada (sin TrackId)" : track;
+          const mensaje = txt(row.status_description || row.acuse_mensaje || row.status_message || "Sin mensaje final");
+          const fecha = txt(row.fecha_ultimo_acuse || row.fecha_envio || row.fecha_actualizacion || row.fecha_creacion);
+          return '<tr>' +
+            '<td>' + escapeHTML(fecha || "-") + '</td>' +
+            '<td>' + escapeHTML(row.documento_codigo || "-") + '</td>' +
+            '<td>' + escapeHTML(row.tipo_documento || "-") + '</td>' +
+            '<td>' + renderPill(row.acuse_estado || row.estado_dian || "pendiente") + '</td>' +
+            '<td>' + escapeHTML(mensaje) + '</td>' +
+            '<td class="dian-track-key">' + escapeHTML(trackLabel) + '</td>' +
+            '<td><button type="button" class="btn secondary dian-track-reconsultar" data-track="' + escapeHTML(track) + '"' + (reconsultable ? '' : ' disabled title="DIAN no entregó TrackId para GetStatusZip; la respuesta se conserva solo como auditoría."') + '>Reconsultar</button></td>' +
+          '</tr>';
+        }).join("") + '</tbody></table></div>';
+      updateDianProgress();
+    }
+
+    async function loadDianTrackHistory() {
+      if (!state.empresaID) return;
+      const url = "/api/empresa/facturacion_electronica/dian?action=historial_tracks&empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=120";
+      const res = await fetch(url, { credentials: "same-origin" });
+      const data = await readJSONResponse(res);
+      if (!res.ok || !data || data.ok === false) {
+        throw new Error(data && data.error ? data.error : "No se pudo cargar historial TrackId DIAN");
+      }
+      renderDianTrackHistory(data.items || []);
+      setText("feDianTrackMsg", "Historial actualizado: " + (data.total || 0) + " registro(s).", false);
+    }
+
+    async function reconsultarDianTrack(trackID) {
+      trackID = txt(trackID);
+      if (!trackID) return;
+      setText("feDianTrackMsg", "Reconsultando GetStatusZip para " + trackID + "...", false);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=consultar_acuse_real&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await dianFetchJSON(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ empresa_id: Number(state.empresaID), track_id: trackID }),
+          credentials: "same-origin"
+        }, "GetStatusZip DIAN: " + trackID);
+        setText("feDianTrackMsg", "Acuse actualizado: " + (data && (data.acuse_mensaje || data.acuse_estado) || "respuesta recibida") + ".", !data || data.ok === false);
+      } catch (err) {
+        setText("feDianTrackMsg", err && err.message ? err.message : "No se pudo reconsultar TrackId DIAN.", true);
+      }
+      await loadDianTrackHistory().catch(function() {});
+    }
+
+    function mergeDianResumen(target, source) {
+      target = target || {};
+      source = source || {};
+      ["aceptado", "rechazado", "enviado", "pendiente", "contingencia", "error", "simulado"].forEach(function(key) {
+        target[key] = Number(target[key] || 0) + Number(source[key] || 0);
+      });
+      return target;
+    }
+
+    function mergeDianAceptadosPorTipo(target, source) {
+      target = target || {};
+      source = source || {};
+      ["factura", "nota_debito", "nota_credito"].forEach(function(key) {
+        target[key] = Number(target[key] || 0) + Number(source[key] || 0);
+      });
+      return target;
+    }
+
+    function buildDianBatchPlan(payload) {
+      const plan = [];
+      const batchSize = Math.max(1, Number(state.dianBatchSize || 3));
+      [
+        { key: "facturas_electronicas", label: "facturas", tipo: "factura" },
+        { key: "notas_debito", label: "notas debito", tipo: "nota_debito" },
+        { key: "notas_credito", label: "notas credito", tipo: "nota_credito" }
+      ].forEach(function(item) {
+        let remaining = Number(payload[item.key] || 0);
+        while (remaining > 0) {
+          const count = Math.min(batchSize, remaining);
+          const batch = {
+            empresa_id: Number(state.empresaID),
+            facturas_electronicas: item.key === "facturas_electronicas" ? count : 0,
+            notas_debito: item.key === "notas_debito" ? count : 0,
+            notas_credito: item.key === "notas_credito" ? count : 0,
+            total_documentos: count,
+            max_envios: count,
+            tipo_lote: item.tipo,
+            etiqueta_lote: count + " " + item.label
+          };
+          plan.push(batch);
+          remaining -= count;
+        }
+      });
+      return plan;
+    }
+
+    async function enviarDianSetRequest(payload, label) {
+      const url = "/api/empresa/facturacion_electronica/dian?action=pruebas_dian&empresa_id=" + encodeURIComponent(state.empresaID);
+      return await dianFetchJSON(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "same-origin"
+      }, "Envio real DIAN: " + label);
+    }
+
+    async function ejecutarDianSetPorTandas(payload, label) {
+      const plan = buildDianBatchPlan(payload);
+      if (!plan.length) {
+        setText("feDianPruebasMsg", "Define al menos un documento para el set DIAN.", true);
+        return;
+      }
+      if (!await confirmarDianAccion("Esto enviara el set completo por tandas reales al ambiente de habilitacion DIAN.", "Continuar?")) {
+        return;
+      }
+      const totalPlan = plan.reduce(function(sum, item) { return sum + Number(item.total_documentos || 0); }, 0);
+      const aggregate = {
+        ok: true,
+        empresa_id: Number(state.empresaID),
+        simulado: false,
+        envio_por_tandas: true,
+        lote_total: plan.length,
+        objetivo: {
+          total_documentos: totalPlan,
+          facturas_electronicas: Number(payload.facturas_electronicas || 0),
+          notas_debito: Number(payload.notas_debito || 0),
+          notas_credito: Number(payload.notas_credito || 0)
+        },
+        procesados: 0,
+        resumen: {},
+        aceptados_por_tipo: {},
+        detenido_por_error: false,
+        detalles: [],
+        lotes: []
+      };
+      setJSON("feDianPruebasResultado", null);
+      renderDianRunResult(null);
+      for (let index = 0; index < plan.length; index++) {
+        const batch = Object.assign({}, plan[index], {
+          simular: false,
+          detener_en_error: true,
+          set_habilitacion: true
+        });
+        const progress = "lote " + (index + 1) + "/" + plan.length + " (" + batch.etiqueta_lote + ")";
+        setText("feDianPruebasMsg", "Enviando " + progress + "...", false);
+        try {
+          const data = await enviarDianSetRequest(batch, label + " - " + progress);
+          aggregate.lotes.push(data);
+          aggregate.procesados += Number(data && data.procesados || 0);
+          aggregate.resumen = mergeDianResumen(aggregate.resumen, data && data.resumen);
+          aggregate.aceptados_por_tipo = mergeDianAceptadosPorTipo(aggregate.aceptados_por_tipo, data && data.aceptados_por_tipo);
+          if (data && Array.isArray(data.detalles)) {
+            data.detalles.forEach(function(row) {
+              aggregate.detalles.push(Object.assign({}, row, { lote: index + 1 }));
+            });
+          }
+          aggregate.ok = aggregate.ok && !!(data && data.ok !== false);
+          aggregate.detenido_por_error = aggregate.detenido_por_error || !!(data && data.detenido_por_error);
+          aggregate.consecutivo_siguiente = data && data.consecutivo_siguiente;
+          aggregate.test_set_id = data && data.test_set_id || aggregate.test_set_id;
+          aggregate.endpoint = data && data.endpoint || aggregate.endpoint;
+          aggregate.requisito_set_dian = data && data.requisito_configurado || data && data.requisito_set_dian || aggregate.requisito_set_dian;
+          renderDianRunResult(aggregate);
+          setJSON("feDianPruebasResultado", aggregate);
+          if (!data || data.ok === false || data.detenido_por_error) {
+            aggregate.ok = false;
+            aggregate.detenido_por_error = true;
+            setText("feDianPruebasMsg", "Set detenido en " + progress + ". Revisa la consola DIAN.", true);
+            break;
+          }
+        } catch (err) {
+          aggregate.ok = false;
+          aggregate.detenido_por_error = true;
+          aggregate.error = err && err.message ? err.message : "Error enviando set por tandas.";
+          renderDianRunResult(aggregate);
+          setJSON("feDianPruebasResultado", err && err.data ? err.data : aggregate);
+          setText("feDianPruebasMsg", aggregate.error, true);
+          break;
+        }
+      }
+      if (!aggregate.detenido_por_error) {
+        setText("feDianPruebasMsg", "Set completo enviado por tandas. Revisa acuses y consola DIAN.", !aggregate.ok);
+      }
+      loadDianConfigStatus().catch(function() {});
+      loadDianTrackHistory().catch(function() {});
+    }
+
+    async function ejecutarDianSet(payload, label, options) {
+      options = options || {};
+      if (!payload || payload.total_documentos <= 0) {
+        setText("feDianPruebasMsg", "Define al menos un documento para el set DIAN.", true);
+        return;
+      }
+      if (options.batched) {
+        await ejecutarDianSetPorTandas(payload, label);
+        return;
+      }
+      if (!await confirmarDianAccion("Esto enviara documentos reales al ambiente de habilitacion DIAN.", "Verifica que el set coincida con lo que DIAN asigno. Continuar?")) {
+        return;
+      }
+      payload = Object.assign({}, payload, { simular: false, detener_en_error: true });
+      setText("feDianPruebasMsg", "Enviando " + label + "...", false);
+      setJSON("feDianPruebasResultado", null);
+      renderDianRunResult(null);
+      try {
+        const data = await enviarDianSetRequest(payload, label);
+        renderDianRunResult(data);
+        setJSON("feDianPruebasResultado", data);
+        const first = data && Array.isArray(data.detalles) && data.detalles.length ? data.detalles[0] : null;
+        const msg = first && first.mensaje_recepcion ? first.mensaje_recepcion : (data && data.habilitacion_aprobada ? "Pruebas DIAN aprobadas." : "Pruebas DIAN ejecutadas. Revisa resultado y acuses.");
+        setText("feDianPruebasMsg", msg, !data || data.ok === false);
+        loadDianConfigStatus().catch(function() {});
+        loadDianTrackHistory().catch(function() {});
+      } catch (err) {
+        setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
+        renderDianRunResult(err && err.data ? err.data : null);
+        setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo ejecutar pruebas DIAN", true);
+      }
+    }
+
+    async function ejecutarDianPruebas() {
+      const payload = collectDianSetPayloadBase();
+      const requestedMax = numberInputValue("feDianSetMaxEnvios", 0);
+      await ejecutarDianSet(payload, "set automatico DIAN", { batched: !requestedMax && Number(payload.total_documentos || 0) > state.dianBatchSize });
+    }
+
+    async function ejecutarDianDocumentoManual(tipo) {
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        facturas_electronicas: tipo === "factura" ? 1 : 0,
+        notas_debito: tipo === "nota_debito" ? 1 : 0,
+        notas_credito: tipo === "nota_credito" ? 1 : 0,
+        total_documentos: 1,
+        max_envios: 1
+      };
+      const labels = {
+        factura: "factura electronica de prueba",
+        nota_debito: "nota debito electronica de prueba",
+        nota_credito: "nota credito electronica de prueba"
+      };
+      await ejecutarDianSet(payload, labels[tipo] || "documento de prueba");
+    }
+
+    async function consultarDianRangoNumeracion() {
+      if (!state.empresaID) return;
+      setText("feDianPruebasMsg", "Consultando rango y clave tecnica en DIAN...", false);
+      setJSON("feDianPruebasResultado", null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=get_numbering_range&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await dianFetchJSON(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ empresa_id: Number(state.empresaID) }),
+          credentials: "same-origin"
+        }, "GetNumberingRange DIAN");
+        setJSON("feDianPruebasResultado", data);
+        setText("feDianPruebasMsg", data && data.ok ? "Clave tecnica DIAN actualizada desde el rango oficial." : (data && data.mensaje ? data.mensaje : "DIAN no devolvio clave tecnica para el rango configurado."), !(data && data.ok));
+        await loadDianConfigStatus().catch(function() {});
+      } catch (err) {
+        setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
+        setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo consultar GetNumberingRange DIAN.", true);
+      }
+    }
+
+    async function activarProduccionDianLocal() {
+      const checkbox = document.getElementById("feDianConfirmarHabilitado");
+      const confirmado = !!(checkbox && checkbox.checked);
+      if (!confirmado) {
+        updateDianProductionCheckHint();
+        setText("feDianPruebasMsg", "Produccion local sin activar.", false);
+        return;
+      }
+      if (!window.confirm("Vas a activar la produccion local para emitir documentos reales. Confirma que DIAN ya habilito la empresa y que tienes resolucion, prefijo y rango reales de produccion. Continuar?")) {
+        if (checkbox) checkbox.checked = false;
+        updateDianProductionCheckHint();
+        return;
+      }
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        confirmar_habilitacion_dian: confirmado,
+        url_dian_produccion: txt(document.getElementById("feDianProduccionURL").value)
+      };
+      setText("feDianPruebasMsg", "Activando produccion local DIAN...", false);
+      setJSON("feDianPruebasResultado", null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=activar_produccion_local&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await dianFetchJSON(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "same-origin"
+        }, "Activar produccion local DIAN");
+        setJSON("feDianPruebasResultado", data);
+        setText("feDianPruebasMsg", data && data.ok ? "Produccion local DIAN activada. Verifica resolucion y rangos reales antes de emitir." : "No se pudo activar produccion local.", !(data && data.ok));
+        if (data && data.ok) {
+          await loadDianConfigStatus().catch(function() {});
+        } else {
+          if (checkbox) checkbox.checked = false;
+          updateDianProductionCheckHint();
+          updateDianProgress();
+        }
+      } catch (err) {
+        if (checkbox) checkbox.checked = false;
+        updateDianProductionCheckHint();
+        updateDianProgress();
+        setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
+        setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo activar produccion local DIAN", true);
+      }
+    }
+
+    async function checkDianConnection(procesarCola) {
+      const url = procesarCola
+        ? ("/api/empresa/facturacion_electronica?action=procesar_reintentos&empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=100")
+        : ("/api/empresa/facturacion_electronica?action=estado_conexion_dian&empresa_id=" + encodeURIComponent(state.empresaID) + "&pais_codigo=CO");
+      const data = await dianFetchJSON(url, procesarCola ? { method: "POST", credentials: "same-origin" } : { credentials: "same-origin" }, procesarCola ? "Procesar cola DIAN" : "Probar conexion DIAN");
+      if (procesarCola) {
+        const queueMsg = "Cola procesada: " + Number(data.enviados || 0) + " enviados/aceptados, " + Number(data.fallidos || 0) + " fallidos y " + Number(data.procesados || 0) + " procesados.";
+        setText("feDianOfflineMsg", queueMsg, Number(data.errores_internos || 0) > 0);
+        return data;
+      }
+      let msg = data.mensaje || "Estado de conexion consultado.";
+      if (data.online) {
+        msg = "Servidor DIAN/proveedor alcanzable. Esta prueba no valida SOAP, credenciales ni aceptación fiscal. " + msg;
+      } else {
+        msg = "Sin conexion DIAN/proveedor. La facturacion electronica requiere conexion activa.";
+      }
+      setText("feDianOfflineMsg", msg, !data.online);
+      return data;
+    }
+
+    async function preflightDianForOperation(action, payload) {
+      const accionesElectronicas = [
+        "emitir", "anular", "anular_factura_nota_credito", "nota_credito", "emitir_nota_credito", "nota_debito", "emitir_nota_debito",
+        "documento_soporte", "emitir_documento_soporte", "nomina_electronica", "emitir_nomina_electronica",
+        "documento_equivalente_pos", "emitir_documento_equivalente_pos",
+        "eventos_radian_recepcion", "emitir_eventos_radian_recepcion", "evento_radian", "emitir_evento_radian"
+      ];
+      if (txt(payload && payload.pais_codigo).toUpperCase() !== "CO" || accionesElectronicas.indexOf(txt(action).toLowerCase()) === -1) {
+        return {};
+      }
+      const status = await checkDianConnection(false);
+      if (status.online) return {};
+      throw new Error((status.mensaje || "No hay conexion con DIAN/proveedor.") + " No se continuara con la emision.");
+    }
+
+    async function ejecutarOperacionFacturacion(action) {
+      const payload = collectOperacionPayload(action);
+      const anulacionTotalPermitida = txt(action).toLowerCase() === "anular_factura_nota_credito" &&
+        txt(payload.tipo_documento).toLowerCase() === "factura_electronica";
+      if (!anulacionTotalPermitida) {
+        setJSON("op_resultado", {
+          ok: false,
+          codigo: "emision_fiscal_libre_bloqueada",
+          tipo_documento: payload.tipo_documento,
+          bloqueado: true
+        });
+        setText("op_msg", "La emision fiscal libre esta bloqueada. Las facturas nacen de una venta pagada y la unica operacion disponible aqui es la anulacion total mediante nota credito. No se consumio consecutivo ni se envio informacion fiscal.", true);
+        return;
+      }
+      if (!payload.documento_codigo) {
+        setText("op_msg", "documento_codigo es obligatorio", true);
+        return;
+      }
+      setText("op_msg", "Ejecutando operacion...", false);
+      setJSON("op_resultado", null);
+      try {
+        Object.assign(payload, await preflightDianForOperation(action, payload));
+        const url = "/api/empresa/facturacion_electronica?action=" + encodeURIComponent(action) + "&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await dianFetchJSON(url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "same-origin"
+        }, "Operacion documental: " + action);
+        setJSON("op_resultado", data);
+        if (data && data.estado_nuevo) document.getElementById("op_estado_actual").value = String(data.estado_nuevo);
+        setText("op_msg", data && data.numero_legal ? ("Operacion ejecutada. Numero legal: " + data.numero_legal) : "Operacion ejecutada correctamente", false);
+      } catch (err) {
+        setJSON("op_resultado", err && err.data ? err.data : null);
+        setText("op_msg", err && err.message ? err.message : "No se pudo ejecutar la operacion", true);
+      }
+    }
+
+    async function ejecutarAnulacionFacturacion() {
+      const tipoDocumento = txt(document.getElementById("op_tipo_documento").value) || "factura_electronica";
+      const motivo = txt(document.getElementById("op_observaciones").value);
+      if (motivo.length < 10) {
+        setText("op_msg", "Escribe un motivo de anulacion de minimo 10 caracteres.", true);
+        document.getElementById("op_observaciones").focus();
+        return;
+      }
+      const action = tipoDocumento === "factura_electronica" ? "anular_factura_nota_credito" : "anular";
+      const confirmado = await confirmarDianAccion(
+        tipoDocumento === "factura_electronica"
+          ? "Se emitira una nota credito electronica por el valor total. La factura solo quedara anulada cuando DIAN acepte la nota."
+          : "Se solicitara la anulacion del documento seleccionado.",
+        "Confirma que revisaste el documento y el motivo."
+      );
+      if (!confirmado) return;
+      ejecutarOperacionFacturacion(action);
+    }
+
+    function setTipoDocumentoOperacion(tipo) {
+      document.getElementById("op_tipo_documento").value = tipo;
+    }
+
+    document.getElementById("btnDianDiagnostico").addEventListener("click", ejecutarDianDiagnostico);
+    document.getElementById("btnDianRecargarConfig").addEventListener("click", loadDianConfigStatus);
+    document.getElementById("btnDianValidarCredenciales").addEventListener("click", validarDianCredenciales);
+    document.getElementById("btnDianConsultarRango").addEventListener("click", consultarDianRangoNumeracion);
+    document.getElementById("btnDianGuardarObjetivo").addEventListener("click", guardarDianObjetivo);
+    document.getElementById("btnDianPruebas").addEventListener("click", ejecutarDianPruebas);
+    document.getElementById("btnDianEnviarFactura").addEventListener("click", function() { ejecutarDianDocumentoManual("factura"); });
+    document.getElementById("btnDianEnviarND").addEventListener("click", function() { ejecutarDianDocumentoManual("nota_debito"); });
+    document.getElementById("btnDianEnviarNC").addEventListener("click", function() { ejecutarDianDocumentoManual("nota_credito"); });
+    document.getElementById("feDianConfirmAccept").addEventListener("click", function() { closeDianConfirm(true); });
+    document.getElementById("feDianConfirmCancel").addEventListener("click", function() { closeDianConfirm(false); });
+    document.getElementById("feDianConfirmOverlay").addEventListener("click", function(event) {
+      if (event.target && event.target.id === "feDianConfirmOverlay") closeDianConfirm(false);
+    });
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Escape" && dianConfirmResolve) closeDianConfirm(false);
+    });
+    document.getElementById("feDianConfirmarHabilitado").addEventListener("change", function(event) {
+      updateDianProductionCheckHint();
+      if (event.target && event.target.checked) {
+        activarProduccionDianLocal();
+      }
+    });
+    updateDianProductionCheckHint();
+    document.getElementById("btnDianConsoleLimpiar").addEventListener("click", clearDianConsole);
+    document.getElementById("btnDianConsoleCopiar").addEventListener("click", copyDianConsole);
+    document.getElementById("btnDianTrackRecargar").addEventListener("click", function() {
+      loadDianTrackHistory().catch(function(err) {
+        setText("feDianTrackMsg", err && err.message ? err.message : "No se pudo cargar historial TrackId DIAN.", true);
+      });
+    });
+    document.getElementById("feDianTrackHistorial").addEventListener("click", function(event) {
+      const btn = event.target && event.target.closest ? event.target.closest(".dian-track-reconsultar") : null;
+      if (!btn) return;
+      reconsultarDianTrack(btn.getAttribute("data-track"));
+    });
+    document.getElementById("feDianConsoleAutoScroll").addEventListener("change", function(event) {
+      state.dianConsoleAutoScroll = !!event.target.checked;
+    });
+    ["feDianSetFacturas", "feDianSetNotasDebito", "feDianSetNotasCredito", "feDianSetTotalRequerido", "feDianSetAceptadosTotal", "feDianSetAceptadasFacturas", "feDianSetAceptadasND", "feDianSetAceptadasNC"].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener("input", refreshDianObjectiveProgress);
+    });
+    document.getElementById("btnDianCheckConexion").addEventListener("click", function() {
+      setText("feDianOfflineMsg", "Probando conexion DIAN/proveedor...", false);
+      checkDianConnection(false).catch(function(err) {
+        setText("feDianOfflineMsg", err && err.message ? err.message : "No se pudo probar la conexion DIAN.", true);
+      });
+    });
+    document.getElementById("btnDianProcesarCola").addEventListener("click", function() {
+      setText("feDianOfflineMsg", "Validando conexion y procesando cola...", false);
+      checkDianConnection(true).catch(function(err) {
+        setText("feDianOfflineMsg", err && err.message ? err.message : "No se pudo procesar la cola DIAN.", true);
+      });
+    });
+    document.getElementById("btnEmitirDocumento").addEventListener("click", function() { ejecutarOperacionFacturacion("emitir"); });
+    document.getElementById("btnAnularDocumento").addEventListener("click", ejecutarAnulacionFacturacion);
+    document.getElementById("btnEmitirFactura").addEventListener("click", function() {
+      setTipoDocumentoOperacion("factura_electronica");
+      ejecutarOperacionFacturacion("emitir");
+    });
+    document.getElementById("btnEmitirNC").addEventListener("click", function() {
+      setTipoDocumentoOperacion("nota_credito");
+      ejecutarOperacionFacturacion("nota_credito");
+    });
+    document.getElementById("btnEmitirND").addEventListener("click", function() {
+      setTipoDocumentoOperacion("nota_debito");
+      ejecutarOperacionFacturacion("nota_debito");
+    });
+    document.getElementById("btnEmitirSoporte").addEventListener("click", function() {
+      setTipoDocumentoOperacion("documento_soporte");
+      ejecutarOperacionFacturacion("documento_soporte");
+    });
+    document.getElementById("btnEmitirNominaElectronica").addEventListener("click", function() {
+      setTipoDocumentoOperacion("nomina_electronica");
+      ejecutarOperacionFacturacion("nomina_electronica");
+    });
+    document.getElementById("btnEmitirPOSElectronico").addEventListener("click", function() {
+      setTipoDocumentoOperacion("documento_equivalente_pos");
+      ejecutarOperacionFacturacion("documento_equivalente_pos");
+    });
+    document.getElementById("btnEmitirRadian").addEventListener("click", function() {
+      setTipoDocumentoOperacion("eventos_radian_recepcion");
+      ejecutarOperacionFacturacion("eventos_radian_recepcion");
+    });
+
+    if (!state.empresaID) {
+      setText("feDianPruebasMsg", "empresa_id requerido en la URL.", true);
+      setText("feDianOfflineMsg", "empresa_id requerido en la URL.", true);
+      setText("op_msg", "empresa_id requerido en la URL.", true);
+      setText("feDianConfigMsg", "empresa_id requerido en la URL.", true);
+    } else {
+      loadDianConfigStatus().catch(function() {});
+      loadDianTrackHistory().catch(function(err) {
+        setText("feDianTrackMsg", err && err.message ? err.message : "No se pudo cargar historial TrackId DIAN.", true);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+﻿# Binarios y logs de backend
+backend/server.exe
+backend/**/*.exe
+herramientas/*.exe
+descargas/*
+backend/pos-backend.exe
+backend/*.log
+backend/*.err
+backend/logs/*.log
+backend/logs/
+backend/utils/logs/*.log
+backend/handlers/logs/
+backend/tmp/
+backend/tmp_*
+backend/tmp_printer_server.*
+backend/logs/vps_security/
+backend/*.exe~
+backend/bin/vps_security_scan_linux_amd64
+backend/pos.db
+*.db
+logs/test_runs/*.log
+test_runs/
+scripts/logs/*.log
+documentos/reportes_profesionales/
+documentos/referencias/dian/2026-06-08/
+# El repositorio operativo conserva fuentes vigentes. Planes cerrados, historiales
+# acumulativos y evidencia de ejecuciones se retienen en CI/almacenamiento externo.
+/CHANGELOG.md
+documentos/CHANGELOG.md
+documentos/historial_de_cambios
+documentos/actualizaciones_del_repositorio.md
+documentos/historico/
+documentos/evidencia*/
+documentos/releases/
+documentos/plan_*.md
+documentos/auditoria_*.md
+documentos/informe_*.md
+documentos/reporte_*.md
+documentos/evidencia_*.md
+documentos/*_report.md
+documentos/*readiness*.md
+documentos/staging_*checklist*.md
+# URL local del remoto para actualizar_repositorio.ps1 (no versionar)
+scripts/actualizar_repositorio.repo_url
+scripts/pcs_deployment.local.ps1
+tmp/
+tmp-*/
+tmp/*.txt
+tmp/*.js
+tmp/*-profile/
+tmp/playwright-*/
+tmp_*.png
+outputs/
+output/
+reports/
+test_runs/
+node_modules/
+coverage/
+.coverage/
+*.coverprofile
+.tmp-go-test/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+Desktop.ini
+.nextcloudsync.log
+.sync_*
+.sync_*.db-wal
+backend/.gotmp/
+backend/.env.local
+.env.local
+.env
+.env.*
+!*.env.example
+!**/*.env.example
+deploy/.env.platform
+deploy/.env.staging
+deploy/monitoring/.env.monitoring
+deploy/monitoring/alertmanager.runtime.yml
+.gocache/
+.gotmp/
+.codex-gocache/
+.codex-tmp-go/
+.codex-chrome*/
+.codex_tmp/
+.codex-remote-attachments/
+# Estado efimero y entregables de agentes; nunca se comparten por Git.
+scripts/logs/*.pid
+scripts/logs/*.err
+Pendiente Notas
+pendiete new
+mobile/**/build/
+mobile/**/.dart_tool/
+# Credenciales y llaves privadas locales
+*.ppk
+*.pem
+*.key
+*.p12
+*.pfx
+# VSCode
+.vscode/
+# Archivos compilados
+bin/
+obj/

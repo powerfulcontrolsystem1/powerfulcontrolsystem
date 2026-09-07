@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Logistica avanzada / WMS</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/administrar_empresa/logistica_wms.css?v=20260813-p110-csp">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="wms-page admin-subpage">
+  <main class="wms-shell">
+    <header class="wms-head">
+      <div>
+        <h1>Logistica avanzada / WMS</h1>
+        <p>Opera bodegas con ubicaciones internas, picking, packing, despachos, rutas, conteos y trazabilidad por empresa sin duplicar inventario ni compras.</p>
+      </div>
+      <div class="wms-actions">
+        <button class="wms-btn" id="wmsRefresh" type="button">Actualizar</button>
+        <button class="wms-btn" id="wmsSeed" type="button">Cargar demo</button>
+        <button class="wms-btn primary" id="wmsExport" type="button">Exportar CSV</button>
+      </div>
+    </header>
+
+    <section class="wms-kpis" aria-label="Indicadores WMS">
+      <article class="wms-kpi"><span>Ubicaciones activas</span><strong id="kpiUbicaciones">0</strong></article>
+      <article class="wms-kpi"><span>Ordenes abiertas</span><strong id="kpiOrdenes">0</strong></article>
+      <article class="wms-kpi"><span>En picking</span><strong id="kpiPicking">0</strong></article>
+      <article class="wms-kpi"><span>En packing</span><strong id="kpiPacking">0</strong></article>
+      <article class="wms-kpi"><span>Listas despacho</span><strong id="kpiListas">0</strong></article>
+      <article class="wms-kpi"><span>Despachos en ruta</span><strong id="kpiRuta">0</strong></article>
+      <article class="wms-kpi"><span>Unidades pendientes</span><strong id="kpiPendientes">0</strong></article>
+      <article class="wms-kpi"><span>Ocupacion bodega</span><strong id="kpiOcupacion">0%</strong></article>
+    </section>
+
+    <nav class="wms-tabs" aria-label="Secciones WMS">
+      <button class="wms-tab is-active" data-tab="dashboard" type="button">Tablero</button>
+      <button class="wms-tab" data-tab="ubicaciones" type="button">Ubicaciones</button>
+      <button class="wms-tab" data-tab="ordenes" type="button">Ordenes</button>
+      <button class="wms-tab" data-tab="items" type="button">Picking/Packing</button>
+      <button class="wms-tab" data-tab="despachos" type="button">Despachos</button>
+      <button class="wms-tab" data-tab="eventos" type="button">Bitacora</button>
+    </nav>
+    <div id="wmsMsg" class="wms-msg"></div>
+
+    <section id="tab-dashboard" class="wms-panel is-active">
+      <div class="wms-command">
+        <div class="wms-command-main">
+          <h2>Torre de control WMS</h2>
+          <p>Coordina cola operativa, capacidad, picking, packing y despachos con lectura rapida de SLA y ocupacion.</p>
+          <div class="wms-quick-grid">
+            <button class="wms-btn" data-tab="ubicaciones" type="button">Mapa de bodega</button>
+            <button class="wms-btn" data-tab="ordenes" type="button">Gestionar ordenes</button>
+            <button class="wms-btn primary" data-tab="despachos" type="button">Despachos</button>
+          </div>
+        </div>
+        <aside class="wms-command-side">
+          <h2>Estado de alistamiento</h2>
+          <p>Indicadores clave para anticipar cuellos de botella antes de prometer salida.</p>
+          <div class="wms-readiness">
+            <span>Ordenes abiertas <strong id="readyOrdenes">0</strong></span>
+            <span>Unidades pendientes <strong id="readyPendientes">0</strong></span>
+            <span>Ocupacion bodega <strong id="readyOcupacion">0%</strong></span>
+          </div>
+        </aside>
+      </div>
+      <div class="wms-overview">
+        <div class="wms-box">
+          <div class="wms-toolbar"><h2>Flujo operativo</h2></div>
+          <div id="wmsPipeline" class="wms-stage-grid"></div>
+        </div>
+        <aside class="wms-box">
+          <div class="wms-toolbar"><h2>Alertas WMS</h2></div>
+          <div id="alertasList" class="wms-alerts"></div>
+        </aside>
+      </div>
+      <div class="wms-box">
+        <div class="wms-toolbar"><h2>Ordenes recientes</h2></div>
+        <div id="ordenesResumen" class="wms-table-wrap"></div>
+      </div>
+    </section>
+
+    <section id="tab-ubicaciones" class="wms-panel">
+      <div class="wms-grid">
+        <form id="ubicacionForm" class="wms-box wms-form">
+          <h2>Ubicacion de bodega</h2>
+          <div class="wms-row"><div class="wms-field"><label>Codigo</label><input id="ubiCodigo" placeholder="BOD-A-P01-R01-N01"></div><div class="wms-field"><label>Bodega</label><input id="ubiBodega" value="Principal"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Zona</label><input id="ubiZona"></div><div class="wms-field"><label>Pasillo</label><input id="ubiPasillo"></div><div class="wms-field"><label>Rack</label><input id="ubiRack"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Nivel</label><input id="ubiNivel"></div><div class="wms-field"><label>Posicion</label><input id="ubiPosicion"></div><div class="wms-field"><label>Tipo</label><select id="ubiTipo"><option value="almacenamiento">Almacenamiento</option><option value="picking">Picking</option><option value="packing">Packing</option><option value="recepcion">Recepcion</option><option value="despacho">Despacho</option><option value="cuarentena">Cuarentena</option><option value="conteo">Conteo</option></select></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Capacidad</label><input id="ubiCapacidad" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Ocupacion</label><input id="ubiOcupacion" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Estado</label><select id="ubiEstado"><option value="activa">Activa</option><option value="inactiva">Inactiva</option></select></div></div>
+          <div class="wms-field"><label>Observaciones</label><textarea id="ubiObs"></textarea></div>
+          <div class="wms-row-actions"><button class="wms-btn primary" type="submit">Guardar ubicacion</button><button class="wms-btn" id="ubiClear" type="button">Limpiar</button></div>
+        </form>
+        <div class="wms-box">
+          <div class="wms-toolbar">
+            <h2>Maestro de ubicaciones</h2>
+            <div class="wms-toolbar-actions">
+              <div class="wms-field"><label>Estado</label><select id="ubicacionFilter"><option value="">Todas</option><option value="activa">Activas</option><option value="inactiva">Inactivas</option></select></div>
+            </div>
+          </div>
+          <div id="ubicacionesTable" class="wms-table-wrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-ordenes" class="wms-panel">
+      <div class="wms-grid">
+        <form id="ordenForm" class="wms-box wms-form">
+          <h2 id="ordenTitle">Orden WMS</h2>
+          <input type="hidden" id="ordenId">
+          <div class="wms-row"><div class="wms-field"><label>Codigo</label><input id="ordenCodigo" placeholder="WMS-20260506-001"></div><div class="wms-field"><label>Tipo</label><select id="ordenTipo"><option value="picking">Picking</option><option value="packing">Packing</option><option value="despacho">Despacho</option><option value="conteo">Conteo</option><option value="reabastecimiento">Reabastecimiento</option><option value="traslado">Traslado</option><option value="devolucion">Devolucion</option></select></div></div>
+          <div class="wms-row"><div class="wms-field"><label>Documento origen</label><input id="ordenOrigen" placeholder="Pedido / factura / OT"></div><div class="wms-field"><label>Cliente / tercero</label><input id="ordenCliente"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Fecha compromiso</label><input id="ordenFecha" type="date"></div><div class="wms-field"><label>Prioridad</label><select id="ordenPrioridad"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option><option value="baja">Baja</option></select></div><div class="wms-field"><label>Estado</label><select id="ordenEstado"><option value="borrador">Borrador</option><option value="liberada">Liberada</option><option value="en_picking">En picking</option><option value="en_packing">En packing</option><option value="lista_despacho">Lista despacho</option><option value="despachada">Despachada</option><option value="cerrada">Cerrada</option><option value="cancelada">Cancelada</option></select></div></div>
+          <div class="wms-row"><div class="wms-field"><label>Responsable</label><input id="ordenResponsable"></div><div class="wms-field"><label>Observaciones</label><input id="ordenObs"></div></div>
+          <div class="wms-row-actions"><button class="wms-btn primary" type="submit">Guardar orden</button><button class="wms-btn" id="ordenClear" type="button">Limpiar</button></div>
+        </form>
+        <div class="wms-box">
+          <div class="wms-toolbar">
+            <h2>Ordenes</h2>
+            <div class="wms-toolbar-actions">
+              <div class="wms-field"><label>Tipo</label><select id="ordenTipoFilter"><option value="">Todos</option><option value="picking">Picking</option><option value="packing">Packing</option><option value="despacho">Despacho</option><option value="conteo">Conteo</option><option value="reabastecimiento">Reabastecimiento</option><option value="traslado">Traslado</option><option value="devolucion">Devolucion</option></select></div>
+              <div class="wms-field"><label>Estado</label><select id="ordenEstadoFilter"><option value="">Todos</option><option value="borrador">Borrador</option><option value="liberada">Liberada</option><option value="en_picking">En picking</option><option value="en_packing">En packing</option><option value="lista_despacho">Lista despacho</option><option value="despachada">Despachada</option><option value="cerrada">Cerrada</option><option value="cancelada">Cancelada</option></select></div>
+              <div class="wms-field"><label>Buscar</label><input id="ordenSearch" placeholder="Codigo, cliente, responsable"></div>
+            </div>
+          </div>
+          <div id="ordenesTable" class="wms-table-wrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-items" class="wms-panel">
+      <div class="wms-grid">
+        <form id="itemForm" class="wms-box wms-form">
+          <h2>Item de picking/packing</h2>
+          <div class="wms-row"><div class="wms-field"><label>Orden</label><select id="itemOrdenId"></select></div><div class="wms-field"><label>Producto</label><input id="itemProducto"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>SKU</label><input id="itemSku"></div><div class="wms-field"><label>Ubicacion origen</label><input id="itemOrigen"></div><div class="wms-field"><label>Ubicacion destino</label><input id="itemDestino" value="PACK-01"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Cantidad</label><input id="itemCantidad" type="number" step="0.01" value="1"></div><div class="wms-field"><label>Lote</label><input id="itemLote"></div><div class="wms-field"><label>Serial</label><input id="itemSerial"></div></div>
+          <button class="wms-btn primary" type="submit">Agregar item</button>
+        </form>
+        <form id="avanceForm" class="wms-box wms-form">
+          <h2>Registrar avance</h2>
+          <div class="wms-row three"><div class="wms-field"><label>Item ID</label><input id="avanceItemId" type="number"></div><div class="wms-field"><label>Pickeado</label><input id="avancePick" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Empacado</label><input id="avancePack" type="number" step="0.01" value="0"></div></div>
+          <div class="wms-field"><label>Estado</label><select id="avanceEstado"><option value="pendiente">Inferir automatico</option><option value="en_picking">En picking</option><option value="pickeado">Pickeado</option><option value="en_packing">En packing</option><option value="empacado">Empacado</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option></select></div>
+          <button class="wms-btn primary" type="submit">Guardar avance</button>
+        </form>
+      </div>
+      <div class="wms-box">
+        <div class="wms-toolbar"><h2>Items de la orden seleccionada</h2></div>
+        <div id="itemsTable" class="wms-table-wrap"></div>
+      </div>
+    </section>
+
+    <section id="tab-despachos" class="wms-panel">
+      <div class="wms-grid">
+        <form id="despachoForm" class="wms-box wms-form">
+          <h2>Despacho</h2>
+          <div class="wms-row"><div class="wms-field"><label>Orden</label><select id="desOrdenId"></select></div><div class="wms-field"><label>Codigo</label><input id="desCodigo" placeholder="DSP-20260506-001"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Estado</label><select id="desEstado"><option value="programado">Programado</option><option value="en_ruta">En ruta</option><option value="entregado">Entregado</option><option value="devuelto">Devuelto</option><option value="cancelado">Cancelado</option></select></div><div class="wms-field"><label>Transportadora</label><input id="desTransportadora"></div><div class="wms-field"><label>Guia</label><input id="desGuia"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Conductor</label><input id="desConductor"></div><div class="wms-field"><label>Vehiculo</label><input id="desVehiculo"></div><div class="wms-field"><label>Ruta</label><input id="desRuta"></div></div>
+          <div class="wms-row three"><div class="wms-field"><label>Flete</label><input id="desFlete" type="number" step="0.01" value="0"></div><div class="wms-field"><label>Salida</label><input id="desSalida" type="date"></div><div class="wms-field"><label>Entrega</label><input id="desEntrega" type="date"></div></div>
+          <button class="wms-btn primary" type="submit">Guardar despacho</button>
+        </form>
+        <div class="wms-box"><div class="wms-toolbar"><h2>Despachos</h2></div><div id="despachosTable" class="wms-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-eventos" class="wms-panel">
+      <div class="wms-box"><div class="wms-toolbar"><h2>Bitacora WMS</h2></div><div id="eventosTable" class="wms-table-wrap"></div></div>
+    </section>
+  </main>
+  <script src="/js/logistica_wms.js?v=20260509-wms-pro"></script>
+</body>
+</html>

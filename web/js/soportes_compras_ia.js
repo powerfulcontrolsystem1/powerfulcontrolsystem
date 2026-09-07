@@ -1,0 +1,653 @@
+(function () {
+  "use strict";
+
+  var state = {
+    empresaId: resolveEmpresaId(),
+    dashboard: {},
+    soportes: [],
+    proveedores: [],
+    selected: null,
+    filters: { estado: "", registro: "activo", tipo: "", search: "" },
+    loading: false,
+    activeAction: "",
+    activeController: null,
+    dialogResolve: null,
+    dialogLastFocus: null
+  };
+
+  var labels = {
+    radicado: "Radicado",
+    extraido: "Extraido",
+    en_revision: "En revision",
+    aprobado: "Aprobado",
+    contabilizado: "Contabilizado",
+    rechazado: "Rechazado",
+    duplicado: "Duplicado",
+    activo: "Activo",
+    eliminado: "Eliminado",
+    purga_pendiente: "Depuracion pendiente",
+    purgado: "Depurado",
+    gasto: "Gasto",
+    compra: "Compra",
+    documento_soporte: "Documento soporte",
+    servicio: "Servicio",
+    recibo: "Recibo",
+    factura_compra: "Factura de compra",
+    cuenta_cobro: "Cuenta de cobro",
+    recibo_caja: "Recibo de caja",
+    otro: "Otro"
+  };
+  var moneyFmt = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+
+  function el(id) { return document.getElementById(id); }
+  function val(id) { return (el(id) && el(id).value || "").trim(); }
+  function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]; }); }
+  function label(v) { return labels[String(v || "").toLowerCase()] || String(v || "-").replace(/_/g, " "); }
+  function money(v) { try { return moneyFmt.format(Number(v) || 0); } catch (_) { return "$" + (Number(v) || 0).toFixed(0); } }
+  function pct(v) { return Math.round((Number(v) || 0) * 100) + "%"; }
+
+  function resolveEmpresaId() {
+    try {
+      if (window.__resolveEmpresaIdContext) return String(window.__resolveEmpresaIdContext() || "");
+    } catch (_) {}
+    var sources = [location.search];
+    try { if (window.parent && window.parent !== window) sources.push(window.parent.location.search); } catch (_) {}
+    for (var i = 0; i < sources.length; i += 1) {
+      var params = new URLSearchParams(sources[i] || "");
+      var id = params.get("empresa_id") || params.get("id");
+      if (id) return id;
+    }
+    try { return sessionStorage.getItem("empresa_id") || localStorage.getItem("empresa_id") || ""; } catch (_) { return ""; }
+  }
+
+  function msg(text, isError) {
+    var target = el("captureMsg");
+    if (!target) return;
+    target.textContent = text || "";
+    target.classList.toggle("is-error", !!isError);
+  }
+
+  function closeActionDialog(result) {
+    var dialog = el("captureActionDialog");
+    if (dialog && dialog.open) dialog.close();
+    var resolve = state.dialogResolve;
+    state.dialogResolve = null;
+    if (state.dialogLastFocus && typeof state.dialogLastFocus.focus === "function") state.dialogLastFocus.focus();
+    state.dialogLastFocus = null;
+    if (resolve) resolve(result || null);
+  }
+
+  function requestActionInput(action) {
+    if (action === "extraer_ia") return Promise.resolve({ motivo: "", retentionDays: 0, confirmation: "" });
+    if (state.dialogResolve) return Promise.resolve(null);
+    var selectedCode = String(state.selected && state.selected.codigo || "").trim();
+    var configs = {
+      aprobar: { title: "Aprobar soporte", message: "Confirma que revisaste proveedor, documento, impuestos y total.", submit: "Aprobar" },
+      rechazar: { title: "Rechazar soporte", message: "La acción quedará registrada y no generará una cuenta por pagar.", submit: "Rechazar", danger: true },
+      contabilizar: { title: "Contabilizar soporte", message: "Se creará la cuenta por pagar con los datos aprobados. Esta acción no registra ningún pago.", submit: "Crear cuenta por pagar" },
+      eliminar: { title: "Enviar a papelera", message: "El archivo y la auditoría se conservarán y el soporte podrá recuperarse.", submit: "Enviar a papelera", motive: "Motivo obligatorio para enviar el soporte a la papelera", danger: true },
+      restaurar: { title: "Recuperar soporte", message: "El soporte volverá a la bandeja activa con toda su auditoría.", submit: "Recuperar", motive: "Motivo obligatorio para recuperar el soporte" },
+      purgar: { title: "Depurar archivo privado", message: "Esta acción elimina definitivamente el archivo privado y no se puede deshacer. La fila y la auditoría se conservarán.", submit: "Depurar definitivamente", motive: "Motivo obligatorio para depurar el archivo", confirmation: selectedCode, danger: true }
+    };
+    var config = configs[action];
+    if (!config) return Promise.resolve(null);
+    var dialog = el("captureActionDialog");
+    if (!dialog || typeof dialog.showModal !== "function") {
+      msg("El diálogo de confirmación no está disponible en este navegador.", true);
+      return Promise.resolve(null);
+    }
+    state.dialogLastFocus = document.activeElement;
+    dialog.dataset.action = action;
+    dialog.dataset.confirmation = config.confirmation || "";
+    el("captureActionTitle").textContent = config.title;
+    el("captureActionMessage").textContent = config.message;
+    el("captureActionSubmit").textContent = config.submit;
+    el("captureActionSubmit").classList.toggle("primary", !config.danger);
+    el("captureActionSubmit").classList.toggle("danger", !!config.danger);
+    el("captureActionMotivoField").hidden = !config.motive;
+    el("captureActionMotivoField").querySelector("label").textContent = config.motive || "Motivo obligatorio";
+    el("captureActionMotivo").value = "";
+    el("captureActionConfirmacionField").hidden = !config.confirmation;
+    el("captureActionConfirmacionLabel").textContent = config.confirmation ? "Escribe " + config.confirmation + " para confirmar" : "Código de confirmación";
+    el("captureActionConfirmacion").value = "";
+    el("captureActionError").textContent = "";
+    dialog.showModal();
+    setTimeout(function () {
+      var target = config.motive ? el("captureActionMotivo") : (config.confirmation ? el("captureActionConfirmacion") : el("captureActionSubmit"));
+      if (target) target.focus();
+    }, 0);
+    return new Promise(function (resolve) { state.dialogResolve = resolve; });
+  }
+
+  var actionStates = {
+    extraer_ia: ["radicado", "extraido", "en_revision"],
+    aprobar: ["radicado", "extraido", "en_revision"],
+    rechazar: ["radicado", "extraido", "en_revision", "aprobado"],
+    contabilizar: ["aprobado"]
+  };
+
+  function selectedState() {
+    return String(state.selected && state.selected.estado_soporte || "").toLowerCase();
+  }
+
+  function actionAllowed(action) {
+    if (!state.selected) return false;
+    var registro = String(state.selected.estado || "activo").toLowerCase();
+    if (action === "restaurar") return registro === "eliminado";
+    if (action === "purgar") return (registro === "eliminado" || registro === "purga_pendiente") && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
+    if (action === "eliminar") return registro === "activo" && selectedState() !== "contabilizado" && Number(state.selected.convertido_id || 0) <= 0;
+    return registro === "activo" && (actionStates[action] || []).indexOf(selectedState()) >= 0;
+  }
+
+  function syncActionControls() {
+    var actions = {
+      btnExtraer: "extraer_ia",
+      btnAprobar: "aprobar",
+      btnRechazar: "rechazar",
+      btnContabilizar: "contabilizar",
+      btnEliminar: "eliminar",
+      btnRestaurar: "restaurar",
+      btnPurgar: "purgar"
+    };
+    Object.keys(actions).forEach(function (id) {
+      var button = el(id);
+      if (!button) return;
+      var allowed = actionAllowed(actions[id]);
+      button.disabled = state.loading || !allowed;
+      button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
+      button.title = !state.selected ? "Selecciona un soporte primero." : (!allowed ? "Accion no disponible para el estado " + label(selectedState()) + "." : "");
+    });
+    var saveButton = el("btnGuardarRevision");
+    if (saveButton) {
+      var editable = !!state.selected && String(state.selected.estado || "activo").toLowerCase() === "activo" && ["radicado", "extraido", "en_revision", "aprobado"].indexOf(selectedState()) >= 0;
+      saveButton.disabled = state.loading || !editable;
+      saveButton.setAttribute("aria-disabled", saveButton.disabled ? "true" : "false");
+      saveButton.title = editable ? "" : "Solo puedes editar un soporte activo pendiente de contabilizar.";
+    }
+    var cancelButton = el("btnCancelarIA");
+    if (cancelButton) {
+      var cancellable = state.loading && state.activeAction === "extraer_ia" && !!state.activeController;
+      cancelButton.disabled = !cancellable;
+      cancelButton.setAttribute("aria-disabled", cancelButton.disabled ? "true" : "false");
+      cancelButton.title = cancellable ? "Cancelar la solicitud IA en curso." : "No hay una extraccion IA en curso.";
+    }
+  }
+
+  function setBusy(on, text) {
+    state.loading = !!on;
+    document.querySelectorAll(".capture-btn").forEach(function (btn) { btn.disabled = !!on; });
+    syncActionControls();
+    if (text) msg(text);
+  }
+
+  function api(action, options, extra) {
+    if (!state.empresaId) return Promise.reject(new Error("empresa_id no disponible"));
+    var url = "/api/empresa/soportes_compras_ia?empresa_id=" + encodeURIComponent(state.empresaId) + "&action=" + encodeURIComponent(action) + (extra || "");
+    var requestOptions = Object.assign({ credentials: "same-origin" }, options || {});
+    if (!(requestOptions.body instanceof FormData)) {
+      requestOptions.headers = Object.assign({ "Content-Type": "application/json" }, requestOptions.headers || {});
+    }
+    return fetch(url, requestOptions).then(function (res) {
+      return res.text().then(function (txt) {
+        var data = {};
+        try { data = txt ? JSON.parse(txt) : {}; } catch (_) { data = { raw: txt }; }
+        if (!res.ok || data.ok === false) throw new Error(data.error || data.raw || txt || res.statusText);
+        return data;
+      });
+    });
+  }
+
+  function chip(value, extra) {
+    return '<span class="capture-chip ' + (extra || estadoClass(value)) + '">' + esc(label(value)) + "</span>";
+  }
+
+  function estadoClass(value) {
+    var v = String(value || "").toLowerCase();
+    if (v === "aprobado" || v === "contabilizado") return "capture-good";
+    if (v === "rechazado" || v === "duplicado") return "capture-bad";
+    return "capture-warn";
+  }
+
+  function progress(value) {
+    var n = Math.max(0, Math.min(100, Math.round((Number(value) || 0) * 100)));
+    return '<div class="capture-progress"><span style="width:' + n + '%"></span></div><span class="capture-muted">' + n + "%</span>";
+  }
+
+  function rowList() {
+    var q = state.filters.search.toLowerCase();
+    return state.soportes.filter(function (s) {
+      if (state.filters.estado && s.estado_soporte !== state.filters.estado) return false;
+      if (state.filters.tipo && s.tipo_soporte !== state.filters.tipo) return false;
+      if (!q) return true;
+      return [s.codigo, s.proveedor_nombre, s.proveedor_nit, s.documento_numero, s.documento_tipo, s.archivo_nombre].join(" ").toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
+  function fillKpis(d) {
+    el("kpiPendientes").textContent = d.pendientes || 0;
+    el("kpiRevision").textContent = d.en_revision || 0;
+    el("kpiAprobados").textContent = d.aprobados || 0;
+    el("kpiContabilizados").textContent = d.contabilizados || 0;
+    el("kpiDuplicados").textContent = d.duplicados || 0;
+    el("kpiTotalPendiente").textContent = money(d.total_pendiente || 0);
+    el("kpiTotalAprobado").textContent = money(d.total_aprobado || 0);
+    el("kpiConfianza").textContent = pct(d.confianza_promedio || 0);
+  }
+
+  function renderPipeline() {
+    var d = state.dashboard || {};
+    var stages = [
+      ["pendientes", "Pendientes", "Radicados o extraidos sin aprobar"],
+      ["en_revision", "Revision", "Datos por validar manualmente"],
+      ["aprobados", "Aprobados", "Listos para contabilizar"],
+      ["contabilizados", "Contabilizados", "Convertidos en CXP"],
+      ["duplicados", "Duplicados", "Bloqueados por control"],
+      ["rechazados", "Rechazados", "Descartados por usuario"]
+    ];
+    el("capturePipeline").innerHTML = stages.map(function (s) {
+      return '<article class="capture-stage"><span>' + esc(s[1]) + '</span><strong>' + (d[s[0]] || 0) + '</strong><small>' + esc(s[2]) + '</small></article>';
+    }).join("");
+  }
+
+  function renderAlerts() {
+    var alerts = (state.dashboard.alertas || []).slice();
+    if (!alerts.length) alerts.push("Bandeja sin alertas criticas.");
+    el("captureAlerts").innerHTML = alerts.map(function (a) {
+      var danger = /duplicad|vencid|menor|requieren/i.test(a) ? " is-danger" : "";
+      return '<article class="capture-alert' + danger + '"><strong>' + esc(a) + '</strong><p>Revisa el soporte, el documento, proveedor, impuestos y aprobacion antes de contabilizar.</p></article>';
+    }).join("");
+  }
+
+  function tableHtml(rows) {
+    if (!rows.length) return '<div class="capture-empty">No hay soportes para los filtros seleccionados.</div>';
+    return '<table class="capture-table"><thead><tr><th>Codigo</th><th>Estado</th><th>Proveedor</th><th>Documento</th><th>Fecha</th><th>Total</th><th>Confianza</th><th>Control</th><th>Archivo</th></tr></thead><tbody>' +
+      rows.map(function (s) {
+        var selected = state.selected && String(state.selected.id) === String(s.id);
+        var archivo = String(s.estado || "activo").toLowerCase() === "activo" ? safeHref(s.archivo_url) : "";
+        var control = s.duplicado_soporte_id ? "Duplicado #" + s.duplicado_soporte_id : (s.requiere_revision_humana ? "Revision humana" : "OK");
+        var recordState = String(s.estado || "activo").toLowerCase();
+        var recordChip = recordState === "eliminado" ? '<br>' + chip("eliminado", "capture-bad") : (recordState === "purga_pendiente" ? '<br>' + chip("purga_pendiente", "capture-warn") : (recordState === "purgado" ? '<br>' + chip("purgado", "capture-bad") : ""));
+        return '<tr data-id="' + esc(s.id) + '" class="' + (selected ? "is-selected" : "") + '"><td><strong>' + esc(s.codigo || "-") + '</strong><br><span class="capture-muted">' + esc(label(s.tipo_soporte)) + '</span></td><td>' + chip(s.estado_soporte) + recordChip + '</td><td>' + esc(s.proveedor_nombre || "Sin proveedor") + '<br><span class="capture-muted">' + esc(s.proveedor_nit || "-") + '</span></td><td>' + esc(label(s.documento_tipo)) + '<br><span class="capture-muted">' + esc(s.documento_numero || "-") + '</span></td><td>' + esc(s.fecha_documento || "-") + '<br><span class="capture-muted">Vence ' + esc(s.fecha_vencimiento || "-") + '</span></td><td class="num"><strong>' + money(s.total || 0) + '</strong></td><td>' + progress(s.confianza_ia || 0) + '</td><td>' + esc(control) + '</td><td>' + (archivo ? '<a href="' + esc(archivo) + '" target="_blank" rel="noopener">Ver</a>' : '<span class="capture-muted">No disponible</span>') + '</td></tr>';
+      }).join("") + '</tbody></table>';
+  }
+
+  function renderTables() {
+    var rows = rowList();
+    el("captureTable").innerHTML = tableHtml(rows);
+    el("captureRecentTable").innerHTML = tableHtml((state.dashboard.soportes_recientes || []).slice(0, 8));
+  }
+
+  function renderDetail() {
+    var s = state.selected;
+    if (!s) {
+      el("captureDetail").innerHTML = '<div class="capture-empty">Selecciona un soporte en la bandeja para revisar datos extraidos, totales y controles.</div>';
+      el("captureEvents").innerHTML = '<div class="capture-empty">Sin soporte seleccionado.</div>';
+      syncActionControls();
+      return;
+    }
+    var fields = [
+      ["Codigo", s.codigo],
+      ["Estado", label(s.estado_soporte)],
+      ["Registro", label(s.estado || "activo")],
+      ["Tipo", label(s.tipo_soporte)],
+      ["Proveedor", s.proveedor_nombre],
+      ["NIT", s.proveedor_nit],
+      ["Documento", [label(s.documento_tipo), s.documento_numero].filter(Boolean).join(" ")],
+      ["Fecha", s.fecha_documento],
+      ["Vencimiento", s.fecha_vencimiento],
+      ["Subtotal", money(s.subtotal || 0)],
+      ["IVA", money(s.impuesto_iva || 0)],
+      ["Retenciones", money((Number(s.retencion_fuente) || 0) + (Number(s.retencion_ica) || 0) + (Number(s.retencion_iva) || 0))],
+      ["Total", money(s.total || 0)],
+      ["Categoria", s.categoria_contable],
+      ["Centro costo", s.centro_costo],
+      ["Inventario", s.impacta_inventario ? "Si impacta" : "No impacta"],
+      ["Confianza", pct(s.confianza_ia || 0)],
+      ["Modelo IA", s.modelo_ia],
+      ["Aprobado por", s.aprobado_por],
+      ["Observaciones", s.observaciones]
+    ];
+    el("captureDetail").innerHTML = fields.map(function (f) {
+      return '<div class="capture-detail-item"><span>' + esc(f[0]) + '</span><strong>' + esc(f[1] || "-") + '</strong></div>';
+    }).join("");
+    fillRevisionForm(s);
+    syncActionControls();
+  }
+
+  function setValue(id, value) { if (el(id)) el(id).value = value == null ? "" : value; }
+  function numberValue(id) { return Number(val(id)) || 0; }
+
+  function fillRevisionForm(s) {
+    if (!s) return;
+    setValue("editSoporteId", s.id);
+    setValue("editProveedorNombre", s.proveedor_nombre);
+    setValue("editProveedorNit", s.proveedor_nit);
+    setValue("editTipoSoporte", s.tipo_soporte || "gasto");
+    setValue("editDocumentoTipo", s.documento_tipo || "factura_compra");
+    setValue("editDocumentoNumero", s.documento_numero);
+    setValue("editFechaDocumento", s.fecha_documento);
+    setValue("editFechaVencimiento", s.fecha_vencimiento);
+    setValue("editMoneda", s.moneda || "COP");
+    setValue("editSubtotal", s.subtotal || 0);
+    setValue("editIVA", s.impuesto_iva || 0);
+    setValue("editTotal", s.total || 0);
+    setValue("editReteFuente", s.retencion_fuente || 0);
+    setValue("editReteICA", s.retencion_ica || 0);
+    setValue("editReteIVA", s.retencion_iva || 0);
+    setValue("editCategoria", s.categoria_contable);
+    setValue("editCentroCosto", s.centro_costo);
+    setValue("editObservaciones", s.observaciones);
+    if (el("editImpactaInventario")) el("editImpactaInventario").checked = !!s.impacta_inventario;
+    if (el("editProveedor")) el("editProveedor").value = s.proveedor_id ? String(s.proveedor_id) : "";
+  }
+
+  function renderProveedorOptions() {
+    var select = el("editProveedor");
+    if (!select) return;
+    var selected = state.selected && state.selected.proveedor_id ? String(state.selected.proveedor_id) : select.value;
+    select.innerHTML = '<option value="">Selecciona antes de contabilizar</option>' + state.proveedores.map(function (p) {
+      var name = p.nombre || p.nombre_comercial || p.razon_social || "Proveedor";
+      return '<option value="' + esc(p.id) + '">' + esc(name + (p.documento || p.nit ? " · " + (p.documento || p.nit) : "")) + '</option>';
+    }).join("");
+    select.value = selected || "";
+  }
+
+  function loadProveedores() {
+    if (!state.empresaId) return Promise.resolve();
+    return fetch("/api/empresa/proveedores?empresa_id=" + encodeURIComponent(state.empresaId), { credentials: "same-origin" }).then(function (res) {
+      if (!res.ok) throw new Error("No se pudo cargar el catalogo de proveedores.");
+      return res.json();
+    }).then(function (rows) {
+      state.proveedores = Array.isArray(rows) ? rows.filter(function (p) { return String(p.estado || "activo").toLowerCase() === "activo"; }) : [];
+      renderProveedorOptions();
+    }).catch(function () {
+      state.proveedores = [];
+      renderProveedorOptions();
+    });
+  }
+
+  function renderEvents(events) {
+    events = events || [];
+    el("captureEvents").innerHTML = events.length ? events.map(function (e) {
+      return '<div class="capture-detail-item"><span>' + esc(label(e.evento)) + '</span><strong>' + esc([label(e.estado_anterior), label(e.estado_nuevo)].filter(Boolean).join(" -> ") || "-") + '<br><span class="capture-muted">' + esc(e.fecha_creacion || "") + " - " + esc(e.usuario_creador || e.usuario || "-") + '</span></strong></div>';
+    }).join("") : '<div class="capture-empty">Sin eventos registrados para este soporte.</div>';
+  }
+
+  function renderChecklist() {
+    var d = state.dashboard || {};
+    var items = [
+      ["Empresa activa", state.empresaId ? "Contexto #" + state.empresaId : "Falta seleccionar empresa"],
+      ["IA recomendada", d.modelo_recomendado || "openai:gpt-5.5"],
+      ["Revision humana", (d.requieren_revision || 0) + " soporte(s)"],
+      ["Inventario pendiente", (d.inventario_pendiente || 0) + " soporte(s)"],
+      ["Vencidos / por vencer", (d.vencidos || 0) + " / " + (d.por_vencer || 0)]
+    ];
+    el("captureChecklist").innerHTML = items.map(function (i) {
+      return '<div class="capture-detail-item"><span>' + esc(i[0]) + '</span><strong>' + esc(i[1]) + '</strong></div>';
+    }).join("");
+  }
+
+  function renderAll() {
+    fillKpis(state.dashboard || {});
+    renderPipeline();
+    renderAlerts();
+    renderTables();
+    renderDetail();
+    renderChecklist();
+  }
+
+  function selectSoporte(id) {
+    state.selected = state.soportes.find(function (s) { return String(s.id) === String(id); }) || null;
+    renderTables();
+    renderDetail();
+    if (!state.selected) {
+      renderEvents([]);
+      return Promise.resolve();
+    }
+    return api("eventos", null, "&soporte_id=" + encodeURIComponent(state.selected.id)).then(function (data) {
+      renderEvents(data.eventos || []);
+    }).catch(function (e) {
+      el("captureEvents").innerHTML = '<div class="capture-empty">' + esc(e.message) + '</div>';
+    });
+  }
+
+  function load() {
+    setBusy(true, "Cargando captura inteligente...");
+    return Promise.all([
+      api("dashboard"),
+      api("soportes", null, (state.filters.estado ? "&estado=" + encodeURIComponent(state.filters.estado) : "") + "&registro=" + encodeURIComponent(state.filters.registro)),
+      loadProveedores()
+    ]).then(function (res) {
+      state.dashboard = res[0].dashboard || {};
+      state.soportes = res[1].soportes || [];
+      if (state.selected) {
+        var current = state.soportes.find(function (s) { return String(s.id) === String(state.selected.id); });
+        state.selected = current || null;
+      }
+      if (!state.selected && state.soportes.length) state.selected = state.soportes[0];
+      renderAll();
+      if (state.selected) {
+        return selectSoporte(state.selected.id).then(function () {
+          msg("Captura inteligente actualizada.");
+        });
+      }
+      msg("Captura inteligente actualizada.");
+    }).catch(function (e) {
+      msg(e.message, true);
+    }).finally(function () {
+      setBusy(false);
+    });
+  }
+
+  function submitForm(ev) {
+    ev.preventDefault();
+    setBusy(true, "Radicando soporte...");
+    api("radicar", { method: "POST", body: new FormData(el("formSoporte")) }).then(function () {
+      el("formSoporte").reset();
+      msg("Soporte radicado correctamente.");
+      document.querySelector('[data-tab="bandeja"]').click();
+      return load();
+    }).catch(function (e) {
+      msg(e.message, true);
+    }).finally(function () {
+      setBusy(false);
+    });
+  }
+
+  function actionSelected(action, text) {
+    if (state.loading) return;
+    if (!state.selected) {
+      msg("Selecciona un soporte primero.", true);
+      return;
+    }
+    if (!actionAllowed(action)) {
+      msg("Accion no disponible para el estado " + label(selectedState()) + ".", true);
+      syncActionControls();
+      return;
+    }
+    requestActionInput(action).then(function (input) {
+      if (!input) return;
+      var controller = action === "extraer_ia" && typeof AbortController !== "undefined" ? new AbortController() : null;
+      state.activeAction = action;
+      state.activeController = controller;
+      setBusy(true, text);
+      var options = { method: "POST", body: JSON.stringify({ soporte_id: state.selected.id, observaciones: input.motivo, retencion_dias: input.retentionDays, confirmacion: input.confirmation }) };
+      if (controller) options.signal = controller.signal;
+      return api(action, options).then(function () {
+        if (state.activeController === controller) {
+          state.activeController = null;
+          state.activeAction = "";
+        }
+        msg("Accion completada.");
+        return load();
+      }).catch(function (e) {
+        if (e && e.name === "AbortError") msg("Extraccion IA cancelada. El soporte conserva su estado anterior.");
+        else msg(e.message, true);
+      }).finally(function () {
+        if (state.activeController === controller) {
+          state.activeController = null;
+          state.activeAction = "";
+        }
+        setBusy(false);
+      });
+    });
+  }
+
+  function saveRevision(ev) {
+    ev.preventDefault();
+    if (!state.selected) {
+      msg("Selecciona un soporte primero.", true);
+      return;
+    }
+    if (String(state.selected.estado || "activo").toLowerCase() !== "activo") {
+      msg("Recupera el soporte antes de editar sus datos.", true);
+      return;
+    }
+    var proveedorId = Number(val("editProveedor")) || 0;
+    setBusy(true, "Guardando revision humana...");
+    api("editar_revision", { method: "POST", body: JSON.stringify({
+      soporte_id: Number(val("editSoporteId")) || state.selected.id,
+      proveedor_id: proveedorId,
+      proveedor_nombre: val("editProveedorNombre"), proveedor_nit: val("editProveedorNit"),
+      tipo_soporte: val("editTipoSoporte"), documento_tipo: val("editDocumentoTipo"), documento_numero: val("editDocumentoNumero"),
+      fecha_documento: val("editFechaDocumento"), fecha_vencimiento: val("editFechaVencimiento"), moneda: val("editMoneda"),
+      subtotal: numberValue("editSubtotal"), impuesto_iva: numberValue("editIVA"), total: numberValue("editTotal"),
+      retencion_fuente: numberValue("editReteFuente"), retencion_ica: numberValue("editReteICA"), retencion_iva: numberValue("editReteIVA"),
+      categoria_contable: val("editCategoria"), centro_costo: val("editCentroCosto"),
+      impacta_inventario: !!(el("editImpactaInventario") && el("editImpactaInventario").checked), observaciones: val("editObservaciones")
+    }) }).then(function () {
+      msg("Revision guardada. Aprueba nuevamente antes de contabilizar.");
+      return load();
+    }).catch(function (e) {
+      msg(e.message, true);
+    }).finally(function () { setBusy(false); });
+  }
+
+  function retentionPreview() {
+    var days = Math.max(1, Math.min(3650, Math.trunc(Number(val("retencionDias")) || 90)));
+    setValue("retencionDias", days);
+    setBusy(true, "Calculando retencion de papelera...");
+    api("retencion_preview", null, "&retencion_dias=" + encodeURIComponent(days)).then(function (data) {
+      var bytes = Number(data.bytes || 0);
+      var size = bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + " MB" : (bytes / 1024).toFixed(2) + " KB";
+      el("retencionPreviewMsg").textContent = (data.candidatos || 0) + " soporte(s) superan " + days + " dias; espacio privado: " + size + ". Vista previa sin borrado.";
+      msg("Vista previa de retencion actualizada.");
+    }).catch(function (e) {
+      el("retencionPreviewMsg").textContent = "No se pudo calcular la retencion.";
+      msg(e.message, true);
+    }).finally(function () { setBusy(false); });
+  }
+
+  function quarantinePreview() {
+    setBusy(true, "Inspeccionando cuarentena privada...");
+    api("cuarentena_preview").then(function (data) {
+      var bytes = Number(data.bytes || 0);
+      var size = bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + " MB" : (bytes / 1024).toFixed(2) + " KB";
+      var mismatch = data.requiere_revision ? " Requiere revision: registros y archivos no coinciden." : " Registros y archivos coinciden.";
+      var stale = Number(data.pendientes_vencidos || 0);
+      el("retencionPreviewMsg").textContent = (data.registros_pendientes || 0) + " registro(s) pendiente(s), " + (data.archivos_cuarentena || 0) + " archivo(s), " + size + "; " + stale + " supera(n) " + (data.umbral_minutos || 15) + " min." + mismatch;
+      msg("Diagnostico de cuarentena actualizado.", !!data.requiere_revision || stale > 0);
+    }).catch(function (e) {
+      msg(e.message, true);
+    }).finally(function () { setBusy(false); });
+  }
+
+  function exportCSV() {
+    var rows = [["ID", "Codigo", "Estado", "Registro", "Tipo", "Proveedor", "NIT", "Documento", "Fecha", "Vencimiento", "Total", "Confianza"]].concat(rowList().map(function (s) {
+      return [s.id, s.codigo, s.estado_soporte, s.estado, s.tipo_soporte, s.proveedor_nombre, s.proveedor_nit, s.documento_numero, s.fecha_documento, s.fecha_vencimiento, s.total, s.confianza_ia];
+    }));
+    var csv = rows.map(function (row) {
+      return row.map(function (v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }).join(";");
+    }).join("\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "soportes_compras_ia.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function safeHref(raw) {
+    raw = String(raw || "").trim();
+    if (!raw) return "";
+    try {
+      var url = new URL(raw, window.location.origin);
+      if ((url.protocol === "http:" || url.protocol === "https:") && url.origin === window.location.origin) return url.href;
+      if (raw.indexOf("/") === 0 && url.origin === window.location.origin) return url.pathname + url.search + url.hash;
+    } catch (_) {}
+    return "";
+  }
+
+  document.addEventListener("click", function (ev) {
+    var tab = ev.target.closest("[data-tab]");
+    if (tab) {
+      document.querySelectorAll(".capture-tab").forEach(function (b) { b.classList.toggle("is-active", b === tab); });
+      document.querySelectorAll(".capture-panel").forEach(function (p) { p.classList.toggle("is-active", p.id === "tab-" + tab.dataset.tab); });
+      return;
+    }
+    var row = ev.target.closest("tr[data-id]");
+    if (row) {
+      selectSoporte(row.getAttribute("data-id"));
+      document.querySelector('[data-tab="detalle"]').click();
+    }
+  });
+
+  el("formSoporte").addEventListener("submit", submitForm);
+  el("formEditarSoporte").addEventListener("submit", saveRevision);
+  el("captureActionForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var action = el("captureActionDialog").dataset.action || "";
+    var motivoRequired = !el("captureActionMotivoField").hidden;
+    var motivo = el("captureActionMotivo").value.trim();
+    var expected = el("captureActionDialog").dataset.confirmation || "";
+    var confirmation = el("captureActionConfirmacion").value.trim();
+    if (motivoRequired && !motivo) {
+      el("captureActionError").textContent = "Debes registrar un motivo para mantener la auditoría.";
+      el("captureActionMotivo").focus();
+      return;
+    }
+    if (expected && confirmation !== expected) {
+      el("captureActionError").textContent = "El código de confirmación no coincide.";
+      el("captureActionConfirmacion").focus();
+      return;
+    }
+    closeActionDialog({
+      motivo: motivo,
+      retentionDays: action === "purgar" ? Math.max(1, Math.min(3650, Math.trunc(Number(val("retencionDias")) || 90))) : 0,
+      confirmation: confirmation
+    });
+  });
+  el("captureActionCancel").addEventListener("click", function () { closeActionDialog(null); });
+  el("captureActionClose").addEventListener("click", function () { closeActionDialog(null); });
+  el("captureActionDialog").addEventListener("cancel", function (ev) { ev.preventDefault(); closeActionDialog(null); });
+  el("editProveedor").addEventListener("change", function () {
+    var p = state.proveedores.find(function (item) { return String(item.id) === String(this.value); }, this);
+    if (!p) return;
+    setValue("editProveedorNombre", p.nombre || p.nombre_comercial || p.razon_social || "");
+    setValue("editProveedorNit", p.documento || p.nit || "");
+  });
+  el("btnLimpiar").addEventListener("click", function () { el("formSoporte").reset(); });
+  el("captureRefresh").addEventListener("click", load);
+  el("captureExport").addEventListener("click", exportCSV);
+  el("btnRetencionPreview").addEventListener("click", retentionPreview);
+  el("btnCuarentenaPreview").addEventListener("click", quarantinePreview);
+  el("btnExtraer").addEventListener("click", function () { actionSelected("extraer_ia", "Extrayendo datos con IA..."); });
+  el("btnCancelarIA").addEventListener("click", function () {
+    if (state.activeController && state.activeAction === "extraer_ia") state.activeController.abort();
+  });
+  el("btnAprobar").addEventListener("click", function () { actionSelected("aprobar", "Aprobando soporte..."); });
+  el("btnRechazar").addEventListener("click", function () { actionSelected("rechazar", "Rechazando soporte..."); });
+  el("btnContabilizar").addEventListener("click", function () { actionSelected("contabilizar", "Generando cuenta por pagar..."); });
+  el("btnEliminar").addEventListener("click", function () { actionSelected("eliminar", "Enviando soporte a la papelera..."); });
+  el("btnRestaurar").addEventListener("click", function () { actionSelected("restaurar", "Recuperando soporte..."); });
+  el("btnPurgar").addEventListener("click", function () { actionSelected("purgar", "Depurando archivo privado..."); });
+  el("estadoFilter").addEventListener("change", function () { state.filters.estado = this.value; load(); });
+  el("registroFilter").addEventListener("change", function () { state.filters.registro = this.value; state.selected = null; load(); });
+  el("tipoFilter").addEventListener("change", function () { state.filters.tipo = this.value; renderTables(); });
+  el("searchFilter").addEventListener("input", function () { state.filters.search = this.value || ""; renderTables(); });
+
+  load();
+})();

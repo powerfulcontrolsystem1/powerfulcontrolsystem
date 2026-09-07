@@ -1,0 +1,95 @@
+name: E2E Visual QA
+
+on:
+  schedule:
+    - cron: "30 9 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "URL base a probar"
+        required: true
+        default: "https://staging.powerfulcontrolsystem.com"
+      empresa_id:
+        description: "Empresa de prueba"
+        required: true
+        default: "7"
+      max_pages:
+        description: "Limite de paginas, 0 para todas"
+        required: true
+        default: "40"
+      route_offset:
+        description: "Desplazamiento determinista dentro del inventario de rutas"
+        required: true
+        default: "0"
+      route_batch_size:
+        description: "Rutas por lote, 0 para usar max_pages o todas"
+        required: true
+        default: "40"
+      routes:
+        description: "Rutas separadas por coma para una repeticion dirigida (opcional)"
+        required: false
+        default: ""
+      viewports:
+        description: "Viewports separados por coma"
+        required: true
+        default: "desktop,mobile"
+      max_safe_clicks:
+        description: "Maximo de acciones seguras por pagina"
+        required: true
+        default: "8"
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    name: Buttons, layout and print evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22"
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Run button and layout QA
+        env:
+          PCS_QA_BASE_URL: ${{ inputs.base_url || 'https://staging.powerfulcontrolsystem.com' }}
+          PCS_QA_EMPRESA_ID: ${{ inputs.empresa_id || '7' }}
+          PCS_QA_EMAIL: ${{ secrets.PCS_QA_EMAIL }}
+          PCS_QA_PASSWORD: ${{ secrets.PCS_QA_PASSWORD }}
+          PCS_QA_MAX_PAGES: ${{ inputs.max_pages || '40' }}
+          PCS_QA_ROUTE_OFFSET: ${{ inputs.route_offset || '0' }}
+          PCS_QA_ROUTE_BATCH_SIZE: ${{ inputs.route_batch_size || '40' }}
+          PCS_QA_ROUTES: ${{ inputs.routes || '' }}
+          PCS_QA_VIEWPORTS: ${{ inputs.viewports || 'desktop,mobile' }}
+          PCS_QA_MAX_SAFE_CLICKS_PER_PAGE: ${{ inputs.max_safe_clicks || '8' }}
+        run: node tools/qa_e2e_buttons.cjs
+
+      - name: Run role matrix audit
+        run: node tools/qa_roles_matrix.mjs --out documentos/reportes_profesionales
+
+      - name: Run print format QA
+        run: node tools/qa_print_formats.cjs
+
+      - name: Run payment matrix audit
+        run: node tools/payment_matrix_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Upload E2E evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-visual-evidence
+          path: |
+            test_runs/
+            documentos/reportes_profesionales/
+          if-no-files-found: ignore

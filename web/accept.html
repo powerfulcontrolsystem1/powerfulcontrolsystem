@@ -1,0 +1,127 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aceptar contrato</title>
+  <link rel="stylesheet" href="/estilos.css" />
+  <script src="/config.js?v=20260510-mobile-login"></script>
+</head>
+<body class="login-page">
+  <!-- Título eliminado por petición del producto -->
+  <main class="container">
+    <div class="card accept-card">
+      <h2>Antes de continuar</h2>
+      <p class="accept-help">Por favor, confirma tu aceptación del contrato para completar el registro</p>
+      <p><a id="contractLink" href="/contrato.html" target="_blank" class="accept-link">Ver contrato completo</a></p>
+
+      <div class="mt-14 mb-12">
+        <label class="remember-label inline-flex-center-gap-10">
+          <input id="acceptCheckbox" type="checkbox" /> <span>He leído y acepto el contrato</span>
+        </label>
+      </div>
+
+      <div class="accept-actions">
+        <button id="acceptBtn" class="btn" disabled>Aceptar y continuar</button>
+        <a href="/login.html" class="btn secondary">Cancelar</a>
+      </div>
+
+      <div id="acceptRecaptcha" class="accept-help" style="display:none"></div>
+
+      <p id="statusEl" class="accept-help min-h-20 mt-12"></p>
+    </div>
+  </main>
+
+  <script src="/js/recaptcha_helper.js?v=20260510-mobile-login"></script>
+  <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+
+    (function(){
+    var acceptBtn = document.getElementById('acceptBtn');
+    var checkbox = document.getElementById('acceptCheckbox');
+    var statusEl = document.getElementById('statusEl');
+    var contractLink = document.getElementById('contractLink');
+    var recaptchaManager = window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'acceptRecaptcha' }) : null;
+
+    function qs(name){
+      var params = new URLSearchParams(window.location.search);
+      return params.get(name) || '';
+    }
+    var payload = qs('payload') || '';
+
+    function updateState(){
+      acceptBtn.disabled = !checkbox.checked || !payload;
+    }
+
+  function loadContractMeta(){
+    fetch('/api/public/contrato', { credentials: 'same-origin' })
+      .then(function(resp){
+        if (!resp.ok) throw resp;
+        return resp.json();
+      })
+      .then(function(js){
+        var contract = js && js.contrato ? js.contrato : null;
+        if (!contract) return;
+        var version = Number(contract.version || 0);
+        if (contractLink && version > 0) {
+          contractLink.href = '/contrato.html?version=' + encodeURIComponent(String(version));
+        }
+      })
+      .catch(function(){});
+  }
+
+    checkbox.addEventListener('change', updateState);
+
+    acceptBtn.addEventListener('click', function(){
+      if (!checkbox.checked) {
+        alert('Debe aceptar el contrato antes de continuar.');
+        return;
+      }
+      if (!payload) {
+        alert('Falta información de sesión. Vuelva a iniciar el proceso.');
+        return;
+      }
+      acceptBtn.disabled = true;
+      statusEl.textContent = 'Procesando...';
+
+      Promise.resolve(recaptchaManager ? recaptchaManager.ensureToken() : { ok: true, token: '' }).then(function(result){
+		if (!result.ok) {
+			acceptBtn.disabled = false;
+			statusEl.textContent = result.message || 'Completa la verificación de seguridad.';
+			return null;
+		}
+		return fetch('/accept/complete', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        credentials: 'same-origin',
+		body: JSON.stringify({ payload: payload, recaptcha_token: result.token })
+		});
+	  }).then(function(resp){
+		if (!resp) return null;
+        if (!resp.ok) throw resp;
+        return resp.json();
+      }).then(function(js){
+		if (!js) return;
+        if (js && js.redirect) {
+          window.location.href = js.redirect;
+          return;
+        }
+        statusEl.textContent = 'Aceptado. Redirigiendo...';
+      }).catch(function(err){
+        acceptBtn.disabled = false;
+        statusEl.textContent = 'No se pudo completar la aceptación.';
+        if (recaptchaManager) recaptchaManager.reset();
+        console.error(err);
+      });
+    });
+
+	loadContractMeta();
+    if (recaptchaManager) recaptchaManager.init().catch(function(){});
+    updateState();
+  })();
+  </script>
+  <script src="/js/ai_chat_drawer.js"></script>
+</body>
+</html>
+

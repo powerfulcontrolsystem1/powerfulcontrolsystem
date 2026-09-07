@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Página principal</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var k = "theme";
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem(k) || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, "dark-corporate": 1, "dark-neon": 1, light: 1, "light-rose": 1, "light-gold": 1, "light-wood": 1 };
+        if (!ok[t]) t = "dark";
+        var root = document.documentElement;
+        root.setAttribute("data-theme", t);
+        root.classList.toggle("theme-light", t.indexOf("light") === 0);
+        root.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
+</head>
+<body class="super-page">
+  <div class="container">
+    <div class="page-header">
+      <h1>Configuración de tarjetas en página principal</h1>
+      <div id="ppTopMessage" class="form-help" aria-live="polite" ></div>
+      <div class="form-actions">
+        <a href="/descripcion_de_los_sistemas.html" class="btn secondary" target="_top">Ver landing descriptiva</a>
+        <button id="ppBtnReload" type="button" class="btn">Recargar</button>
+      </div>
+    </div>
+
+    <section class="card form pp-main-card">
+      <h2>Editor de tarjetas</h2>
+      <p class="form-help"><strong>Cat&aacute;logo vigente:</strong> 53 m&oacute;dulos activos y 13 plantillas empresariales. Las tarjetas de m&oacute;dulos o plantillas retirados se descartan al cargar y guardar.</p>
+      <div class="form-row">
+        <div class="form-col pp-col-small">
+          <label class="form-label" for="ppCantidad">Cantidad de tarjetas</label>
+          <input id="ppCantidad" class="form-input" type="number" min="1" max="12" value="" placeholder="Cargando..." disabled>
+          <p class="form-help">La cantidad se aplica al cambiar este campo y se guarda junto con toda la configuración.</p>
+        </div>
+        <div class="form-col pp-col-grow">
+          <label class="form-label">Acciones</label>
+          <div class="form-actions pp-inline-actions">
+            <button id="ppBtnSave" type="button" class="btn">Guardar cantidad y configuración</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="ppIndexCardSize">Tamano de tarjetas en index</label>
+          <select id="ppIndexCardSize" class="form-input pp-style-field" data-field="index_card_size"></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ppIndexTextSize">Tamano del texto en index</label>
+          <select id="ppIndexTextSize" class="form-input pp-style-field" data-field="index_text_size"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="ppLandingCardSize">Tamano de tarjetas en landing</label>
+          <select id="ppLandingCardSize" class="form-input pp-style-field" data-field="landing_card_size"></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ppLandingTextSize">Tamano del texto en landing</label>
+          <select id="ppLandingTextSize" class="form-input pp-style-field" data-field="landing_text_size"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <p class="form-help"><strong>Tipos de tarjeta:</strong> por defecto se usa "tarjeta información más foto". Si eliges "tarjeta banner", el index mostrará solamente la imagen ocupando toda la tarjeta.</p>
+          <p class="form-help"><strong>Medidas recomendadas para banner:</strong> relacion 4:3. Pequena: 640 x 480 px, mediana: 800 x 600 px, grande: 1000 x 750 px. Tambien puedes usar una imagen un poco mas pequena con la misma proporcion para evitar recortes.</p>
+        </div>
+      </div>
+      <p class="form-help">Cada tarjeta define imagen, título, descripción breve, destino de Probar Gratis y el contenido ampliado que se mostrará en la landing descriptiva. Los ajustes visuales aplican de forma global al index y a la pagina descriptiva.</p>
+      <div id="ppCardsEditor" class="pp-cards-editor"></div>
+      <!-- El tipo banner se configura por tarjeta desde el editor. -->
+      <div class="form-actions pp-bottom-actions">
+        <button id="ppBtnSaveBottom" type="button" class="btn">Guardar cambios</button>
+      </div>
+      <div id="ppMessage" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var state = {
+        images: [],
+        config: {
+          cantidad: 0,
+          tarjetas: [],
+          estilos: {
+            index_card_size: 'mediano',
+            index_text_size: 'mediano',
+            landing_card_size: 'mediano',
+            landing_text_size: 'mediano'
+          }
+        }
+      };
+
+      var topMsgEl = document.getElementById('ppTopMessage');
+      var msgEl = document.getElementById('ppMessage');
+      var cardsEditorEl = document.getElementById('ppCardsEditor');
+      var cantidadEl = document.getElementById('ppCantidad');
+      var indexCardSizeEl = document.getElementById('ppIndexCardSize');
+      var indexTextSizeEl = document.getElementById('ppIndexTextSize');
+      var landingCardSizeEl = document.getElementById('ppLandingCardSize');
+      var landingTextSizeEl = document.getElementById('ppLandingTextSize');
+      // El tipo banner se configura por tarjeta desde el editor.
+
+      function setCantidadLoading(isLoading) {
+        cantidadEl.disabled = !!isLoading;
+        if (isLoading) {
+          cantidadEl.value = '';
+          cantidadEl.placeholder = 'Cargando...';
+          return;
+        }
+        cantidadEl.placeholder = '';
+      }
+
+      function setMsg(text, type) {
+        var t = text || '';
+        [topMsgEl, msgEl].forEach(function (el) {
+          if (!el) return;
+          el.textContent = t;
+          el.classList.remove('error', 'success');
+          if (type) el.classList.add(type);
+        });
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function makeDefaultCard(index) {
+        var image = state.images[index % (state.images.length || 1)] || '/img/punto_venta.png';
+        return {
+          tipo_tarjeta: 'info_foto',
+          titulo: 'Tarjeta ' + (index + 1),
+          descripcion: 'Describe aquí la oferta principal de esta tarjeta.',
+          imagen_url: image,
+          imagen_secundaria_url: '/img/sistema punto de venta.png',
+          enlace: '/login.html',
+          youtube_url: '',
+          detalle_etiqueta: 'Solucion especializada',
+          detalle_titular: 'Explica aqui el principal valor de esta solucion.',
+          detalle_parrafo_uno: 'Describe el primer bloque de la experiencia o alcance funcional de esta tarjeta.',
+          detalle_parrafo_dos: 'Describe el segundo bloque de valor, resultados o componentes principales.',
+          detalle_puntos: [
+            'Capacidad clave 1.',
+            'Capacidad clave 2.',
+            'Capacidad clave 3.',
+            'Capacidad clave 4.'
+          ]
+        };
+      }
+
+      function defaultVisualSettings() {
+        return {
+          index_card_size: 'mediano',
+          index_text_size: 'mediano',
+          landing_card_size: 'mediano',
+          landing_text_size: 'mediano'
+        };
+      }
+
+      function normalizeVisualSize(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'small') value = 'pequeno';
+        if (value === 'medium') value = 'mediano';
+        if (value === 'large') value = 'grande';
+        if (value !== 'pequeno' && value !== 'mediano' && value !== 'grande') {
+          value = 'mediano';
+        }
+        return value;
+      }
+
+      function normalizeVisualSettings(raw) {
+        var source = raw && typeof raw === 'object' ? raw : {};
+        var defaults = defaultVisualSettings();
+        return {
+          index_card_size: normalizeVisualSize(source.index_card_size || defaults.index_card_size),
+          index_text_size: normalizeVisualSize(source.index_text_size || defaults.index_text_size),
+          landing_card_size: normalizeVisualSize(source.landing_card_size || defaults.landing_card_size),
+          landing_text_size: normalizeVisualSize(source.landing_text_size || defaults.landing_text_size)
+        };
+      }
+
+      function sizeOptionsHTML(selected) {
+        var current = normalizeVisualSize(selected);
+        var options = [
+          { value: 'pequeno', label: 'Pequeno' },
+          { value: 'mediano', label: 'Mediano' },
+          { value: 'grande', label: 'Grande' }
+        ];
+        return options.map(function (option) {
+          return '<option value="' + option.value + '"' + (option.value === current ? ' selected' : '') + '>' + option.label + '</option>';
+        }).join('');
+      }
+
+      function normalizeCardType(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'banner' || value === 'baner' || value === 'tarjeta_banner' || value === 'tarjeta_baner') {
+          return 'banner';
+        }
+        return 'info_foto';
+      }
+
+      function cardTypeOptionsHTML(selected) {
+        var current = normalizeCardType(selected);
+        var options = [
+          { value: 'info_foto', label: 'Tarjeta información más foto' },
+          { value: 'banner', label: 'Tarjeta banner' }
+        ];
+        return options.map(function (option) {
+          return '<option value="' + option.value + '"' + (option.value === current ? ' selected' : '') + '>' + option.label + '</option>';
+        }).join('');
+      }
+
+      function renderStyleControls() {
+        var styles = normalizeVisualSettings(state.config.estilos);
+        state.config.estilos = styles;
+        indexCardSizeEl.innerHTML = sizeOptionsHTML(styles.index_card_size);
+        indexTextSizeEl.innerHTML = sizeOptionsHTML(styles.index_text_size);
+        landingCardSizeEl.innerHTML = sizeOptionsHTML(styles.landing_card_size);
+        landingTextSizeEl.innerHTML = sizeOptionsHTML(styles.landing_text_size);
+      }
+
+      function normalizeCount(raw) {
+        var n = Number(raw || 0);
+        if (!Number.isFinite(n) || n < 1) n = 1;
+        if (n > 12) n = 12;
+        return Math.floor(n);
+      }
+
+      function ensureCards(count) {
+        var total = normalizeCount(count);
+        var cards = Array.isArray(state.config.tarjetas) ? state.config.tarjetas.slice() : [];
+        while (cards.length < total) {
+          cards.push(makeDefaultCard(cards.length));
+        }
+        if (cards.length > total) {
+          cards = cards.slice(0, total);
+        }
+        state.config.cantidad = total;
+        state.config.tarjetas = cards;
+      }
+
+      // Los banners usan la imagen principal de cada tarjeta.
+
+      function imageOptionsHTML(selected) {
+        var current = String(selected || '').trim();
+        var html = '<option value="">Seleccione una imagen</option>';
+        var found = false;
+        state.images.forEach(function (url) {
+          var isSelected = url === current;
+          if (isSelected) found = true;
+          html += '<option value="' + escapeHTML(url) + '"' + (isSelected ? ' selected' : '') + '>' + escapeHTML(url) + '</option>';
+        });
+        if (current && !found) {
+          html += '<option value="' + escapeHTML(current) + '" selected>' + escapeHTML(current) + ' (personalizada)</option>';
+        }
+        return html;
+      }
+
+      function renderCardsEditor() {
+        ensureCards(state.config.cantidad);
+        cantidadEl.value = state.config.cantidad;
+
+        var html = '';
+        state.config.tarjetas.forEach(function (card, idx) {
+          var image = String(card.imagen_url || '').trim();
+          var secondaryImage = String(card.imagen_secundaria_url || '').trim();
+          var cardType = normalizeCardType(card.tipo_tarjeta);
+          var title = String(card.titulo || '').trim();
+          var description = String(card.descripcion || '').trim();
+          var link = String(card.enlace || '').trim();
+          var youtubeURL = String(card.youtube_url || '').trim();
+          var detailTag = String(card.detalle_etiqueta || '').trim();
+          var detailHeadline = String(card.detalle_titular || '').trim();
+          var detailParagraphOne = String(card.detalle_parrafo_uno || '').trim();
+          var detailParagraphTwo = String(card.detalle_parrafo_dos || '').trim();
+          var detailPoints = Array.isArray(card.detalle_puntos) ? card.detalle_puntos.join('\n') : '';
+
+          html += '<article class="card pp-card-item" data-index="' + idx + '" data-card-type="' + escapeHTML(cardType) + '">';
+          html += '<h3>Tarjeta ' + (idx + 1) + '</h3>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppCardType' + idx + '">Tipo de tarjeta</label>';
+          html += '    <select id="ppCardType' + idx + '" class="form-input pp-field pp-card-type-select" data-field="tipo_tarjeta">' + cardTypeOptionsHTML(cardType) + '</select>';
+          html += '    <p class="form-help">Banner usa solo la imagen principal y la muestra a todo el tamano de la tarjeta del index.</p>';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppImage' + idx + '">Imagen principal / banner (web/img)</label>';
+          html += '    <select id="ppImage' + idx + '" class="form-input pp-image-select" data-field="imagen_url">' + imageOptionsHTML(image) + '</select>';
+          html += '    <input class="form-input pp-image-upload" data-field="imagen_url" type="file" accept="image/png,image/jpeg,image/webp,image/gif">';
+          html += '    <p class="form-help">Para tarjeta banner, usa una imagen 4:3. Recomendado: 800 x 600 px en tamano mediano.</p>';
+          html += '  </div>';
+          html += '  <div class="form-col pp-info-only">';
+          html += '    <label class="form-label" for="ppSecondaryImage' + idx + '">Imagen pequeña (derecha del logo)</label>';
+          html += '    <select id="ppSecondaryImage' + idx + '" class="form-input pp-image-select pp-field" data-field="imagen_secundaria_url">' + imageOptionsHTML(secondaryImage) + '</select>';
+          html += '    <p class="form-help">Se muestra como imagen pequeña al lado del icono principal en el index.</p>';
+          html += '  </div>';
+          html += '  <div class="form-col pp-info-only">';
+          html += '    <label class="form-label" for="ppLink' + idx + '">Destino de Probar Gratis</label>';
+          html += '    <input id="ppLink' + idx + '" class="form-input pp-field" data-field="enlace" type="text" value="' + escapeHTML(link) + '" placeholder="/login.html">';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row pp-info-only">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppYoutube' + idx + '">Video de YouTube (opcional)</label>';
+          html += '    <input id="ppYoutube' + idx + '" class="form-input pp-field" data-field="youtube_url" type="url" value="' + escapeHTML(youtubeURL) + '" placeholder="https://www.youtube.com/watch?v=...">';
+          html += '    <p class="form-help">Pega un enlace de YouTube o youtu.be. La landing pública mostrará el video embebido en la tarjeta seleccionada.</p>';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row pp-info-only">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppTitle' + idx + '">Titulo</label>';
+          html += '    <input id="ppTitle' + idx + '" class="form-input pp-field" data-field="titulo" type="text" value="' + escapeHTML(title) + '" maxlength="120">';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col pp-info-only">';
+          html += '    <label class="form-label" for="ppDesc' + idx + '">Descripcion</label>';
+          html += '    <textarea id="ppDesc' + idx + '" class="form-textarea pp-field" data-field="descripcion" maxlength="360">' + escapeHTML(description) + '</textarea>';
+          html += '  </div>';
+          html += '  <div class="form-col pp-preview-col">';
+          html += '    <label class="form-label">Vista rapida</label>';
+          html += '    <div class="pp-image-preview-wrap">';
+          html += '      <img class="pp-image-preview" src="' + escapeHTML(image || '/img/punto_venta.png') + '" alt="Vista previa tarjeta ' + (idx + 1) + '">';
+          html += '    </div>';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row pp-info-only">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailTag' + idx + '">Etiqueta en landing</label>';
+          html += '    <input id="ppDetailTag' + idx + '" class="form-input pp-field" data-field="detalle_etiqueta" type="text" value="' + escapeHTML(detailTag) + '" maxlength="80">';
+          html += '  </div>';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailHeadline' + idx + '">Titular ampliado</label>';
+          html += '    <input id="ppDetailHeadline' + idx + '" class="form-input pp-field" data-field="detalle_titular" type="text" value="' + escapeHTML(detailHeadline) + '" maxlength="180">';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row pp-info-only">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailParagraphOne' + idx + '">Parrafo 1 de landing</label>';
+          html += '    <textarea id="ppDetailParagraphOne' + idx + '" class="form-textarea pp-field" data-field="detalle_parrafo_uno" maxlength="900">' + escapeHTML(detailParagraphOne) + '</textarea>';
+          html += '  </div>';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailParagraphTwo' + idx + '">Parrafo 2 de landing</label>';
+          html += '    <textarea id="ppDetailParagraphTwo' + idx + '" class="form-textarea pp-field" data-field="detalle_parrafo_dos" maxlength="900">' + escapeHTML(detailParagraphTwo) + '</textarea>';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row pp-info-only">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailPoints' + idx + '">Capacidades clave (una por linea)</label>';
+          html += '    <textarea id="ppDetailPoints' + idx + '" class="form-textarea pp-field" data-field="detalle_puntos" maxlength="1200">' + escapeHTML(detailPoints) + '</textarea>';
+          html += '  </div>';
+          html += '</div>';
+          html += '</article>';
+        });
+
+        cardsEditorEl.innerHTML = html;
+      }
+
+      function syncCardCountAndRender() {
+        ensureCards(cantidadEl.value);
+        renderCardsEditor();
+      }
+
+      function getCardIndexFromElement(el) {
+        var parent = el.closest('.pp-card-item');
+        if (!parent) return -1;
+        var idx = Number(parent.getAttribute('data-index') || -1);
+        if (!Number.isFinite(idx)) return -1;
+        return idx;
+      }
+
+      cardsEditorEl.addEventListener('input', function (event) {
+        var target = event.target;
+        if (!target.classList.contains('pp-field')) return;
+        var idx = getCardIndexFromElement(target);
+        if (idx < 0 || idx >= state.config.tarjetas.length) return;
+        var field = target.getAttribute('data-field');
+        if (!field) return;
+      if (field === 'detalle_puntos') {
+        state.config.tarjetas[idx][field] = String(target.value || '').split(/\r?\n/).map(function (item) {
+          return String(item || '').trim();
+        }).filter(Boolean);
+        return;
+      }
+        state.config.tarjetas[idx][field] = target.value;
+      });
+
+      cardsEditorEl.addEventListener('change', function (event) {
+        var target = event.target;
+        if (target.classList.contains('pp-image-upload')) {
+          uploadImageForCard(target);
+          return;
+        }
+        if (target.classList.contains('pp-field') && !target.classList.contains('pp-image-select')) {
+          var fieldIdx = getCardIndexFromElement(target);
+          if (fieldIdx < 0 || fieldIdx >= state.config.tarjetas.length) return;
+          var fieldName = target.getAttribute('data-field');
+          if (!fieldName) return;
+          state.config.tarjetas[fieldIdx][fieldName] = fieldName === 'tipo_tarjeta'
+            ? normalizeCardType(target.value)
+            : target.value;
+          if (fieldName === 'tipo_tarjeta') {
+            renderCardsEditor();
+          }
+          return;
+        }
+        if (!target.classList.contains('pp-image-select')) return;
+        var idx = getCardIndexFromElement(target);
+        if (idx < 0 || idx >= state.config.tarjetas.length) return;
+        var field = target.getAttribute('data-field') || 'imagen_url';
+        state.config.tarjetas[idx][field] = target.value;
+        var cardEl = target.closest('.pp-card-item');
+        if (!cardEl) return;
+        if (field === 'imagen_url') {
+          var previewEl = cardEl.querySelector('.pp-image-preview');
+          if (previewEl) {
+            previewEl.src = target.value || '/img/punto_venta.png';
+          }
+        }
+      });
+
+      async function uploadImageForCard(inputEl) {
+        var idx = getCardIndexFromElement(inputEl);
+        if (idx < 0 || idx >= state.config.tarjetas.length) return;
+        var file = inputEl.files && inputEl.files[0] ? inputEl.files[0] : null;
+        if (!file) return;
+        var form = new FormData();
+        form.append('imagen', file);
+        setMsg('Subiendo imagen...', '');
+        try {
+          var data = await requestJSON('/super/api/pagina_principal?action=upload_image', {
+            method: 'POST',
+            body: form
+          });
+          var url = String((data && data.url) || '').trim();
+          if (!url) throw new Error('El servidor no devolvio URL de imagen.');
+          if (state.images.indexOf(url) < 0) {
+            state.images.push(url);
+            state.images.sort();
+          }
+          state.config.tarjetas[idx].imagen_url = url;
+          renderCardsEditor();
+          setMsg('Imagen cargada y asignada a la tarjeta ' + (idx + 1) + '.', 'success');
+        } catch (err) {
+          setMsg('No se pudo subir la imagen: ' + (err && err.message ? err.message : String(err)), 'error');
+        }
+      }
+
+      async function requestJSON(url, options) {
+        var resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        var text = await resp.text();
+        var data = {};
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            data = { raw: text };
+          }
+        }
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        return data;
+      }
+
+      async function loadImages() {
+        var data = await requestJSON('/super/api/pagina_principal?action=imagenes');
+        var images = Array.isArray(data.imagenes) ? data.imagenes : [];
+        state.images = images;
+      }
+
+      async function loadConfig() {
+        var data = await requestJSON('/super/api/pagina_principal?action=config');
+        var cfg = data && data.config ? data.config : {};
+        state.config.tarjetas = Array.isArray(cfg.tarjetas) ? cfg.tarjetas : [];
+        var persistedCount = normalizeCount(cfg.cantidad || 0);
+        if (state.config.tarjetas.length > persistedCount) {
+          persistedCount = normalizeCount(state.config.tarjetas.length);
+        }
+        state.config.cantidad = persistedCount;
+        state.config.estilos = normalizeVisualSettings(cfg.estilos);
+        ensureCards(state.config.cantidad);
+      }
+
+      function buildPayloadFromState() {
+        ensureCards(cantidadEl.value);
+        return {
+          cantidad: state.config.cantidad,
+          estilos: normalizeVisualSettings(state.config.estilos),
+          tarjetas: state.config.tarjetas.map(function (card) {
+            return {
+              tipo_tarjeta: normalizeCardType(card.tipo_tarjeta),
+              titulo: String(card.titulo || '').trim(),
+              descripcion: String(card.descripcion || '').trim(),
+              imagen_url: String(card.imagen_url || '').trim(),
+              imagen_secundaria_url: String(card.imagen_secundaria_url || '').trim(),
+              enlace: String(card.enlace || '').trim(),
+              youtube_url: String(card.youtube_url || '').trim(),
+              detalle_etiqueta: String(card.detalle_etiqueta || '').trim(),
+              detalle_titular: String(card.detalle_titular || '').trim(),
+              detalle_parrafo_uno: String(card.detalle_parrafo_uno || '').trim(),
+              detalle_parrafo_dos: String(card.detalle_parrafo_dos || '').trim(),
+              detalle_puntos: Array.isArray(card.detalle_puntos)
+                ? card.detalle_puntos.map(function (item) { return String(item || '').trim(); }).filter(Boolean)
+                : []
+            };
+          }),
+        };
+      }
+
+      [indexCardSizeEl, indexTextSizeEl, landingCardSizeEl, landingTextSizeEl].forEach(function (el) {
+        if (!el) return;
+        el.addEventListener('change', function () {
+          var field = el.getAttribute('data-field');
+          if (!field) return;
+          state.config.estilos[field] = normalizeVisualSize(el.value);
+        });
+      });
+
+      // Los cambios de tipo se atienden en el listener general del editor.
+
+      async function saveConfig() {
+        var payload = buildPayloadFromState();
+        await requestJSON('/super/api/pagina_principal?action=config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      async function saveCurrentConfig() {
+        syncCardCountAndRender();
+        setMsg('Guardando configuración...', '');
+        try {
+          await saveConfig();
+          await loadConfig();
+          renderCardsEditor();
+          renderStyleControls();
+          setMsg('Configuracion guardada correctamente.', 'success');
+        } catch (err) {
+          setMsg('No se pudo guardar: ' + (err && err.message ? err.message : String(err)), 'error');
+        }
+      }
+
+      async function reloadAll() {
+        setMsg('Cargando configuración...', '');
+        setCantidadLoading(true);
+        try {
+          await loadImages();
+          await loadConfig();
+          renderCardsEditor();
+          renderStyleControls();
+          setCantidadLoading(false);
+          setMsg('Configuracion cargada correctamente.', 'success');
+        } catch (err) {
+          setCantidadLoading(false);
+          setMsg('No se pudo cargar la configuracion: ' + (err && err.message ? err.message : String(err)), 'error');
+        }
+      }
+
+      document.getElementById('ppBtnReload').addEventListener('click', function () {
+        reloadAll();
+      });
+
+      cantidadEl.addEventListener('change', function () {
+        syncCardCountAndRender();
+        setMsg('Cantidad actualizada en el editor. Guarda la configuracion para publicarla.', '');
+      });
+
+      document.getElementById('ppBtnSave').addEventListener('click', async function () {
+        await saveCurrentConfig();
+      });
+
+      document.getElementById('ppBtnSaveBottom').addEventListener('click', async function () {
+        await saveCurrentConfig();
+      });
+
+      reloadAll();
+    })();
+  </script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>
+

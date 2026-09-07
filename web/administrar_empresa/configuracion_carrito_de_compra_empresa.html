@@ -1,0 +1,1652 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ConfiguraciÃ³n del carrito unificado</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage" data-auto-estacion-labels="true">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <div>
+          <h1 style="margin:0;">Carrito unificado por empresa</h1>
+          <p id="empresaInfo" class="form-help" style="margin:6px 0 0 0;">Empresa: cargando...</p>
+        </div>
+        <button id="btnGuardarConfigCarrito" type="button" class="btn">Guardar configuraciÃ³n</button>
+      </div>
+
+      <div class="form" >
+        <p class="form-help" >El sistema usarÃ¡ una sola pÃ¡gina de carrito para todas las estaciones. AquÃ­ defines quÃ© bloques estarÃ¡n activos por defecto para toda la empresa; luego puedes sobrescribirlos por estaciÃ³n desde ConfiguraciÃ³n de estaciones.</p>
+
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Respuesta de botones del carrito</h3>
+              <p class="form-help mt-0">Define si los botones del carrito emiten confirmacion sonora o vibracion visual/fisica al tocarlos.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgPitidoPc" type="checkbox">
+                Emitir pitido en PC
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgPitidoMovil" type="checkbox">
+                Emitir pitido en celular
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgVibracionPc" type="checkbox">
+                Vibrar botones en PC
+              </label>
+              <div class="form-help">En PC se aplica como vibracion visual breve del boton.</div>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgVibracionMovil" type="checkbox">
+                Vibrar botones en celular
+              </label>
+              <div class="form-help">En celulares compatibles usa vibracion fisica y tambien una respuesta visual corta.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Atajos de teclado POS</h3>
+              <p class="form-help mt-0">Configura por empresa las teclas rapidas usadas por cajeros en supermercados, tiendas y puntos de venta.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgAtajosPOSEnabled" type="checkbox" checked>
+                Activar atajos de teclado en el carrito
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgAtajosPOSAyuda" type="checkbox" checked>
+                Mostrar ayuda de atajos con F1
+              </label>
+            </div>
+          </div>
+          <div id="carritoCfgAtajosPOSGrid" class="form-row" style="align-items:stretch;"></div>
+          <p class="form-help mt-0">ENTER solo agrega producto cuando el foco esta en el lector/codigo o cuando no estas escribiendo en otro campo. ALT+F4 sale del carrito hacia el panel del sistema si el navegador permite capturar la tecla.</p>
+        </div>
+
+        <div class="empresa-section mt-12 pos-touch-config-card">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:flex-start;gap:10px;font-size:1.02rem;font-weight:800;color:#0f172a;">
+                <input id="carritoCfgModoTactil" type="checkbox" style="margin-top:2px;">
+                <span>
+                  Modo POS tactil para carrito, estaciones y corte de caja
+                  <small style="display:block;font-weight:500;color:#64748b;margin-top:4px;">Activa botones, campos y tarjetas mas grandes en las funciones operativas de venta. Se guarda por empresa y no cambia la configuracion de facturacion electronica.</small>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">BÃ¡scula electrÃ³nica</h3>
+              <p class="form-help mt-0">Activa esta opciÃ³n solo si la empresa venderÃ¡ productos por peso usando una bÃ¡scula serial/USB compatible con Web Serial.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:flex-start;gap:10px;font-size:1.02rem;font-weight:800;">
+                <input id="carritoCfgBasculaElectronica" type="checkbox" style="margin-top:2px;">
+                <span>Mostrar tarjeta de bÃ¡scula electrÃ³nica en el carrito</span>
+              </label>
+              <div class="form-help">Por defecto queda apagada. Al activarla, el cajero podrÃ¡ conectar el puerto local de la bÃ¡scula y aplicar el peso a la cantidad del producto.</div>
+            </div>
+          </div>
+          <label class="form-label" for="carritoCfgMetodosPagoPersonalizados">Formas de pago adicionales por pais o por empresa</label>
+          <textarea id="carritoCfgMetodosPagoPersonalizados" class="form-input" rows="3" placeholder="Una por linea. Ej: Yape, Plin, Zelle, Daviplata, PayPal"></textarea>
+          <div class="form-help">Estas formas aparecen en el carrito como opciones rapidas y se registran internamente como otra transferencia para conservar reportes y conciliacion.</div>
+        </div>
+
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Stock del carrito</h3>
+              <p class="form-help mt-0">La venta sin stock queda habilitada de forma predeterminada para todas las empresas.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgPermitirVentaSinStock" type="checkbox" checked disabled>
+                Permitir vender aunque no haya stock
+              </label>
+              <div class="form-help">El carrito permitirÃ¡ agregar y cerrar ventas aun cuando el inventario no tenga existencia suficiente. El inventario podrÃ¡ quedar negativo hasta que lo ajustes.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgBuscarProductos" type="checkbox" checked>
+              Mostrar botÃ³n de buscar productos
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgBusquedaCatalogo" type="checkbox" checked>
+              Mostrar bÃºsqueda inteligente de catÃ¡logo
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgCodigoManual" type="checkbox" checked>
+              Mostrar cÃ³digo y referencia manual del item
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgObservaciones" type="checkbox" checked>
+              Mostrar observaciones del item
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgCliente" type="checkbox" checked>
+              Visualizar panel de cliente en el carrito
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgClienteObligatorio" type="checkbox">
+              Exigir cliente registrado para pagar
+            </label>
+            <div class="form-help">Si estÃ¡ activo, el carrito no permite pagar hasta seleccionar o crear un cliente de la empresa.</div>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carritoCfgClienteGeneralNombre">Nombre para ventas sin cliente</label>
+            <input id="carritoCfgClienteGeneralNombre" class="form-input" maxlength="120" placeholder="Cliente General">
+            <div class="form-help">Se usa en carritos y comprobantes cuando no se elige un cliente registrado.</div>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgImpuestos" type="checkbox" checked>
+              Mostrar descuento e impuestos del item
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgLector" type="checkbox" checked>
+              Mostrar lector de cÃ³digo de barras
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carritoCfgBusquedaPredeterminada">Busqueda predeterminada al abrir venta</label>
+            <select id="carritoCfgBusquedaPredeterminada" class="form-input">
+              <option value="codigo_barras">Codigo de barras</option>
+              <option value="sku">Codigo SKU</option>
+              <option value="nombre">Nombre</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgCantidadDecimal" type="checkbox">
+              Permitir cantidad decimal al buscar producto
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgAltoItemsContenido" type="checkbox" checked>
+              Ajustar alto de productos segun el contenido
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarTodosItems" type="checkbox">
+              Mantener siempre visible la lista completa
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgResumenProductos" type="checkbox" checked>
+              Mostrar tabla resumen de productos y recetas
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarPagar" type="checkbox" checked>
+              Mostrar botÃ³n de pagar
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgPreguntarDocumentoPago" type="checkbox">
+              Preguntar venta sola o factura electronica al pagar
+            </label>
+            <div class="form-help">Cuando esta activo, el cajero elige el tipo de documento antes de cerrar el carrito.</div>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarLogoEmpresa" type="checkbox" checked>
+              Mostrar logo de la empresa en el carrito
+            </label>
+            <div class="form-help">Se muestra encima de Totales y detalles solo cuando la empresa tiene logo cargado.</div>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carritoCfgLogoEmpresaTamano">Tamano del logo en el carrito</label>
+            <select id="carritoCfgLogoEmpresaTamano" class="form-input">
+              <option value="pequeno">Pequeno</option>
+              <option value="mediano">Mediano</option>
+              <option value="grande">Grande</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarTarjetasPago" type="checkbox" checked>
+              Mostrar tarjetas de pago
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="btnGuardarVisibilidadPagoCarrito" type="button" class="btn secondary">Guardar cambios</button>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaLector" type="checkbox" checked>
+              Activar tarjeta del lector de cÃ³digo de barras
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaItems" type="checkbox" checked>
+              Activar tarjeta de items del carrito
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaTotales" type="checkbox" checked>
+              Activar tarjeta de totales y detalles
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalEntrada" type="checkbox" checked> Mostrar entrada</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalSalida" type="checkbox" checked> Mostrar salida</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalItems" type="checkbox" checked> Mostrar items totales</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalProductos" type="checkbox" checked> Mostrar productos</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalServicios" type="checkbox" checked> Mostrar servicios</label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalFacturadoProductos" type="checkbox" checked> Mostrar productos facturados</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalFacturadoServicios" type="checkbox" checked> Mostrar servicios facturados</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalCliente" type="checkbox" checked> Mostrar cliente</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalSubtotal" type="checkbox" checked> Mostrar subtotal</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalDescuento" type="checkbox" checked> Mostrar descuento</label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalImpuesto" type="checkbox" checked> Mostrar impuesto</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalPagado" type="checkbox" checked> Mostrar pagado</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalGeneral" type="checkbox" checked> Mostrar total</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;"><input id="carritoCfgTotalSaldo" type="checkbox" checked> Mostrar saldo</label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaCobro" type="checkbox" checked>
+              Activar tarjeta de cobro y estados
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaAcciones" type="checkbox" checked>
+              Activar tarjeta de acciones del carrito
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaValoresPago" type="checkbox" checked>
+              Activar tarjeta de valores por medio de pago
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaComision" type="checkbox" checked>
+              Activar tarjeta de lavador / comisiÃ³n
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaVip" type="checkbox" checked>
+              Activar tarjeta de acceso cliente VIP
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgControlElectrico" type="checkbox" checked>
+              Habilitar modulo Domotica
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaDomotica" type="checkbox" checked>
+              Mostrar tarjeta Domotica automaticamente
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:flex-start;gap:8px;">
+              <input id="carritoCfgAbrirDomoticaEstaciones" type="checkbox">
+              <span>Abrir equipos electronicos al entrar a una estacion o a Venta directa<br><small>Dejelo desactivado para conservar el carrito y la facturacion como destino predeterminado.</small></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Botones de acciones del carrito</h3>
+              <p class="form-help mt-0">Activa solo los botones que debe ver el cajero en la barra de acciones.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonDescuentos" type="checkbox" checked>
+                Visualizar boton Descuentos
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonCambiarTarifa" type="checkbox" checked>
+                Visualizar boton Cambiar tarifa
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonTransferirCuenta" type="checkbox">
+                Visualizar boton Transferir cuenta
+              </label>
+              <div class="form-help">Permite mover una cuenta abierta a otra mesa, habitacion o estacion disponible. En motel/hotel solo se permite si la tarifa destino es equivalente.</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonControlElectrico" type="checkbox" checked>
+                Visualizar boton Domotica
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonCancelar" type="checkbox" checked>
+                Visualizar boton Cancelar carrito
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonClientes" type="checkbox" checked>
+                Visualizar boton Clientes
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonAbonos" type="checkbox" checked>
+                Visualizar boton Abonos
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonVehiculo" type="checkbox" checked>
+                Visualizar boton Vehiculo
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col maxw-220">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonesSelectorEnabled" type="checkbox">
+                Usar selector rapido de botones
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="carritoCfgBotonesSelector">Boton del carrito</label>
+              <select id="carritoCfgBotonesSelector" class="form-input" disabled>
+                <option value="">Selecciona un boton</option>
+                <option value="carritoCfgBotonDescuentos">Descuentos</option>
+                <option value="carritoCfgBotonCambiarTarifa">Cambiar tarifa</option>
+                <option value="carritoCfgBotonTransferirCuenta">Transferir cuenta</option>
+                <option value="carritoCfgBotonControlElectrico">Domotica</option>
+                <option value="carritoCfgBotonCancelar">Cancelar carrito</option>
+                <option value="carritoCfgBotonClientes">Clientes</option>
+                <option value="carritoCfgBotonAbonos">Abonos</option>
+                <option value="carritoCfgBotonVehiculo">Vehiculo</option>
+              </select>
+            </div>
+            <div class="form-col maxw-220">
+              <label class="form-label" for="carritoCfgBotonesSelectorAction">Accion</label>
+              <select id="carritoCfgBotonesSelectorAction" class="form-input" disabled>
+                <option value="show">Mostrar</option>
+                <option value="hide">Ocultar</option>
+              </select>
+            </div>
+            <div class="form-col maxw-220 flex-col-end">
+              <button type="button" id="carritoCfgBotonesSelectorApply" class="btn secondary w-full" disabled>Aplicar al boton</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarAlertaTiempo" type="checkbox">
+              Mostrar opcion de alerta visual por tiempo en el carrito
+            </label>
+            <div class="form-help">Si esta desactivado, el cajero no vera el check de alerta visual en las acciones del carrito.</div>
+          </div>
+          <div class="form-col maxw-180">
+            <label class="form-label" for="carritoCfgAlertaTiempoMinutos">Minutos de alerta</label>
+            <input id="carritoCfgAlertaTiempoMinutos" type="number" min="1" max="1440" step="1" class="form-input" value="10">
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgAlertaTiempoDefault" type="checkbox">
+              Activar la alerta por defecto al abrir el carrito
+            </label>
+            <div class="form-help">Por defecto queda apagada; el cajero puede activarla manualmente si el check visible esta habilitado.</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgDescuentos" type="checkbox" checked>
+              Mostrar descuentos en el panel de cobro
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgPropina" type="checkbox" checked>
+              Mostrar propina en el panel de cobro
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgComision" type="checkbox" checked>
+              Mostrar comisiÃ³n por servicio
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgPagoMixto" type="checkbox" checked>
+              Permitir pago mixto
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgResumenTotales" type="checkbox" checked>
+              Mostrar resumen total del carrito
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgDesgloseCobro" type="checkbox" checked>
+              Mostrar desglose del cobro
+            </label>
+          </div>
+        </div>
+
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Medios de pago habilitados</h3>
+              <p class="form-help mt-0">Activa los medios que puede usar la empresa en el carrito. Bre-B queda listo para conciliacion automatica cuando se conecte el webhook o API bancaria.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoEfectivo" type="checkbox" checked>
+                Efectivo
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoCredito" type="checkbox" checked>
+                Tarjeta credito
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoDebito" type="checkbox" checked>
+                Tarjeta debito
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoBreb" type="checkbox" checked>
+                Transferencia Bre-B
+              </label>
+              <div class="form-help">Mientras no exista webhook bancario, el cajero debe registrar la referencia o llave confirmada.</div>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoNequi" type="checkbox" checked>
+                Nequi
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoOtraTransferencia" type="checkbox" checked>
+                Otra transferencia
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgMetodoPagoCreditoCliente" type="checkbox" checked>
+                CrÃ©dito cliente / cupo cartera
+              </label>
+              <div class="form-help">Permite cerrar ventas contra el cupo aprobado del cliente y crear cartera por cobrar.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgFacturacionOffline" type="checkbox">
+              Permitir facturacion offline si se cae internet
+            </label>
+            <div class="form-help">Cuando esta activo, el cajero puede cerrar la cuenta en modo sin internet; el sistema guarda la venta en este equipo y la sincroniza cuando vuelva la conexion, respetando la caja del usuario.</div>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMarcaOffline" type="checkbox" checked>
+              Marcar factura offline como pendiente de sincronizar
+            </label>
+            <div class="form-help">Por defecto el soporte impreso queda identificado como provisional/offline hasta que el sistema sincronice la venta.</div>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgQrFacturaElectronica" type="checkbox">
+              Mostrar QR DIAN al final de la factura o recibo
+            </label>
+            <div class="form-help">Cuando la venta tenga CUFE/CUDE o codigo de validacion, el comprobante impreso agrega un QR de consulta publica de la factura electronica.</div>
+          </div>
+        </div>
+
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Pagos por QR</h3>
+              <p class="form-help mt-0">Configura las cuentas receptoras donde llegara el dinero de Bre-B, Nequi u otro QR bancario.</p>
+            </div>
+            <button id="btnAgregarCuentaQR" type="button" class="btn secondary">Agregar cuenta</button>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgPagoQR" type="checkbox">
+                Mostrar pago por QR en el carrito
+              </label>
+              <div class="form-help">El cobro se registra como transferencia bancaria con una referencia automatica; el cajero debe verificar el abono antes de pagar y cerrar.</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="empresa-table qr-accounts-table">
+              <thead>
+                <tr>
+                  <th>Activa</th>
+                  <th>Nombre</th>
+                  <th>Proveedor</th>
+                  <th>Llave / cuenta</th>
+                  <th>Comercio</th>
+                  <th>Payload oficial / plantilla</th>
+                  <th>Instrucciones</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="qrAccountsTableBody"></tbody>
+            </table>
+          </div>
+          <p class="form-help">Puedes usar placeholders en el payload oficial: {valor}, {referencia}, {llave}, {comercio}, {empresa_id}, {carrito_id}, {carrito_codigo}. Si el proveedor entrega un QR estatico o una plantilla EMV/API, pegala aqui.</p>
+        </div>
+
+        <p class="form-help">Las estaciones individuales pueden heredar esta configuraciÃ³n o sobrescribirla desde la pantalla de configuraciÃ³n de estaciones.</p>
+      </div>
+
+      <div id="configCarritoMsg" class="form-help"></div>
+    </section>
+  </div>
+
+  <script src="/js/estaciones_labels.js"></script>
+  <script>
+    function parsePositiveInt(value) {
+      const num = Number(value || 0);
+      return Number.isFinite(num) && num > 0 ? Math.trunc(num) : 0;
+    }
+
+    function resolveEmpresaId() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const direct = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+        if (direct > 0) return direct;
+      } catch (_) {}
+
+      try {
+        const candidates = [
+          sessionStorage.getItem('active_empresa_id'),
+          sessionStorage.getItem('empresa_id'),
+          sessionStorage.getItem('admin_empresa_id'),
+          localStorage.getItem('active_empresa_id'),
+          localStorage.getItem('empresa_id'),
+          localStorage.getItem('admin_empresa_id')
+        ];
+        for (let i = 0; i < candidates.length; i += 1) {
+          const parsed = parsePositiveInt(candidates[i]);
+          if (parsed > 0) return parsed;
+        }
+      } catch (_) {}
+      return 0;
+    }
+
+    const empresaId = resolveEmpresaId();
+
+    function setMessage(text, type) {
+      const box = document.getElementById('configCarritoMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function normalizeText(value) {
+      return String(value == null ? '' : value).trim();
+    }
+
+    function normalizeCartLogoSize(value) {
+      const raw = normalizeText(value).toLowerCase();
+      return ['pequeno', 'mediano', 'grande'].indexOf(raw) >= 0 ? raw : 'mediano';
+    }
+
+    function paymentQrProviderLabel(provider) {
+      const p = normalizeText(provider).toLowerCase();
+      if (p === 'nequi') return 'Nequi';
+      if (p === 'breb') return 'Bre-B';
+      return 'Otro';
+    }
+
+    function normalizeQrAccounts(raw, fallback) {
+      const rows = Array.isArray(raw) ? raw : [];
+      const normalized = [];
+      rows.forEach(function(item, index) {
+        if (!item || typeof item !== 'object') return;
+        let provider = normalizeText(item.proveedor || item.provider || 'breb').toLowerCase();
+        if (provider !== 'breb' && provider !== 'nequi' && provider !== 'otro') provider = 'breb';
+        const key = normalizeText(item.llave || item.cuenta || item.key || '');
+        const payload = normalizeText(item.payload_oficial || item.officialPayload || item.qr_payload || '');
+        const name = normalizeText(item.nombre || item.name || item.alias || '');
+        if (!key && !payload && !name) return;
+        normalized.push({
+          id: normalizeText(item.id || item.codigo || '') || ('qr_account_' + String(index + 1)),
+          nombre: name || paymentQrProviderLabel(provider),
+          proveedor: provider,
+          llave: key,
+          comercio: normalizeText(item.comercio || item.merchant || ''),
+          payload_oficial: payload,
+          instrucciones: normalizeText(item.instrucciones || item.instructions || ''),
+          activa: item.activa === undefined && item.active === undefined ? true : !!(item.activa !== undefined ? item.activa : item.active)
+        });
+      });
+      if (!normalized.length && fallback) {
+        const provider = normalizeText(fallback.pago_qr_proveedor || 'breb').toLowerCase() || 'breb';
+        const key = normalizeText(fallback.pago_qr_llave || '');
+        const payload = normalizeText(fallback.pago_qr_payload_oficial || '');
+        if (key || payload) {
+          normalized.push({
+            id: 'qr_legacy_account',
+            nombre: normalizeText(fallback.pago_qr_comercio || '') || paymentQrProviderLabel(provider),
+            proveedor: provider === 'nequi' || provider === 'otro' ? provider : 'breb',
+            llave: key,
+            comercio: normalizeText(fallback.pago_qr_comercio || ''),
+            payload_oficial: payload,
+            instrucciones: normalizeText(fallback.pago_qr_instrucciones || ''),
+            activa: true
+          });
+        }
+      }
+      return normalized;
+    }
+
+    function clampCarritoAlertMinutes(value) {
+      var parsed = Math.floor(Number(value || 0));
+      if (!Number.isFinite(parsed) || parsed < 1) parsed = 10;
+      if (parsed > 1440) parsed = 1440;
+      return parsed;
+    }
+
+    const POS_SHORTCUT_KEY_OPTIONS = [
+      '', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+      'ESC', 'ENTER', 'CTRL+B', 'CTRL+D', 'CTRL+P', 'ALT+F4'
+    ];
+
+    const POS_SHORTCUT_DEFS = [
+      { key: 'ayuda', label: 'Ayuda del sistema', description: 'Abre una guia corta de atajos y acciones.', defaultKey: 'F1' },
+      { key: 'buscar_producto', label: 'Buscar producto', description: 'Abre el buscador o enfoca el lector de codigo.', defaultKey: 'F2' },
+      { key: 'buscar_cliente', label: 'Buscar cliente', description: 'Enfoca la busqueda del cliente del carrito.', defaultKey: 'F3' },
+      { key: 'descuento', label: 'Aplicar descuento', description: 'Abre la seccion de descuentos del cobro.', defaultKey: 'F4' },
+      { key: 'cambiar_cantidad', label: 'Cambiar cantidad', description: 'Enfoca cantidad del producto agregado o del lector.', defaultKey: 'F5' },
+      { key: 'modificar_precio', label: 'Modificar precio', description: 'Enfoca precio unitario del item segun permisos.', defaultKey: 'F6' },
+      { key: 'suspender_venta', label: 'Suspender venta', description: 'Deja la cuenta abierta para recuperarla despues.', defaultKey: 'F7' },
+      { key: 'recuperar_venta', label: 'Recuperar venta', description: 'Recarga la cuenta activa de la estacion o venta directa.', defaultKey: 'F8' },
+      { key: 'verificar_inventario', label: 'Verificar inventario', description: 'Consulta inventario desde codigo o buscador.', defaultKey: 'F9' },
+      { key: 'cobrar', label: 'Cobrar / finalizar', description: 'Ejecuta Pagar y cerrar carrito.', defaultKey: 'F10' },
+      { key: 'abrir_cajon', label: 'Abrir cajon de dinero', description: 'Solicita apertura manual si la caja lo permite.', defaultKey: 'F11' },
+      { key: 'imprimir', label: 'Imprimir factura o duplicado', description: 'Imprime el comprobante visible o duplicado disponible.', defaultKey: 'F12' },
+      { key: 'cancelar_operacion', label: 'Cancelar operacion', description: 'Limpia el foco actual o cancela la operacion visible.', defaultKey: 'ESC' },
+      { key: 'agregar_producto', label: 'Agregar producto', description: 'Agrega el codigo digitado en el lector.', defaultKey: 'ENTER' },
+      { key: 'descuento_combo', label: 'Descuento alterno', description: 'Atajo combinado para abrir descuentos.', defaultKey: 'CTRL+D' },
+      { key: 'imprimir_combo', label: 'Imprimir alterno', description: 'Atajo combinado para imprimir.', defaultKey: 'CTRL+P' },
+      { key: 'buscar_producto_combo', label: 'Buscar producto alterno', description: 'Atajo combinado para buscar producto.', defaultKey: 'CTRL+B' },
+      { key: 'salir_sistema', label: 'Salir del carrito', description: 'Regresa al panel operativo del sistema.', defaultKey: 'ALT+F4' }
+    ];
+
+    function defaultPosShortcuts() {
+      const out = {};
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        out[def.key] = def.defaultKey;
+      });
+      return out;
+    }
+
+    function normalizeCustomPaymentMethods(raw) {
+      const rows = Array.isArray(raw) ? raw : String(raw || '').split(/\r?\n|,/);
+      const seen = {};
+      const out = [];
+      rows.forEach(function(item) {
+        const label = normalizeText(item && typeof item === 'object' ? (item.label || item.nombre || item.name) : item);
+        if (!label) return;
+        const key = label.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push(label.slice(0, 40));
+      });
+      return out.slice(0, 12);
+    }
+
+    function normalizeShortcutKey(value, fallback) {
+      const raw = String(value == null ? '' : value).trim().toUpperCase().replace(/\s+/g, '');
+      if (!raw) return '';
+      const normalized = raw === 'ESCAPE' ? 'ESC' : raw;
+      if (POS_SHORTCUT_KEY_OPTIONS.indexOf(normalized) >= 0) return normalized;
+      return fallback || '';
+    }
+
+    function normalizePosShortcuts(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const defaults = defaultPosShortcuts();
+      const out = {};
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        out[def.key] = normalizeShortcutKey(src[def.key], defaults[def.key]);
+      });
+      return out;
+    }
+
+    function defaultUnifiedCartConfig() {
+      return {
+        modo_pantalla_tactil: false,
+        mostrar_boton_buscar_productos: true,
+        mostrar_busqueda_catalogo: true,
+        mostrar_codigo_manual_item: true,
+        mostrar_observaciones_item: true,
+        mostrar_selector_cliente: true,
+        cliente_obligatorio_pago: false,
+        cliente_general_nombre: 'Cliente General',
+        mostrar_impuestos_item: true,
+        mostrar_lector_codigo_barras: true,
+        modo_busqueda_producto_carrito: 'codigo_barras',
+        permitir_cantidad_decimal_carrito: false,
+        ajustar_alto_items_contenido_carrito: true,
+        mostrar_todos_items_carrito: false,
+        habilitar_bascula_electronica: false,
+        mostrar_descuentos: false,
+        mostrar_propina: false,
+        mostrar_comision: false,
+        permitir_pago_mixto: true,
+        metodo_pago_efectivo: true,
+        metodo_pago_tarjeta_credito: true,
+        metodo_pago_tarjeta_debito: true,
+        metodo_pago_transferencia_bancaria: true,
+        metodo_pago_transferencia_bre_b: true,
+        metodo_pago_nequi: true,
+        metodo_pago_otras_transferencias: true,
+        metodo_pago_credito_cliente: true,
+        metodos_pago_personalizados: [],
+        mostrar_resumen_totales_carrito: true,
+        mostrar_desglose_cobro: false,
+        mostrar_resumen_productos: true,
+        mostrar_boton_pagar: true,
+        preguntar_tipo_documento_al_pagar: false,
+        mostrar_logo_empresa_carrito: true,
+        logo_empresa_carrito_tamano: 'mediano',
+        mostrar_tarjetas_pago: true,
+        mostrar_tarjeta_lector_codigo: true,
+        mostrar_tarjeta_items_carrito: true,
+        mostrar_tarjeta_totales_detalles: true,
+        totales_detalles_mostrar_entrada: true,
+        totales_detalles_mostrar_salida: true,
+        totales_detalles_mostrar_items: true,
+        totales_detalles_mostrar_productos: true,
+        totales_detalles_mostrar_servicios: true,
+        totales_detalles_mostrar_total_productos: true,
+        totales_detalles_mostrar_total_servicios: true,
+        totales_detalles_mostrar_cliente: true,
+        totales_detalles_mostrar_subtotal: true,
+        totales_detalles_mostrar_descuento: true,
+        totales_detalles_mostrar_impuesto: true,
+        totales_detalles_mostrar_pagado: true,
+        totales_detalles_mostrar_total: true,
+        totales_detalles_mostrar_saldo: true,
+        mostrar_tarjeta_cobro_estados: false,
+        mostrar_tarjeta_acciones_carrito: true,
+        mostrar_control_electrico_carrito: true,
+        mostrar_tarjeta_domotica_carrito: true,
+        abrir_domotica_al_entrar_estacion: false,
+        mostrar_tarjeta_valores_pago: true,
+        mostrar_tarjeta_comision: false,
+        mostrar_tarjeta_vip_cliente: true,
+        mostrar_boton_descuentos_carrito: true,
+        mostrar_boton_cambiar_tarifa_carrito: true,
+        mostrar_boton_transferir_cuenta_carrito: false,
+        permitir_transferir_cuenta_carrito: false,
+        mostrar_boton_control_electrico_carrito: true,
+        mostrar_boton_cancelar_carrito: true,
+        mostrar_boton_taxi_carrito: false,
+        mostrar_boton_clientes_carrito: true,
+        mostrar_boton_abonos_carrito: true,
+        mostrar_boton_vehiculo_carrito: true,
+        permitir_venta_sin_stock_carrito: true,
+        mostrar_alerta_tiempo_carrito: false,
+        alerta_tiempo_minutos: 10,
+        alerta_tiempo_activa_default: false,
+        facturacion_offline_habilitada: true,
+        marcar_factura_offline_pendiente: true,
+        mostrar_qr_factura_electronica: false,
+        pago_qr_habilitado: false,
+        pago_qr_proveedor: 'breb',
+        pago_qr_llave: '',
+        pago_qr_comercio: '',
+        pago_qr_payload_oficial: '',
+        pago_qr_instrucciones: '',
+        pago_qr_cuentas: [],
+        atajos_pos_habilitados: true,
+        atajos_pos_mostrar_ayuda: true,
+        atajos_pos: defaultPosShortcuts(),
+        botones_pitido_pc: false,
+        botones_pitido_movil: false,
+        botones_vibracion_pc: false,
+        botones_vibracion_movil: false
+      };
+    }
+
+    function normalizeUnifiedCartConfig(raw) {
+      const base = defaultUnifiedCartConfig();
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const touchAlias = src.pos_touch_ui && typeof src.pos_touch_ui === 'object'
+        ? src.pos_touch_ui.enabled
+        : src.pos_touch_enabled;
+      return Object.assign({}, src, {
+        modo_pantalla_tactil: src.modo_pantalla_tactil === undefined
+          ? (touchAlias === undefined ? base.modo_pantalla_tactil : !!touchAlias)
+          : !!src.modo_pantalla_tactil,
+        mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : !!src.mostrar_boton_buscar_productos,
+        mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : !!src.mostrar_busqueda_catalogo,
+        mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : !!src.mostrar_codigo_manual_item,
+        mostrar_observaciones_item: src.mostrar_observaciones_item === undefined ? base.mostrar_observaciones_item : !!src.mostrar_observaciones_item,
+        mostrar_selector_cliente: src.mostrar_selector_cliente === undefined ? base.mostrar_selector_cliente : !!src.mostrar_selector_cliente,
+        cliente_obligatorio_pago: src.cliente_obligatorio_pago === undefined ? base.cliente_obligatorio_pago : !!src.cliente_obligatorio_pago,
+        cliente_general_nombre: normalizeText(src.cliente_general_nombre || src.nombre_cliente_general || src.cliente_generico_nombre || base.cliente_general_nombre) || base.cliente_general_nombre,
+        mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : !!src.mostrar_impuestos_item,
+        mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : !!src.mostrar_lector_codigo_barras,
+        modo_busqueda_producto_carrito: ['codigo_barras', 'sku', 'nombre'].indexOf(normalizeText(src.modo_busqueda_producto_carrito || src.busqueda_producto_modo_default).toLowerCase()) >= 0 ? normalizeText(src.modo_busqueda_producto_carrito || src.busqueda_producto_modo_default).toLowerCase() : base.modo_busqueda_producto_carrito,
+        permitir_cantidad_decimal_carrito: src.permitir_cantidad_decimal_carrito === undefined ? base.permitir_cantidad_decimal_carrito : !!src.permitir_cantidad_decimal_carrito,
+        ajustar_alto_items_contenido_carrito: src.ajustar_alto_items_contenido_carrito === undefined ? base.ajustar_alto_items_contenido_carrito : !!src.ajustar_alto_items_contenido_carrito,
+        mostrar_todos_items_carrito: src.mostrar_todos_items_carrito === undefined ? base.mostrar_todos_items_carrito : !!src.mostrar_todos_items_carrito,
+        habilitar_bascula_electronica: src.habilitar_bascula_electronica === undefined
+          ? (src.bascula_electronica_habilitada === undefined ? base.habilitar_bascula_electronica : !!src.bascula_electronica_habilitada)
+          : !!src.habilitar_bascula_electronica,
+        mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : !!src.mostrar_descuentos,
+        mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : !!src.mostrar_propina,
+        mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : !!src.mostrar_comision,
+        permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : !!src.permitir_pago_mixto,
+        metodo_pago_efectivo: src.metodo_pago_efectivo === undefined ? base.metodo_pago_efectivo : !!src.metodo_pago_efectivo,
+        metodo_pago_tarjeta_credito: src.metodo_pago_tarjeta_credito === undefined ? base.metodo_pago_tarjeta_credito : !!src.metodo_pago_tarjeta_credito,
+        metodo_pago_tarjeta_debito: src.metodo_pago_tarjeta_debito === undefined ? base.metodo_pago_tarjeta_debito : !!src.metodo_pago_tarjeta_debito,
+        metodo_pago_transferencia_bancaria: src.metodo_pago_transferencia_bancaria === undefined ? base.metodo_pago_transferencia_bancaria : !!src.metodo_pago_transferencia_bancaria,
+        metodo_pago_transferencia_bre_b: src.metodo_pago_transferencia_bre_b === undefined ? (src.metodo_pago_bre_b === undefined ? base.metodo_pago_transferencia_bre_b : !!src.metodo_pago_bre_b) : !!src.metodo_pago_transferencia_bre_b,
+        metodo_pago_nequi: src.metodo_pago_nequi === undefined ? base.metodo_pago_nequi : !!src.metodo_pago_nequi,
+        metodo_pago_otras_transferencias: src.metodo_pago_otras_transferencias === undefined ? (src.metodo_pago_transferencia_otro === undefined ? base.metodo_pago_otras_transferencias : !!src.metodo_pago_transferencia_otro) : !!src.metodo_pago_otras_transferencias,
+        metodo_pago_credito_cliente: src.metodo_pago_credito_cliente === undefined ? base.metodo_pago_credito_cliente : !!src.metodo_pago_credito_cliente,
+        metodos_pago_personalizados: normalizeCustomPaymentMethods(src.metodos_pago_personalizados || src.formas_pago_personalizadas || src.medios_pago_personalizados),
+        mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : !!src.mostrar_resumen_totales_carrito,
+        mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : !!src.mostrar_desglose_cobro,
+        mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : !!src.mostrar_resumen_productos,
+        mostrar_boton_pagar: src.mostrar_boton_pagar === undefined ? base.mostrar_boton_pagar : !!src.mostrar_boton_pagar,
+        preguntar_tipo_documento_al_pagar: src.preguntar_tipo_documento_al_pagar === undefined ? base.preguntar_tipo_documento_al_pagar : !!src.preguntar_tipo_documento_al_pagar,
+        mostrar_logo_empresa_carrito: src.mostrar_logo_empresa_carrito === undefined ? base.mostrar_logo_empresa_carrito : !!src.mostrar_logo_empresa_carrito,
+        logo_empresa_carrito_tamano: normalizeCartLogoSize(src.logo_empresa_carrito_tamano || src.tamano_logo_empresa_carrito || base.logo_empresa_carrito_tamano),
+        mostrar_tarjetas_pago: src.mostrar_tarjetas_pago === undefined ? base.mostrar_tarjetas_pago : !!src.mostrar_tarjetas_pago,
+        mostrar_tarjeta_lector_codigo: src.mostrar_tarjeta_lector_codigo === undefined ? base.mostrar_tarjeta_lector_codigo : !!src.mostrar_tarjeta_lector_codigo,
+        mostrar_tarjeta_items_carrito: src.mostrar_tarjeta_items_carrito === undefined ? base.mostrar_tarjeta_items_carrito : !!src.mostrar_tarjeta_items_carrito,
+        mostrar_tarjeta_totales_detalles: src.mostrar_tarjeta_totales_detalles === undefined ? base.mostrar_tarjeta_totales_detalles : !!src.mostrar_tarjeta_totales_detalles,
+        totales_detalles_mostrar_entrada: src.totales_detalles_mostrar_entrada === undefined ? base.totales_detalles_mostrar_entrada : !!src.totales_detalles_mostrar_entrada,
+        totales_detalles_mostrar_salida: src.totales_detalles_mostrar_salida === undefined ? base.totales_detalles_mostrar_salida : !!src.totales_detalles_mostrar_salida,
+        totales_detalles_mostrar_items: src.totales_detalles_mostrar_items === undefined ? base.totales_detalles_mostrar_items : !!src.totales_detalles_mostrar_items,
+        totales_detalles_mostrar_productos: src.totales_detalles_mostrar_productos === undefined ? base.totales_detalles_mostrar_productos : !!src.totales_detalles_mostrar_productos,
+        totales_detalles_mostrar_servicios: src.totales_detalles_mostrar_servicios === undefined ? base.totales_detalles_mostrar_servicios : !!src.totales_detalles_mostrar_servicios,
+        totales_detalles_mostrar_total_productos: src.totales_detalles_mostrar_total_productos === undefined ? base.totales_detalles_mostrar_total_productos : !!src.totales_detalles_mostrar_total_productos,
+        totales_detalles_mostrar_total_servicios: src.totales_detalles_mostrar_total_servicios === undefined ? base.totales_detalles_mostrar_total_servicios : !!src.totales_detalles_mostrar_total_servicios,
+        totales_detalles_mostrar_cliente: src.totales_detalles_mostrar_cliente === undefined ? base.totales_detalles_mostrar_cliente : !!src.totales_detalles_mostrar_cliente,
+        totales_detalles_mostrar_subtotal: src.totales_detalles_mostrar_subtotal === undefined ? base.totales_detalles_mostrar_subtotal : !!src.totales_detalles_mostrar_subtotal,
+        totales_detalles_mostrar_descuento: src.totales_detalles_mostrar_descuento === undefined ? base.totales_detalles_mostrar_descuento : !!src.totales_detalles_mostrar_descuento,
+        totales_detalles_mostrar_impuesto: src.totales_detalles_mostrar_impuesto === undefined ? base.totales_detalles_mostrar_impuesto : !!src.totales_detalles_mostrar_impuesto,
+        totales_detalles_mostrar_pagado: src.totales_detalles_mostrar_pagado === undefined ? base.totales_detalles_mostrar_pagado : !!src.totales_detalles_mostrar_pagado,
+        totales_detalles_mostrar_total: src.totales_detalles_mostrar_total === undefined ? base.totales_detalles_mostrar_total : !!src.totales_detalles_mostrar_total,
+        totales_detalles_mostrar_saldo: src.totales_detalles_mostrar_saldo === undefined ? base.totales_detalles_mostrar_saldo : !!src.totales_detalles_mostrar_saldo,
+        mostrar_tarjeta_cobro_estados: src.mostrar_tarjeta_cobro_estados === undefined ? base.mostrar_tarjeta_cobro_estados : !!src.mostrar_tarjeta_cobro_estados,
+        mostrar_tarjeta_acciones_carrito: src.mostrar_tarjeta_acciones_carrito === undefined ? base.mostrar_tarjeta_acciones_carrito : !!src.mostrar_tarjeta_acciones_carrito,
+        mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined ? base.mostrar_control_electrico_carrito : !!src.mostrar_control_electrico_carrito,
+        mostrar_tarjeta_domotica_carrito: src.mostrar_tarjeta_domotica_carrito === undefined
+          ? (src.mostrar_control_electrico_carrito === undefined ? base.mostrar_tarjeta_domotica_carrito : !!src.mostrar_control_electrico_carrito)
+          : !!src.mostrar_tarjeta_domotica_carrito,
+        abrir_domotica_al_entrar_estacion: src.abrir_domotica_al_entrar_estacion === undefined
+          ? base.abrir_domotica_al_entrar_estacion
+          : !!src.abrir_domotica_al_entrar_estacion,
+        mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : !!src.mostrar_tarjeta_valores_pago,
+        mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : !!src.mostrar_tarjeta_comision,
+        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : !!src.mostrar_tarjeta_vip_cliente,
+        mostrar_boton_descuentos_carrito: src.mostrar_boton_descuentos_carrito === undefined ? base.mostrar_boton_descuentos_carrito : !!src.mostrar_boton_descuentos_carrito,
+        mostrar_boton_cambiar_tarifa_carrito: src.mostrar_boton_cambiar_tarifa_carrito === undefined ? base.mostrar_boton_cambiar_tarifa_carrito : !!src.mostrar_boton_cambiar_tarifa_carrito,
+        mostrar_boton_transferir_cuenta_carrito: src.mostrar_boton_transferir_cuenta_carrito === undefined
+          ? base.mostrar_boton_transferir_cuenta_carrito
+          : !!src.mostrar_boton_transferir_cuenta_carrito,
+        permitir_transferir_cuenta_carrito: src.permitir_transferir_cuenta_carrito === undefined
+          ? (src.transferencia_cuenta_habilitada === undefined ? base.permitir_transferir_cuenta_carrito : !!src.transferencia_cuenta_habilitada)
+          : !!src.permitir_transferir_cuenta_carrito,
+        mostrar_boton_control_electrico_carrito: src.mostrar_boton_control_electrico_carrito === undefined
+          ? (src.mostrar_control_electrico_carrito === undefined ? base.mostrar_boton_control_electrico_carrito : !!src.mostrar_control_electrico_carrito)
+          : !!src.mostrar_boton_control_electrico_carrito,
+        mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined
+          ? base.mostrar_boton_control_electrico_carrito
+          : !!src.mostrar_control_electrico_carrito,
+        mostrar_boton_cancelar_carrito: src.mostrar_boton_cancelar_carrito === undefined ? base.mostrar_boton_cancelar_carrito : !!src.mostrar_boton_cancelar_carrito,
+        mostrar_boton_taxi_carrito: false,
+        mostrar_boton_clientes_carrito: src.mostrar_boton_clientes_carrito === undefined ? base.mostrar_boton_clientes_carrito : !!src.mostrar_boton_clientes_carrito,
+        mostrar_boton_abonos_carrito: src.mostrar_boton_abonos_carrito === undefined ? base.mostrar_boton_abonos_carrito : !!src.mostrar_boton_abonos_carrito,
+        mostrar_boton_vehiculo_carrito: src.mostrar_boton_vehiculo_carrito === undefined ? base.mostrar_boton_vehiculo_carrito : !!src.mostrar_boton_vehiculo_carrito,
+        permitir_venta_sin_stock_carrito: true,
+        mostrar_alerta_tiempo_carrito: src.mostrar_alerta_tiempo_carrito === undefined ? base.mostrar_alerta_tiempo_carrito : !!src.mostrar_alerta_tiempo_carrito,
+        alerta_tiempo_minutos: clampCarritoAlertMinutes(src.alerta_tiempo_minutos === undefined ? base.alerta_tiempo_minutos : src.alerta_tiempo_minutos),
+        alerta_tiempo_activa_default: src.alerta_tiempo_activa_default === undefined ? base.alerta_tiempo_activa_default : !!src.alerta_tiempo_activa_default,
+        facturacion_offline_habilitada: src.facturacion_offline_habilitada === undefined
+          ? (src.permitir_facturacion_offline === undefined ? base.facturacion_offline_habilitada : !!src.permitir_facturacion_offline)
+          : !!src.facturacion_offline_habilitada,
+        marcar_factura_offline_pendiente: src.marcar_factura_offline_pendiente === undefined ? base.marcar_factura_offline_pendiente : !!src.marcar_factura_offline_pendiente,
+        mostrar_qr_factura_electronica: src.mostrar_qr_factura_electronica === undefined
+          ? (src.qr_factura_electronica === undefined ? base.mostrar_qr_factura_electronica : !!src.qr_factura_electronica)
+          : !!src.mostrar_qr_factura_electronica,
+        pago_qr_habilitado: src.pago_qr_habilitado === undefined ? base.pago_qr_habilitado : !!src.pago_qr_habilitado,
+        pago_qr_proveedor: normalizeText(src.pago_qr_proveedor || base.pago_qr_proveedor).toLowerCase() || base.pago_qr_proveedor,
+        pago_qr_llave: normalizeText(src.pago_qr_llave || ''),
+        pago_qr_comercio: normalizeText(src.pago_qr_comercio || ''),
+        pago_qr_payload_oficial: normalizeText(src.pago_qr_payload_oficial || ''),
+        pago_qr_instrucciones: normalizeText(src.pago_qr_instrucciones || ''),
+        pago_qr_cuentas: normalizeQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src),
+        atajos_pos_habilitados: src.atajos_pos_habilitados === undefined ? base.atajos_pos_habilitados : !!src.atajos_pos_habilitados,
+        atajos_pos_mostrar_ayuda: src.atajos_pos_mostrar_ayuda === undefined ? base.atajos_pos_mostrar_ayuda : !!src.atajos_pos_mostrar_ayuda,
+        atajos_pos: normalizePosShortcuts(src.atajos_pos || src.pos_shortcuts || src.atajos_teclado_pos),
+        botones_pitido_pc: src.botones_pitido_pc === undefined ? base.botones_pitido_pc : !!src.botones_pitido_pc,
+        botones_pitido_movil: src.botones_pitido_movil === undefined ? base.botones_pitido_movil : !!src.botones_pitido_movil,
+        botones_vibracion_pc: src.botones_vibracion_pc === undefined ? base.botones_vibracion_pc : !!src.botones_vibracion_pc,
+        botones_vibracion_movil: src.botones_vibracion_movil === undefined ? base.botones_vibracion_movil : !!src.botones_vibracion_movil
+      });
+    }
+
+    function parseStationConfigValue(raw) {
+      let current = raw;
+      for (let i = 0; i < 3; i += 1) {
+        if (typeof current !== 'string') break;
+        const trimmed = current.trim();
+        if (!trimmed) return null;
+        try {
+          current = JSON.parse(trimmed);
+        } catch (_) {
+          return null;
+        }
+      }
+      return current && typeof current === 'object' ? current : null;
+    }
+
+    function normalizeStationConfig(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const estaciones = Array.isArray(src.estaciones) ? src.estaciones : [];
+      const normalizePlacement = function(value) {
+        const rawValue = String(value == null ? '' : value).trim().toLowerCase();
+        return rawValue === 'after' ? 'after' : 'before';
+      };
+      const normalizeMinutes = function(value) {
+        let parsed = Number(String(value == null ? '' : value).trim());
+        if (!Number.isFinite(parsed)) return 5;
+        parsed = Math.trunc(parsed);
+        if (parsed < 1) return 1;
+        if (parsed > 1440) return 1440;
+        return parsed;
+      };
+      return Object.assign({}, src, {
+        cantidad: Math.max(1, Number(src.cantidad || estaciones.length || 1)),
+        estaciones: estaciones,
+        card_size: String(src.card_size || 'medium').trim().toLowerCase() || 'medium',
+        caja_enabled: !!src.caja_enabled,
+        caja_placement: normalizePlacement(src.caja_placement || src.cajaPlacement),
+        youtube_enabled: !!src.youtube_enabled,
+        youtube_placement: normalizePlacement(src.youtube_placement || src.youtubePlacement),
+        youtube_query: String(src.youtube_query || 'YouTube').trim() || 'YouTube',
+        notas_enabled: !!(src.notas_enabled || src.notasEnabled),
+        notas_placement: normalizePlacement(src.notas_placement || src.notasPlacement),
+        notas_text: String(src.notas_text || src.notasText || '').trim(),
+        notas_default_minutes: normalizeMinutes(src.notas_default_minutes || src.notasDefaultMinutes),
+        notas_repeat_minutes: normalizeMinutes(src.notas_repeat_minutes || src.notasRepeatMinutes),
+        notas_beep_enabled: src.notas_beep_enabled === undefined && src.notasBeepEnabled === undefined ? true : !!(src.notas_beep_enabled !== undefined ? src.notas_beep_enabled : src.notasBeepEnabled),
+        notas_blink_enabled: src.notas_blink_enabled === undefined && src.notasBlinkEnabled === undefined ? true : !!(src.notas_blink_enabled !== undefined ? src.notas_blink_enabled : src.notasBlinkEnabled),
+        ia_pedidos_enabled: !!(src.ia_pedidos_enabled || src.iaPedidosEnabled),
+        ia_pedidos_placement: normalizePlacement(src.ia_pedidos_placement || src.iaPedidosPlacement),
+        carrito_ui_global: normalizeUnifiedCartConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global)
+      });
+    }
+
+    async function loadConfig() {
+      if (!empresaId) return normalizeUnifiedCartConfig({});
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        credentials: 'same-origin'
+      });
+      if (!res.ok) {
+        throw new Error(await res.text() || 'No se pudo cargar la configuracion de carrito.');
+      }
+      const data = await res.json();
+      const prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+      const pref = prefs.find(function(item) {
+        return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
+      });
+      if (!pref || !pref.valor) {
+        return normalizeUnifiedCartConfig({});
+      }
+      const parsed = parseStationConfigValue(pref.valor);
+      const normalized = normalizeStationConfig(parsed);
+      return normalizeUnifiedCartConfig(normalized.carrito_ui_global);
+    }
+
+    async function saveConfig(cfg) {
+      if (!empresaId) throw new Error('No se puede guardar sin empresa seleccionada.');
+      const currentRes = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        credentials: 'same-origin'
+      });
+      if (!currentRes.ok) {
+        throw new Error(await currentRes.text() || 'No se pudo cargar la configuraciÃ³n actual de estaciones.');
+      }
+      const currentData = await currentRes.json();
+      const prefs = currentData && Array.isArray(currentData.prefs) ? currentData.prefs : [];
+      const pref = prefs.find(function(item) {
+        return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
+      });
+      const parsed = normalizeStationConfig(parseStationConfigValue(pref && pref.valor));
+      parsed.carrito_ui_global = normalizeUnifiedCartConfig(cfg);
+
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          estacion_id: 0,
+          clave: 'estaciones_config',
+          valor: JSON.stringify(parsed)
+        })
+      });
+      if (!res.ok) {
+        throw new Error(await res.text() || 'No se pudo guardar la configuracion de carrito.');
+      }
+      try {
+        const navigationMessageTarget = window.top && window.top !== window
+          ? window.top
+          : window.parent;
+        if (navigationMessageTarget && navigationMessageTarget !== window) {
+          navigationMessageTarget.postMessage({
+            type: 'pcs-station-entry-navigation-updated',
+            empresa_id: String(empresaId)
+          }, window.location.origin);
+        }
+      } catch (_) {}
+      return normalizeUnifiedCartConfig(parsed.carrito_ui_global);
+    }
+
+    function renderQrAccounts(accounts) {
+      const tbody = document.getElementById('qrAccountsTableBody');
+      if (!tbody) return;
+      const rows = normalizeQrAccounts(accounts, null);
+      tbody.innerHTML = '';
+      if (!rows.length) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="8" class="form-help">Sin cuentas receptoras. Agrega al menos una cuenta Bre-B, Nequi u otro proveedor.</td>';
+        tbody.appendChild(tr);
+        return;
+      }
+      rows.forEach(function(account, index) {
+        const tr = document.createElement('tr');
+        tr.dataset.qrAccountIndex = String(index);
+        tr.innerHTML = '' +
+          '<td><input type="checkbox" data-qr-field="activa" ' + (account.activa ? 'checked' : '') + '></td>' +
+          '<td><input class="form-input" data-qr-field="nombre" value="' + escapeAttr(account.nombre) + '" placeholder="Ej: Cuenta caja principal"></td>' +
+          '<td><select class="form-input" data-qr-field="proveedor">' +
+            '<option value="breb">Bre-B</option>' +
+            '<option value="nequi">Nequi</option>' +
+            '<option value="otro">Otro</option>' +
+          '</select></td>' +
+          '<td><input class="form-input" data-qr-field="llave" value="' + escapeAttr(account.llave) + '" placeholder="Celular, correo, documento o cuenta"></td>' +
+          '<td><input class="form-input" data-qr-field="comercio" value="' + escapeAttr(account.comercio) + '" placeholder="Nombre del comercio"></td>' +
+          '<td><textarea class="form-input" rows="2" data-qr-field="payload_oficial" placeholder="Payload/plantilla oficial">' + escapeHtmlText(account.payload_oficial) + '</textarea></td>' +
+          '<td><textarea class="form-input" rows="2" data-qr-field="instrucciones" placeholder="Ej: confirma en la app antes de cerrar">' + escapeHtmlText(account.instrucciones) + '</textarea></td>' +
+          '<td><button type="button" class="btn danger btn-remove-qr-account">Eliminar</button></td>';
+        tbody.appendChild(tr);
+        const provider = tr.querySelector('[data-qr-field="proveedor"]');
+        if (provider) provider.value = account.proveedor;
+      });
+    }
+
+    function escapeHtmlText(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function escapeAttr(value) {
+      return escapeHtmlText(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function readQrAccounts() {
+      const tbody = document.getElementById('qrAccountsTableBody');
+      if (!tbody) return [];
+      const rows = Array.from(tbody.querySelectorAll('tr[data-qr-account-index]'));
+      return normalizeQrAccounts(rows.map(function(tr, index) {
+        const read = function(field) {
+          const el = tr.querySelector('[data-qr-field="' + field + '"]');
+          if (!el) return '';
+          if (el.type === 'checkbox') return el.checked;
+          return el.value;
+        };
+        return {
+          id: 'qr_account_' + String(index + 1),
+          activa: read('activa'),
+          nombre: read('nombre'),
+          proveedor: read('proveedor'),
+          llave: read('llave'),
+          comercio: read('comercio'),
+          payload_oficial: read('payload_oficial'),
+          instrucciones: read('instrucciones')
+        };
+      }), null);
+    }
+
+    function addQrAccount(account) {
+      const current = readQrAccounts();
+      current.push(account || {
+        id: 'qr_account_' + String(current.length + 1),
+        activa: true,
+        nombre: 'Cuenta QR ' + String(current.length + 1),
+        proveedor: 'breb',
+        llave: '',
+        comercio: '',
+        payload_oficial: '',
+        instrucciones: ''
+      });
+      renderQrAccounts(current);
+    }
+
+    function renderPosShortcutControls(cfg) {
+      const normalized = normalizeUnifiedCartConfig(cfg || {});
+      const box = document.getElementById('carritoCfgAtajosPOSGrid');
+      if (!box) return;
+      box.innerHTML = '';
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        const col = document.createElement('div');
+        col.className = 'form-col';
+        col.style.minWidth = '220px';
+        const label = document.createElement('label');
+        label.className = 'form-label';
+        label.setAttribute('for', 'carritoCfgAtajoPOS_' + def.key);
+        label.textContent = def.label;
+        const select = document.createElement('select');
+        select.id = 'carritoCfgAtajoPOS_' + def.key;
+        select.className = 'form-input';
+        select.setAttribute('data-pos-shortcut-key', def.key);
+        POS_SHORTCUT_KEY_OPTIONS.forEach(function(optionValue) {
+          const option = document.createElement('option');
+          option.value = optionValue;
+          option.textContent = optionValue || 'Sin atajo';
+          select.appendChild(option);
+        });
+        select.value = normalized.atajos_pos[def.key] || '';
+        const help = document.createElement('div');
+        help.className = 'form-help';
+        help.textContent = def.description;
+        col.appendChild(label);
+        col.appendChild(select);
+        col.appendChild(help);
+        box.appendChild(col);
+      });
+    }
+
+    function collectPosShortcutConfig() {
+      const out = {};
+      POS_SHORTCUT_DEFS.forEach(function(def) {
+        const el = document.getElementById('carritoCfgAtajoPOS_' + def.key);
+        out[def.key] = normalizeShortcutKey(el ? el.value : '', '');
+      });
+      return normalizePosShortcuts(out);
+    }
+
+    function setButtonSelectorControlsEnabled() {
+      const enabled = document.getElementById('carritoCfgBotonesSelectorEnabled');
+      const selector = document.getElementById('carritoCfgBotonesSelector');
+      const action = document.getElementById('carritoCfgBotonesSelectorAction');
+      const apply = document.getElementById('carritoCfgBotonesSelectorApply');
+      const active = !!(enabled && enabled.checked);
+      [selector, action, apply].forEach(function(el) {
+        if (el) el.disabled = !active;
+      });
+    }
+
+    function applyButtonSelectorChoice() {
+      const selector = document.getElementById('carritoCfgBotonesSelector');
+      const action = document.getElementById('carritoCfgBotonesSelectorAction');
+      const target = selector ? document.getElementById(selector.value) : null;
+      if (!target || !action) return;
+      target.checked = action.value !== 'hide';
+    }
+
+    function applyConfig(cfg) {
+      const normalized = normalizeUnifiedCartConfig(cfg);
+      document.getElementById('carritoCfgModoTactil').checked = !!normalized.modo_pantalla_tactil;
+      document.getElementById('carritoCfgPitidoPc').checked = !!normalized.botones_pitido_pc;
+      document.getElementById('carritoCfgPitidoMovil').checked = !!normalized.botones_pitido_movil;
+      document.getElementById('carritoCfgVibracionPc').checked = !!normalized.botones_vibracion_pc;
+      document.getElementById('carritoCfgVibracionMovil').checked = !!normalized.botones_vibracion_movil;
+      document.getElementById('carritoCfgAtajosPOSEnabled').checked = !!normalized.atajos_pos_habilitados;
+      document.getElementById('carritoCfgAtajosPOSAyuda').checked = !!normalized.atajos_pos_mostrar_ayuda;
+      renderPosShortcutControls(normalized);
+      document.getElementById('carritoCfgBuscarProductos').checked = !!normalized.mostrar_boton_buscar_productos;
+      document.getElementById('carritoCfgBusquedaCatalogo').checked = !!normalized.mostrar_busqueda_catalogo;
+      document.getElementById('carritoCfgCodigoManual').checked = !!normalized.mostrar_codigo_manual_item;
+      document.getElementById('carritoCfgObservaciones').checked = !!normalized.mostrar_observaciones_item;
+      document.getElementById('carritoCfgCliente').checked = !!normalized.mostrar_selector_cliente;
+      document.getElementById('carritoCfgClienteObligatorio').checked = !!normalized.cliente_obligatorio_pago;
+      document.getElementById('carritoCfgClienteGeneralNombre').value = normalized.cliente_general_nombre;
+      document.getElementById('carritoCfgImpuestos').checked = !!normalized.mostrar_impuestos_item;
+      document.getElementById('carritoCfgLector').checked = !!normalized.mostrar_lector_codigo_barras;
+      document.getElementById('carritoCfgBusquedaPredeterminada').value = normalized.modo_busqueda_producto_carrito;
+      document.getElementById('carritoCfgCantidadDecimal').checked = !!normalized.permitir_cantidad_decimal_carrito;
+      document.getElementById('carritoCfgAltoItemsContenido').checked = !!normalized.ajustar_alto_items_contenido_carrito;
+      document.getElementById('carritoCfgMostrarTodosItems').checked = !!normalized.mostrar_todos_items_carrito;
+      document.getElementById('carritoCfgBasculaElectronica').checked = !!normalized.habilitar_bascula_electronica;
+      document.getElementById('carritoCfgResumenProductos').checked = !!normalized.mostrar_resumen_productos;
+      document.getElementById('carritoCfgMostrarPagar').checked = !!normalized.mostrar_boton_pagar;
+      document.getElementById('carritoCfgPreguntarDocumentoPago').checked = !!normalized.preguntar_tipo_documento_al_pagar;
+      document.getElementById('carritoCfgMostrarLogoEmpresa').checked = !!normalized.mostrar_logo_empresa_carrito;
+      document.getElementById('carritoCfgLogoEmpresaTamano').value = normalizeCartLogoSize(normalized.logo_empresa_carrito_tamano);
+      document.getElementById('carritoCfgMostrarTarjetasPago').checked = !!normalized.mostrar_tarjetas_pago;
+      document.getElementById('carritoCfgTarjetaLector').checked = !!normalized.mostrar_tarjeta_lector_codigo;
+      document.getElementById('carritoCfgTarjetaItems').checked = !!normalized.mostrar_tarjeta_items_carrito;
+      document.getElementById('carritoCfgTarjetaTotales').checked = !!normalized.mostrar_tarjeta_totales_detalles;
+      document.getElementById('carritoCfgTotalEntrada').checked = !!normalized.totales_detalles_mostrar_entrada;
+      document.getElementById('carritoCfgTotalSalida').checked = !!normalized.totales_detalles_mostrar_salida;
+      document.getElementById('carritoCfgTotalItems').checked = !!normalized.totales_detalles_mostrar_items;
+      document.getElementById('carritoCfgTotalProductos').checked = !!normalized.totales_detalles_mostrar_productos;
+      document.getElementById('carritoCfgTotalServicios').checked = !!normalized.totales_detalles_mostrar_servicios;
+      document.getElementById('carritoCfgTotalFacturadoProductos').checked = !!normalized.totales_detalles_mostrar_total_productos;
+      document.getElementById('carritoCfgTotalFacturadoServicios').checked = !!normalized.totales_detalles_mostrar_total_servicios;
+      document.getElementById('carritoCfgTotalCliente').checked = !!normalized.totales_detalles_mostrar_cliente;
+      document.getElementById('carritoCfgTotalSubtotal').checked = !!normalized.totales_detalles_mostrar_subtotal;
+      document.getElementById('carritoCfgTotalDescuento').checked = !!normalized.totales_detalles_mostrar_descuento;
+      document.getElementById('carritoCfgTotalImpuesto').checked = !!normalized.totales_detalles_mostrar_impuesto;
+      document.getElementById('carritoCfgTotalPagado').checked = !!normalized.totales_detalles_mostrar_pagado;
+      document.getElementById('carritoCfgTotalGeneral').checked = !!normalized.totales_detalles_mostrar_total;
+      document.getElementById('carritoCfgTotalSaldo').checked = !!normalized.totales_detalles_mostrar_saldo;
+      document.getElementById('carritoCfgTarjetaCobro').checked = !!normalized.mostrar_tarjeta_cobro_estados;
+      document.getElementById('carritoCfgTarjetaAcciones').checked = !!normalized.mostrar_tarjeta_acciones_carrito;
+      document.getElementById('carritoCfgTarjetaValoresPago').checked = !!normalized.mostrar_tarjeta_valores_pago;
+      document.getElementById('carritoCfgTarjetaComision').checked = !!normalized.mostrar_tarjeta_comision;
+      document.getElementById('carritoCfgTarjetaVip').checked = !!normalized.mostrar_tarjeta_vip_cliente;
+      document.getElementById('carritoCfgControlElectrico').checked = !!normalized.mostrar_control_electrico_carrito;
+      document.getElementById('carritoCfgTarjetaDomotica').checked = !!normalized.mostrar_tarjeta_domotica_carrito;
+      document.getElementById('carritoCfgAbrirDomoticaEstaciones').checked = !!normalized.abrir_domotica_al_entrar_estacion;
+      document.getElementById('carritoCfgBotonDescuentos').checked = !!normalized.mostrar_boton_descuentos_carrito;
+      document.getElementById('carritoCfgBotonCambiarTarifa').checked = !!normalized.mostrar_boton_cambiar_tarifa_carrito;
+      document.getElementById('carritoCfgBotonTransferirCuenta').checked = !!(normalized.mostrar_boton_transferir_cuenta_carrito && normalized.permitir_transferir_cuenta_carrito);
+      document.getElementById('carritoCfgBotonControlElectrico').checked = !!normalized.mostrar_boton_control_electrico_carrito;
+      document.getElementById('carritoCfgBotonCancelar').checked = !!normalized.mostrar_boton_cancelar_carrito;
+      document.getElementById('carritoCfgBotonClientes').checked = !!normalized.mostrar_boton_clientes_carrito;
+      document.getElementById('carritoCfgBotonAbonos').checked = !!normalized.mostrar_boton_abonos_carrito;
+      document.getElementById('carritoCfgBotonVehiculo').checked = !!normalized.mostrar_boton_vehiculo_carrito;
+      const stocklessCfg = document.getElementById('carritoCfgPermitirVentaSinStock');
+      if (stocklessCfg) {
+        stocklessCfg.checked = true;
+        stocklessCfg.disabled = true;
+      }
+      setButtonSelectorControlsEnabled();
+      document.getElementById('carritoCfgMostrarAlertaTiempo').checked = !!normalized.mostrar_alerta_tiempo_carrito;
+      document.getElementById('carritoCfgAlertaTiempoMinutos').value = String(normalized.alerta_tiempo_minutos || 10);
+      document.getElementById('carritoCfgAlertaTiempoDefault').checked = !!normalized.alerta_tiempo_activa_default;
+      document.getElementById('carritoCfgDescuentos').checked = !!normalized.mostrar_descuentos;
+      document.getElementById('carritoCfgPropina').checked = !!normalized.mostrar_propina;
+      document.getElementById('carritoCfgComision').checked = !!normalized.mostrar_comision;
+      document.getElementById('carritoCfgPagoMixto').checked = !!normalized.permitir_pago_mixto;
+      document.getElementById('carritoCfgMetodoPagoEfectivo').checked = !!normalized.metodo_pago_efectivo;
+      document.getElementById('carritoCfgMetodoPagoCredito').checked = !!normalized.metodo_pago_tarjeta_credito;
+      document.getElementById('carritoCfgMetodoPagoDebito').checked = !!normalized.metodo_pago_tarjeta_debito;
+      document.getElementById('carritoCfgMetodoPagoBreb').checked = !!normalized.metodo_pago_transferencia_bre_b;
+      document.getElementById('carritoCfgMetodoPagoNequi').checked = !!normalized.metodo_pago_nequi;
+      document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked = !!normalized.metodo_pago_otras_transferencias;
+      document.getElementById('carritoCfgMetodoPagoCreditoCliente').checked = !!normalized.metodo_pago_credito_cliente;
+      document.getElementById('carritoCfgMetodosPagoPersonalizados').value = normalizeCustomPaymentMethods(normalized.metodos_pago_personalizados).join('\n');
+      document.getElementById('carritoCfgResumenTotales').checked = !!normalized.mostrar_resumen_totales_carrito;
+      document.getElementById('carritoCfgDesgloseCobro').checked = !!normalized.mostrar_desglose_cobro;
+      document.getElementById('carritoCfgFacturacionOffline').checked = !!normalized.facturacion_offline_habilitada;
+      document.getElementById('carritoCfgMarcaOffline').checked = !!normalized.marcar_factura_offline_pendiente;
+      document.getElementById('carritoCfgQrFacturaElectronica').checked = !!normalized.mostrar_qr_factura_electronica;
+      document.getElementById('carritoCfgPagoQR').checked = !!normalized.pago_qr_habilitado;
+      renderQrAccounts(normalized.pago_qr_cuentas);
+      return normalized;
+    }
+
+    async function bootstrap() {
+      document.getElementById('empresaInfo').textContent = empresaId > 0 ? ('Empresa #' + empresaId) : 'Empresa: no detectada';
+      if (!empresaId) {
+        setMessage('empresa_id es obligatorio para configurar el carrito de estaciones.', 'error');
+        document.getElementById('btnGuardarConfigCarrito').disabled = true;
+        [
+          'carritoCfgBuscarProductos',
+          'carritoCfgModoTactil',
+          'carritoCfgPitidoPc',
+          'carritoCfgPitidoMovil',
+          'carritoCfgVibracionPc',
+          'carritoCfgVibracionMovil',
+          'carritoCfgAtajosPOSEnabled',
+          'carritoCfgAtajosPOSAyuda',
+          'carritoCfgBusquedaCatalogo',
+          'carritoCfgCodigoManual',
+          'carritoCfgObservaciones',
+          'carritoCfgCliente',
+          'carritoCfgClienteObligatorio',
+          'carritoCfgClienteGeneralNombre',
+          'carritoCfgImpuestos',
+          'carritoCfgLector',
+          'carritoCfgBusquedaPredeterminada',
+          'carritoCfgCantidadDecimal',
+          'carritoCfgAltoItemsContenido',
+          'carritoCfgMostrarTodosItems',
+          'carritoCfgBasculaElectronica',
+          'carritoCfgResumenProductos',
+          'carritoCfgMostrarPagar',
+          'carritoCfgPreguntarDocumentoPago',
+          'carritoCfgMostrarLogoEmpresa',
+          'carritoCfgMostrarTarjetasPago',
+          'carritoCfgTarjetaLector',
+          'carritoCfgTarjetaItems',
+          'carritoCfgTarjetaTotales',
+          'carritoCfgTotalEntrada',
+          'carritoCfgTotalSalida',
+          'carritoCfgTotalItems',
+          'carritoCfgTotalProductos',
+          'carritoCfgTotalServicios',
+          'carritoCfgTotalFacturadoProductos',
+          'carritoCfgTotalFacturadoServicios',
+          'carritoCfgTotalCliente',
+          'carritoCfgTotalSubtotal',
+          'carritoCfgTotalDescuento',
+          'carritoCfgTotalImpuesto',
+          'carritoCfgTotalPagado',
+          'carritoCfgTotalGeneral',
+          'carritoCfgTotalSaldo',
+          'carritoCfgTarjetaCobro',
+          'carritoCfgTarjetaAcciones',
+          'carritoCfgTarjetaValoresPago',
+          'carritoCfgTarjetaComision',
+          'carritoCfgTarjetaVip',
+          'carritoCfgControlElectrico',
+          'carritoCfgTarjetaDomotica',
+          'carritoCfgAbrirDomoticaEstaciones',
+          'carritoCfgBotonDescuentos',
+          'carritoCfgBotonCambiarTarifa',
+          'carritoCfgBotonTransferirCuenta',
+          'carritoCfgBotonControlElectrico',
+          'carritoCfgBotonCancelar',
+          'carritoCfgBotonClientes',
+          'carritoCfgBotonAbonos',
+          'carritoCfgBotonVehiculo',
+          'carritoCfgPermitirVentaSinStock',
+          'carritoCfgBotonesSelectorEnabled',
+          'carritoCfgBotonesSelector',
+          'carritoCfgBotonesSelectorAction',
+          'carritoCfgBotonesSelectorApply',
+          'carritoCfgMostrarAlertaTiempo',
+          'carritoCfgAlertaTiempoMinutos',
+          'carritoCfgAlertaTiempoDefault',
+          'carritoCfgDescuentos',
+          'carritoCfgPropina',
+          'carritoCfgComision',
+          'carritoCfgPagoMixto',
+          'carritoCfgMetodoPagoEfectivo',
+          'carritoCfgMetodoPagoCredito',
+          'carritoCfgMetodoPagoDebito',
+          'carritoCfgMetodoPagoBreb',
+          'carritoCfgMetodoPagoNequi',
+          'carritoCfgMetodoPagoOtraTransferencia',
+          'carritoCfgMetodoPagoCreditoCliente',
+          'carritoCfgMetodosPagoPersonalizados',
+          'carritoCfgResumenTotales',
+          'carritoCfgDesgloseCobro',
+          'carritoCfgFacturacionOffline',
+          'carritoCfgMarcaOffline',
+          'carritoCfgQrFacturaElectronica',
+          'carritoCfgPagoQR',
+          'btnAgregarCuentaQR'
+        ].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.disabled = true;
+        });
+        return;
+      }
+      try {
+        const cfg = await loadConfig();
+        applyConfig(cfg);
+        setMessage('', '');
+      } catch (err) {
+        setMessage(err.message || 'No se pudo cargar la configuracion.', 'error');
+      }
+    }
+
+    document.getElementById('btnGuardarConfigCarrito').addEventListener('click', async function() {
+      try {
+        const cfg = normalizeUnifiedCartConfig({
+          modo_pantalla_tactil: document.getElementById('carritoCfgModoTactil').checked,
+          botones_pitido_pc: document.getElementById('carritoCfgPitidoPc').checked,
+          botones_pitido_movil: document.getElementById('carritoCfgPitidoMovil').checked,
+          botones_vibracion_pc: document.getElementById('carritoCfgVibracionPc').checked,
+          botones_vibracion_movil: document.getElementById('carritoCfgVibracionMovil').checked,
+          atajos_pos_habilitados: document.getElementById('carritoCfgAtajosPOSEnabled').checked,
+          atajos_pos_mostrar_ayuda: document.getElementById('carritoCfgAtajosPOSAyuda').checked,
+          atajos_pos: collectPosShortcutConfig(),
+          mostrar_boton_buscar_productos: document.getElementById('carritoCfgBuscarProductos').checked,
+          mostrar_busqueda_catalogo: document.getElementById('carritoCfgBusquedaCatalogo').checked,
+          mostrar_codigo_manual_item: document.getElementById('carritoCfgCodigoManual').checked,
+          mostrar_observaciones_item: document.getElementById('carritoCfgObservaciones').checked,
+          mostrar_selector_cliente: document.getElementById('carritoCfgCliente').checked || document.getElementById('carritoCfgClienteObligatorio').checked,
+          cliente_obligatorio_pago: document.getElementById('carritoCfgClienteObligatorio').checked,
+          cliente_general_nombre: document.getElementById('carritoCfgClienteGeneralNombre').value,
+          mostrar_impuestos_item: document.getElementById('carritoCfgImpuestos').checked,
+          mostrar_lector_codigo_barras: document.getElementById('carritoCfgLector').checked,
+          modo_busqueda_producto_carrito: document.getElementById('carritoCfgBusquedaPredeterminada').value,
+          permitir_cantidad_decimal_carrito: document.getElementById('carritoCfgCantidadDecimal').checked,
+          ajustar_alto_items_contenido_carrito: document.getElementById('carritoCfgAltoItemsContenido').checked,
+          mostrar_todos_items_carrito: document.getElementById('carritoCfgMostrarTodosItems').checked,
+          habilitar_bascula_electronica: document.getElementById('carritoCfgBasculaElectronica').checked,
+          mostrar_resumen_productos: document.getElementById('carritoCfgResumenProductos').checked,
+          mostrar_boton_pagar: document.getElementById('carritoCfgMostrarPagar').checked,
+          preguntar_tipo_documento_al_pagar: document.getElementById('carritoCfgPreguntarDocumentoPago').checked,
+          mostrar_logo_empresa_carrito: document.getElementById('carritoCfgMostrarLogoEmpresa').checked,
+          logo_empresa_carrito_tamano: normalizeCartLogoSize(document.getElementById('carritoCfgLogoEmpresaTamano').value),
+          mostrar_tarjetas_pago: document.getElementById('carritoCfgMostrarTarjetasPago').checked,
+          mostrar_tarjeta_lector_codigo: document.getElementById('carritoCfgTarjetaLector').checked,
+          mostrar_tarjeta_items_carrito: document.getElementById('carritoCfgTarjetaItems').checked,
+          mostrar_tarjeta_totales_detalles: document.getElementById('carritoCfgTarjetaTotales').checked,
+          totales_detalles_mostrar_entrada: document.getElementById('carritoCfgTotalEntrada').checked,
+          totales_detalles_mostrar_salida: document.getElementById('carritoCfgTotalSalida').checked,
+          totales_detalles_mostrar_items: document.getElementById('carritoCfgTotalItems').checked,
+          totales_detalles_mostrar_productos: document.getElementById('carritoCfgTotalProductos').checked,
+          totales_detalles_mostrar_servicios: document.getElementById('carritoCfgTotalServicios').checked,
+          totales_detalles_mostrar_total_productos: document.getElementById('carritoCfgTotalFacturadoProductos').checked,
+          totales_detalles_mostrar_total_servicios: document.getElementById('carritoCfgTotalFacturadoServicios').checked,
+          totales_detalles_mostrar_cliente: document.getElementById('carritoCfgTotalCliente').checked,
+          totales_detalles_mostrar_subtotal: document.getElementById('carritoCfgTotalSubtotal').checked,
+          totales_detalles_mostrar_descuento: document.getElementById('carritoCfgTotalDescuento').checked,
+          totales_detalles_mostrar_impuesto: document.getElementById('carritoCfgTotalImpuesto').checked,
+          totales_detalles_mostrar_pagado: document.getElementById('carritoCfgTotalPagado').checked,
+          totales_detalles_mostrar_total: document.getElementById('carritoCfgTotalGeneral').checked,
+          totales_detalles_mostrar_saldo: document.getElementById('carritoCfgTotalSaldo').checked,
+          mostrar_tarjeta_cobro_estados: document.getElementById('carritoCfgTarjetaCobro').checked,
+          mostrar_tarjeta_acciones_carrito: document.getElementById('carritoCfgTarjetaAcciones').checked,
+          mostrar_tarjeta_valores_pago: document.getElementById('carritoCfgTarjetaValoresPago').checked,
+          mostrar_tarjeta_comision: document.getElementById('carritoCfgTarjetaComision').checked,
+          mostrar_tarjeta_vip_cliente: document.getElementById('carritoCfgTarjetaVip').checked,
+          mostrar_control_electrico_carrito: document.getElementById('carritoCfgControlElectrico').checked,
+          mostrar_tarjeta_domotica_carrito: document.getElementById('carritoCfgTarjetaDomotica').checked,
+          abrir_domotica_al_entrar_estacion: document.getElementById('carritoCfgAbrirDomoticaEstaciones').checked,
+          mostrar_boton_descuentos_carrito: document.getElementById('carritoCfgBotonDescuentos').checked,
+          mostrar_boton_cambiar_tarifa_carrito: document.getElementById('carritoCfgBotonCambiarTarifa').checked,
+          mostrar_boton_transferir_cuenta_carrito: document.getElementById('carritoCfgBotonTransferirCuenta').checked,
+          permitir_transferir_cuenta_carrito: document.getElementById('carritoCfgBotonTransferirCuenta').checked,
+          transferencia_cuenta_habilitada: document.getElementById('carritoCfgBotonTransferirCuenta').checked,
+          mostrar_boton_control_electrico_carrito: document.getElementById('carritoCfgBotonControlElectrico').checked,
+          mostrar_boton_cancelar_carrito: document.getElementById('carritoCfgBotonCancelar').checked,
+          mostrar_boton_taxi_carrito: false,
+          mostrar_boton_clientes_carrito: document.getElementById('carritoCfgBotonClientes').checked,
+          mostrar_boton_abonos_carrito: document.getElementById('carritoCfgBotonAbonos').checked,
+          mostrar_boton_vehiculo_carrito: document.getElementById('carritoCfgBotonVehiculo').checked,
+          permitir_venta_sin_stock_carrito: true,
+          mostrar_alerta_tiempo_carrito: document.getElementById('carritoCfgMostrarAlertaTiempo').checked,
+          alerta_tiempo_minutos: document.getElementById('carritoCfgAlertaTiempoMinutos').value,
+          alerta_tiempo_activa_default: document.getElementById('carritoCfgAlertaTiempoDefault').checked,
+          mostrar_descuentos: document.getElementById('carritoCfgDescuentos').checked,
+          mostrar_propina: document.getElementById('carritoCfgPropina').checked,
+          mostrar_comision: document.getElementById('carritoCfgComision').checked,
+          permitir_pago_mixto: document.getElementById('carritoCfgPagoMixto').checked,
+          metodo_pago_efectivo: document.getElementById('carritoCfgMetodoPagoEfectivo').checked,
+          metodo_pago_tarjeta_credito: document.getElementById('carritoCfgMetodoPagoCredito').checked,
+          metodo_pago_tarjeta_debito: document.getElementById('carritoCfgMetodoPagoDebito').checked,
+          metodo_pago_transferencia_bancaria: document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked,
+          metodo_pago_transferencia_bre_b: document.getElementById('carritoCfgMetodoPagoBreb').checked,
+          metodo_pago_nequi: document.getElementById('carritoCfgMetodoPagoNequi').checked,
+          metodo_pago_otras_transferencias: document.getElementById('carritoCfgMetodoPagoOtraTransferencia').checked,
+          metodo_pago_credito_cliente: document.getElementById('carritoCfgMetodoPagoCreditoCliente').checked,
+          metodos_pago_personalizados: normalizeCustomPaymentMethods(document.getElementById('carritoCfgMetodosPagoPersonalizados').value),
+          mostrar_resumen_totales_carrito: document.getElementById('carritoCfgResumenTotales').checked,
+          mostrar_desglose_cobro: document.getElementById('carritoCfgDesgloseCobro').checked,
+          facturacion_offline_habilitada: document.getElementById('carritoCfgFacturacionOffline').checked,
+          marcar_factura_offline_pendiente: document.getElementById('carritoCfgMarcaOffline').checked,
+          mostrar_qr_factura_electronica: document.getElementById('carritoCfgQrFacturaElectronica').checked,
+          pago_qr_habilitado: document.getElementById('carritoCfgPagoQR').checked,
+          pago_qr_cuentas: readQrAccounts()
+        });
+        const stored = await saveConfig(cfg);
+        applyConfig(stored);
+        setMessage('Configuracion de carrito guardada correctamente.', 'success');
+      } catch (err) {
+        setMessage(err.message || 'No se pudo guardar la configuracion.', 'error');
+      }
+    });
+
+    const btnAgregarCuentaQR = document.getElementById('btnAgregarCuentaQR');
+    if (btnAgregarCuentaQR) {
+      btnAgregarCuentaQR.addEventListener('click', function() {
+        addQrAccount();
+      });
+    }
+
+    const qrAccountsTableBody = document.getElementById('qrAccountsTableBody');
+    if (qrAccountsTableBody) {
+      qrAccountsTableBody.addEventListener('click', function(ev) {
+        const btn = ev.target.closest('.btn-remove-qr-account');
+        if (!btn) return;
+        const tr = btn.closest('tr[data-qr-account-index]');
+        if (!tr) return;
+        tr.remove();
+        const rows = readQrAccounts();
+        renderQrAccounts(rows);
+      });
+    }
+
+    const carritoCfgBotonesSelectorEnabled = document.getElementById('carritoCfgBotonesSelectorEnabled');
+    if (carritoCfgBotonesSelectorEnabled) {
+      carritoCfgBotonesSelectorEnabled.addEventListener('change', setButtonSelectorControlsEnabled);
+    }
+    const carritoCfgBotonesSelectorApply = document.getElementById('carritoCfgBotonesSelectorApply');
+    if (carritoCfgBotonesSelectorApply) {
+      carritoCfgBotonesSelectorApply.addEventListener('click', applyButtonSelectorChoice);
+    }
+
+    document.getElementById('btnGuardarVisibilidadPagoCarrito').addEventListener('click', function() {
+      document.getElementById('btnGuardarConfigCarrito').click();
+    });
+
+    bootstrap();
+  </script>
+</body>
+</html>

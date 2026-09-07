@@ -1,0 +1,517 @@
+package handlers
+
+import (
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"math"
+	"net/http"
+	"net/mail"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
+)
+
+const asesorComercialMailNotificationType = "asesor_comercial_invitation"
+
+func hashAsesorComercialToken(token string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(token)))
+	return hex.EncodeToString(sum[:])
+}
+
+func currentAdminFromSession(r *http.Request, dbSuper *sql.DB) (*dbpkg.Admin, error) {
+	if dbSuper == nil {
+		return nil, fmt.Errorf("base super no disponible")
+	}
+	c, err := r.Cookie("session_token")
+	if err != nil || c == nil || strings.TrimSpace(c.Value) == "" {
+		return nil, fmt.Errorf("unauthenticated")
+	}
+	s, err := dbpkg.GetSessionByToken(dbSuper, strings.TrimSpace(c.Value))
+	if err != nil || s == nil {
+		return nil, fmt.Errorf("unauthenticated")
+	}
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, s.AdminEmail)
+	if err != nil || admin == nil {
+		return nil, fmt.Errorf("account not found")
+	}
+	return admin, nil
+}
+
+func requireSuperAdmin(r *http.Request, dbSuper *sql.DB) (*dbpkg.Admin, bool, int, string) {
+	admin, err := currentAdminFromSession(r, dbSuper)
+	if err != nil {
+		return nil, false, http.StatusUnauthorized, "unauthenticated"
+	}
+	// Mantiene la misma semántica de Super Administrador que protege el shell
+	// y los endpoints con auditoría. De otro modo un alias histórico válido
+	// podía abrir el panel y leer un recurso, pero era rechazado al guardarlo.
+	if !paginaPrincipalRoleIsSuper(admin.Role) {
+		return nil, false, http.StatusForbidden, "solo super administrador"
+	}
+	return admin, true, http.StatusOK, ""
+}
+
+func newAsesorComercialTokenAndExpiration() (string, string, string, error) {
+	token, err := utils.GenerateSecureToken(32)
+	if err != nil {
+		return "", "", "", err
+	}
+	return token, hashAsesorComercialToken(token), time.Now().Add(7 * 24 * time.Hour).Format(time.RFC3339), nil
+}
+
+func newAsesorComercialCode(dbSuper *sql.DB) (string, error) {
+	for i := 0; i < 12; i++ {
+		raw, err := utils.GenerateSecureToken(8)
+		if err != nil {
+			return "", err
+		}
+		code := "AC-" + strings.ToUpper(strings.ReplaceAll(raw[:8], "_", "X"))
+		code = strings.ReplaceAll(code, "-", "")
+		if len(code) > 10 {
+			code = code[:10]
+		}
+		code = "AC-" + code[2:]
+		existing, err := dbpkg.GetAsesorComercialByCode(dbSuper, code)
+		if err != nil {
+			return "", err
+		}
+		if existing == nil {
+			return code, nil
+		}
+	}
+	return "", fmt.Errorf("no se pudo generar codigo unico")
+}
+
+func asesorComercialAcceptURL(r *http.Request, dbSuper *sql.DB, token string) string {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	return strings.TrimRight(baseURL, "/") + "/api/asesor_comercial/aceptar?token=" + url.QueryEscape(strings.TrimSpace(token))
+}
+
+func sendAsesorComercialInvitationEmail(r *http.Request, dbSuper *sql.DB, item dbpkg.AsesorComercial, token string) (string, error) {
+	acceptURL := asesorComercialAcceptURL(r, dbSuper, token)
+	loginURL := strings.TrimRight(resolveBaseURLForConfirmation(r, dbSuper), "/") + "/login.html"
+	name := strings.TrimSpace(item.AdminNombre)
+	if name == "" {
+		name = "administrador"
+	}
+	asunto, cuerpoPlano, cuerpoHTML := asesorComercialEmailContent(name, item.Codigo, item.PorcentajePrimerAnio, item.PorcentajeRenovacionAnual, item.MesesRenovacion, acceptURL, loginURL)
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"accept_url":%q,"login_url":%q,"codigo":%q,"mail_mode":"test"}`, acceptURL, loginURL, item.Codigo)
+		if err := captureEmpresaUsuarioMailNotification(dbSuper, asesorComercialMailNotificationType, 0, item.AdminEmail, asunto, cuerpoPlano, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
+			return acceptURL, err
+		}
+		return acceptURL, nil
+	}
+	if _, err := mail.ParseAddress(item.AdminEmail); err != nil {
+		return acceptURL, fmt.Errorf("correo destino invalido: %w", err)
+	}
+	if err := sendEmpresaUsuarioMailuMultipart(dbSuper, resolveBaseURLForConfirmation(r, dbSuper), item.AdminEmail, asunto, cuerpoPlano, cuerpoHTML); err != nil {
+		return acceptURL, err
+	}
+	return acceptURL, nil
+}
+
+func asesorComercialEmailContent(name, code string, pctPrimerAnio float64, pctRenovacion float64, mesesRenovacion int, acceptURL, loginURL string) (string, string, string) {
+	if pctPrimerAnio <= 0 {
+		pctPrimerAnio = 40
+	}
+	if pctRenovacion < 0 {
+		pctRenovacion = 0
+	}
+	if mesesRenovacion < 0 {
+		mesesRenovacion = 0
+	}
+	meses := 12 + mesesRenovacion
+	subject := "Invitacion para activar asesor comercial"
+	text := fmt.Sprintf("Hola %s,\n\nPowerful Control System te invito a ser asesor comercial.\n\nTu codigo de asesor sera: %s\nComision del primer ano: %.2f%%\nComision desde el segundo ano: %.2f%% anual durante %d mes(es)\nTiempo total de asociacion por cliente: %d mes(es)\n\nPara aceptar la invitacion, abre este enlace:\n%s\n\nDespues podras iniciar sesion y ver Mis clientes desde Seleccionar empresa:\n%s\n\nSi no esperabas esta invitacion, ignora este mensaje.\n", name, code, pctPrimerAnio, pctRenovacion, mesesRenovacion, meses, acceptURL, loginURL)
+	html := fmt.Sprintf("<html><body><p>Hola %s,</p><p>Powerful Control System te invito a ser <strong>asesor comercial</strong>.</p><p><strong>Codigo de asesor:</strong> %s<br><strong>Comision del primer ano:</strong> %.2f%%<br><strong>Comision desde el segundo ano:</strong> %.2f%% anual durante %d mes(es)<br><strong>Tiempo total de asociacion por cliente:</strong> %d mes(es)</p><p><a href=\"%s\" style=\"display:inline-block;padding:12px 18px;background:#0f6fcb;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;\">Aceptar invitacion</a></p><p>Despues podras iniciar sesion y consultar <strong>Mis clientes</strong> desde Seleccionar empresa.</p><p>Acceso manual: <a href=\"%s\">%s</a></p><p>Si no esperabas esta invitacion, ignora este mensaje.</p></body></html>", htmlEscape(name), htmlEscape(code), pctPrimerAnio, pctRenovacion, mesesRenovacion, meses, htmlEscape(acceptURL), htmlEscape(loginURL), htmlEscape(loginURL))
+	return subject, text, html
+}
+
+func htmlEscape(value string) string {
+	replacer := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;", "'", "&#39;")
+	return replacer.Replace(value)
+}
+
+// AsesorComercialSuperHandler administra asesores, reglas de comision y liquidaciones desde super.
+func AsesorComercialSuperHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		admin, ok, status, msg := requireSuperAdmin(r, dbSuper)
+		if !ok {
+			http.Error(w, msg, status)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			if strings.EqualFold(r.URL.Query().Get("action"), "promocion") {
+				cfg, err := readLicenciaAdvisorPromoConfig(dbSuper)
+				if err != nil {
+					http.Error(w, "no se pudo cargar promocion de asesores: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "promocion": cfg})
+				return
+			}
+			if strings.EqualFold(r.URL.Query().Get("action"), "comisiones") {
+				items, err := dbpkg.ListAsesorComercialComisiones(dbSuper, "", true)
+				if err != nil {
+					http.Error(w, "no se pudieron cargar comisiones: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "items": items})
+				return
+			}
+			items, err := dbpkg.ListAsesoresComerciales(dbSuper)
+			if err != nil {
+				http.Error(w, "no se pudieron cargar asesores: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "items": items})
+		case http.MethodPost:
+			var payload struct {
+				Email                     string  `json:"email"`
+				PorcentajeComision        float64 `json:"porcentaje_comision"`
+				PorcentajePrimerAnio      float64 `json:"porcentaje_primer_anio"`
+				PorcentajeRenovacionAnual float64 `json:"porcentaje_renovacion_anual"`
+				MesesRenovacion           int     `json:"meses_renovacion"`
+				MesesAsociacion           int     `json:"meses_asociacion"`
+				MetodoPagoComision        string  `json:"metodo_pago_comision"`
+				EntidadFinanciera         string  `json:"entidad_financiera"`
+				TipoCuenta                string  `json:"tipo_cuenta"`
+				NumeroCuenta              string  `json:"numero_cuenta"`
+				TitularCuenta             string  `json:"titular_cuenta"`
+				DocumentoTitular          string  `json:"documento_titular"`
+				EmailPagos                string  `json:"email_pagos"`
+				TelefonoPagos             string  `json:"telefono_pagos"`
+				PeriodicidadPago          string  `json:"periodicidad_pago"`
+				DiaPago                   int     `json:"dia_pago"`
+				PagoMinimo                float64 `json:"pago_minimo"`
+				RequiereSoportePago       bool    `json:"requiere_soporte_pago"`
+				Observaciones             string  `json:"observaciones"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+			email := strings.ToLower(strings.TrimSpace(payload.Email))
+			if email == "" {
+				http.Error(w, "email requerido", http.StatusBadRequest)
+				return
+			}
+			target, err := dbpkg.GetAdminByEmailFull(dbSuper, email)
+			if err != nil || target == nil {
+				http.Error(w, "el correo debe corresponder a un administrador registrado", http.StatusBadRequest)
+				return
+			}
+			if strings.EqualFold(target.Estado, "inactivo") {
+				http.Error(w, "el administrador esta inactivo", http.StatusConflict)
+				return
+			}
+			if payload.PorcentajeComision < 0 || payload.PorcentajeComision > 100 {
+				http.Error(w, "porcentaje_comision debe estar entre 0 y 100", http.StatusBadRequest)
+				return
+			}
+			if payload.PorcentajePrimerAnio <= 0 {
+				payload.PorcentajePrimerAnio = payload.PorcentajeComision
+			}
+			if payload.PorcentajePrimerAnio < 0 || payload.PorcentajePrimerAnio > 100 || payload.PorcentajeRenovacionAnual < 0 || payload.PorcentajeRenovacionAnual > 100 {
+				http.Error(w, "los porcentajes de comision deben estar entre 0 y 100", http.StatusBadRequest)
+				return
+			}
+			if payload.MesesRenovacion < 0 || payload.MesesRenovacion > 120 {
+				http.Error(w, "meses_renovacion debe estar entre 0 y 120", http.StatusBadRequest)
+				return
+			}
+			minMesesAsociacion := 12 + payload.MesesRenovacion
+			if payload.MesesAsociacion < minMesesAsociacion {
+				payload.MesesAsociacion = minMesesAsociacion
+			}
+			code := ""
+			if existing, lookupErr := dbpkg.GetAsesorComercialByEmail(dbSuper, email); lookupErr == nil && existing != nil {
+				code = strings.TrimSpace(existing.Codigo)
+			}
+			if code == "" {
+				var codeErr error
+				code, codeErr = newAsesorComercialCode(dbSuper)
+				if codeErr != nil {
+					http.Error(w, "no se pudo generar codigo: "+codeErr.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			token, tokenHash, expira, err := newAsesorComercialTokenAndExpiration()
+			if err != nil {
+				http.Error(w, "no se pudo generar invitacion", http.StatusInternalServerError)
+				return
+			}
+			item := dbpkg.AsesorComercial{
+				AdminEmail:                email,
+				AdminNombre:               target.Name,
+				Codigo:                    code,
+				PorcentajeComision:        roundMoney(payload.PorcentajeComision),
+				PorcentajePrimerAnio:      roundMoney(payload.PorcentajePrimerAnio),
+				PorcentajeRenovacionAnual: roundMoney(payload.PorcentajeRenovacionAnual),
+				MesesRenovacion:           payload.MesesRenovacion,
+				MesesAsociacion:           payload.MesesAsociacion,
+				MetodoPagoComision:        payload.MetodoPagoComision,
+				EntidadFinanciera:         payload.EntidadFinanciera,
+				TipoCuenta:                payload.TipoCuenta,
+				NumeroCuenta:              payload.NumeroCuenta,
+				TitularCuenta:             payload.TitularCuenta,
+				DocumentoTitular:          payload.DocumentoTitular,
+				EmailPagos:                payload.EmailPagos,
+				TelefonoPagos:             payload.TelefonoPagos,
+				PeriodicidadPago:          payload.PeriodicidadPago,
+				DiaPago:                   payload.DiaPago,
+				PagoMinimo:                roundMoney(payload.PagoMinimo),
+				RequiereSoportePago:       payload.RequiereSoportePago,
+				InvitacionExpiraEn:        expira,
+				InvitadoPorEmail:          admin.Email,
+				Observaciones:             payload.Observaciones,
+			}
+			id, err := dbpkg.CreateAsesorComercial(dbSuper, item, tokenHash)
+			if err != nil {
+				http.Error(w, "no se pudo guardar asesor comercial: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			item.ID = id
+			acceptURL, mailErr := sendAsesorComercialInvitationEmail(r, dbSuper, item, token)
+			resp := map[string]interface{}{"ok": true, "id": id, "codigo": code, "accept_url": acceptURL}
+			if mailErr != nil {
+				resp["email_sent"] = false
+				resp["message"] = "El asesor fue creado, pero el correo no pudo enviarse. Revisa Email corporativo Mailu."
+				resp["error"] = mailErr.Error()
+			} else {
+				resp["email_sent"] = true
+			}
+			writeJSON(w, http.StatusOK, resp)
+		case http.MethodPut:
+			if strings.EqualFold(r.URL.Query().Get("action"), "promocion") {
+				var payload struct {
+					Enabled bool    `json:"enabled"`
+					Percent float64 `json:"percent"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "payload invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.Percent < 0 || payload.Percent > 100 {
+					http.Error(w, "percent debe estar entre 0 y 100", http.StatusBadRequest)
+					return
+				}
+				enabledValue := "0"
+				if payload.Enabled {
+					enabledValue = "1"
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "licencias.asesor_promo.enabled", enabledValue, false); err != nil {
+					http.Error(w, "no se pudo guardar activacion: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "licencias.asesor_promo.percent", fmt.Sprintf("%.2f", payload.Percent), false); err != nil {
+					http.Error(w, "no se pudo guardar porcentaje: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				_ = dbpkg.SetConfigValue(dbSuper, "licencias.asesor_promo.updated_by", admin.Email, false)
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "promocion": payload})
+				return
+			}
+			id, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("id")), 10, 64)
+			if id <= 0 {
+				http.Error(w, "id requerido", http.StatusBadRequest)
+				return
+			}
+			if strings.EqualFold(r.URL.Query().Get("action"), "marcar_pago") {
+				var payload struct {
+					EstadoPagoComision     string `json:"estado_pago_comision"`
+					MetodoPagoComision     string `json:"metodo_pago_comision"`
+					ReferenciaPagoComision string `json:"referencia_pago_comision"`
+					FechaProgramadaPago    string `json:"fecha_programada_pago"`
+					SoportePagoURL         string `json:"soporte_pago_url"`
+					Observaciones          string `json:"observaciones"`
+				}
+				_ = json.NewDecoder(r.Body).Decode(&payload)
+				if err := dbpkg.MarkAsesorComercialComisionPagada(dbSuper, dbpkg.AsesorComercialComision{
+					ID:                     id,
+					EstadoPagoComision:     payload.EstadoPagoComision,
+					MetodoPagoComision:     payload.MetodoPagoComision,
+					ReferenciaPagoComision: payload.ReferenciaPagoComision,
+					FechaProgramadaPago:    payload.FechaProgramadaPago,
+					SoportePagoURL:         payload.SoportePagoURL,
+					Observaciones:          payload.Observaciones,
+				}, admin.Email); err != nil {
+					http.Error(w, "no se pudo marcar pago: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
+			}
+			var payload struct {
+				PorcentajeComision        float64 `json:"porcentaje_comision"`
+				PorcentajePrimerAnio      float64 `json:"porcentaje_primer_anio"`
+				PorcentajeRenovacionAnual float64 `json:"porcentaje_renovacion_anual"`
+				MesesRenovacion           int     `json:"meses_renovacion"`
+				MesesAsociacion           int     `json:"meses_asociacion"`
+				MetodoPagoComision        string  `json:"metodo_pago_comision"`
+				EntidadFinanciera         string  `json:"entidad_financiera"`
+				TipoCuenta                string  `json:"tipo_cuenta"`
+				NumeroCuenta              string  `json:"numero_cuenta"`
+				TitularCuenta             string  `json:"titular_cuenta"`
+				DocumentoTitular          string  `json:"documento_titular"`
+				EmailPagos                string  `json:"email_pagos"`
+				TelefonoPagos             string  `json:"telefono_pagos"`
+				PeriodicidadPago          string  `json:"periodicidad_pago"`
+				DiaPago                   int     `json:"dia_pago"`
+				PagoMinimo                float64 `json:"pago_minimo"`
+				RequiereSoportePago       bool    `json:"requiere_soporte_pago"`
+				Observaciones             string  `json:"observaciones"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.PorcentajeComision < 0 || payload.PorcentajeComision > 100 {
+				http.Error(w, "porcentaje_comision debe estar entre 0 y 100", http.StatusBadRequest)
+				return
+			}
+			if payload.PorcentajePrimerAnio <= 0 {
+				payload.PorcentajePrimerAnio = payload.PorcentajeComision
+			}
+			if payload.PorcentajePrimerAnio < 0 || payload.PorcentajePrimerAnio > 100 || payload.PorcentajeRenovacionAnual < 0 || payload.PorcentajeRenovacionAnual > 100 {
+				http.Error(w, "los porcentajes de comision deben estar entre 0 y 100", http.StatusBadRequest)
+				return
+			}
+			if payload.MesesRenovacion < 0 || payload.MesesRenovacion > 120 {
+				http.Error(w, "meses_renovacion debe estar entre 0 y 120", http.StatusBadRequest)
+				return
+			}
+			minMesesAsociacion := 12 + payload.MesesRenovacion
+			if payload.MesesAsociacion < minMesesAsociacion {
+				payload.MesesAsociacion = minMesesAsociacion
+			}
+			if err := dbpkg.UpdateAsesorComercial(dbSuper, dbpkg.AsesorComercial{
+				ID:                        id,
+				PorcentajeComision:        roundMoney(payload.PorcentajeComision),
+				PorcentajePrimerAnio:      roundMoney(payload.PorcentajePrimerAnio),
+				PorcentajeRenovacionAnual: roundMoney(payload.PorcentajeRenovacionAnual),
+				MesesRenovacion:           payload.MesesRenovacion,
+				MesesAsociacion:           payload.MesesAsociacion,
+				MetodoPagoComision:        payload.MetodoPagoComision,
+				EntidadFinanciera:         payload.EntidadFinanciera,
+				TipoCuenta:                payload.TipoCuenta,
+				NumeroCuenta:              payload.NumeroCuenta,
+				TitularCuenta:             payload.TitularCuenta,
+				DocumentoTitular:          payload.DocumentoTitular,
+				EmailPagos:                payload.EmailPagos,
+				TelefonoPagos:             payload.TelefonoPagos,
+				PeriodicidadPago:          payload.PeriodicidadPago,
+				DiaPago:                   payload.DiaPago,
+				PagoMinimo:                roundMoney(payload.PagoMinimo),
+				RequiereSoportePago:       payload.RequiereSoportePago,
+				Observaciones:             payload.Observaciones,
+			}, admin.Email); err != nil {
+				http.Error(w, "no se pudo actualizar asesor: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+		case http.MethodDelete:
+			id, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("id")), 10, 64)
+			if id <= 0 {
+				http.Error(w, "id requerido", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.InactivateAsesorComercial(dbSuper, id, admin.Email); err != nil {
+				http.Error(w, "no se pudo desactivar asesor: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+}
+
+func AsesorComercialAcceptHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := strings.TrimSpace(r.URL.Query().Get("token"))
+		if token == "" {
+			http.Error(w, "token requerido", http.StatusBadRequest)
+			return
+		}
+		item, err := dbpkg.GetAsesorComercialByTokenHash(dbSuper, hashAsesorComercialToken(token))
+		if err != nil || item == nil {
+			http.Error(w, "invitacion no valida", http.StatusNotFound)
+			return
+		}
+		if !strings.EqualFold(item.EstadoInvitacion, "pendiente") {
+			http.Error(w, "la invitacion ya no esta pendiente", http.StatusConflict)
+			return
+		}
+		if exp, ok := parseAsesorTime(item.InvitacionExpiraEn); ok && time.Now().After(exp) {
+			http.Error(w, "la invitacion expiro", http.StatusConflict)
+			return
+		}
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, item.AdminEmail)
+		if err != nil || admin == nil || strings.EqualFold(admin.Estado, "inactivo") {
+			http.Error(w, "administrador no disponible", http.StatusBadRequest)
+			return
+		}
+		acceptedAt := time.Now().Format("2006-01-02 15:04:05")
+		if err := dbpkg.AcceptAsesorComercialInvitation(dbSuper, item.ID, acceptedAt, item.AdminEmail); err != nil {
+			http.Error(w, "no se pudo aceptar invitacion", http.StatusInternalServerError)
+			return
+		}
+		if err := createAdminEmpresaCompartidaSession(w, r, dbSuper, item.AdminEmail); err != nil {
+			http.Error(w, "invitacion aceptada, pero no se pudo iniciar sesion", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/seleccionar_empresa.html?asesor_comercial=aceptado", http.StatusFound)
+	}
+}
+
+func AsesorComercialMisClientesHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		admin, err := currentAdminFromSession(r, dbSuper)
+		if err != nil {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		advisor, err := dbpkg.GetAsesorComercialByEmail(dbSuper, admin.Email)
+		if err != nil {
+			http.Error(w, "no se pudo validar asesor: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if advisor == nil || !strings.EqualFold(advisor.EstadoInvitacion, "aceptada") {
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "is_asesor": false, "items": []interface{}{}})
+			return
+		}
+		items, err := dbpkg.ListAsesorComercialComisiones(dbSuper, admin.Email, false)
+		if err != nil {
+			http.Error(w, "no se pudieron cargar clientes: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "is_asesor": true, "asesor": advisor, "items": items})
+	}
+}
+
+func parseAsesorTime(value string) (time.Time, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return time.Time{}, false
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02 15:04:05", "2006-01-02"} {
+		if t, err := time.Parse(layout, value); err == nil {
+			return t, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func roundMoney(value float64) float64 {
+	return math.Round(value*100) / 100
+}

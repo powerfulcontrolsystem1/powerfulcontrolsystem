@@ -1,0 +1,9 @@
+# Security-sensitive paths require technical-owner review before merge.
+/backend/auth/ @powerfulcontrolsystem
+/backend/secure/ @powerfulcontrolsystem
+/backend/utils/ @powerfulcontrolsystem
+/backend/handlers/auth_* @powerfulcontrolsystem
+/backend/handlers/payments_* @powerfulcontrolsystem
+/backend/db/ @powerfulcontrolsystem
+/deploy/ @powerfulcontrolsystem
+/.github/workflows/ @powerfulcontrolsystem

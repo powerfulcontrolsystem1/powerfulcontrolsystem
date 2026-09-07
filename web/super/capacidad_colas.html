@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Capacidad de colas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/super/capacidad_colas.css?v=20260906">
+  <script src="/menu.js"></script>
+</head>
+<body class="super-page">
+  <main class="queue-shell">
+    <header class="queue-head">
+      <div>
+        <h1>Capacidad de colas</h1>
+        <p>Supervisa por separado impresiones, altas de productos y emisión fiscal. Los límites se aplican por empresa para que una carga excesiva no consuma la capacidad de las demás.</p>
+      </div>
+      <div class="queue-actions">
+        <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+        <button id="evaluateBtn" class="btn secondary" type="button">Evaluar y alertar</button>
+        <button id="saveBtn" class="btn" type="button">Guardar configuración</button>
+      </div>
+    </header>
+    <div id="queueCards" class="queue-grid" aria-live="polite"></div>
+    <p class="queue-help">La alerta usa el correo y el tiempo de enfriamiento configurados en “Alertas sistema”. Para determinar el máximo real del VPS todavía se requiere una prueba de carga controlada con el hardware, las réplicas y PostgreSQL del entorno objetivo.</p>
+    <div id="statusMsg" class="form-help queue-status"></div>
+    <section class="card form queue-summary">
+      <h2 class="queue-summary-title">Diagnóstico consolidado</h2>
+      <table class="table">
+        <thead><tr><th>Carril</th><th>Pendientes / solicitudes</th><th>Procesando</th><th>Fallidos</th><th>Empresas activas</th><th>Mayor presión</th><th>Antigüedad</th><th>Estado</th></tr></thead>
+        <tbody id="summaryRows"><tr><td colspan="8" class="muted">Cargando…</td></tr></tbody>
+      </table>
+    </section>
+  </main>
+  <script src="/js/super_capacidad_colas.js?v=20260906"></script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

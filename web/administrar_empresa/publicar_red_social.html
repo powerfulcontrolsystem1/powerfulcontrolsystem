@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Publicar en Red Social Comercial</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body{background:linear-gradient(180deg,var(--bg-alt),var(--bg));color:var(--text);padding:20px;min-height:100vh;font-family:"Segoe UI",Arial,sans-serif}
+    .panel{background:linear-gradient(180deg,color-mix(in srgb,var(--surface-soft) 86%,var(--surface) 14%),var(--surface));padding:22px;border-radius:22px;max-width:980px;margin:0 auto;box-shadow:0 18px 34px color-mix(in srgb,var(--bg) 72%,transparent);border:1px solid var(--border)}
+    .composer{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:20px;align-items:start}
+    .grupo{margin-bottom:15px}.grupo label{display:block;font-weight:800;margin-bottom:6px}.grupo input,.grupo textarea{width:100%;padding:11px;border:1px solid var(--border);border-radius:12px;box-sizing:border-box;background:var(--input-bg);color:var(--text)}
+    .preview-card,.pub-item{background:var(--surface-soft);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+    .preview-img{height:180px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 20%,transparent),color-mix(in srgb,var(--accent-2) 18%,transparent));background-size:cover;background-position:center;display:grid;place-items:center;color:var(--muted);font-weight:800}
+    .preview-body{padding:15px}.preview-body h3{margin:0 0 8px}.preview-body p{color:var(--muted);white-space:pre-wrap}
+    .listado{margin-top:26px}.pub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+    .pub-item{padding:14px;display:flex;flex-direction:column;gap:10px}.pub-item small{color:var(--muted);white-space:pre-wrap}.pub-delete-btn{align-self:flex-start;background:var(--danger);color:#fff;border:0;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:800}
+    .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+    .page-head h2{margin:0}.page-head p{margin:6px 0 0}.visit-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.visit-btn{text-decoration:none;white-space:nowrap}
+    @media(max-width:760px){body{padding:12px}.composer{grid-template-columns:1fr}.panel{padding:16px}}
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body>
+  <div class="panel">
+<div class="page-head">
+      <div>
+        <h2>Publicar en Red Social Comercial</h2>
+        <p class="form-help">Publica texto, fotos desde celular o PC, y videos de YouTube. El feed público carga por desplazamiento continuo, con una experiencia más comercial y ordenada.</p>
+      </div>
+      <div class="visit-actions">
+        <a id="visitBusinessProfileBtn" class="btn visit-btn" href="/administrar_empresa/venta_publica.html" target="_blank" rel="noopener">Ver perfil de la empresa</a>
+        <a id="visitSocialBtn" class="btn secondary visit-btn" href="/red_social_comercial.html" target="_blank" rel="noopener">Visitar red social</a>
+      </div>
+    </div>
+    <div class="composer">
+      <div>
+        <div class="grupo">
+          <label>Título del post</label>
+          <input type="text" id="pubNombre" placeholder="Ej. Nueva promoción de temporada">
+        </div>
+        <div class="grupo">
+          <label>Contenido</label>
+          <textarea id="pubDesc" rows="6" placeholder="Escribe la novedad, beneficio, precio o condiciones..."></textarea>
+        </div>
+        <div class="grupo">
+          <label>Foto</label>
+          <div class="form-row" style="gap:10px;">
+            <div class="form-col">
+              <input type="file" id="pubFotoFile" class="form-input" accept="image/*">
+              <div class="form-help">Puedes seleccionar una imagen desde tu celular o PC.</div>
+            </div>
+            <div class="form-col">
+              <input type="text" id="pubFoto" placeholder="o pega una URL https://... o se llenará con la subida">
+              <div class="form-help">Si subes un archivo, se genera una URL interna automática.</div>
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top:10px;">
+            <button type="button" class="btn secondary" id="btnSubirFoto">Subir foto</button>
+          </div>
+        </div>
+        <div class="grupo">
+          <label>Video de YouTube (URL)</label>
+          <input type="text" id="pubYoutube" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+        <button id="btnCrearPublicacion" class="btn" type="button">Publicar post</button>
+      </div>
+      <div class="preview-card">
+        <div id="previewImg" class="preview-img">Vista previa</div>
+        <div class="preview-body">
+          <h3 id="previewTitle">Tu post empresarial</h3>
+          <p id="previewDesc">El contenido aparecerá aquí antes de publicarlo.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="listado">
+      <h3>Mis publicaciones</h3>
+      <div id="misPublicaciones">Cargando...</div>
+    </div>
+  </div>
+
+  <script>
+    function parsePositiveInt(raw) {
+      var n = Number(String(raw == null ? '' : raw).trim());
+      if (!Number.isFinite(n)) return 0;
+      n = Math.trunc(n);
+      return n > 0 ? n : 0;
+    }
+
+    function resolveEmpresaId() {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        var own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+        if (own > 0) return own;
+      } catch (e) {}
+      try {
+        if (window.parent && window.parent !== window) {
+          if (typeof window.parent.__resolveEmpresaIdContext === 'function') {
+            var parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+            if (parentResolved > 0) return parentResolved;
+          }
+          var parentParams = new URLSearchParams(window.parent.location.search || '');
+          var fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
+          if (fromParent > 0) return fromParent;
+        }
+      } catch (e) {}
+      try {
+        var stores = [window.sessionStorage, window.localStorage];
+        var keys = ['active_empresa_id', 'empresa_id', 'admin_empresa_id'];
+        for (var s = 0; s < stores.length; s += 1) {
+          for (var k = 0; k < keys.length; k += 1) {
+            var value = parsePositiveInt(stores[s].getItem(keys[k]));
+            if (value > 0) return value;
+          }
+        }
+      } catch (e) {}
+      return 0;
+    }
+
+    var empresaId = resolveEmpresaId();
+
+    function socialPublicURL() {
+      var url = new URL('/red_social_comercial.html', window.location.origin);
+      if (empresaId > 0) url.searchParams.set('empresa_id', String(empresaId));
+      return url.pathname + url.search;
+    }
+
+    function publicProfileURLFromConfig(cfg) {
+      cfg = cfg || {};
+      var slug = String(cfg.empresa_slug || '').trim();
+      if (slug) return '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug);
+      var setup = new URL('/administrar_empresa/venta_publica.html', window.location.origin);
+      if (empresaId > 0) setup.searchParams.set('empresa_id', String(empresaId));
+      return setup.pathname + setup.search;
+    }
+
+    async function refreshBusinessProfileButton() {
+      var btn = document.getElementById('visitBusinessProfileBtn');
+      if (!btn) return;
+      btn.href = publicProfileURLFromConfig(null);
+      if (!empresaId) return;
+      try {
+        var res = await fetch(empresaApiURL('/api/empresa/venta_publica', { action: 'config' }), { credentials: 'same-origin' });
+        var text = await res.text();
+        var data = text ? JSON.parse(text) : {};
+        if (res.ok && data && data.config) {
+          btn.href = publicProfileURLFromConfig(data.config);
+        }
+      } catch (e) {}
+    }
+
+    (function initVisitButton(){
+      var btn = document.getElementById('visitSocialBtn');
+      if (btn) btn.href = socialPublicURL();
+      refreshBusinessProfileButton();
+    })();
+
+    function empresaApiURL(path, extra) {
+      var url = new URL(path, window.location.origin);
+      if (empresaId > 0) url.searchParams.set('empresa_id', String(empresaId));
+      if (extra && typeof extra === 'object') {
+        Object.keys(extra).forEach(function(key) {
+          if (extra[key] !== undefined && extra[key] !== null && String(extra[key]) !== '') {
+            url.searchParams.set(key, String(extra[key]));
+          }
+        });
+      }
+      return url.pathname + url.search;
+    }
+
+    async function readErrorMessage(res, fallback) {
+      var text = '';
+      try { text = await res.text(); } catch (e) {}
+      if (!text) return fallback || ('HTTP ' + res.status);
+      try {
+        var data = JSON.parse(text);
+        return data.error || data.message || text;
+      } catch (e) {
+        return text;
+      }
+    }
+
+    async function cargarPublicaciones() {
+      if (!empresaId) {
+        document.getElementById('misPublicaciones').innerHTML = 'No se encontró empresa_id para cargar publicaciones.';
+        return;
+      }
+      try {
+        const res = await fetch(empresaApiURL('/api/empresa/publicaciones'), {
+          credentials: 'same-origin',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('session_token') }
+        });
+        if (!res.ok) throw new Error(await readErrorMessage(res, 'Error al cargar'));
+        const pubs = await res.json();
+        const div = document.getElementById('misPublicaciones');
+        div.innerHTML = '';
+        if (pubs.length === 0) {
+          div.innerHTML = '<p>No tienes publicaciones activas.</p>';
+          return;
+        }
+        div.className = 'pub-grid';
+        pubs.forEach(p => {
+          div.innerHTML += `
+            <div class="pub-item">
+              <div>
+                <strong>${p.nombre}</strong><br>
+                <small>${p.descripcion}</small>
+              </div>
+              <button type="button" data-publicacion-id="${Number(p.id)}" class="pub-delete-btn">Eliminar</button>
+            </div>
+          `;
+        });
+      } catch (e) {
+        document.getElementById('misPublicaciones').innerHTML = (e && e.message) ? 'No se pudieron cargar publicaciones: ' + e.message : 'Error cargando publicaciones.';
+      }
+    }
+
+    async function crearPublicacion() {
+      if (!empresaId) {
+        alert('No se encontró empresa_id. Abre esta página desde Administrar empresa.');
+        return;
+      }
+      const nombre = document.getElementById('pubNombre').value;
+      const desc = document.getElementById('pubDesc').value;
+      const foto = document.getElementById('pubFoto').value;
+      const youtube = document.getElementById('pubYoutube').value;
+      
+      if (!nombre || !desc) {
+        alert('Nombre y descripción son obligatorios');
+        return;
+      }
+      
+      try {
+        const res = await fetch(empresaApiURL('/api/empresa/publicaciones'), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('session_token')
+          },
+          body: JSON.stringify({ empresa_id: empresaId, nombre: nombre, descripcion: desc, foto_url: foto, youtube_url: youtube, estado: 'activo' })
+        });
+        
+        if (res.ok) {
+          document.getElementById('pubNombre').value = '';
+          document.getElementById('pubDesc').value = '';
+          document.getElementById('pubFoto').value = '';
+          document.getElementById('pubYoutube').value = '';
+          var f = document.getElementById('pubFotoFile'); if (f) f.value = '';
+          alert('Publicado con éxito.');
+          cargarPublicaciones();
+        } else {
+          alert(await readErrorMessage(res, 'Error al publicar'));
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Error de conexión');
+      }
+    }
+
+    async function eliminarPublicacion(id) {
+      if (!confirm('¿Seguro que deseas eliminar esta publicación?')) return;
+      try {
+        const res = await fetch(empresaApiURL('/api/empresa/publicaciones/' + encodeURIComponent(id)), {
+          method: 'DELETE',
+          credentials: 'same-origin',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('session_token') }
+        });
+        if (res.ok) {
+          cargarPublicaciones();
+        } else {
+          alert(await readErrorMessage(res, 'Error al eliminar'));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function bindPreview(){
+      const n = document.getElementById('pubNombre');
+      const d = document.getElementById('pubDesc');
+      const f = document.getElementById('pubFoto');
+      const y = document.getElementById('pubYoutube');
+      function update(){
+        document.getElementById('previewTitle').textContent = n.value.trim() || 'Tu post empresarial';
+        document.getElementById('previewDesc').textContent = d.value.trim() || 'El contenido aparecerá aquí antes de publicarlo.';
+        const img = f.value.trim();
+        const box = document.getElementById('previewImg');
+        box.style.backgroundImage = img ? 'url(' + img + ')' : '';
+        box.textContent = img ? '' : 'Vista previa';
+      }
+      [n,d,f,y].forEach(el => el && el.addEventListener('input', update));
+      update();
+    }
+    bindPreview();
+    document.getElementById('btnCrearPublicacion').addEventListener('click', crearPublicacion);
+    document.getElementById('misPublicaciones').addEventListener('click', function (event) {
+      const button = event.target && event.target.closest ? event.target.closest('[data-publicacion-id]') : null;
+      if (button) eliminarPublicacion(Number(button.dataset.publicacionId || 0));
+    });
+    cargarPublicaciones();
+
+    // Subida de imagen desde archivo (celular/PC)
+    (function initUpload(){
+      var btn = document.getElementById("btnSubirFoto");
+      var file = document.getElementById("pubFotoFile");
+      var urlInput = document.getElementById("pubFoto");
+      if (!btn || !file || !urlInput) return;
+
+      btn.addEventListener("click", async function(){
+        try{
+          if (!empresaId) { alert("No se encontró empresa_id. Abre esta página desde Administrar empresa."); return; }
+          var f = file.files && file.files[0];
+          if (!f) { alert("Selecciona un archivo de imagen."); return; }
+          btn.disabled = true;
+          btn.textContent = "Subiendo...";
+          var fd = new FormData();
+          fd.append("archivo", f, f.name);
+          fd.append("empresa_id", String(empresaId));
+          const res = await fetch(empresaApiURL('/api/empresa/publicaciones', { action: 'upload_media' }), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('session_token') },
+            body: fd
+          });
+          const text = await res.text();
+          const data = text ? JSON.parse(text) : {};
+          if (!res.ok) throw new Error(data.error || data.message || text || ("HTTP " + res.status));
+          urlInput.value = String(data.url || "").trim();
+          alert("Foto subida correctamente.");
+          try { urlInput.dispatchEvent(new Event("input")); } catch(e){}
+        }catch(e){
+          alert(e.message || "No se pudo subir la foto.");
+        }finally{
+          btn.disabled = false;
+          btn.textContent = "Subir foto";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

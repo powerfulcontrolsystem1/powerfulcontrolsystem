@@ -1,0 +1,240 @@
+{
+  "uid": "pcs-operacion",
+  "title": "Powerful Control System - Operacion VPS",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 6,
+  "refresh": "30s",
+  "tags": ["pcs", "vps", "docker"],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "CPU VPS (%)",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Memoria usada (%)",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Disco usado (%)",
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "100 - ((node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs\"} * 100) / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs\"})",
+          "legendFormat": "{{mountpoint}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Contenedores Docker - CPU",
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "sum by(name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[5m])) * 100",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent"}}
+    },
+    {
+      "type": "stat",
+      "title": "Backend producción arriba",
+      "gridPos": {"x": 0, "y": 16, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "up{job=\"pcs-backend\"}",
+          "legendFormat": "production"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Backend staging arriba",
+      "gridPos": {"x": 8, "y": 16, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "up{job=\"pcs-staging-backend\"}",
+          "legendFormat": "staging"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Contenedores activos",
+      "gridPos": {"x": 16, "y": 16, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "count(container_last_seen{name!=\"\"})",
+          "legendFormat": "containers"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "PostgreSQL disponible",
+      "gridPos": {"x": 0, "y": 21, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "min by(job) (pcs_postgres_ready{job=~\"pcs-backend|pcs-staging-backend\"})",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0, "max": 1}}
+    },
+    {
+      "type": "stat",
+      "title": "Edad del latido worker",
+      "gridPos": {"x": 8, "y": 21, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "pcs_worker_heartbeat_age_seconds{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Trabajo durable listo",
+      "gridPos": {"x": 16, "y": 21, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "sum by(job) (pcs_async_jobs_ready_total{job=~\"pcs-backend|pcs-staging-backend\"}) + on(job) sum by(job) (pcs_outbox_ready_total{job=~\"pcs-backend|pcs-staging-backend\"})",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Leases vencidos",
+      "gridPos": {"x": 0, "y": 26, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "sum by(job) (pcs_async_jobs_expired_leases_total{job=~\"pcs-backend|pcs-staging-backend\"}) + on(job) sum by(job) (pcs_outbox_expired_leases_total{job=~\"pcs-backend|pcs-staging-backend\"})",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Dead letters",
+      "gridPos": {"x": 8, "y": 26, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "sum by(job) (pcs_async_jobs_dead_total{job=~\"pcs-backend|pcs-staging-backend\"}) + on(job) sum by(job) (pcs_outbox_dead_total{job=~\"pcs-backend|pcs-staging-backend\"})",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Consultas operativas",
+      "gridPos": {"x": 16, "y": 26, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "min by(job) (pcs_observability_query_success{job=~\"pcs-backend|pcs-staging-backend\"})",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0, "max": 1}}
+    },
+    {
+      "type": "stat",
+      "title": "Depuraciones IA pendientes",
+      "gridPos": {"x": 0, "y": 31, "w": 12, "h": 5},
+      "targets": [
+        {
+          "expr": "pcs_support_purge_pending_total{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Depuraciones IA vencidas",
+      "gridPos": {"x": 12, "y": 31, "w": 12, "h": 5},
+      "targets": [
+        {
+          "expr": "pcs_support_purge_stale_total{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Antivirus soportes",
+      "gridPos": {"x": 0, "y": 36, "w": 8, "h": 5},
+      "targets": [
+        {
+          "expr": "pcs_support_antivirus_configured{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "configurado {{job}}"
+        },
+        {
+          "expr": "pcs_support_antivirus_required{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "obligatorio {{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0, "max": 1}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Resultados antivirus soportes (5m)",
+      "gridPos": {"x": 8, "y": 36, "w": 16, "h": 7},
+      "targets": [
+        {
+          "expr": "sum by(job, result) (increase(pcs_support_antivirus_scans_total{job=~\"pcs-backend|pcs-staging-backend\"}[5m]))",
+          "legendFormat": "{{job}} {{result}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Resultados extraccion IA soportes (5m)",
+      "gridPos": {"x": 0, "y": 43, "w": 24, "h": 7},
+      "targets": [
+        {
+          "expr": "sum by(job, result) (increase(pcs_support_ai_extractions_total{job=~\"pcs-backend|pcs-staging-backend\"}[5m]))",
+          "legendFormat": "{{job}} {{result}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    },
+    {
+      "type": "stat",
+      "title": "Fallos integridad archivos de soporte",
+      "gridPos": {"x": 0, "y": 50, "w": 24, "h": 5},
+      "targets": [
+        {
+          "expr": "pcs_support_file_integrity_failures_total{job=~\"pcs-backend|pcs-staging-backend\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0}}
+    }
+  ]
+}

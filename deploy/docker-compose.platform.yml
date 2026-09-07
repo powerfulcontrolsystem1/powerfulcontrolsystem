@@ -1,0 +1,748 @@
+name: powerful-control-system
+
+x-mailu-common-env: &mailu-common-env
+  SECRET_KEY: ${MAILU_SECRET_KEY:-}
+  SUBNET: ${MAILU_SUBNET:-192.168.203.0/24}
+  DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
+  HOSTNAMES: ${MAILU_HOSTNAME:-mail.powerfulcontrolsystem.com}
+  POSTMASTER: ${MAILU_POSTMASTER:-postmaster}
+  MESSAGE_SIZE_LIMIT: ${MAILU_MESSAGE_SIZE_LIMIT:-50000000}
+  MESSAGE_RATELIMIT: ${MAILU_MESSAGE_RATELIMIT:-200/day}
+  ADMIN_ADDRESS: mailu-admin
+  FRONT_ADDRESS: mailu-front
+  IMAP_ADDRESS: mailu-imap
+  SMTP_ADDRESS: mailu-smtp
+  ANTISPAM_ADDRESS: mailu-antispam
+  WEBMAIL_ADDRESS: mailu-webmail
+  REDIS_ADDRESS: mailu-redis
+  RESOLVER: ${MAILU_RESOLVER_IP:-192.168.203.254}
+  WEB_WEBMAIL: ${MAILU_WEB_WEBMAIL:-/webmail}
+  WEB_ADMIN: ${MAILU_WEB_ADMIN:-/admin}
+  WEBROOT_REDIRECT: ${MAILU_WEBROOT_REDIRECT:-/webmail}
+  PROXY_AUTH_WHITELIST: ${MAILU_PROXY_AUTH_WHITELIST:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+  PROXY_AUTH_HEADER: ${MAILU_PROXY_AUTH_HEADER:-X-Auth-Email}
+  PROXY_AUTH_CREATE: ${MAILU_PROXY_AUTH_CREATE:-false}
+  REAL_IP_FROM: ${MAILU_REAL_IP_FROM:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+
+x-mailu-service-hosts: &mailu-service-hosts
+  - "mailu-redis:${MAILU_REDIS_IP:-192.168.203.2}"
+  - "mailu-smtp:${MAILU_SMTP_IP:-192.168.203.3}"
+  - "mailu-antispam:${MAILU_ANTISPAM_IP:-192.168.203.4}"
+  - "mailu-webmail:${MAILU_WEBMAIL_IP:-192.168.203.5}"
+  - "mailu-imap:${MAILU_IMAP_IP:-192.168.203.6}"
+  - "mailu-admin:${MAILU_ADMIN_IP:-192.168.203.7}"
+  - "mailu-front:${MAILU_FRONT_IP:-192.168.203.8}"
+
+services:
+  postgres:
+    image: postgres:16.14-alpine
+    container_name: pcs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pcs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DEFAULT_DB:-pcs_superadministrador}
+      TZ: ${TZ:-America/Bogota}
+      PGTZ: ${TZ:-America/Bogota}
+    volumes:
+      - pcs_postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pcs_internal
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: migrate
+    image: ${PCS_MIGRATE_IMAGE:-pcs-migrate:local}
+    container_name: pcs-migrate
+    restart: "no"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    command: ["/bin/sh", "-ec", "/app/backend/pcs-backend && /app/backend/pcs-migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PCS_ENV: production
+      PCS_RUNTIME_ROLE: migrate
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: ${PCS_RUNTIME_SCHEMA_BOOTSTRAP:?Defina PCS_RUNTIME_SCHEMA_BOOTSTRAP}
+      PCS_DB_MAX_OPEN_CONNS: ${PCS_MIGRATE_DB_MAX_OPEN_CONNS:-3}
+      PCS_DB_MAX_IDLE_CONNS: ${PCS_MIGRATE_DB_MAX_IDLE_CONNS:-1}
+      PCS_DB_CONN_MAX_LIFETIME: ${PCS_MIGRATE_DB_CONN_MAX_LIFETIME:-15m}
+      PCS_DB_CONN_MAX_IDLE_TIME: ${PCS_MIGRATE_DB_CONN_MAX_IDLE_TIME:-1m}
+      DB_DIALECT: postgres
+      DB_EMPRESAS_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
+      DB_SUPERADMIN_DSN: postgres://${POSTGRES_USER:-pcs}:${POSTGRES_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      PCS_RUNTIME_DB_USER: ${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}
+      PCS_RUNTIME_DB_PASSWORD: ${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}
+      PCS_BACKUP_DB_USER: ${PCS_BACKUP_DB_USER:?Defina PCS_BACKUP_DB_USER}
+      PCS_BACKUP_DB_PASSWORD: ${PCS_BACKUP_DB_PASSWORD:?Defina PCS_BACKUP_DB_PASSWORD}
+      CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
+      CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
+      PCS_TRUSTED_PROXY_CIDRS: ${PCS_TRUSTED_PROXY_CIDRS:?Defina PCS_TRUSTED_PROXY_CIDRS}
+      PCS_CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:?Defina SESSION_TIMEOUT}
+      MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:?Defina MAX_REQUEST_BODY_BYTES}
+      PCS_PRIVATE_STORAGE_DIR: /app/private_storage
+      PCS_SUPPORTS_CLAMAV_ADDR: ${PCS_SUPPORTS_CLAMAV_ADDR:-}
+      PCS_SUPPORTS_CLAMAV_REQUIRED: ${PCS_SUPPORTS_CLAMAV_REQUIRED:-0}
+      HTTP_READ_TIMEOUT: ${HTTP_READ_TIMEOUT:?Defina HTTP_READ_TIMEOUT}
+      HTTP_WRITE_TIMEOUT: ${HTTP_WRITE_TIMEOUT:?Defina HTTP_WRITE_TIMEOUT}
+      HTTP_IDLE_TIMEOUT: ${HTTP_IDLE_TIMEOUT:?Defina HTTP_IDLE_TIMEOUT}
+      PCS_SKIP_CORPORATE_EMAIL_STARTUP_SYNC: "1"
+      PCS_MIGRATION_SKIP_EXTERNAL_SYNC: "1"
+    networks:
+      - pcs_internal
+    volumes:
+      - pcs_private_storage:/app/private_storage
+
+  # Volúmenes heredados pueden haber sido creados por root. Esta tarea única
+  # repara exclusivamente la propiedad de uploads antes de iniciar la API.
+  upload-permissions:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: api
+    image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
+    container_name: pcs-upload-permissions
+    restart: "no"
+    user: "0:0"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - DAC_OVERRIDE
+    command: ["/bin/sh", "-ec", "mkdir -p /app/web/uploads && chown -R 10001:10001 /app/web/uploads && chmod 0755 /app/web/uploads"]
+    volumes:
+      - pcs_web_uploads:/app/web/uploads
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: api
+    image: ${PCS_BACKEND_IMAGE:-pcs-backend:local}
+    restart: unless-stopped
+    deploy:
+      replicas: ${PCS_API_REPLICAS:-1}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      upload-permissions:
+        condition: service_completed_successfully
+    environment:
+      PORT: "8080"
+      PCS_RUNTIME_ROLE: api
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
+      PCS_DB_MAX_OPEN_CONNS: ${PCS_API_DB_MAX_OPEN_CONNS:-24}
+      PCS_DB_MAX_IDLE_CONNS: ${PCS_API_DB_MAX_IDLE_CONNS:-12}
+      PCS_DB_CONN_MAX_LIFETIME: ${PCS_API_DB_CONN_MAX_LIFETIME:-30m}
+      PCS_DB_CONN_MAX_IDLE_TIME: ${PCS_API_DB_CONN_MAX_IDLE_TIME:-5m}
+      TZ: ${TZ:-America/Bogota}
+      PCS_ENV: ${PCS_ENV:-production}
+      PCS_TRUSTED_PROXY_CIDRS: ${PCS_TRUSTED_PROXY_CIDRS:?Defina PCS_TRUSTED_PROXY_CIDRS}
+      PCS_CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      CSRF_ALLOWED_ORIGINS: ${PCS_CSRF_ALLOWED_ORIGINS:?Defina PCS_CSRF_ALLOWED_ORIGINS}
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:?Defina SESSION_TIMEOUT}
+      MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:?Defina MAX_REQUEST_BODY_BYTES}
+      HTTP_READ_TIMEOUT: ${HTTP_READ_TIMEOUT:?Defina HTTP_READ_TIMEOUT}
+      HTTP_WRITE_TIMEOUT: ${HTTP_WRITE_TIMEOUT:?Defina HTTP_WRITE_TIMEOUT}
+      HTTP_IDLE_TIMEOUT: ${HTTP_IDLE_TIMEOUT:?Defina HTTP_IDLE_TIMEOUT}
+      PCS_WEBRTC_IDLE_TIMEOUT_SECONDS: ${PCS_WEBRTC_IDLE_TIMEOUT_SECONDS:-300}
+      PCS_PRIVATE_STORAGE_DIR: /app/private_storage
+      PCS_PRIVATE_STORAGE_MODE: ${PCS_PRIVATE_STORAGE_MODE:-shared}
+      PCS_API_REPLICAS: ${PCS_API_REPLICAS:-1}
+      DB_DIALECT: postgres
+      DB_EMPRESAS_DSN: postgres://${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}:${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
+      DB_SUPERADMIN_DSN: postgres://${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}:${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
+      CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://powerfulcontrolsystem.com}
+      PCS_CSP_REPORT_ONLY_STRICT: ${PCS_CSP_REPORT_ONLY_STRICT:-1}
+      PCS_CSP_SCRIPT_ORIGINS: ${PCS_CSP_SCRIPT_ORIGINS:-https://unpkg.com https://cdn.jsdelivr.net}
+      PCS_CSP_STYLE_ORIGINS: ${PCS_CSP_STYLE_ORIGINS:-https://unpkg.com https://fonts.googleapis.com}
+      PCS_CSP_FONT_ORIGINS: ${PCS_CSP_FONT_ORIGINS:-https://fonts.gstatic.com}
+      PCS_CSP_IMG_ORIGINS: ${PCS_CSP_IMG_ORIGINS:-https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org}
+      PCS_CSP_CONNECT_ORIGINS: ${PCS_CSP_CONNECT_ORIGINS:-https://nominatim.openstreetmap.org}
+      GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-https://powerfulcontrolsystem.com/auth/google/callback}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ONLYOFFICE_DOCUMENT_SERVER_URL: ${ONLYOFFICE_DOCUMENT_SERVER_URL:-https://onlyoffice.powerfulcontrolsystem.com}
+      ONLYOFFICE_JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:-}
+      NEXTCLOUD_ENABLED: ${NEXTCLOUD_ENABLED:-0}
+      NEXTCLOUD_BASE_URL: ${NEXTCLOUD_BASE_URL:-https://nextcloud.powerfulcontrolsystem.com}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-}
+      NEXTCLOUD_ADMIN_SECRET: ${NEXTCLOUD_ADMIN_SECRET:-}
+      NEXTCLOUD_DEFAULT_QUOTA_MB: ${NEXTCLOUD_DEFAULT_QUOTA_MB:-1024}
+      EMAIL_CORPORATIVO_ENABLED: ${EMAIL_CORPORATIVO_ENABLED:-0}
+      EMAIL_CORPORATIVO_AUTO_CREATE: ${EMAIL_CORPORATIVO_AUTO_CREATE:-1}
+      EMAIL_CORPORATIVO_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
+      EMAIL_CORPORATIVO_WEBMAIL_URL: ${EMAIL_CORPORATIVO_WEBMAIL_URL:-https://mail.powerfulcontrolsystem.com/webmail/}
+      EMAIL_CORPORATIVO_PROVISION_MODE: ${EMAIL_CORPORATIVO_PROVISION_MODE:-mailu_api}
+      EMAIL_CORPORATIVO_MAILU_API_BASE_URL: ${EMAIL_CORPORATIVO_MAILU_API_BASE_URL:-https://mail.powerfulcontrolsystem.com/api}
+      EMAIL_CORPORATIVO_INTERNAL_MAILU_API_BASE_URL: ${EMAIL_CORPORATIVO_INTERNAL_MAILU_API_BASE_URL:-http://mailu-front/api}
+      EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL: ${EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL:-http://mailu-front/webmail/}
+      EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL: ${EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL:-http://mailu-webmail/}
+      EMAIL_CORPORATIVO_MAILU_ADMIN: ${EMAIL_CORPORATIVO_MAILU_ADMIN:-postmaster@powerfulcontrolsystem.com}
+      EMAIL_CORPORATIVO_MAILU_API_TOKEN: ${MAILU_API_TOKEN:-}
+      EMAIL_CORPORATIVO_AUTOLOGIN_SECRET: ${EMAIL_CORPORATIVO_AUTOLOGIN_SECRET:-}
+      EMAIL_CORPORATIVO_QUOTA_MB: ${EMAIL_CORPORATIVO_QUOTA_MB:-1024}
+      PCS_MAILU_SMTP_ADDR: ${MAILU_SMTP_IP:-192.168.203.3}:25
+      EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND: ${EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND:-/app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh}
+      EMAIL_CORPORATIVO_DIRECT_DELETE_COMMAND: ${EMAIL_CORPORATIVO_DIRECT_DELETE_COMMAND:-/app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh}
+      VOICE_STREAM_BASE_URL: ${VOICE_STREAM_BASE_URL:-http://voice-stream:8000}
+      GOOGLE_RECAPTCHA_SITE_KEY: ${GOOGLE_RECAPTCHA_SITE_KEY:-}
+      GOOGLE_RECAPTCHA_SECRET_KEY: ${GOOGLE_RECAPTCHA_SECRET_KEY:-}
+      RECAPTCHA_PROVIDER: ${RECAPTCHA_PROVIDER:-google-recaptcha-v2}
+      RECAPTCHA_DEV_BYPASS: ${RECAPTCHA_DEV_BYPASS:-0}
+      # El cache/DB de Trivy supera el tmpfs de 64 MiB; usar el volumen de logs
+      # evita falsos errores de "no space left on device" durante auditorias.
+      PCS_VPS_SECURITY_TMP_DIR: ${PCS_VPS_SECURITY_TMP_DIR:-/app/backend/logs/vps_security/tmp}
+      PCS_DISK_MANAGER_URL: http://disk-manager:8083
+    volumes:
+      - pcs_backend_logs:/app/backend/logs
+      - pcs_web_uploads:/app/web/uploads
+      - pcs_private_storage:/app/private_storage
+      - pcs_backups:/app/backup
+      # Trivy se mantiene instalado y actualizado en el host VPS; montarlo
+      # como binario estatico evita inflar la imagen de la aplicacion y permite
+      # que el escaneo real del panel use la herramienta aprobada.
+      - /usr/bin/trivy:/usr/local/bin/trivy:ro
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/ready >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      pcs_internal:
+      mailu_internal:
+
+  # Servicio sin puertos publicados. Su API interna exige una firma del backend
+  # y solo admite las categorías de limpieza Docker declaradas en su binario.
+  disk-manager:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: disk-manager
+    image: ${PCS_DISK_MANAGER_IMAGE:-pcs-disk-manager:local}
+    container_name: pcs-disk-manager
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    environment:
+      PCS_DISK_MANAGER_SHARED_SECRET: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      PCS_DISK_MANAGER_ADDR: :8083
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+      - "8083"
+    networks:
+      pcs_internal:
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/docker/backend.Dockerfile
+      target: worker
+    image: ${PCS_WORKER_IMAGE:-pcs-worker:local}
+    restart: unless-stopped
+    deploy:
+      replicas: ${PCS_WORKER_REPLICAS:-1}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    command: ["/app/backend/pcs-worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      upload-permissions:
+        condition: service_completed_successfully
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      PCS_ENV: production
+      PCS_RUNTIME_ROLE: worker
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
+      PCS_DB_MAX_OPEN_CONNS: ${PCS_WORKER_DB_MAX_OPEN_CONNS:-8}
+      PCS_DB_MAX_IDLE_CONNS: ${PCS_WORKER_DB_MAX_IDLE_CONNS:-4}
+      PCS_DB_CONN_MAX_LIFETIME: ${PCS_WORKER_DB_CONN_MAX_LIFETIME:-30m}
+      PCS_DB_CONN_MAX_IDLE_TIME: ${PCS_WORKER_DB_CONN_MAX_IDLE_TIME:-5m}
+      DB_DIALECT: postgres
+      DB_EMPRESAS_DSN: postgres://${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}:${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}@postgres:5432/pcs_empresas?sslmode=disable
+      DB_SUPERADMIN_DSN: postgres://${PCS_RUNTIME_DB_USER:?Defina PCS_RUNTIME_DB_USER}:${PCS_RUNTIME_DB_PASSWORD:?Defina PCS_RUNTIME_DB_PASSWORD}@postgres:5432/pcs_superadministrador?sslmode=disable
+      CONFIG_ENC_KEY: ${CONFIG_ENC_KEY:?Defina CONFIG_ENC_KEY}
+      CONFIG_ENC_KEY_ID: ${CONFIG_ENC_KEY_ID:?Defina CONFIG_ENC_KEY_ID}
+      CONFIG_ENC_KEY_PREVIOUS: ${CONFIG_ENC_KEY_PREVIOUS:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      NEXTCLOUD_ENABLED: ${NEXTCLOUD_ENABLED:-0}
+      NEXTCLOUD_BASE_URL: ${NEXTCLOUD_BASE_URL:-https://nextcloud.powerfulcontrolsystem.com}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-}
+      NEXTCLOUD_ADMIN_SECRET: ${NEXTCLOUD_ADMIN_SECRET:-}
+      EMAIL_CORPORATIVO_ENABLED: ${EMAIL_CORPORATIVO_ENABLED:-0}
+      EMAIL_CORPORATIVO_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
+      EMAIL_CORPORATIVO_MAILU_API_TOKEN: ${MAILU_API_TOKEN:-}
+      PCS_MAILU_SMTP_ADDR: ${MAILU_SMTP_IP:-192.168.203.3}:25
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://powerfulcontrolsystem.com}
+      ASIENTOS_WORKER_INTERVAL_MINUTES: ${ASIENTOS_WORKER_INTERVAL_MINUTES:-15}
+      ASIENTOS_WORKER_BATCH_SIZE: ${ASIENTOS_WORKER_BATCH_SIZE:-100}
+      ASIENTOS_WORKER_MAX_RETRIES: ${ASIENTOS_WORKER_MAX_RETRIES:-5}
+      PCS_WORKER_CONCURRENCY: ${PCS_WORKER_CONCURRENCY:-4}
+      FACTURACION_RETRY_SHARDS: ${FACTURACION_RETRY_SHARDS:-8}
+      FACTURACION_RETRY_TENANT_BATCH_SIZE: ${FACTURACION_RETRY_TENANT_BATCH_SIZE:-100}
+      FACTURACION_RETRY_DOCUMENT_BATCH_SIZE: ${FACTURACION_RETRY_DOCUMENT_BATCH_SIZE:-100}
+      FACTURACION_RETRY_INTERVAL_SECONDS: ${FACTURACION_RETRY_INTERVAL_SECONDS:-60}
+      PCS_WORKER_HEALTH_ADDR: ${PCS_WORKER_HEALTH_ADDR:-127.0.0.1:8082}
+      PCS_PRIVATE_STORAGE_DIR: /app/private_storage
+      PCS_PROJECT_EXPORT_ROOT: /app/project_export
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${PCS_BACKUP_DB_USER:?Defina PCS_BACKUP_DB_USER}
+      PGPASSWORD: ${PCS_BACKUP_DB_PASSWORD:?Defina PCS_BACKUP_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/ready >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - pcs_backend_logs:/app/backend/logs
+      - pcs_web_uploads:/app/web/uploads
+      - pcs_private_storage:/app/private_storage
+      - pcs_backups:/app/backup
+    networks:
+      pcs_internal:
+      mailu_internal:
+
+  mailu-redis:
+    profiles: ["mail"]
+    image: redis:7.4.9-alpine
+    container_name: pcs-mailu-redis
+    restart: unless-stopped
+    user: redis
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    volumes:
+      - mailu_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      mailu_internal:
+        ipv4_address: ${MAILU_REDIS_IP:-192.168.203.2}
+
+  mailu-resolver:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/unbound:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-resolver
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+    networks:
+      mailu_internal:
+        ipv4_address: ${MAILU_RESOLVER_IP:-192.168.203.254}
+
+  mailu-front:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/nginx:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-front
+    hostname: ${MAILU_HOSTNAME:-mail.powerfulcontrolsystem.com}
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      TLS_FLAVOR: ${MAILU_TLS_FLAVOR:-notls}
+      WEBMAIL: ${MAILU_WEBMAIL:-snappymail}
+      ADMIN: "true"
+      API: ${MAILU_API_ENABLED:-false}
+      API_TOKEN: ${MAILU_API_TOKEN:-}
+      WEB_API: "/api"
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_certs:/certs
+      - mailu_overrides:/overrides
+    ports:
+      - "${MAILU_HTTP_BIND:-127.0.0.1}:${MAILU_HTTP_PORT:-8089}:80"
+      - "${MAILU_HTTPS_BIND:-127.0.0.1}:${MAILU_HTTPS_PORT:-8449}:443"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_SMTP_PORT:-2525}:25"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_IMAP_PORT:-8143}:143"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_SMTPS_PORT:-8465}:465"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_SUBMISSION_PORT:-8587}:587"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_IMAPS_PORT:-8993}:993"
+    expose:
+      - "80"
+    depends_on:
+      - mailu-resolver
+      - mailu-admin
+      - mailu-imap
+      - mailu-smtp
+      - mailu-antispam
+      - mailu-webmail
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_FRONT_IP:-192.168.203.8}
+
+  mailu-admin:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/admin:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-admin
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      WEBMAIL: ${MAILU_WEBMAIL:-snappymail}
+      ADMIN: "true"
+      API: ${MAILU_API_ENABLED:-false}
+      API_TOKEN: ${MAILU_API_TOKEN:-}
+      WEB_API: "/api"
+      INITIAL_ADMIN_ACCOUNT: ${MAILU_INITIAL_ADMIN_ACCOUNT:-postmaster}
+      INITIAL_ADMIN_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
+      INITIAL_ADMIN_PW: ${MAILU_ADMIN_PASSWORD:-}
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_data:/data
+      - mailu_dkim:/dkim
+    depends_on:
+      - mailu-redis
+      - mailu-resolver
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_ADMIN_IP:-192.168.203.7}
+
+  mailu-imap:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/dovecot:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-imap
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_mail:/mail
+      - mailu_overrides:/overrides
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_IMAP_IP:-192.168.203.6}
+
+  mailu-smtp:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/postfix:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-smtp
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_queue:/queue
+      - mailu_overrides:/overrides
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_SMTP_IP:-192.168.203.3}
+
+  mailu-antispam:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/rspamd:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-antispam
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_filter:/var/lib/rspamd
+      - mailu_overrides:/overrides
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_ANTISPAM_IP:-192.168.203.4}
+
+  mailu-webmail:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/webmail:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-webmail
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      WEBMAIL: ${MAILU_WEBMAIL:-snappymail}
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_webmail:/data
+      - ./mailu/snappymail-application.ini:/defaults/application.ini:ro
+      - ./mailu/themes:/pcs-themes:ro
+    ports:
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_WEBMAIL_PORT:-8091}:80"
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_WEBMAIL_IP:-192.168.203.5}
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/docker/frontend.Dockerfile
+    image: ${PCS_FRONTEND_IMAGE:-pcs-frontend:local}
+    container_name: pcs-frontend
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+      - /var/cache/nginx:rw,noexec,nosuid,size=32m
+      - /var/run:rw,noexec,nosuid,size=4m
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8081}:8080"
+    volumes:
+      - pcs_web_uploads:/usr/share/nginx/html/uploads:ro
+      - pcs_downloads:/usr/share/nginx/html/descargas:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pcs_internal
+
+  edge:
+    profiles: ["edge"]
+    image: nginx:1.27-alpine
+    container_name: pcs-edge
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_started
+    environment:
+      EDGE_DOMAIN: ${EDGE_DOMAIN:-powerfulcontrolsystem.com}
+      EDGE_WWW_DOMAIN: ${EDGE_WWW_DOMAIN:-www.powerfulcontrolsystem.com}
+      EDGE_ONLYOFFICE_DOMAIN: ${EDGE_ONLYOFFICE_DOMAIN:-onlyoffice.powerfulcontrolsystem.com}
+      EDGE_MAIL_DOMAIN: ${EDGE_MAIL_DOMAIN:-mail.powerfulcontrolsystem.com}
+      EDGE_CERT_NAME: ${EDGE_CERT_NAME:-powerfulcontrolsystem.com}
+    ports:
+      - "${EDGE_HTTP_BIND:-0.0.0.0}:80:80"
+      - "${EDGE_HTTPS_BIND:-0.0.0.0}:443:443"
+    volumes:
+      - ${EDGE_NGINX_TEMPLATE:-./nginx/edge.conf.template}:/etc/nginx/templates/default.conf.template:ro
+      - pcs_letsencrypt:/etc/letsencrypt:ro
+      - pcs_certbot_www:/var/www/certbot:ro
+    networks:
+      - pcs_internal
+
+  certbot:
+    profiles: ["certbot"]
+    image: certbot/certbot:v2.11.0
+    container_name: pcs-certbot
+    volumes:
+      - pcs_letsencrypt:/etc/letsencrypt
+      - pcs_certbot_www:/var/www/certbot
+
+  onlyoffice-documentserver:
+    profiles: ["office"]
+    image: onlyoffice/documentserver:${ONLYOFFICE_TAG:-9.4}
+    container_name: pcs-onlyoffice-documentserver
+    restart: unless-stopped
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?Defina ONLYOFFICE_JWT_SECRET}
+      JWT_HEADER: Authorization
+      TZ: ${TZ:-America/Bogota}
+    volumes:
+      - pcs_onlyoffice_data:/var/www/onlyoffice/Data
+      - pcs_onlyoffice_logs:/var/log/onlyoffice
+      - pcs_onlyoffice_lib:/var/lib/onlyoffice
+      - pcs_onlyoffice_db:/var/lib/postgresql
+    expose:
+      - "80"
+    ports:
+      - "${ONLYOFFICE_BIND:-127.0.0.1}:${ONLYOFFICE_PORT:-8088}:80"
+    networks:
+      - pcs_internal
+
+  voice-stream:
+    profiles: ["voice"]
+    build:
+      context: ..
+      dockerfile: deploy/docker/voice-stream.Dockerfile
+    image: ${PCS_VOICE_STREAM_IMAGE:-pcs-voice-stream:local}
+    container_name: pcs-voice-stream
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      VOICE_STREAM_ENABLED: ${VOICE_STREAM_ENABLED:-false}
+      VOICE_STREAM_PIPER_BIN: ${VOICE_STREAM_PIPER_BIN:-piper}
+      VOICE_STREAM_TTS_MODEL: ${VOICE_STREAM_TTS_MODEL:-}
+      VOICE_STREAM_TTS_CONFIG: ${VOICE_STREAM_TTS_CONFIG:-}
+      VOICE_STREAM_MODEL_DIR: ${VOICE_STREAM_MODEL_DIR:-/models}
+      VOICE_STREAM_MODEL_NAME: ${VOICE_STREAM_MODEL_NAME:-es_ES-sharvard-medium}
+      VOICE_STREAM_MODEL_BASE_URL: ${VOICE_STREAM_MODEL_BASE_URL:-https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/sharvard/medium}
+      VOICE_STREAM_MAX_CHARS: ${VOICE_STREAM_MAX_CHARS:-4000}
+      VOICE_STREAM_TTS_TIMEOUT: ${VOICE_STREAM_TTS_TIMEOUT:-20}
+      VOICE_STREAM_AUTH_HEADER: ${VOICE_STREAM_AUTH_HEADER:-X-PCS-Voice-Token}
+      VOICE_STREAM_AUTH_TOKEN: ${VOICE_STREAM_AUTH_TOKEN:-}
+    volumes:
+      - pcs_voice_models:/models
+      - pcs_voice_cache:/tmp/pcs_voice
+    expose:
+      - "8000"
+    ports:
+      - "${VOICE_STREAM_BIND:-127.0.0.1}:${VOICE_STREAM_PORT:-8011}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -H \"$${VOICE_STREAM_AUTH_HEADER}: $${VOICE_STREAM_AUTH_TOKEN}\" http://127.0.0.1:8000/health >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pcs_internal
+
+  rustdesk-hbbs:
+    profiles: ["rustdesk"]
+    image: ghcr.io/rustdesk/rustdesk-server:${RUSTDESK_TAG:-1.1.15}
+    container_name: pcs-rustdesk-hbbs
+    restart: unless-stopped
+    command: hbbs -r rustdesk-hbbr:21117
+    volumes:
+      # Conserva la identidad/llave publica del servicio RustDesk existente.
+      - /var/lib/rustdesk-server:/data
+    ports:
+      - "${RUSTDESK_BIND:-0.0.0.0}:21115:21115"
+      - "${RUSTDESK_BIND:-0.0.0.0}:21116:21116"
+      - "${RUSTDESK_BIND:-0.0.0.0}:21116:21116/udp"
+      - "${RUSTDESK_BIND:-0.0.0.0}:21118:21118"
+      - "${RUSTDESK_BIND:-0.0.0.0}:21119:21119"
+    networks:
+      - pcs_internal
+
+  rustdesk-hbbr:
+    profiles: ["rustdesk"]
+    image: ghcr.io/rustdesk/rustdesk-server:${RUSTDESK_TAG:-1.1.15}
+    container_name: pcs-rustdesk-hbbr
+    restart: unless-stopped
+    command: hbbr
+    volumes:
+      - /var/lib/rustdesk-server:/data
+    ports:
+      - "${RUSTDESK_BIND:-0.0.0.0}:21117:21117"
+    networks:
+      - pcs_internal
+
+networks:
+  pcs_internal:
+    name: pcs_internal
+    driver: bridge
+  mailu_internal:
+    name: pcs_mailu_internal
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${MAILU_SUBNET:-192.168.203.0/24}
+
+volumes:
+  pcs_postgres_data:
+  pcs_backend_logs:
+  pcs_web_uploads:
+  pcs_private_storage:
+  pcs_backups:
+  pcs_downloads:
+  pcs_letsencrypt:
+  pcs_certbot_www:
+  pcs_onlyoffice_data:
+  pcs_onlyoffice_logs:
+  pcs_onlyoffice_lib:
+  pcs_onlyoffice_db:
+  mailu_redis:
+  mailu_data:
+  mailu_dkim:
+  mailu_mail:
+  mailu_queue:
+  mailu_filter:
+  mailu_webmail:
+  mailu_certs:
+  mailu_overrides:
+  pcs_voice_models:
+  pcs_voice_cache:
+  pcs_rustdesk_data:

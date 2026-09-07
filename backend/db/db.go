@@ -1,0 +1,3260 @@
+package db
+
+import (
+	"context"
+	"crypto/sha256"
+	"crypto/subtle"
+	"database/sql"
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"math"
+	"strings"
+	"sync"
+	"time"
+	"unicode"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
+	"github.com/you/pos-backend/secure"
+)
+
+var (
+	licenciaPermisoPolicyCacheMu  sync.Mutex
+	licenciaPermisoPolicyCache    = map[int64]cachedLicenciaPermisoPolicy{}
+	licenciaPermisoPolicyCacheTTL = 60 * time.Second
+
+	adminByEmailCacheMu  sync.Mutex
+	adminByEmailCache    = map[string]cachedAdminByEmail{}
+	adminByEmailCacheTTL = 60 * time.Second
+
+	empresaByScopeCacheMu  sync.Mutex
+	empresaByScopeCache    = map[int64]cachedEmpresaByScope{}
+	empresaByScopeCacheTTL = 60 * time.Second
+
+	empresaCreateLocksMu sync.Mutex
+	empresaCreateLocks   = map[string]*empresaCreateLockRef{}
+)
+
+type empresaCreateLockRef struct {
+	mu   sync.Mutex
+	refs int
+}
+
+type cachedLicenciaPermisoPolicy struct {
+	Policy   *LicenciaPermisoPolicy
+	LoadedAt time.Time
+}
+
+// InvalidateLicenciaPermisoPolicyCacheForEmpresa descarta el permiso efectivo
+// calculado desde licencias para que activaciones/desactivaciones se reflejen
+// inmediatamente en menus, roles y protecciones de API.
+func InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID int64) {
+	if empresaID <= 0 {
+		return
+	}
+	licenciaPermisoPolicyCacheMu.Lock()
+	delete(licenciaPermisoPolicyCache, empresaID)
+	licenciaPermisoPolicyCacheMu.Unlock()
+}
+
+// InvalidateEmpresaByScopeCacheForEmpresa descarta cualquier resolucion cacheada
+// por id fisico o empresa_id logico para evitar accesos residuales tras borrados.
+func InvalidateEmpresaByScopeCacheForEmpresa(ids ...int64) {
+	empresaByScopeCacheMu.Lock()
+	defer empresaByScopeCacheMu.Unlock()
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		delete(empresaByScopeCache, id)
+	}
+}
+
+func invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn *sql.DB, licenciaID int64) {
+	if dbConn == nil || licenciaID <= 0 {
+		return
+	}
+	empresaIDs := map[int64]struct{}{}
+
+	rows, err := querySQLCompat(dbConn, `SELECT empresa_id FROM licencias WHERE id = ? AND COALESCE(empresa_id, 0) > 0`, licenciaID)
+	if err == nil {
+		for rows.Next() {
+			var empresaID sql.NullInt64
+			if scanErr := rows.Scan(&empresaID); scanErr == nil && empresaID.Valid && empresaID.Int64 > 0 {
+				empresaIDs[empresaID.Int64] = struct{}{}
+			}
+		}
+		_ = rows.Close()
+	}
+
+	addonRows, addonErr := querySQLCompat(dbConn, `SELECT empresa_id FROM empresa_licencias_adicionales WHERE licencia_id = ? AND COALESCE(empresa_id, 0) > 0`, licenciaID)
+	if addonErr == nil {
+		for addonRows.Next() {
+			var empresaID sql.NullInt64
+			if scanErr := addonRows.Scan(&empresaID); scanErr == nil && empresaID.Valid && empresaID.Int64 > 0 {
+				empresaIDs[empresaID.Int64] = struct{}{}
+			}
+		}
+		_ = addonRows.Close()
+	}
+
+	for empresaID := range empresaIDs {
+		InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
+	}
+}
+
+func postgresDateTextExpr(expr string) string {
+	expr = strings.TrimSpace(expr)
+	if expr == "" {
+		expr = "NULL"
+	}
+	return "NULLIF(BTRIM(CAST(" + expr + " AS TEXT)), '')"
+}
+
+func postgresTimestampExpr(expr string) string {
+	txt := postgresDateTextExpr(expr)
+	return "(CASE WHEN " + txt + " IS NULL THEN NULL WHEN " + txt + " ~ '^\\d{4}-\\d{2}-\\d{2}' THEN CAST(" + txt + " AS TIMESTAMP) ELSE NULL END)"
+}
+
+func postgresLicenciaDatePredicate(expr, operator string) string {
+	ts := postgresTimestampExpr(expr)
+	return "(" + ts + " IS NULL OR " + ts + " " + operator + " CURRENT_TIMESTAMP)"
+}
+
+func postgresLicenciaHasExpiredPredicate(expr string) string {
+	ts := postgresTimestampExpr(expr)
+	return "(" + ts + " IS NOT NULL AND " + ts + " < CURRENT_TIMESTAMP)"
+}
+
+func postgresLicenciaFechaFinOrderExpr(expr string) string {
+	ts := postgresTimestampExpr(expr)
+	return "COALESCE(" + ts + ", TIMESTAMP '9999-12-31 23:59:59')"
+}
+
+type cachedAdminByEmail struct {
+	Admin    *Admin
+	LoadedAt time.Time
+}
+
+type cachedEmpresaByScope struct {
+	Empresa  *Empresa
+	LoadedAt time.Time
+}
+
+// EnsureAdministradoresAuthSchema regulariza las columnas operativas y de seguridad
+// usadas por el flujo administrativo en PostgreSQL.
+func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+
+	statements := []string{
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS photo TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS acepta_contrato INTEGER DEFAULT 0`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS telefono TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS pais TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS ciudad TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirm_token TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirm_expira TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirmado INTEGER DEFAULT 0`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirmado_en TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_hash TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_salt TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_set INTEGER DEFAULT 0`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_token TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_expira TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_enabled INTEGER DEFAULT 0`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_secret TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_confirmado_en TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_last_counter BIGINT DEFAULT -1`,
+	}
+	for _, stmt := range statements {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+	if err := EnsureAdminPrincipalDelegacionesSchema(dbConn); err != nil {
+		return err
+	}
+	if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS administrador_totp_recovery_codes (
+		id BIGSERIAL PRIMARY KEY,
+		administrador_email TEXT NOT NULL,
+		code_hash VARCHAR(64) NOT NULL,
+		created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP::text,
+		used_at TEXT,
+		batch_id TEXT NOT NULL
+	)`); err != nil {
+		return err
+	}
+	if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_admin_totp_recovery_code_hash ON administrador_totp_recovery_codes(administrador_email, code_hash)`); err != nil {
+		return err
+	}
+	return nil
+}
+
+// EnsurePaymentGatewaySchema prepara las tablas de checkout de licencias en PostgreSQL.
+func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
+	if dbConn == nil || !isPostgresDialect() {
+		return nil
+	}
+
+	statements := []string{
+		`CREATE TABLE IF NOT EXISTS pagos_wompi (
+			id BIGSERIAL PRIMARY KEY,
+			licencia_id BIGINT,
+			empresa_id BIGINT,
+			transaction_id TEXT,
+			reference TEXT,
+			status TEXT,
+			raw_payload TEXT,
+			discount_code TEXT,
+			asesor_id TEXT,
+			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP::text,
+			fecha_actualizacion TEXT,
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS discount_code TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS asesor_id TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS fecha_actualizacion TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS observaciones TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activation_status TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activada_id BIGINT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activada_en TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activation_lease_until TIMESTAMPTZ`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activation_attempts INTEGER NOT NULL DEFAULT 0`,
+		`CREATE INDEX IF NOT EXISTS ix_pagos_wompi_transaction_id ON pagos_wompi (transaction_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_pagos_wompi_reference ON pagos_wompi (reference)`,
+		`CREATE TABLE IF NOT EXISTS pagos_epayco (
+			id BIGSERIAL PRIMARY KEY,
+			licencia_id BIGINT,
+			empresa_id BIGINT,
+			transaction_id TEXT,
+			reference TEXT,
+			status TEXT,
+			raw_payload TEXT,
+			discount_code TEXT,
+			asesor_id TEXT,
+			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP::text,
+			fecha_actualizacion TEXT,
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS discount_code TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS asesor_id TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS fecha_actualizacion TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS observaciones TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activation_status TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activada_id BIGINT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activada_en TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activation_lease_until TIMESTAMPTZ`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activation_attempts INTEGER NOT NULL DEFAULT 0`,
+		`CREATE INDEX IF NOT EXISTS ix_pagos_epayco_transaction_id ON pagos_epayco (transaction_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_pagos_epayco_reference ON pagos_epayco (reference)`,
+	}
+
+	for _, stmt := range statements {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// EnsureLicenciasSchema regulariza la tabla licencias (PostgreSQL-only).
+func EnsureLicenciasSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+
+	statements := []string{
+		`CREATE TABLE IF NOT EXISTS licencias (
+			id BIGSERIAL PRIMARY KEY,
+			empresa_id BIGINT,
+			tipo_id BIGINT,
+			pais_codigo TEXT DEFAULT 'CO',
+			nombre TEXT,
+			descripcion TEXT,
+			valor DOUBLE PRECISION DEFAULT 0,
+			duracion_dias INTEGER DEFAULT 0,
+			max_documentos_mensuales INTEGER DEFAULT 0,
+			max_cajas_simultaneas INTEGER DEFAULT 0,
+			modulos_habilitados TEXT,
+			es_adicional INTEGER DEFAULT 0,
+			codigo_funcion TEXT,
+			super_rol_habilitado INTEGER DEFAULT 0,
+			fecha_inicio TEXT,
+			fecha_fin TEXT,
+			activo INTEGER DEFAULT 1,
+			fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+			fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS empresa_id BIGINT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS tipo_id BIGINT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS pais_codigo TEXT DEFAULT 'CO'`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS nombre TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS descripcion TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS valor DOUBLE PRECISION DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS duracion_dias INTEGER DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS max_documentos_mensuales INTEGER DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS max_cajas_simultaneas INTEGER DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS modulos_habilitados TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS es_adicional INTEGER DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS codigo_funcion TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS super_rol_habilitado INTEGER DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_inicio TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_fin TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS activo INTEGER DEFAULT 1`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS observaciones TEXT`,
+	}
+	for _, stmt := range statements {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+
+	// Backfill: licencias ya creadas deben quedar en Colombia por defecto.
+	// Es idempotente y no afecta registros ya definidos.
+	_, _ = execSQLCompat(dbConn, `UPDATE licencias SET pais_codigo = 'CO' WHERE COALESCE(TRIM(pais_codigo),'') = ''`)
+	// Migracion idempotente: los planes heredados de 5000 documentos quedan en 4000.
+	_, _ = execSQLCompat(dbConn, `UPDATE licencias
+		SET nombre = REPLACE(COALESCE(nombre, ''), '5000 documentos', '4000 documentos'),
+			descripcion = REPLACE(COALESCE(descripcion, ''), '5000 documentos', '4000 documentos'),
+			max_documentos_mensuales = 4000
+		WHERE COALESCE(max_documentos_mensuales, 0) = 5000
+		  AND (
+			LOWER(COALESCE(nombre, '')) LIKE '%5000 documentos%'
+			OR LOWER(COALESCE(descripcion, '')) LIKE '%5000 documentos%'
+		  )`)
+	// Las licencias de prueba existentes quedan limitadas a 250 documentos/ventas mensuales.
+	_, _ = execSQLCompat(dbConn, `UPDATE licencias
+		SET max_documentos_mensuales = 250
+		WHERE COALESCE(max_documentos_mensuales, 0) <> 250
+		  AND COALESCE(valor, 0) = 0
+		  AND COALESCE(duracion_dias, 0) = 15
+		  AND (
+			LOWER(COALESCE(nombre, '')) LIKE '%prueba%'
+			OR LOWER(COALESCE(descripcion, '')) LIKE '%prueba%'
+			OR LOWER(COALESCE(nombre, '')) LIKE '%trial%'
+			OR LOWER(COALESCE(descripcion, '')) LIKE '%trial%'
+		  )`)
+	// Las licencias no limitan cajas. El cupo comercial se gobierna solo por documentos/ventas.
+	_, _ = execSQLCompat(dbConn, `UPDATE licencias SET max_cajas_simultaneas = 0 WHERE COALESCE(max_cajas_simultaneas, 0) <> 0`)
+	if _, err := ensureLicenciasCatalogoGlobalNoSchema(dbConn, "sistema.licencias_globales"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpsertUser inserta o actualiza un usuario en la base de datos de empresas (registro por empresa)
+func UpsertUser(dbConn *sql.DB, email, name string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	upsertSQL := "INSERT INTO users (email, name) VALUES (?, ?) ON CONFLICT(email) DO UPDATE SET name = EXCLUDED.name"
+	if _, err := execTxSQLCompat(tx, upsertSQL, email, name); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// ProvisionDefaultEmpresaForUser crea una empresa por defecto para el usuario
+// si no tiene una asociada. Es aprovisionamiento de negocio, no de esquema.
+func ProvisionDefaultEmpresaForUser(dbConn *sql.DB, email, empresaNombre string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var userID int64
+	var empresaID sql.NullInt64
+	row := queryRowTxSQLCompat(tx, "SELECT id, empresa_id FROM users WHERE email = ?", email)
+	if err := row.Scan(&userID, &empresaID); err != nil {
+		return err
+	}
+
+	if empresaID.Valid {
+		// ya tiene empresa asociada
+		return tx.Commit()
+	}
+
+	var newEmpresaID int64
+	if err := queryRowTxSQLCompat(tx, "INSERT INTO empresas (nombre, usuario_creador) VALUES (?, ?) RETURNING id", empresaNombre, email).Scan(&newEmpresaID); err != nil {
+		return err
+	}
+
+	if _, err := execTxSQLCompat(tx, "UPDATE users SET empresa_id = ? WHERE id = ?", newEmpresaID, userID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// EnsureUserEmpresa conserva el nombre de contrato usado por el flujo OAuth
+// mientras delega en el aprovisionamiento transaccional vigente.
+func EnsureUserEmpresa(dbConn *sql.DB, email, empresaNombre string) error {
+	return ProvisionDefaultEmpresaForUser(dbConn, email, empresaNombre)
+}
+
+// UpsertAdministrador inserta o actualiza un registro en la tabla administradores de la base superadministrador
+// Si se inserta por primera vez, asigna el rol provisto (usualmente 'administrador').
+// Ahora acepta un campo `photo` con la URL de la foto del perfil.
+func UpsertAdministrador(dbConn *sql.DB, email, name, role, photo string) error {
+	return UpsertAdministradorConCreador(dbConn, email, name, role, photo, "")
+}
+
+// UpsertAdministradorConCreador inserta o actualiza un administrador conservando el administrador principal.
+func UpsertAdministradorConCreador(dbConn *sql.DB, email, name, role, photo, usuarioCreador string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	nowExpr := sqlNowExpr()
+	upsertSQL := "INSERT INTO administradores (email, name, role, photo, usuario_creador, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 'activo') ON CONFLICT(email) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, photo = EXCLUDED.photo, usuario_creador = CASE WHEN TRIM(COALESCE(administradores.usuario_creador, '')) <> '' THEN administradores.usuario_creador ELSE EXCLUDED.usuario_creador END, fecha_actualizacion = " + nowExpr
+	if _, err := execTxSQLCompat(tx, upsertSQL, email, name, role, photo, strings.TrimSpace(usuarioCreador)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// UpdateAdministrador actualiza el nombre y rol de un administrador por id
+func UpdateAdministrador(dbConn *sql.DB, id int64, name, role string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET name = ?, role = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", name, role, id)
+	return err
+}
+
+// DeleteAdministrador elimina un administrador por id
+func DeleteAdministrador(dbConn *sql.DB, id int64) error {
+	_, err := execSQLCompat(dbConn, "DELETE FROM administradores WHERE id = ?", id)
+	return err
+}
+
+// SetAdministradorEstado activa/desactiva un administrador (estado: 'activo'/'inactivo')
+func SetAdministradorEstado(dbConn *sql.DB, id int64, estado string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET estado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", estado, id)
+	return err
+}
+
+// SetAdministradorAceptaContrato marca si el administrador aceptó el contrato/registro.
+func SetAdministradorAceptaContrato(dbConn *sql.DB, email string, acepta bool) error {
+	v := 0
+	if acepta {
+		v = 1
+	}
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET acepta_contrato = ?, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", v, strings.TrimSpace(email))
+	return err
+}
+
+func hashSessionToken(token string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(token)))
+	return fmt.Sprintf("%x", sum[:])
+}
+
+// maxActiveSessionsPerIdentity bounds browser/mobile sessions created with the
+// same effective identity. It remains comfortably above the four independent
+// cashiers required by the production acceptance plan while preventing load
+// tests or abandoned clients from keeping hundreds of valid sessions alive.
+const maxActiveSessionsPerIdentity = 20
+
+func acquireAdminSessionLockTx(tx *sql.Tx, adminEmail string) error {
+	if tx == nil || !isPostgresDialect() {
+		return nil
+	}
+	lockID := empresaCreateAdvisoryLockID("admin-session:" + strings.ToLower(strings.TrimSpace(adminEmail)))
+	_, err := execTxSQLCompat(tx, `SELECT pg_advisory_xact_lock(?)`, lockID)
+	return err
+}
+
+func pruneAdminSessionsTx(tx *sql.Tx, adminEmail string) error {
+	if tx == nil {
+		return sql.ErrConnDone
+	}
+	email := strings.TrimSpace(adminEmail)
+	if email == "" {
+		return fmt.Errorf("admin email required")
+	}
+	nowExpr := sqlNowExpr()
+	// Expired rows must not remain operationally active. This also makes the
+	// alert/dashboard state match the verifier used by session lookup.
+	if _, err := execTxSQLCompat(tx, `UPDATE sesiones
+		SET activo = 0, fecha_fin = `+nowExpr+`
+		WHERE LOWER(COALESCE(admin_email, '')) = LOWER(?)
+		  AND COALESCE(activo, 0) = 1
+		  AND NULLIF(TRIM(CAST(fecha_fin AS TEXT)), '') IS NOT NULL
+		  AND CAST(fecha_fin AS TIMESTAMP) <= `+nowExpr, email); err != nil {
+		return err
+	}
+	// IDs are monotonic and every session is inserted before this query. Keeping
+	// the newest IDs gives deterministic behavior even when textual timestamps
+	// come from historical schemas.
+	_, err := execTxSQLCompat(tx, `UPDATE sesiones
+		SET activo = 0, fecha_fin = `+nowExpr+`
+		WHERE id IN (
+			SELECT id FROM sesiones
+			WHERE LOWER(COALESCE(admin_email, '')) = LOWER(?)
+			  AND COALESCE(activo, 0) = 1
+			ORDER BY id DESC
+			LIMIT ? OFFSET ?
+		)`, email, 2147483647, maxActiveSessionsPerIdentity)
+	return err
+}
+
+// MigrateSessionTokensToHashes adds a dedicated verifier column and clears the
+// legacy plaintext value. Active browser cookies remain valid because lookup
+// hashes the cookie value too.
+func MigrateSessionTokensToHashes(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("database not available")
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := migrateSessionTokensToHashesTx(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func migrateSessionTokensToHashesTx(tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("transaction not available")
+	}
+	if _, err := execTxSQLCompat(tx, "ALTER TABLE sesiones ADD COLUMN IF NOT EXISTS token_hash VARCHAR(64)"); err != nil {
+		return err
+	}
+	if _, err := execTxSQLCompat(tx, "CREATE UNIQUE INDEX IF NOT EXISTS ux_sesiones_token_hash ON sesiones(token_hash) WHERE token_hash IS NOT NULL"); err != nil {
+		return err
+	}
+	rows, err := queryTxSQLCompat(tx, "SELECT id, token FROM sesiones WHERE COALESCE(token_hash,'') = '' AND COALESCE(token,'') <> ''")
+	if err != nil {
+		return err
+	}
+	type sessionTokenRow struct {
+		id    int64
+		token string
+	}
+	var pending []sessionTokenRow
+	for rows.Next() {
+		var row sessionTokenRow
+		if err := rows.Scan(&row.id, &row.token); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		pending = append(pending, row)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, row := range pending {
+		if _, err := execTxSQLCompat(tx, "UPDATE sesiones SET token_hash = ?, token = '' WHERE id = ?", hashSessionToken(row.token), row.id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CreateSession registers only a SHA-256 token verifier. The original token
+// never crosses the database boundary.
+func createSessionWithPrincipal(dbConn *sql.DB, adminEmail, ip, userAgent, token, principalType string, principalID, empresaID int64, principalRole string) error {
+	if strings.TrimSpace(token) == "" {
+		return fmt.Errorf("session token required")
+	}
+	principalType = strings.ToLower(strings.TrimSpace(principalType))
+	if principalType != "admin" && principalType != "empresa_usuario" {
+		return fmt.Errorf("invalid session principal type")
+	}
+	if principalType == "empresa_usuario" && (principalID <= 0 || empresaID <= 0 || strings.TrimSpace(principalRole) == "") {
+		return fmt.Errorf("enterprise-user session requires principal, company and role")
+	}
+	if dbConn == nil {
+		dbConn = GetDB()
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := acquireAdminSessionLockTx(tx, adminEmail); err != nil {
+		return err
+	}
+	nowExpr := sqlNowExpr()
+	expiresExpr := sqlPlusHoursExpr(24)
+	query := "INSERT INTO sesiones (admin_email, token, token_hash, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion, principal_type, principal_id, empresa_id, principal_role) VALUES (?, ?, ?, ?, ?, " + nowExpr + ", " + expiresExpr + ", 1, " + nowExpr + ", ?, ?, ?, ?)"
+	if _, err := execTxSQLCompat(tx, query, adminEmail, "", hashSessionToken(token), ip, userAgent, principalType, principalID, empresaID, strings.TrimSpace(principalRole)); err != nil {
+		return err
+	}
+	if err := pruneAdminSessionsTx(tx, adminEmail); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) error {
+	return createSessionWithPrincipal(dbConn, adminEmail, ip, userAgent, token, "admin", 0, 0, "")
+}
+
+func CreateEmpresaUsuarioSession(dbConn *sql.DB, email, ip, userAgent, token string, usuarioID, empresaID int64, role string) error {
+	return createSessionWithPrincipal(dbConn, email, ip, userAgent, token, "empresa_usuario", usuarioID, empresaID, role)
+}
+
+// RevokeSessionByToken invalida una sesión activa por token.
+func RevokeSessionByToken(dbConn *sql.DB, token string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE sesiones SET activo = 0, fecha_fin = "+nowExpr+" WHERE token_hash = ? AND activo = 1", hashSessionToken(token))
+	return err
+}
+
+// RevokeSessionsByAdminEmail invalidates every active browser session for an
+// administrator. Callers use it before issuing a replacement session after a
+// password or second-factor security event.
+func RevokeSessionsByAdminEmail(dbConn *sql.DB, adminEmail string) error {
+	if dbConn == nil || strings.TrimSpace(adminEmail) == "" {
+		return fmt.Errorf("admin email required")
+	}
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE sesiones SET activo = 0, fecha_fin = "+nowExpr+" WHERE LOWER(COALESCE(admin_email, '')) = LOWER(?) AND activo = 1", strings.TrimSpace(adminEmail))
+	return err
+}
+
+// Admin representa un registro en la tabla administradores
+type Admin struct {
+	ID                 int64  `json:"id"`
+	Email              string `json:"email"`
+	Name               string `json:"name"`
+	Role               string `json:"role"`
+	Photo              string `json:"photo,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion"`
+	FechaActualizacion string `json:"fecha_actualizacion"`
+	Estado             string `json:"estado"`
+	AceptaContrato     int    `json:"acepta_contrato"`
+	Telefono           string `json:"telefono,omitempty"`
+	Pais               string `json:"pais,omitempty"`
+	Ciudad             string `json:"ciudad,omitempty"`
+	// Campos de seguridad y confirmación
+	EmailConfirmado     int    `json:"email_confirmado,omitempty"`
+	EmailConfirmToken   string `json:"-"`
+	EmailConfirmExpira  string `json:"-"`
+	EmailConfirmadoEn   string `json:"email_confirmado_en,omitempty"`
+	PasswordSet         int    `json:"password_set,omitempty"`
+	PasswordHash        string `json:"-"`
+	PasswordSalt        string `json:"-"`
+	PasswordResetToken  string `json:"-"`
+	PasswordResetExpira string `json:"-"`
+	TOTPEnabled         int    `json:"totp_enabled,omitempty"`
+	TOTPSecret          string `json:"-"`
+	TOTPConfirmadoEn    string `json:"totp_confirmado_en,omitempty"`
+	TOTPLastCounter     int64  `json:"-"`
+	InvitationStatus    string `json:"invitation_status,omitempty"`
+}
+
+// NOTE: tipos_de_licencia CRUD removed per project decision (frontend/page/link removed).
+
+// Licencia representa una licencia asignada (nuevo CRUD)
+type Licencia struct {
+	ID                     int64   `json:"id"`
+	EmpresaID              int64   `json:"empresa_id"`
+	EmpresaNombre          string  `json:"empresa_nombre,omitempty"`
+	TipoID                 int64   `json:"tipo_id"`
+	TipoNombre             string  `json:"tipo_nombre,omitempty"`
+	PaisCodigo             string  `json:"pais_codigo,omitempty"`
+	Nombre                 string  `json:"nombre"`
+	Descripcion            string  `json:"descripcion"`
+	Valor                  float64 `json:"valor"`
+	DuracionDias           int     `json:"duracion_dias"`
+	MaxDocumentosMensuales int     `json:"max_documentos_mensuales"`
+	MaxCajasSimultaneas    int     `json:"max_cajas_simultaneas"`
+	ModulosHab             string  `json:"modulos_habilitados,omitempty"`
+	EsAdicional            int     `json:"es_adicional"`
+	CodigoFuncion          string  `json:"codigo_funcion,omitempty"`
+	SuperRol               int     `json:"super_rol_habilitado"`
+	FechaInicio            string  `json:"fecha_inicio,omitempty"`
+	FechaFin               string  `json:"fecha_fin,omitempty"`
+	FechaCreacion          string  `json:"fecha_creacion"`
+	Activo                 int     `json:"activo"`
+}
+
+func DefaultLicenciaMaxCajasSimultaneas(_ int) int {
+	return 0
+}
+
+func ResolveLicenciaMaxCajasSimultaneas(_ *Licencia) int {
+	return 0
+}
+
+// CreateLicencia inserta una nueva licencia en dbSuper
+func CreateLicencia(dbConn *sql.DB, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) (int64, error) {
+	return CreateLicenciaAdvanced(dbConn, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, 0, "", superRolHabilitado)
+}
+
+func CreateLicenciaAdvanced(dbConn *sql.DB, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int) (int64, error) {
+	return CreateLicenciaAdvancedWithLimits(dbConn, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, 0)
+}
+
+func CreateLicenciaAdvancedWithLimits(dbConn *sql.DB, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int) (int64, error) {
+	return CreateLicenciaAdvancedWithLimitsAndCajas(dbConn, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, maxDocumentosMensuales, 0)
+}
+
+func CreateLicenciaAdvancedWithLimitsAndCajas(dbConn *sql.DB, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int, maxCajasSimultaneas int) (int64, error) {
+	if maxDocumentosMensuales < 0 {
+		maxDocumentosMensuales = 0
+	}
+	maxCajasSimultaneas = 0
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO licencias (tipo_id, pais_codigo, nombre, descripcion, valor, duracion_dias, max_documentos_mensuales, max_cajas_simultaneas, modulos_habilitados, es_adicional, codigo_funcion, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 1, 'activo')"
+	id, err := insertSQLCompat(dbConn, query, tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, maxCajasSimultaneas, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado)
+	if err == nil {
+		return id, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
+		return 0, err
+	}
+	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
+		return 0, err
+	}
+	return insertSQLCompat(dbConn, query, tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, maxCajasSimultaneas, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado)
+}
+
+// GetLicencias obtiene todas las licencias (comportamiento legado sin filtros)
+func GetLicencias(dbConn *sql.DB) ([]Licencia, error) {
+	return GetLicenciasFiltered(dbConn, false, "", false)
+}
+
+// GetLicenciasFilteredByPais filtra licencias por país (best-effort).
+// Si paisCodigo está vacío, retorna todas las licencias.
+func GetLicenciasFilteredByPais(dbConn *sql.DB, soloActivas bool, usuarioCreador string, conEmpresa bool, paisCodigo string) ([]Licencia, error) {
+	rows, err := GetLicenciasFiltered(dbConn, soloActivas, usuarioCreador, conEmpresa)
+	if err != nil {
+		return nil, err
+	}
+	pais := strings.ToUpper(strings.TrimSpace(paisCodigo))
+	if pais == "" {
+		return rows, nil
+	}
+	out := make([]Licencia, 0, len(rows))
+	for _, item := range rows {
+		code := strings.ToUpper(strings.TrimSpace(item.PaisCodigo))
+		if code == "" {
+			code = "CO"
+		}
+		if code == pais || code == "GLOBAL" || code == "*" {
+			out = append(out, item)
+		}
+	}
+	return out, nil
+}
+
+// GetLicenciasFiltered obtiene licencias con filtros opcionales.
+func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador string, conEmpresa bool) ([]Licencia, error) {
+	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, COALESCE(l.pais_codigo,'CO'), l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.max_documentos_mensuales, 0), 0, COALESCE(l.modulos_habilitados, ''), COALESCE(l.es_adicional, 0), COALESCE(l.codigo_funcion, ''), COALESCE(l.super_rol_habilitado, 0), COALESCE(l.fecha_inicio, ''), COALESCE(l.fecha_fin, ''), l.fecha_creacion, l.activo`
+	baseFrom := `
+		FROM licencias l LEFT JOIN tipos_de_empresas t ON l.tipo_id = t.id`
+	q += baseFrom
+
+	usuarioCreador = strings.TrimSpace(usuarioCreador)
+	hasEmpresasTable, err := tableExists(dbConn, "empresas")
+	if err != nil {
+		return nil, err
+	}
+	if hasEmpresasTable {
+		q += " LEFT JOIN empresas e ON e.id = l.empresa_id"
+		q = strings.Replace(q, "SELECT l.id, l.empresa_id", "SELECT l.id, l.empresa_id, COALESCE(e.nombre, '')", 1)
+	} else {
+		q = strings.Replace(q, "SELECT l.id, l.empresa_id", "SELECT l.id, l.empresa_id, ''", 1)
+	}
+	canFilterByUsuarioCreador := false
+	if usuarioCreador != "" {
+		if hasEmpresasTable {
+			canFilterByUsuarioCreador = true
+		}
+	}
+
+	var where []string
+	var args []interface{}
+	if soloActivas {
+		where = append(where, "COALESCE(l.activo, 1) = 1")
+		if isPostgresDialect() {
+			where = append(where, postgresLicenciaDatePredicate("l.fecha_inicio", "<="))
+			where = append(where, postgresLicenciaDatePredicate("l.fecha_fin", ">="))
+		} else {
+			where = append(where, "(COALESCE(l.fecha_inicio, '') = '' OR pcs_ts(l.fecha_inicio) <= CURRENT_TIMESTAMP)")
+			where = append(where, "(COALESCE(l.fecha_fin, '') = '' OR pcs_ts(l.fecha_fin) >= CURRENT_TIMESTAMP)")
+		}
+	}
+	if conEmpresa {
+		where = append(where, "l.empresa_id IS NOT NULL AND l.empresa_id > 0")
+	}
+	if usuarioCreador != "" && canFilterByUsuarioCreador {
+		where = append(where, "LOWER(COALESCE(e.usuario_creador, '')) = LOWER(?)")
+		args = append(args, usuarioCreador)
+	}
+	if len(where) > 0 {
+		q += " WHERE " + strings.Join(where, " AND ")
+	}
+	q += " ORDER BY l.id DESC"
+
+	rows, err := querySQLCompat(dbConn, q, args...)
+	if err != nil {
+		if !isMissingTableError(err) && !isMissingColumnError(err) {
+			return nil, err
+		}
+		if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
+			return nil, err
+		}
+		rows, err = querySQLCompat(dbConn, q, args...)
+		if err != nil {
+			return nil, err
+		}
+	}
+	defer rows.Close()
+	var out []Licencia
+	for rows.Next() {
+		var lic Licencia
+		var empresaID sql.NullInt64
+		var empresaNombre sql.NullString
+		var tipoNombre sql.NullString
+		var paisCodigo sql.NullString
+		var descripcion sql.NullString
+		var modulosHab sql.NullString
+		var fechaInicio sql.NullString
+		var fechaFin sql.NullString
+		var fechaCreacion sql.NullString
+		if err := rows.Scan(&lic.ID, &empresaID, &empresaNombre, &lic.TipoID, &tipoNombre, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &lic.MaxDocumentosMensuales, &lic.MaxCajasSimultaneas, &modulosHab, &lic.EsAdicional, &lic.CodigoFuncion, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
+			return nil, err
+		}
+		if empresaID.Valid {
+			lic.EmpresaID = empresaID.Int64
+		}
+		if empresaNombre.Valid {
+			lic.EmpresaNombre = empresaNombre.String
+		}
+		if tipoNombre.Valid {
+			lic.TipoNombre = tipoNombre.String
+		}
+		if paisCodigo.Valid && strings.TrimSpace(paisCodigo.String) != "" {
+			lic.PaisCodigo = strings.TrimSpace(paisCodigo.String)
+		} else {
+			lic.PaisCodigo = "CO"
+		}
+		if descripcion.Valid {
+			lic.Descripcion = descripcion.String
+		}
+		if modulosHab.Valid {
+			lic.ModulosHab = modulosHab.String
+		}
+		if fechaInicio.Valid {
+			lic.FechaInicio = fechaInicio.String
+		}
+		if fechaFin.Valid {
+			lic.FechaFin = fechaFin.String
+		}
+		if fechaCreacion.Valid {
+			lic.FechaCreacion = fechaCreacion.String
+		}
+		out = append(out, lic)
+	}
+	return out, nil
+}
+
+// GetLicenciaByID devuelve una licencia por id
+func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
+	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), 0, COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
+	scanLicencia := func() (*Licencia, error) {
+		row := queryRowSQLCompat(dbConn, q, id)
+		var lic Licencia
+		var empresaID sql.NullInt64
+		var paisCodigo sql.NullString
+		var descripcion sql.NullString
+		var modulosHab sql.NullString
+		var fechaInicio sql.NullString
+		var fechaFin sql.NullString
+		var fechaCreacion sql.NullString
+		if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &lic.MaxDocumentosMensuales, &lic.MaxCajasSimultaneas, &modulosHab, &lic.EsAdicional, &lic.CodigoFuncion, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
+			return nil, err
+		}
+		if empresaID.Valid {
+			lic.EmpresaID = empresaID.Int64
+		}
+		if paisCodigo.Valid && strings.TrimSpace(paisCodigo.String) != "" {
+			lic.PaisCodigo = strings.TrimSpace(paisCodigo.String)
+		} else {
+			lic.PaisCodigo = "CO"
+		}
+		if descripcion.Valid {
+			lic.Descripcion = descripcion.String
+		}
+		if modulosHab.Valid {
+			lic.ModulosHab = modulosHab.String
+		}
+		if fechaInicio.Valid {
+			lic.FechaInicio = fechaInicio.String
+		}
+		if fechaFin.Valid {
+			lic.FechaFin = fechaFin.String
+		}
+		if fechaCreacion.Valid {
+			lic.FechaCreacion = fechaCreacion.String
+		}
+		return &lic, nil
+	}
+
+	lic, err := scanLicencia()
+	if err == nil {
+		return lic, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
+		return nil, err
+	}
+	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
+		return nil, err
+	}
+	return scanLicencia()
+}
+
+// GetActiveLicenciaByEmpresa devuelve la licencia activa vigente mas reciente de una empresa.
+func GetActiveLicenciaByEmpresa(dbConn *sql.DB, empresaID int64) (*Licencia, error) {
+	if empresaID <= 0 {
+		return nil, sql.ErrNoRows
+	}
+	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), 0, COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
+	FROM licencias
+	WHERE empresa_id = ?
+		AND COALESCE(activo, 1) = 1
+		AND (COALESCE(fecha_inicio, '') = '' OR pcs_ts(fecha_inicio) <= CURRENT_TIMESTAMP)
+		AND (COALESCE(fecha_fin, '') = '' OR pcs_ts(fecha_fin) >= CURRENT_TIMESTAMP)
+	ORDER BY
+		CASE WHEN COALESCE(fecha_fin, '') = '' THEN 1 ELSE 0 END DESC,
+		pcs_ts(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
+		id DESC
+	LIMIT 1`
+	if isPostgresDialect() {
+		q = `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), 0, COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
+		FROM licencias
+		WHERE empresa_id = ?
+			AND COALESCE(activo, 1) = 1
+			AND ` + postgresLicenciaDatePredicate("fecha_inicio", "<=") + `
+			AND ` + postgresLicenciaDatePredicate("fecha_fin", ">=") + `
+		ORDER BY
+			CASE WHEN ` + postgresTimestampExpr("fecha_fin") + ` IS NULL THEN 1 ELSE 0 END DESC,
+			` + postgresLicenciaFechaFinOrderExpr("fecha_fin") + ` DESC,
+			id DESC
+		LIMIT 1`
+	}
+	row := queryRowSQLCompat(dbConn, q, empresaID)
+	var lic Licencia
+	var empresaIDVal sql.NullInt64
+	var paisCodigo sql.NullString
+	var descripcion sql.NullString
+	var modulosHab sql.NullString
+	var fechaInicio sql.NullString
+	var fechaFin sql.NullString
+	var fechaCreacion sql.NullString
+	if err := row.Scan(&lic.ID, &empresaIDVal, &lic.TipoID, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &lic.MaxDocumentosMensuales, &lic.MaxCajasSimultaneas, &modulosHab, &lic.EsAdicional, &lic.CodigoFuncion, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
+		return nil, err
+	}
+	if empresaIDVal.Valid {
+		lic.EmpresaID = empresaIDVal.Int64
+	}
+	if paisCodigo.Valid && strings.TrimSpace(paisCodigo.String) != "" {
+		lic.PaisCodigo = strings.TrimSpace(paisCodigo.String)
+	} else {
+		lic.PaisCodigo = "CO"
+	}
+	if descripcion.Valid {
+		lic.Descripcion = descripcion.String
+	}
+	if modulosHab.Valid {
+		lic.ModulosHab = modulosHab.String
+	}
+	if fechaInicio.Valid {
+		lic.FechaInicio = fechaInicio.String
+	}
+	if fechaFin.Valid {
+		lic.FechaFin = fechaFin.String
+	}
+	if fechaCreacion.Valid {
+		lic.FechaCreacion = fechaCreacion.String
+	}
+	return &lic, nil
+}
+
+// UpdateLicencia actualiza campos editables de una licencia
+func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) error {
+	return UpdateLicenciaAdvanced(dbConn, id, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, 0, "", superRolHabilitado)
+}
+
+func UpdateLicenciaAdvanced(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int) error {
+	return updateLicenciaAdvancedInternal(dbConn, id, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, 0, 0, false, false)
+}
+
+func UpdateLicenciaAdvancedWithLimits(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int) error {
+	return updateLicenciaAdvancedInternal(dbConn, id, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, maxDocumentosMensuales, 0, true, false)
+}
+
+func UpdateLicenciaAdvancedWithLimitsAndCajas(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int, maxCajasSimultaneas int) error {
+	return updateLicenciaAdvancedInternal(dbConn, id, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, maxDocumentosMensuales, maxCajasSimultaneas, true, true)
+}
+
+func updateLicenciaAdvancedInternal(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int, maxCajasSimultaneas int, updateDocumentLimit bool, updateCashRegisterLimit bool) error {
+	if maxDocumentosMensuales < 0 {
+		maxDocumentosMensuales = 0
+	}
+	maxCajasSimultaneas = 0
+	nowExpr := sqlNowExpr()
+	query := "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
+	fallbackQuery := "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ? WHERE id = ?"
+	args := []interface{}{tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado, id}
+	if updateDocumentLimit && updateCashRegisterLimit {
+		query = "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, max_documentos_mensuales = ?, max_cajas_simultaneas = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
+		fallbackQuery = "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, max_documentos_mensuales = ?, max_cajas_simultaneas = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ? WHERE id = ?"
+		args = []interface{}{tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, maxCajasSimultaneas, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado, id}
+	} else if updateDocumentLimit {
+		query = "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, max_documentos_mensuales = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
+		fallbackQuery = "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, max_documentos_mensuales = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ? WHERE id = ?"
+		args = []interface{}{tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado, id}
+	}
+
+	_, err := execSQLCompat(dbConn, query, args...)
+	if err == nil {
+		invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
+		return nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
+		return err
+	}
+	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr == nil {
+		_, retryErr := execSQLCompat(dbConn, query, args...)
+		if retryErr == nil {
+			invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
+			return nil
+		}
+		err = retryErr
+	}
+	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
+		_, fallbackErr := execSQLCompat(dbConn, fallbackQuery, args...)
+		if fallbackErr == nil {
+			invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
+			return nil
+		}
+		err = fallbackErr
+	}
+	return err
+}
+
+// LicenciaPermisoPolicy describe las capacidades de acceso habilitadas por licencia activa para una empresa.
+type LicenciaPermisoPolicy struct {
+	LicenciaID         int64
+	Nombre             string
+	ModulosHabilitados string
+	SuperRolHabilitado bool
+}
+
+func mergeLicenciaModules(base string, extra ...string) string {
+	if strings.TrimSpace(base) == "" {
+		return ""
+	}
+	seen := map[string]struct{}{}
+	out := make([]string, 0)
+	for _, chunk := range append([]string{base}, extra...) {
+		for _, raw := range strings.Split(chunk, ",") {
+			module := strings.ToLower(strings.TrimSpace(raw))
+			if module == "" {
+				continue
+			}
+			if _, exists := seen[module]; exists {
+				continue
+			}
+			seen[module] = struct{}{}
+			out = append(out, module)
+		}
+	}
+	return strings.Join(out, ",")
+}
+
+// GetLicenciaPermisoPolicyByEmpresa resuelve la licencia activa vigente para permisos de una empresa.
+func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*LicenciaPermisoPolicy, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return nil, nil
+	}
+
+	licenciaPermisoPolicyCacheMu.Lock()
+	if cached, ok := licenciaPermisoPolicyCache[empresaID]; ok && time.Since(cached.LoadedAt) < licenciaPermisoPolicyCacheTTL {
+		licenciaPermisoPolicyCacheMu.Unlock()
+		if cached.Policy == nil {
+			return nil, nil
+		}
+		copyPolicy := *cached.Policy
+		return &copyPolicy, nil
+	}
+	licenciaPermisoPolicyCacheMu.Unlock()
+
+	query := `SELECT id,
+		COALESCE(nombre, ''),
+		COALESCE(modulos_habilitados, ''),
+		COALESCE(super_rol_habilitado, 0)
+	FROM licencias
+	WHERE empresa_id = ?
+		AND COALESCE(activo, 1) = 1
+		AND (COALESCE(fecha_inicio, '') = '' OR pcs_ts(fecha_inicio) <= CURRENT_TIMESTAMP)
+		AND (COALESCE(fecha_fin, '') = '' OR pcs_ts(fecha_fin) >= CURRENT_TIMESTAMP)
+	ORDER BY
+		CASE WHEN COALESCE(fecha_fin, '') = '' THEN 1 ELSE 0 END DESC,
+		pcs_ts(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
+		id DESC
+	LIMIT 1`
+	if isPostgresDialect() {
+		query = `SELECT id,
+			COALESCE(nombre, ''),
+			COALESCE(modulos_habilitados, ''),
+			COALESCE(super_rol_habilitado, 0)
+		FROM licencias
+		WHERE empresa_id = ?
+			AND COALESCE(activo, 1) = 1
+			AND ` + postgresLicenciaDatePredicate("fecha_inicio", "<=") + `
+			AND ` + postgresLicenciaDatePredicate("fecha_fin", ">=") + `
+		ORDER BY
+			CASE WHEN ` + postgresTimestampExpr("fecha_fin") + ` IS NULL THEN 1 ELSE 0 END DESC,
+			` + postgresLicenciaFechaFinOrderExpr("fecha_fin") + ` DESC,
+			id DESC
+		LIMIT 1`
+	}
+	row := queryRowSQLCompat(dbConn, query, empresaID)
+
+	var item LicenciaPermisoPolicy
+	var superRolRaw int
+	if err := row.Scan(&item.LicenciaID, &item.Nombre, &item.ModulosHabilitados, &superRolRaw); err != nil {
+		if err == sql.ErrNoRows {
+			licenciaPermisoPolicyCacheMu.Lock()
+			licenciaPermisoPolicyCache[empresaID] = cachedLicenciaPermisoPolicy{Policy: nil, LoadedAt: time.Now()}
+			licenciaPermisoPolicyCacheMu.Unlock()
+			return nil, nil
+		}
+		if isMissingTableError(err) || isMissingColumnError(err) {
+			licenciaPermisoPolicyCacheMu.Lock()
+			licenciaPermisoPolicyCache[empresaID] = cachedLicenciaPermisoPolicy{Policy: nil, LoadedAt: time.Now()}
+			licenciaPermisoPolicyCacheMu.Unlock()
+			return nil, nil
+		}
+		return nil, err
+	}
+	item.SuperRolHabilitado = superRolRaw == 1
+	addons, addonsErr := ListEmpresaLicenciasAdicionales(dbConn, empresaID, false)
+	if addonsErr == nil && strings.TrimSpace(item.ModulosHabilitados) != "" {
+		extraModules := make([]string, 0, len(addons))
+		for _, addon := range addons {
+			if strings.TrimSpace(addon.ModulosHab) != "" {
+				extraModules = append(extraModules, addon.ModulosHab)
+			}
+		}
+		item.ModulosHabilitados = mergeLicenciaModules(item.ModulosHabilitados, extraModules...)
+	}
+	licenciaPermisoPolicyCacheMu.Lock()
+	licenciaPermisoPolicyCache[empresaID] = cachedLicenciaPermisoPolicy{Policy: &item, LoadedAt: time.Now()}
+	licenciaPermisoPolicyCacheMu.Unlock()
+	copyPolicy := item
+	return &copyPolicy, nil
+}
+
+// DeleteLicencia elimina una licencia por id
+func DeleteLicencia(dbConn *sql.DB, id int64) error {
+	_, err := execSQLCompat(dbConn, "DELETE FROM licencias WHERE id = ?", id)
+	return err
+}
+
+// SetLicenciaActivo activa/desactiva una licencia (activo: 1 o 0)
+func SetLicenciaActivo(dbConn *sql.DB, id int64, activo int) error {
+	nowExpr := sqlNowExpr()
+	query := "UPDATE licencias SET activo = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
+	_, err := execSQLCompat(dbConn, query, activo, id)
+	if err == nil {
+		invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
+		return nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
+		return err
+	}
+	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr == nil {
+		_, retryErr := execSQLCompat(dbConn, query, activo, id)
+		if retryErr == nil {
+			invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
+			return nil
+		}
+		err = retryErr
+	}
+	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
+		_, fallbackErr := execSQLCompat(dbConn, "UPDATE licencias SET activo = ? WHERE id = ?", activo, id)
+		if fallbackErr == nil {
+			invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn, id)
+			return nil
+		}
+		err = fallbackErr
+	}
+	return err
+}
+
+// Session representa una sesión del administrador registrada en la tabla sesiones
+type Session struct {
+	ID            int64  `json:"id"`
+	AdminEmail    string `json:"admin_email"`
+	Token         string `json:"token"`
+	IP            string `json:"ip"`
+	UserAgent     string `json:"user_agent"`
+	FechaInicio   string `json:"fecha_inicio"`
+	FechaFin      string `json:"fecha_fin,omitempty"`
+	FechaCreacion string `json:"fecha_creacion"`
+	Activo        int    `json:"activo"`
+	PrincipalType string `json:"principal_type"`
+	PrincipalID   int64  `json:"principal_id"`
+	EmpresaID     int64  `json:"empresa_id"`
+	PrincipalRole string `json:"principal_role"`
+}
+
+// GetSessionByToken devuelve una sesión activa por token
+func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
+	condition := sessionNotExpiredCondition("fecha_fin")
+	query := "SELECT id, admin_email, token_hash, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo, COALESCE(principal_type, 'admin'), COALESCE(principal_id, 0), COALESCE(empresa_id, 0), COALESCE(principal_role, '') FROM sesiones WHERE token_hash = ? AND activo = 1 AND " + condition + " LIMIT 1"
+	row := queryRowSQLCompat(dbConn, query, hashSessionToken(token))
+	var s Session
+	var fechaInicio sql.NullString
+	var fechaFin sql.NullString
+	var fechaCreacion sql.NullString
+	if err := row.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaFin, &fechaCreacion, &s.Activo, &s.PrincipalType, &s.PrincipalID, &s.EmpresaID, &s.PrincipalRole); err != nil {
+		return nil, err
+	}
+	if fechaInicio.Valid {
+		s.FechaInicio = fechaInicio.String
+	}
+	if fechaFin.Valid {
+		s.FechaFin = fechaFin.String
+	}
+	if fechaCreacion.Valid {
+		s.FechaCreacion = fechaCreacion.String
+	}
+	// Never expose a database verifier through session-management responses.
+	s.Token = ""
+	return &s, nil
+}
+
+// GetAdminByEmail devuelve el administrador por email
+func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
+	cacheKey := strings.ToLower(strings.TrimSpace(email))
+	if cacheKey != "" {
+		adminByEmailCacheMu.Lock()
+		if cached, ok := adminByEmailCache[cacheKey]; ok && time.Since(cached.LoadedAt) < adminByEmailCacheTTL {
+			adminByEmailCacheMu.Unlock()
+			if cached.Admin == nil {
+				return nil, sql.ErrNoRows
+			}
+			copyAdmin := *cached.Admin
+			return &copyAdmin, nil
+		}
+		adminByEmailCacheMu.Unlock()
+	}
+	// Intentar obtener con la columna 'acepta_contrato' (para bases actualizadas).
+	row := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores WHERE email = ? LIMIT 1", email)
+	var a Admin
+	var photo sql.NullString
+	var usuarioCreador sql.NullString
+	var acepta sql.NullInt64
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
+		// Fallback: si la columna no existe en este esquema, consultar sin ella.
+		if isMissingColumnError(err) {
+			row2 := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE email = ? LIMIT 1", email)
+			var photo2 sql.NullString
+			if err2 := row2.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo2, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err2 != nil {
+				if cacheKey != "" && err2 == sql.ErrNoRows {
+					adminByEmailCacheMu.Lock()
+					adminByEmailCache[cacheKey] = cachedAdminByEmail{Admin: nil, LoadedAt: time.Now()}
+					adminByEmailCacheMu.Unlock()
+				}
+				return nil, err2
+			}
+			if photo2.Valid {
+				a.Photo = photo2.String
+			}
+			a.AceptaContrato = 0
+			if cacheKey != "" {
+				adminCopy := a
+				adminByEmailCacheMu.Lock()
+				adminByEmailCache[cacheKey] = cachedAdminByEmail{Admin: &adminCopy, LoadedAt: time.Now()}
+				adminByEmailCacheMu.Unlock()
+			}
+			out := a
+			return &out, nil
+		}
+		if cacheKey != "" && err == sql.ErrNoRows {
+			adminByEmailCacheMu.Lock()
+			adminByEmailCache[cacheKey] = cachedAdminByEmail{Admin: nil, LoadedAt: time.Now()}
+			adminByEmailCacheMu.Unlock()
+		}
+		return nil, err
+	}
+	if photo.Valid {
+		a.Photo = photo.String
+	}
+	if usuarioCreador.Valid {
+		a.UsuarioCreador = usuarioCreador.String
+	}
+	if acepta.Valid {
+		a.AceptaContrato = int(acepta.Int64)
+	} else {
+		a.AceptaContrato = 0
+	}
+	if cacheKey != "" {
+		adminCopy := a
+		adminByEmailCacheMu.Lock()
+		adminByEmailCache[cacheKey] = cachedAdminByEmail{Admin: &adminCopy, LoadedAt: time.Now()}
+		adminByEmailCacheMu.Unlock()
+	}
+	out := a
+	return &out, nil
+}
+
+// GetAdminByID devuelve el administrador por id.
+func GetAdminByID(dbConn *sql.DB, id int64) (*Admin, error) {
+	row := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores WHERE id = ? LIMIT 1", id)
+	var a Admin
+	var photo sql.NullString
+	var usuarioCreador sql.NullString
+	var acepta sql.NullInt64
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
+		if isMissingColumnError(err) {
+			row2 := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE id = ? LIMIT 1", id)
+			var photo2 sql.NullString
+			if err2 := row2.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo2, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err2 != nil {
+				return nil, err2
+			}
+			if photo2.Valid {
+				a.Photo = photo2.String
+			}
+			a.AceptaContrato = 0
+			return &a, nil
+		}
+		return nil, err
+	}
+	if photo.Valid {
+		a.Photo = photo.String
+	}
+	if usuarioCreador.Valid {
+		a.UsuarioCreador = usuarioCreador.String
+	}
+	if acepta.Valid {
+		a.AceptaContrato = int(acepta.Int64)
+	}
+	return &a, nil
+}
+
+// GetAdministradores lista todos los administradores
+func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
+	// Intentar consulta que incluya la columna acepta_contrato cuando exista
+	rows, err := querySQLCompat(dbConn, "SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(email_confirmado, 0) FROM administradores ORDER BY id DESC")
+	if err != nil {
+		// Fallback si la columna no existe en esquemas antiguos
+		if isMissingColumnError(err) {
+			rows2, err2 := querySQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores ORDER BY id DESC")
+			if err2 != nil {
+				return nil, err2
+			}
+			defer rows2.Close()
+			var out2 []Admin
+			for rows2.Next() {
+				var a Admin
+				var photo sql.NullString
+				if err := rows2.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
+					return nil, err
+				}
+				if photo.Valid {
+					a.Photo = photo.String
+				}
+				a.AceptaContrato = 0
+				out2 = append(out2, a)
+			}
+			return out2, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Admin
+	for rows.Next() {
+		var a Admin
+		var photo sql.NullString
+		var usuarioCreador sql.NullString
+		var acepta sql.NullInt64
+		var emailConfirmado sql.NullInt64
+		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &emailConfirmado); err != nil {
+			return nil, err
+		}
+		if photo.Valid {
+			a.Photo = photo.String
+		}
+		if usuarioCreador.Valid {
+			a.UsuarioCreador = usuarioCreador.String
+		}
+		if acepta.Valid {
+			a.AceptaContrato = int(acepta.Int64)
+		} else {
+			a.AceptaContrato = 0
+		}
+		a.EmailConfirmado = int(emailConfirmado.Int64)
+		out = append(out, a)
+	}
+	return out, nil
+}
+
+// GetSesiones lista las sesiones registradas
+func GetSesiones(dbConn *sql.DB) ([]Session, error) {
+	rows, err := querySQLCompat(dbConn, "SELECT id, admin_email, token_hash, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Session
+	for rows.Next() {
+		var s Session
+		var fechaInicio sql.NullString
+		var fechaFin sql.NullString
+		var fechaCreacion sql.NullString
+		if err := rows.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaFin, &fechaCreacion, &s.Activo); err != nil {
+			return nil, err
+		}
+		if fechaInicio.Valid {
+			s.FechaInicio = fechaInicio.String
+		}
+		if fechaFin.Valid {
+			s.FechaFin = fechaFin.String
+		}
+		if fechaCreacion.Valid {
+			s.FechaCreacion = fechaCreacion.String
+		}
+		s.Token = ""
+		out = append(out, s)
+	}
+	return out, nil
+}
+
+// GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt)
+func getAdminByEmailFullCore(dbConn *sql.DB, email string) (*Admin, error) {
+	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(pais, ''), COALESCE(ciudad, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, ''), COALESCE(totp_enabled, 0), COALESCE(totp_secret, ''), COALESCE(totp_confirmado_en, ''), COALESCE(totp_last_counter, -1) FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
+	var a Admin
+	var photo sql.NullString
+	var usuarioCreador sql.NullString
+	var acepta sql.NullInt64
+	var telefono sql.NullString
+	var pais sql.NullString
+	var ciudad sql.NullString
+	var emailConfirmado sql.NullInt64
+	var emailConfirmToken sql.NullString
+	var emailConfirmExpira sql.NullString
+	var emailConfirmadoEn sql.NullString
+	var passwordSet sql.NullInt64
+	var passwordHash sql.NullString
+	var passwordSalt sql.NullString
+	var passwordResetToken sql.NullString
+	var passwordResetExpira sql.NullString
+	var totpEnabled sql.NullInt64
+	var totpSecret sql.NullString
+	var totpConfirmadoEn sql.NullString
+	var totpLastCounter sql.NullInt64
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &pais, &ciudad, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira, &totpEnabled, &totpSecret, &totpConfirmadoEn, &totpLastCounter); err != nil {
+		return nil, err
+	}
+	if photo.Valid {
+		a.Photo = photo.String
+	}
+	a.UsuarioCreador = strings.TrimSpace(usuarioCreador.String)
+	a.AceptaContrato = int(acepta.Int64)
+	if telefono.Valid {
+		a.Telefono = telefono.String
+	}
+	if pais.Valid {
+		a.Pais = pais.String
+	}
+	if ciudad.Valid {
+		a.Ciudad = ciudad.String
+	}
+	a.EmailConfirmado = int(emailConfirmado.Int64)
+	a.EmailConfirmToken = emailConfirmToken.String
+	a.EmailConfirmExpira = emailConfirmExpira.String
+	a.EmailConfirmadoEn = emailConfirmadoEn.String
+	a.PasswordSet = int(passwordSet.Int64)
+	a.PasswordHash = passwordHash.String
+	a.PasswordSalt = passwordSalt.String
+	a.PasswordResetToken = passwordResetToken.String
+	a.PasswordResetExpira = passwordResetExpira.String
+	a.TOTPEnabled = int(totpEnabled.Int64)
+	a.TOTPSecret = totpSecret.String
+	a.TOTPConfirmadoEn = totpConfirmadoEn.String
+	a.TOTPLastCounter = totpLastCounter.Int64
+	return &a, nil
+}
+
+// GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt, TOTP).
+func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
+	// El esquema se aplica exclusivamente durante la fase de migracion. Un
+	// request de autenticacion no debe ejecutar DDL ni degradar a una consulta
+	// legacy que omita estado, tokens o controles de segundo factor.
+	return getAdminByEmailFullCore(dbConn, email)
+}
+
+// ResolveAdminPrincipalEmail devuelve el email del administrador principal asociado a un administrador.
+func ResolveAdminPrincipalEmail(dbConn *sql.DB, email string) (string, error) {
+	current := strings.ToLower(strings.TrimSpace(email))
+	if current == "" {
+		return "", nil
+	}
+	visited := map[string]bool{}
+	for current != "" {
+		if visited[current] {
+			break
+		}
+		visited[current] = true
+		admin, err := GetAdminByEmailFull(dbConn, current)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				break
+			}
+			return "", err
+		}
+		creator := strings.ToLower(strings.TrimSpace(admin.UsuarioCreador))
+		if creator == "" || creator == current {
+			return current, nil
+		}
+		current = creator
+	}
+	return strings.ToLower(strings.TrimSpace(email)), nil
+}
+
+// UpdateAdministradorProfile actualiza campos del perfil del administrador identificando por id.
+func UpdateAdministradorProfile(dbConn *sql.DB, id int64, name, telefono, email, pais, ciudad string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET name = ?, telefono = ?, email = ?, pais = ?, ciudad = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", strings.TrimSpace(name), strings.TrimSpace(telefono), strings.TrimSpace(email), strings.TrimSpace(pais), strings.TrimSpace(ciudad), id)
+	return err
+}
+
+// ReassignSessionsAdminEmail actualiza las sesiones activas para reflejar nuevo email de administrador.
+func ReassignSessionsAdminEmail(dbConn *sql.DB, oldEmail, newEmail string) error {
+	_, err := execSQLCompat(dbConn, "UPDATE sesiones SET admin_email = ? WHERE admin_email = ? AND activo = 1", strings.TrimSpace(newEmail), strings.TrimSpace(oldEmail))
+	return err
+}
+
+// SetAdministradorConfirmToken actualiza el token de confirmación para un administrador.
+func SetAdministradorConfirmToken(dbConn *sql.DB, email, token, expira string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET email_confirm_token = ?, email_confirm_expira = ?, email_confirmado = 0, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", hashOneTimeSecret(token), strings.TrimSpace(expira), strings.TrimSpace(email))
+	return err
+}
+
+func AdministradorEmailConfirmTokenMatches(storedHash, suppliedToken string) bool {
+	storedHash = strings.TrimSpace(storedHash)
+	expected := hashOneTimeSecret(suppliedToken)
+	return len(storedHash) == len(expected) && subtle.ConstantTimeCompare([]byte(storedHash), []byte(expected)) == 1
+}
+
+func parseAuthTokenExpiration(raw string) (time.Time, bool) {
+	return valueutil.ParseDateTimeLocal(raw)
+}
+
+func rollbackTransaction(tx *sql.Tx) {
+	if tx == nil {
+		return
+	}
+	if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+		return
+	}
+}
+
+// ConfirmAdministradorByToken confirma el correo de un administrador usando su token.
+func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
+	tokenHash := hashOneTimeSecret(token)
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer rollbackTransaction(tx)
+	row := queryRowTxSQLCompat(tx, `SELECT id, COALESCE(email_confirm_expira, '') FROM administradores WHERE email_confirm_token = ? LIMIT 1 FOR UPDATE`, tokenHash)
+	var id int64
+	var expiraRaw string
+	if err := row.Scan(&id, &expiraRaw); err != nil {
+		return 0, err
+	}
+	expiraAt, validExpiry := parseAuthTokenExpiration(expiraRaw)
+	if !validExpiry || time.Now().After(expiraAt) {
+		if _, clearErr := execTxSQLCompat(tx, `UPDATE administradores SET email_confirm_token = '', email_confirm_expira = '' WHERE id = ? AND email_confirm_token = ?`, id, tokenHash); clearErr != nil {
+			return 0, clearErr
+		}
+		if commitErr := tx.Commit(); commitErr != nil {
+			return 0, commitErr
+		}
+		return 0, fmt.Errorf("token de confirmacion invalido o expirado")
+	}
+	nowExpr := sqlNowExpr()
+	result, err := execTxSQLCompat(tx, `UPDATE administradores SET email_confirmado = 1, email_confirmado_en = `+nowExpr+`, estado = 'activo', email_confirm_token = '', email_confirm_expira = '', fecha_actualizacion = `+nowExpr+` WHERE id = ? AND email_confirm_token = ?`, id, tokenHash)
+	if err != nil {
+		return 0, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil || affected != 1 {
+		return 0, sql.ErrNoRows
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func MigrateAdministradorEmailConfirmTokens(dbConn *sql.DB, dryRun bool) (int, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("database not available")
+	}
+	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(email_confirm_token, '') FROM administradores WHERE COALESCE(email_confirm_token, '') <> ''")
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	type legacyToken struct {
+		id    int64
+		token string
+	}
+	legacy := make([]legacyToken, 0)
+	for rows.Next() {
+		var item legacyToken
+		if err := rows.Scan(&item.id, &item.token); err != nil {
+			return 0, err
+		}
+		if !isSHA256Hex(item.token) {
+			legacy = append(legacy, item)
+		}
+	}
+	if err := rows.Err(); err != nil || dryRun {
+		return len(legacy), err
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer rollbackTransaction(tx)
+	for _, item := range legacy {
+		if _, err := tx.Exec(rebindCompatQuery("UPDATE administradores SET email_confirm_token = ? WHERE id = ? AND email_confirm_token = ?"), hashOneTimeSecret(item.token), item.id, item.token); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(legacy), nil
+}
+
+// SetAdministradorPassword guarda hash y salt y marca password_set.
+func SetAdministradorPassword(dbConn *sql.DB, email, hash, salt string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET password_hash = ?, password_salt = ?, password_set = 1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(hash), strings.TrimSpace(salt), strings.TrimSpace(email))
+	return err
+}
+
+// SetAdministradorTOTPSecret guarda el secreto TOTP pendiente de confirmacion.
+func SetAdministradorTOTPSecret(dbConn *sql.DB, email, secret string) error {
+	encrypted, err := secure.EncryptStringForPurpose(secure.TOTPEncryptionPurpose, strings.TrimSpace(secret))
+	if err != nil {
+		return err
+	}
+	nowExpr := sqlNowExpr()
+	_, err = execSQLCompat(dbConn, "UPDATE administradores SET totp_secret = ?, totp_enabled = 0, totp_confirmado_en = '', totp_last_counter = -1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", encrypted, strings.TrimSpace(email))
+	return err
+}
+
+func EnableAdministradorTOTP(dbConn *sql.DB, email string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 1, totp_confirmado_en = "+nowExpr+", fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND COALESCE(totp_secret, '') <> ''", strings.TrimSpace(email))
+	return err
+}
+
+// ConsumeAdministradorTOTPCounter records the accepted moving counter only if
+// it is newer than the last accepted value. This makes a valid six-digit code
+// single-use even when concurrent requests arrive within the same time window.
+func ConsumeAdministradorTOTPCounter(dbConn *sql.DB, email string, counter int64) (bool, error) {
+	if dbConn == nil || strings.TrimSpace(email) == "" || counter < 0 {
+		return false, fmt.Errorf("invalid TOTP counter input")
+	}
+	result, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_last_counter = ?, fecha_actualizacion = "+sqlNowExpr()+" WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND ? > COALESCE(totp_last_counter, -1)", counter, strings.TrimSpace(email), counter)
+	if err != nil {
+		return false, err
+	}
+	changed, err := result.RowsAffected()
+	return changed == 1, err
+}
+
+func DisableAdministradorTOTP(dbConn *sql.DB, email string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 0, totp_secret = '', totp_confirmado_en = '', totp_last_counter = -1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(email))
+	return err
+}
+
+func hashOneTimeSecret(value string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(value)))
+	return fmt.Sprintf("%x", sum[:])
+}
+
+func isSHA256Hex(value string) bool {
+	value = strings.TrimSpace(value)
+	if len(value) != 64 {
+		return false
+	}
+	for _, ch := range value {
+		if !(ch >= '0' && ch <= '9') && !(ch >= 'a' && ch <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// DecryptAdministradorTOTPSecret decrypts only values written by the TOTP
+// envelope. Plaintext values are intentionally rejected so callers cannot
+// accidentally keep using a legacy secret after the migration is available.
+func DecryptAdministradorTOTPSecret(payload string) (string, error) {
+	return secure.DecryptStringForPurpose(secure.TOTPEncryptionPurpose, payload)
+}
+
+func isAdministradorTOTPSecretEncrypted(payload string) bool {
+	return strings.HasPrefix(strings.TrimSpace(payload), "v1:"+secure.TOTPEncryptionPurpose+":")
+}
+
+// MigrateAdministradorTOTPSecrets encrypts legacy plaintext authenticator
+// secrets. With dryRun=true it only returns the number of rows that would be
+// changed; no database row is modified.
+func MigrateAdministradorTOTPSecrets(dbConn *sql.DB, dryRun bool) (int, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("database not available")
+	}
+	if err := EnsureAdministradoresAuthSchema(dbConn); err != nil {
+		return 0, err
+	}
+	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(totp_secret, '') FROM administradores WHERE COALESCE(totp_secret, '') <> ''")
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	type legacySecret struct {
+		id     int64
+		secret string
+	}
+	legacy := make([]legacySecret, 0)
+	for rows.Next() {
+		var item legacySecret
+		if err := rows.Scan(&item.id, &item.secret); err != nil {
+			return 0, err
+		}
+		if !isAdministradorTOTPSecretEncrypted(item.secret) {
+			legacy = append(legacy, item)
+		}
+	}
+	if err := rows.Err(); err != nil || dryRun {
+		return len(legacy), err
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, item := range legacy {
+		encrypted, err := secure.EncryptStringForPurpose(secure.TOTPEncryptionPurpose, item.secret)
+		if err != nil {
+			return 0, err
+		}
+		if _, err := tx.Exec(rebindCompatQuery("UPDATE administradores SET totp_secret = ? WHERE id = ? AND totp_secret = ?"), encrypted, item.id, item.secret); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(legacy), nil
+}
+
+// ReplaceAdministradorTOTPRecoveryCodes invalidates all previous recovery
+// codes and writes only SHA-256 verifiers for the replacement batch.
+func ReplaceAdministradorTOTPRecoveryCodes(dbConn *sql.DB, email, batchID string, codes []string) error {
+	if dbConn == nil || strings.TrimSpace(email) == "" || strings.TrimSpace(batchID) == "" || len(codes) == 0 {
+		return fmt.Errorf("recovery codes require email, batch and values")
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.Exec(rebindCompatQuery("DELETE FROM administrador_totp_recovery_codes WHERE LOWER(administrador_email) = LOWER(?)"), strings.TrimSpace(email)); err != nil {
+		return err
+	}
+	for _, code := range codes {
+		if strings.TrimSpace(code) == "" {
+			return fmt.Errorf("empty recovery code")
+		}
+		if _, err := tx.Exec(rebindCompatQuery("INSERT INTO administrador_totp_recovery_codes (administrador_email, code_hash, batch_id) VALUES (?, ?, ?)"), strings.TrimSpace(email), hashOneTimeSecret(code), strings.TrimSpace(batchID)); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// ConsumeAdministradorTOTPRecoveryCode marks a recovery code as used in one
+// statement. A replay returns false without revealing why it failed.
+func ConsumeAdministradorTOTPRecoveryCode(dbConn *sql.DB, email, code string) (bool, error) {
+	if dbConn == nil {
+		return false, fmt.Errorf("database not available")
+	}
+	result, err := execSQLCompat(dbConn, "UPDATE administrador_totp_recovery_codes SET used_at = "+sqlNowExpr()+" WHERE LOWER(administrador_email) = LOWER(?) AND code_hash = ? AND COALESCE(used_at, '') = ''", strings.TrimSpace(email), hashOneTimeSecret(code))
+	if err != nil {
+		return false, err
+	}
+	changed, err := result.RowsAffected()
+	return changed == 1, err
+}
+
+// SetAdministradorPasswordResetToken guarda token de recuperación para el administrador.
+func SetAdministradorPasswordResetToken(dbConn *sql.DB, email, token, expira string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET password_reset_token = ?, password_reset_expira = ?, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", hashOneTimeSecret(token), strings.TrimSpace(expira), strings.TrimSpace(email))
+	return err
+}
+
+// SetAdministradorPasswordFromResetToken consumes one recovery token exactly
+// once while persisting its replacement password verifier.
+func SetAdministradorPasswordFromResetToken(dbConn *sql.DB, email, token, hash, salt string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	nowExpr := sqlNowExpr()
+	result, err := execTxSQLCompat(tx, `UPDATE administradores
+		SET password_hash = ?, password_salt = ?, password_set = 1,
+			password_reset_token = '', password_reset_expira = '', fecha_actualizacion = `+nowExpr+`
+		WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND password_reset_token = ?`,
+		strings.TrimSpace(hash), strings.TrimSpace(salt), strings.TrimSpace(email), hashOneTimeSecret(token))
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != 1 {
+		return sql.ErrNoRows
+	}
+	if _, err := execTxSQLCompat(tx, `UPDATE sesiones SET activo = 0, fecha_fin = `+nowExpr+` WHERE LOWER(COALESCE(admin_email, '')) = LOWER(?) AND activo = 1`, strings.TrimSpace(email)); err != nil {
+		return err
+	}
+	if _, err := execTxSQLCompat(tx, `DELETE FROM administrador_login_intentos WHERE LOWER(email) = LOWER(?)`, strings.TrimSpace(email)); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// AdministradorPasswordResetTokenMatches compares the supplied original token
+// with its persisted verifier without exposing either value through callers.
+func AdministradorPasswordResetTokenMatches(storedHash, suppliedToken string) bool {
+	storedHash = strings.TrimSpace(storedHash)
+	expected := hashOneTimeSecret(suppliedToken)
+	return len(storedHash) == len(expected) && subtle.ConstantTimeCompare([]byte(storedHash), []byte(expected)) == 1
+}
+
+// MigrateAdministradorPasswordResetTokens replaces legacy plaintext reset
+// tokens with SHA-256 verifiers. Existing email links keep working because the
+// supplied original token is hashed before comparison.
+func MigrateAdministradorPasswordResetTokens(dbConn *sql.DB, dryRun bool) (int, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("database not available")
+	}
+	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(password_reset_token, '') FROM administradores WHERE COALESCE(password_reset_token, '') <> ''")
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	type legacyToken struct {
+		id    int64
+		token string
+	}
+	legacy := make([]legacyToken, 0)
+	for rows.Next() {
+		var item legacyToken
+		if err := rows.Scan(&item.id, &item.token); err != nil {
+			return 0, err
+		}
+		if !isSHA256Hex(item.token) {
+			legacy = append(legacy, item)
+		}
+	}
+	if err := rows.Err(); err != nil || dryRun {
+		return len(legacy), err
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, item := range legacy {
+		if _, err := tx.Exec(rebindCompatQuery("UPDATE administradores SET password_reset_token = ? WHERE id = ? AND password_reset_token = ?"), hashOneTimeSecret(item.token), item.id, item.token); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(legacy), nil
+}
+
+// ClearAdministradorPasswordResetToken por id limpia el token de recuperación.
+func ClearAdministradorPasswordResetToken(dbConn *sql.DB, id int64) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET password_reset_token = '', password_reset_expira = '', fecha_actualizacion = "+nowExpr+" WHERE id = ?", id)
+	return err
+}
+
+// TipoEmpresa representa un tipo de empresa
+type TipoEmpresa struct {
+	ID            int64  `json:"id"`
+	Nombre        string `json:"nombre"`
+	Observaciones string `json:"observaciones"`
+	FechaCreacion string `json:"fecha_creacion"`
+	Estado        string `json:"estado"`
+}
+
+// CreateTipoEmpresa inserta un nuevo tipo de empresa
+func CreateTipoEmpresa(dbConn *sql.DB, nombre, observaciones string) (int64, error) {
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO tipos_de_empresas (nombre, observaciones, fecha_creacion) VALUES (?, ?, " + nowExpr + ")"
+	return insertSQLCompat(dbConn, query, nombre, observaciones)
+}
+
+// GetTiposEmpresas obtiene todos los tipos de empresa
+func GetTiposEmpresas(dbConn *sql.DB) ([]TipoEmpresa, error) {
+	rows, err := querySQLCompat(dbConn, "SELECT id, nombre, observaciones, fecha_creacion, estado FROM tipos_de_empresas ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []TipoEmpresa
+	for rows.Next() {
+		var t TipoEmpresa
+		if err := rows.Scan(&t.ID, &t.Nombre, &t.Observaciones, &t.FechaCreacion, &t.Estado); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, nil
+}
+
+// UpdateTipoEmpresa actualiza un tipo de empresa por id
+func UpdateTipoEmpresa(dbConn *sql.DB, id int64, nombre, observaciones string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE tipos_de_empresas SET nombre = ?, observaciones = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", nombre, observaciones, id)
+	return err
+}
+
+// DeleteTipoEmpresa elimina un tipo de empresa por id
+func DeleteTipoEmpresa(dbConn *sql.DB, id int64) error {
+	_, err := execSQLCompat(dbConn, "DELETE FROM tipos_de_empresas WHERE id = ?", id)
+	return err
+}
+
+// SetTipoEmpresaActivo activa/desactiva un tipo de empresa (activo: 'activo'/'inactivo' o 1/0)
+func SetTipoEmpresaActivo(dbConn *sql.DB, id int64, estado string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE tipos_de_empresas SET estado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", estado, id)
+	return err
+}
+
+// Empresa representa una empresa registrada en la base PostgreSQL operativa.
+type Empresa struct {
+	ID                   int64  `json:"id"`
+	EmpresaID            int64  `json:"empresa_id,omitempty"`
+	Nombre               string `json:"nombre"`
+	Nit                  string `json:"nit,omitempty"`
+	TipoID               int64  `json:"tipo_id,omitempty"`
+	TipoNombre           string `json:"tipo_nombre,omitempty"`
+	FechaCreacion        string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion   string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador       string `json:"usuario_creador,omitempty"`
+	Estado               string `json:"estado,omitempty"`
+	Observaciones        string `json:"observaciones,omitempty"`
+	AccessSource         string `json:"access_source,omitempty"`
+	CompartidaPor        string `json:"compartida_por,omitempty"`
+	SharedNivelAcceso    string `json:"shared_nivel_acceso,omitempty"`
+	SharedModulos        string `json:"shared_modulos_permitidos,omitempty"`
+	SharedPuedeCompartir bool   `json:"shared_puede_compartir,omitempty"`
+}
+
+// CreateEmpresa inserta una nueva empresa en la base PostgreSQL operativa.
+func CreateEmpresa(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observaciones, usuarioCreador string) (int64, error) {
+	id, _, err := CreateEmpresaIdempotente(dbConn, tipoID, tipoNombre, nombre, nit, observaciones, usuarioCreador)
+	return id, err
+}
+
+// CreateEmpresaIdempotente crea una empresa una sola vez para el mismo
+// administrador, tipo, nombre y NIT. Es la defensa backend contra doble clic,
+// reintentos del navegador o solicitudes concurrentes iguales.
+func CreateEmpresaIdempotente(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observaciones, usuarioCreador string) (int64, bool, error) {
+	key := empresaCreateDedupKey(tipoID, tipoNombre, nombre, nit, usuarioCreador)
+	unlock := lockEmpresaCreate(key)
+	defer unlock()
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, false, err
+	}
+	defer tx.Rollback()
+	nowExpr := sqlNowExpr()
+
+	if err := acquireEmpresaCreateDedupLockTx(tx, key); err != nil {
+		return 0, false, err
+	}
+	if existingID, found, err := findDuplicateEmpresaCreateTx(tx, tipoID, tipoNombre, nombre, nit, usuarioCreador); err != nil {
+		return 0, false, err
+	} else if found {
+		if err := tx.Commit(); err != nil {
+			return 0, false, err
+		}
+		_, _ = EnsureEmpresaPOS80Defaults(dbConn, existingID, usuarioCreador)
+		return existingID, false, nil
+	}
+
+	id, err := insertTxSQLCompat(tx, "INSERT INTO empresas (tipo_id, tipo_nombre, nombre, nit, observaciones, usuario_creador, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, ?, "+nowExpr+", 'activo')", tipoID, tipoNombre, nombre, nit, observaciones, usuarioCreador)
+	if err != nil {
+		return 0, false, err
+	}
+	if _, err := execTxSQLCompat(tx, "UPDATE empresas SET empresa_id = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ? AND (empresa_id IS NULL OR empresa_id <= 0)", id, id); err != nil {
+		return 0, false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, false, err
+	}
+	_, _ = EnsureEmpresaPOS80Defaults(dbConn, id, usuarioCreador)
+	return id, true, nil
+}
+
+func lockEmpresaCreate(key string) func() {
+	if strings.TrimSpace(key) == "" {
+		key = "empresa:create:empty"
+	}
+	empresaCreateLocksMu.Lock()
+	ref := empresaCreateLocks[key]
+	if ref == nil {
+		ref = &empresaCreateLockRef{}
+		empresaCreateLocks[key] = ref
+	}
+	ref.refs++
+	empresaCreateLocksMu.Unlock()
+
+	ref.mu.Lock()
+	return func() {
+		ref.mu.Unlock()
+		empresaCreateLocksMu.Lock()
+		ref.refs--
+		if ref.refs <= 0 {
+			delete(empresaCreateLocks, key)
+		}
+		empresaCreateLocksMu.Unlock()
+	}
+}
+
+func acquireEmpresaCreateDedupLockTx(tx *sql.Tx, key string) error {
+	if tx == nil || !isPostgresDialect() {
+		return nil
+	}
+	lockID := empresaCreateAdvisoryLockID(key)
+	_, err := execTxSQLCompat(tx, `SELECT pg_advisory_xact_lock(?)`, lockID)
+	return err
+}
+
+func findDuplicateEmpresaCreateTx(tx *sql.Tx, tipoID int64, tipoNombre, nombre, nit, usuarioCreador string) (int64, bool, error) {
+	if tx == nil {
+		return 0, false, sql.ErrConnDone
+	}
+	nombreKey := normalizeEmpresaCreateText(nombre)
+	nitKey := normalizeEmpresaCreateNit(nit)
+	tipoNombreKey := normalizeEmpresaCreateText(tipoNombre)
+	usuarioKey := normalizeEmpresaCreateText(usuarioCreador)
+	var id int64
+	err := queryRowTxSQLCompat(tx, `
+		SELECT id
+		FROM empresas
+		WHERE LOWER(TRIM(COALESCE(nombre, ''))) = ?
+		  AND REPLACE(REPLACE(REPLACE(LOWER(TRIM(COALESCE(nit, ''))), '.', ''), '-', ''), ' ', '') = ?
+		  AND COALESCE(tipo_id, 0) = ?
+		  AND LOWER(TRIM(COALESCE(tipo_nombre, ''))) = ?
+		  AND LOWER(TRIM(COALESCE(usuario_creador, ''))) = ?
+		  AND LOWER(TRIM(COALESCE(estado, 'activo'))) <> 'eliminada'
+		ORDER BY id ASC
+		LIMIT 1
+	`, nombreKey, nitKey, tipoID, tipoNombreKey, usuarioKey).Scan(&id)
+	if err == nil {
+		return id, true, nil
+	}
+	if err == sql.ErrNoRows {
+		return 0, false, nil
+	}
+	return 0, false, err
+}
+
+func empresaCreateDedupKey(tipoID int64, tipoNombre, nombre, nit, usuarioCreador string) string {
+	parts := []string{
+		fmt.Sprintf("tipo_id=%d", tipoID),
+		"tipo=" + normalizeEmpresaCreateText(tipoNombre),
+		"nombre=" + normalizeEmpresaCreateText(nombre),
+		"nit=" + normalizeEmpresaCreateNit(nit),
+		"usuario=" + normalizeEmpresaCreateText(usuarioCreador),
+	}
+	return strings.Join(parts, "|")
+}
+
+func empresaCreateAdvisoryLockID(key string) int64 {
+	sum := sha256.Sum256([]byte(key))
+	// Build the positive int64 from two safe uint32 conversions. Besides making
+	// the range explicit, this avoids implementation-dependent overflow checks.
+	high := int64(binary.BigEndian.Uint32(sum[:4]) & 0x7fffffff)
+	low := int64(binary.BigEndian.Uint32(sum[4:8]))
+	return (high << 32) | low
+}
+
+// nullableID convierte identificadores opcionales en NULL para PostgreSQL.
+// Es compartido por los modulos empresariales que persisten relaciones opcionales.
+func nullableID(v int64) interface{} {
+	if v <= 0 {
+		return nil
+	}
+	return v
+}
+
+func normalizeEmpresaCreateText(value string) string {
+	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(value))), " ")
+}
+
+func normalizeEmpresaCreateNit(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	var b strings.Builder
+	for _, r := range value {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// GetEmpresas obtiene todas las empresas
+func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
+	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Empresa
+	for rows.Next() {
+		var e Empresa
+		var empresaID sql.NullInt64
+		var nit sql.NullString
+		var tipoID sql.NullInt64
+		var tipoNombre sql.NullString
+		var fechaCre sql.NullString
+		var fechaAct sql.NullString
+		var usuario sql.NullString
+		var estado sql.NullString
+		var obs sql.NullString
+		if err := rows.Scan(&e.ID, &empresaID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+			return nil, err
+		}
+		if empresaID.Valid {
+			e.EmpresaID = empresaID.Int64
+		} else {
+			e.EmpresaID = e.ID
+		}
+		if nit.Valid {
+			e.Nit = nit.String
+		}
+		if tipoID.Valid {
+			e.TipoID = tipoID.Int64
+		}
+		if tipoNombre.Valid {
+			e.TipoNombre = tipoNombre.String
+		}
+		if fechaCre.Valid {
+			e.FechaCreacion = fechaCre.String
+		}
+		if fechaAct.Valid {
+			e.FechaActualizacion = fechaAct.String
+		}
+		if usuario.Valid {
+			e.UsuarioCreador = usuario.String
+		}
+		if estado.Valid {
+			e.Estado = estado.String
+		}
+		if obs.Valid {
+			e.Observaciones = obs.String
+		}
+		out = append(out, e)
+	}
+	return out, nil
+}
+
+// GetEmpresasByUsuarioCreador obtiene las empresas creadas por un administrador.
+func GetEmpresasByUsuarioCreador(dbConn *sql.DB, usuarioCreador string) ([]Empresa, error) {
+	usuarioCreador = strings.TrimSpace(usuarioCreador)
+	if usuarioCreador == "" {
+		return []Empresa{}, nil
+	}
+	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE LOWER(COALESCE(usuario_creador, '')) = LOWER(?) ORDER BY id DESC", usuarioCreador)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Empresa
+	for rows.Next() {
+		var e Empresa
+		var empresaID sql.NullInt64
+		var nit sql.NullString
+		var tipoID sql.NullInt64
+		var tipoNombre sql.NullString
+		var fechaCre sql.NullString
+		var fechaAct sql.NullString
+		var usuario sql.NullString
+		var estado sql.NullString
+		var obs sql.NullString
+		if err := rows.Scan(&e.ID, &empresaID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+			return nil, err
+		}
+		if empresaID.Valid {
+			e.EmpresaID = empresaID.Int64
+		} else {
+			e.EmpresaID = e.ID
+		}
+		if nit.Valid {
+			e.Nit = nit.String
+		}
+		if tipoID.Valid {
+			e.TipoID = tipoID.Int64
+		}
+		if tipoNombre.Valid {
+			e.TipoNombre = tipoNombre.String
+		}
+		if fechaCre.Valid {
+			e.FechaCreacion = fechaCre.String
+		}
+		if fechaAct.Valid {
+			e.FechaActualizacion = fechaAct.String
+		}
+		if usuario.Valid {
+			e.UsuarioCreador = usuario.String
+		}
+		if estado.Valid {
+			e.Estado = estado.String
+		}
+		if obs.Valid {
+			e.Observaciones = obs.String
+		}
+		out = append(out, e)
+	}
+	return out, nil
+}
+
+// GetEmpresaByID devuelve una empresa por id
+func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
+	row := queryRowSQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? LIMIT 1", id)
+	var e Empresa
+	var empresaID sql.NullInt64
+	var nit sql.NullString
+	var tipoID sql.NullInt64
+	var tipoNombre sql.NullString
+	var fechaCre sql.NullString
+	var fechaAct sql.NullString
+	var usuario sql.NullString
+	var estado sql.NullString
+	var obs sql.NullString
+	if err := row.Scan(&e.ID, &empresaID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+		return nil, err
+	}
+	if empresaID.Valid {
+		e.EmpresaID = empresaID.Int64
+	} else {
+		e.EmpresaID = e.ID
+	}
+	if nit.Valid {
+		e.Nit = nit.String
+	}
+	if tipoID.Valid {
+		e.TipoID = tipoID.Int64
+	}
+	if tipoNombre.Valid {
+		e.TipoNombre = tipoNombre.String
+	}
+	if fechaCre.Valid {
+		e.FechaCreacion = fechaCre.String
+	}
+	if fechaAct.Valid {
+		e.FechaActualizacion = fechaAct.String
+	}
+	if usuario.Valid {
+		e.UsuarioCreador = usuario.String
+	}
+	if estado.Valid {
+		e.Estado = estado.String
+	}
+	if obs.Valid {
+		e.Observaciones = obs.String
+	}
+	return &e, nil
+}
+
+// GetEmpresaByScopeID resuelve una empresa por id fisico o por alcance logico empresa_id.
+func GetEmpresaByScopeID(dbConn *sql.DB, empresaID int64) (*Empresa, error) {
+	startedAt := time.Now()
+	defer func() {
+		PerfLogf("[perf][empresa] GetEmpresaByScopeID empresa=%d dur=%s", empresaID, time.Since(startedAt))
+	}()
+	if empresaID <= 0 {
+		return nil, nil
+	}
+	empresaByScopeCacheMu.Lock()
+	if cached, ok := empresaByScopeCache[empresaID]; ok && time.Since(cached.LoadedAt) < empresaByScopeCacheTTL {
+		empresaByScopeCacheMu.Unlock()
+		if cached.Empresa == nil {
+			return nil, nil
+		}
+		copyEmpresa := *cached.Empresa
+		return &copyEmpresa, nil
+	}
+	empresaByScopeCacheMu.Unlock()
+	row := queryRowSQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? OR COALESCE(empresa_id, id) = ? ORDER BY CASE WHEN COALESCE(empresa_id, id) = ? THEN 0 ELSE 1 END, id ASC LIMIT 1", empresaID, empresaID, empresaID)
+	var e Empresa
+	var resolvedEmpresaID sql.NullInt64
+	var nit sql.NullString
+	var tipoID sql.NullInt64
+	var tipoNombre sql.NullString
+	var fechaCre sql.NullString
+	var fechaAct sql.NullString
+	var usuario sql.NullString
+	var estado sql.NullString
+	var obs sql.NullString
+	if err := row.Scan(&e.ID, &resolvedEmpresaID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+		if err == sql.ErrNoRows {
+			empresaByScopeCacheMu.Lock()
+			empresaByScopeCache[empresaID] = cachedEmpresaByScope{Empresa: nil, LoadedAt: time.Now()}
+			empresaByScopeCacheMu.Unlock()
+			return nil, nil
+		}
+		return nil, err
+	}
+	if resolvedEmpresaID.Valid {
+		e.EmpresaID = resolvedEmpresaID.Int64
+	} else {
+		e.EmpresaID = e.ID
+	}
+	if nit.Valid {
+		e.Nit = nit.String
+	}
+	if tipoID.Valid {
+		e.TipoID = tipoID.Int64
+	}
+	if tipoNombre.Valid {
+		e.TipoNombre = tipoNombre.String
+	}
+	if fechaCre.Valid {
+		e.FechaCreacion = fechaCre.String
+	}
+	if fechaAct.Valid {
+		e.FechaActualizacion = fechaAct.String
+	}
+	if usuario.Valid {
+		e.UsuarioCreador = usuario.String
+	}
+	if estado.Valid {
+		e.Estado = estado.String
+	}
+	if obs.Valid {
+		e.Observaciones = obs.String
+	}
+	empresaCopy := e
+	empresaByScopeCacheMu.Lock()
+	empresaByScopeCache[empresaID] = cachedEmpresaByScope{Empresa: &empresaCopy, LoadedAt: time.Now()}
+	empresaByScopeCacheMu.Unlock()
+	return &empresaCopy, nil
+}
+
+// UpdateEmpresa actualiza campos editables de una empresa
+func UpdateEmpresa(dbConn *sql.DB, id, tipoID int64, tipoNombre, nombre, nit, observaciones string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE empresas SET tipo_id = ?, tipo_nombre = ?, nombre = ?, nit = ?, observaciones = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", tipoID, tipoNombre, nombre, nit, observaciones, id)
+	return err
+}
+
+// DeleteEmpresa elimina una empresa por id
+func DeleteEmpresa(dbConn *sql.DB, id int64) error {
+	_, err := execSQLCompat(dbConn, "DELETE FROM empresas WHERE id = ?", id)
+	return err
+}
+
+// SetEmpresaEstado activa/desactiva una empresa (estado: 'activo'/'inactivo')
+func SetEmpresaEstado(dbConn *sql.DB, id int64, estado string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE empresas SET estado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", estado, id)
+	return err
+}
+
+// Metric representa una muestra de métricas del sistema
+type Metric struct {
+	ID            int64   `json:"id"`
+	Timestamp     string  `json:"timestamp"`
+	CPUPercent    float64 `json:"cpu_percent"`
+	MemTotal      uint64  `json:"mem_total"`
+	MemUsed       uint64  `json:"mem_used"`
+	MemPercent    float64 `json:"mem_percent"`
+	DiskTotal     uint64  `json:"disk_total"`
+	DiskUsed      uint64  `json:"disk_used"`
+	DiskPercent   float64 `json:"disk_percent"`
+	NetRecv       uint64  `json:"net_recv"`
+	NetSent       uint64  `json:"net_sent"`
+	FechaCreacion string  `json:"fecha_creacion"`
+}
+
+const metricsSchemaFingerprint = "metrics:v1:cpu-memory-disk-network-samples"
+
+func metricsSchemaStatements() []string {
+	return []string{
+		`CREATE TABLE IF NOT EXISTS metrics (
+			id BIGSERIAL PRIMARY KEY,
+			timestamp TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			cpu_percent DOUBLE PRECISION,
+			mem_total BIGINT,
+			mem_used BIGINT,
+			mem_percent DOUBLE PRECISION,
+			disk_total BIGINT DEFAULT 0,
+			disk_used BIGINT DEFAULT 0,
+			disk_percent DOUBLE PRECISION DEFAULT 0,
+			net_recv BIGINT,
+			net_sent BIGINT,
+			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_actualizacion TEXT,
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`,
+		`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_total BIGINT DEFAULT 0`,
+		`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_used BIGINT DEFAULT 0`,
+		`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_percent DOUBLE PRECISION DEFAULT 0`,
+	}
+}
+
+func applyMetricsSchemaTx(ctx context.Context, tx *sql.Tx) error {
+	if tx == nil {
+		return fmt.Errorf("metrics migration transaction is required")
+	}
+	for _, statement := range metricsSchemaStatements() {
+		if _, err := tx.ExecContext(ctx, rebindCompatQuery(statement)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// InitMetricsTable crea la tabla metrics en la base de datos si no existe
+func InitMetricsTable(dbConn *sql.DB) error {
+	if isPostgresDialect() {
+		for _, statement := range metricsSchemaStatements() {
+			if _, err := execSQLCompat(dbConn, statement); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	create := `CREATE TABLE IF NOT EXISTS metrics (
+		id BIGSERIAL PRIMARY KEY,
+		timestamp TEXT DEFAULT (CURRENT_TIMESTAMP),
+		cpu_percent REAL,
+		mem_total INTEGER,
+		mem_used INTEGER,
+		mem_percent REAL,
+		disk_total INTEGER DEFAULT 0,
+		disk_used INTEGER DEFAULT 0,
+		disk_percent REAL DEFAULT 0,
+		net_recv INTEGER,
+		net_sent INTEGER,
+		fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := execSQLCompat(dbConn, create); err != nil {
+		return err
+	}
+	return ensureMetricsDiskColumns(dbConn)
+}
+
+// VerifyMetricsSchema is read-only and is used by pcs-worker. Runtime
+// processes must request pcs-migrate when this table is absent instead of
+// creating it while serving business traffic.
+func VerifyMetricsSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return fmt.Errorf("metrics database is required")
+	}
+	var table sql.NullString
+	if err := queryRowSQLCompat(dbConn, `SELECT to_regclass('public.metrics')`).Scan(&table); err != nil {
+		return fmt.Errorf("verify metrics schema: %w", err)
+	}
+	if !table.Valid || strings.TrimSpace(table.String) == "" {
+		return fmt.Errorf("metrics schema is missing; run pcs-migrate before starting pcs-worker")
+	}
+	return nil
+}
+
+func ensureMetricsDiskColumns(dbConn *sql.DB) error {
+	var alters []string
+	if isPostgresDialect() {
+		alters = []string{
+			`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_total BIGINT DEFAULT 0`,
+			`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_used BIGINT DEFAULT 0`,
+			`ALTER TABLE metrics ADD COLUMN IF NOT EXISTS disk_percent DOUBLE PRECISION DEFAULT 0`,
+		}
+	} else {
+		alters = []string{
+			`ALTER TABLE metrics ADD COLUMN disk_total INTEGER DEFAULT 0`,
+			`ALTER TABLE metrics ADD COLUMN disk_used INTEGER DEFAULT 0`,
+			`ALTER TABLE metrics ADD COLUMN disk_percent REAL DEFAULT 0`,
+		}
+	}
+
+	for _, q := range alters {
+		if _, err := execSQLCompat(dbConn, q); err != nil {
+			low := strings.ToLower(strings.TrimSpace(err.Error()))
+			if strings.Contains(low, "duplicate column") || strings.Contains(low, "already exists") || strings.Contains(low, "ya existe") {
+				continue
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+// CreateWompiPaymentRecord registra una transacción inicial de Wompi en la tabla pagos_wompi.
+func CreateWompiPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload, discountCode, asesorID string) (int64, error) {
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO pagos_wompi (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ")"
+	id, err := insertSQLCompat(dbConn, query, licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
+	return id, err
+}
+
+// UpdateWompiPaymentRecordByTransaction actualiza una transacción de Wompi usando su transaction_id.
+func UpdateWompiPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status, rawPayload string) error {
+	nowExpr := sqlNowExpr()
+	query := "UPDATE pagos_wompi SET status = CASE WHEN UPPER(COALESCE(status, '')) = 'APPROVED' AND UPPER(?) <> 'APPROVED' THEN status ELSE ? END, raw_payload = ?, fecha_actualizacion = " + nowExpr + " WHERE transaction_id = ?"
+	_, err := execSQLCompat(dbConn, query, status, status, rawPayload, transactionID)
+	return err
+}
+
+// UpdateWompiPaymentRecordByReference actualiza una transaccion de Wompi usando su referencia.
+func UpdateWompiPaymentRecordByReference(dbConn *sql.DB, reference, status, rawPayload string) error {
+	nowExpr := sqlNowExpr()
+	query := "UPDATE pagos_wompi SET status = CASE WHEN UPPER(COALESCE(status, '')) = 'APPROVED' AND UPPER(?) <> 'APPROVED' THEN status ELSE ? END, raw_payload = ?, fecha_actualizacion = " + nowExpr + " WHERE reference = ?"
+	_, err := execSQLCompat(dbConn, query, status, status, rawPayload, reference)
+	return err
+}
+
+// WompiPaymentRecord representa una fila de pagos_wompi
+type WompiPaymentRecord struct {
+	ID            int64
+	LicenciaID    sql.NullInt64
+	EmpresaID     sql.NullInt64
+	TransactionID sql.NullString
+	Reference     sql.NullString
+	Status        sql.NullString
+	RawPayload    sql.NullString
+	DiscountCode  sql.NullString
+	AsesorID      sql.NullString
+	FechaCreacion sql.NullString
+}
+
+// GetWompiPaymentByTransaction obtiene una fila de pagos_wompi por transaction_id
+func GetWompiPaymentByTransaction(dbConn *sql.DB, transactionID string) (*WompiPaymentRecord, error) {
+	read := func() (*WompiPaymentRecord, error) {
+		row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE transaction_id = ? LIMIT 1`, transactionID)
+		var r WompiPaymentRecord
+		if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return &r, nil
+	}
+	return read()
+}
+
+// GetWompiPaymentByReference obtiene una fila de pagos_wompi por reference
+func GetWompiPaymentByReference(dbConn *sql.DB, reference string) (*WompiPaymentRecord, error) {
+	read := func() (*WompiPaymentRecord, error) {
+		row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE reference = ? LIMIT 1`, reference)
+		var r WompiPaymentRecord
+		if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return &r, nil
+	}
+	return read()
+}
+
+// CreateEpaycoPaymentRecord registra una transacción inicial de Epayco en la tabla pagos_epayco.
+func CreateEpaycoPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload, discountCode, asesorID string) (int64, error) {
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO pagos_epayco (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ")"
+	id, err := insertSQLCompat(dbConn, query, licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
+	return id, err
+}
+
+// UpdateEpaycoPaymentRecordByTransaction actualiza una transacción de Epayco usando su transaction_id.
+func UpdateEpaycoPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status, rawPayload string) error {
+	nowExpr := sqlNowExpr()
+	query := "UPDATE pagos_epayco SET status = CASE WHEN UPPER(COALESCE(status, '')) = 'APPROVED' AND UPPER(?) <> 'APPROVED' THEN status ELSE ? END, raw_payload = ?, fecha_actualizacion = " + nowExpr + " WHERE transaction_id = ?"
+	_, err := execSQLCompat(dbConn, query, status, status, rawPayload, transactionID)
+	return err
+}
+
+// UpdateEpaycoPaymentRecordByReference actualiza una transaccion de Epayco usando su reference.
+func UpdateEpaycoPaymentRecordByReference(dbConn *sql.DB, reference, status, rawPayload string) error {
+	nowExpr := sqlNowExpr()
+	query := "UPDATE pagos_epayco SET status = CASE WHEN UPPER(COALESCE(status, '')) = 'APPROVED' AND UPPER(?) <> 'APPROVED' THEN status ELSE ? END, raw_payload = ?, fecha_actualizacion = " + nowExpr + " WHERE reference = ?"
+	_, err := execSQLCompat(dbConn, query, status, status, rawPayload, reference)
+	return err
+}
+
+// EpaycoPaymentRecord representa una fila de pagos_epayco
+type EpaycoPaymentRecord struct {
+	ID            int64
+	LicenciaID    sql.NullInt64
+	EmpresaID     sql.NullInt64
+	TransactionID sql.NullString
+	Reference     sql.NullString
+	Status        sql.NullString
+	RawPayload    sql.NullString
+	DiscountCode  sql.NullString
+	AsesorID      sql.NullString
+	FechaCreacion sql.NullString
+}
+
+// GetEpaycoPaymentByTransaction obtiene una fila de pagos_epayco por transaction_id
+func GetEpaycoPaymentByTransaction(dbConn *sql.DB, transactionID string) (*EpaycoPaymentRecord, error) {
+	read := func() (*EpaycoPaymentRecord, error) {
+		row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_epayco WHERE transaction_id = ? LIMIT 1`, transactionID)
+		var r EpaycoPaymentRecord
+		if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return &r, nil
+	}
+	return read()
+}
+
+// GetEpaycoPaymentByReference obtiene una fila de pagos_epayco por reference
+func GetEpaycoPaymentByReference(dbConn *sql.DB, reference string) (*EpaycoPaymentRecord, error) {
+	read := func() (*EpaycoPaymentRecord, error) {
+		row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_epayco WHERE reference = ? LIMIT 1`, reference)
+		var r EpaycoPaymentRecord
+		if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return &r, nil
+	}
+	return read()
+}
+
+// GetEpaycoPaymentContext devuelve licencia_id y empresa_id para una transaccion/referencia Epayco.
+func GetEpaycoPaymentContext(dbConn *sql.DB, transactionID, reference string) (int64, int64, bool, error) {
+	read := func() (int64, int64, bool, error) {
+		row := queryRowSQLCompat(dbConn, `
+			SELECT licencia_id, empresa_id
+			FROM pagos_epayco
+			WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
+			ORDER BY id DESC
+			LIMIT 1
+		`, transactionID, transactionID, reference, reference)
+
+		var licenciaID sql.NullInt64
+		var empresaID sql.NullInt64
+		if err := row.Scan(&licenciaID, &empresaID); err != nil {
+			if err == sql.ErrNoRows {
+				return 0, 0, false, nil
+			}
+			return 0, 0, false, err
+		}
+
+		if !licenciaID.Valid || !empresaID.Valid {
+			return 0, 0, false, nil
+		}
+
+		return licenciaID.Int64, empresaID.Int64, true, nil
+	}
+	return read()
+}
+
+// GetWompiPaymentContext devuelve licencia_id y empresa_id para una transaccion/referencia Wompi.
+func GetWompiPaymentContext(dbConn *sql.DB, transactionID, reference string) (int64, int64, bool, error) {
+	read := func() (int64, int64, bool, error) {
+		row := queryRowSQLCompat(dbConn, `
+			SELECT licencia_id, empresa_id
+			FROM pagos_wompi
+			WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
+			ORDER BY id DESC
+			LIMIT 1
+		`, transactionID, transactionID, reference, reference)
+
+		var licenciaID sql.NullInt64
+		var empresaID sql.NullInt64
+		if err := row.Scan(&licenciaID, &empresaID); err != nil {
+			if err == sql.ErrNoRows {
+				return 0, 0, false, nil
+			}
+			return 0, 0, false, err
+		}
+
+		if !licenciaID.Valid || !empresaID.Valid {
+			return 0, 0, false, nil
+		}
+
+		return licenciaID.Int64, empresaID.Int64, true, nil
+	}
+	return read()
+}
+
+func licenciaPaymentTable(provider string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "wompi":
+		return "pagos_wompi", true
+	case "epayco":
+		return "pagos_epayco", true
+	default:
+		return "", false
+	}
+}
+
+func getLicenciaPaymentRowID(dbConn *sql.DB, table, transactionID, reference string) (int64, bool, error) {
+	transactionID = strings.TrimSpace(transactionID)
+	reference = strings.TrimSpace(reference)
+	if table == "" || (transactionID == "" && reference == "") {
+		return 0, false, nil
+	}
+	row := queryRowSQLCompat(dbConn, fmt.Sprintf(`SELECT id
+		FROM %s
+		WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
+		ORDER BY id DESC
+		LIMIT 1`, table), transactionID, transactionID, reference, reference)
+	var id int64
+	if err := row.Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, false, nil
+		}
+		return 0, false, err
+	}
+	return id, true, nil
+}
+
+// TryBeginLicenciaPaymentActivation reserva una transaccion de pasarela para
+// que un webhook o consulta repetida no vuelva a sumar dias a la licencia.
+// Un estado processing no se reclama automaticamente: un corte despues de
+// activar y antes de confirmar es incierto y debe reconciliarse, no repetirse.
+func TryBeginLicenciaPaymentActivation(dbConn *sql.DB, provider, transactionID, reference string) (bool, error) {
+	table, ok := licenciaPaymentTable(provider)
+	if !ok {
+		return false, fmt.Errorf("proveedor de pago no soportado")
+	}
+	id, found, err := getLicenciaPaymentRowID(dbConn, table, transactionID, reference)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return false, fmt.Errorf("pago de licencia no registrado previamente")
+	}
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, fmt.Sprintf(`UPDATE %s
+			SET licencia_activation_status = 'processing',
+				licencia_activation_lease_until = CURRENT_TIMESTAMP + interval '5 minutes',
+				licencia_activation_attempts = COALESCE(licencia_activation_attempts, 0) + 1,
+				fecha_actualizacion = %s
+			WHERE id = ?
+				AND COALESCE(licencia_activation_status, '') <> 'done'
+				AND COALESCE(licencia_activation_status, '') <> 'processing'`, table, nowExpr), id)
+	if err != nil {
+		return false, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected > 0, nil
+}
+
+func FinishLicenciaPaymentActivation(dbConn *sql.DB, provider, transactionID, reference string, activatedLicenciaID int64, activationErr error) error {
+	table, ok := licenciaPaymentTable(provider)
+	if !ok {
+		return nil
+	}
+	id, found, err := getLicenciaPaymentRowID(dbConn, table, transactionID, reference)
+	if err != nil || !found {
+		return err
+	}
+	nowExpr := sqlNowExpr()
+	status := "done"
+	if activationErr != nil {
+		status = "failed"
+	}
+	_, err = execSQLCompat(dbConn, fmt.Sprintf(`UPDATE %s
+			SET licencia_activation_status = ?,
+				licencia_activation_lease_until = NULL,
+				licencia_activada_id = CASE WHEN ? > 0 THEN ? ELSE licencia_activada_id END,
+			licencia_activada_en = CASE WHEN ? = 'done' THEN %s ELSE licencia_activada_en END,
+			fecha_actualizacion = %s
+		WHERE id = ?`, table, nowExpr, nowExpr), status, activatedLicenciaID, activatedLicenciaID, status, id)
+	return err
+}
+
+func licenciaEmpresaStackAnchorTx(tx *sql.Tx, empresaID int64, now time.Time) (time.Time, error) {
+	anchor := now
+	rows, err := queryTxSQLCompat(tx, `SELECT COALESCE(fecha_fin, '')
+		FROM licencias
+		WHERE empresa_id = ?
+			AND COALESCE(activo, 1) = 1
+			AND COALESCE(es_adicional, 0) = 0`, empresaID)
+	if err != nil {
+		return anchor, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var raw string
+		if err := rows.Scan(&raw); err != nil {
+			return anchor, err
+		}
+		if parsed, ok := parseMaybeTime(raw); ok && parsed.After(anchor) {
+			anchor = parsed
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return anchor, err
+	}
+	return anchor, nil
+}
+
+func resolveLicenciaDurationDays(duracionDias sql.NullInt64, fechaInicio, fechaFin string) int {
+	if duracionDias.Valid && duracionDias.Int64 > 0 {
+		return int(duracionDias.Int64)
+	}
+	if start, ok := parseMaybeTime(fechaInicio); ok {
+		if end, ok := parseMaybeTime(fechaFin); ok && end.After(start) {
+			days := int(math.Ceil(end.Sub(start).Hours() / 24))
+			if days > 0 {
+				return days
+			}
+		}
+	}
+	return 30
+}
+
+func buildLicenciaStackWindow(now, anchor time.Time, requestedStart, requestedEnd string, durationDays int) (string, string) {
+	if durationDays <= 0 {
+		durationDays = 30
+	}
+	start := anchor.Format("2006-01-02 15:04:05")
+	end := anchor.AddDate(0, 0, durationDays).Format("2006-01-02 15:04:05")
+	if !anchor.After(now.Add(1 * time.Minute)) {
+		if requestedStart = strings.TrimSpace(requestedStart); requestedStart != "" {
+			start = requestedStart
+		}
+		if requestedEnd = strings.TrimSpace(requestedEnd); requestedEnd != "" {
+			end = requestedEnd
+		}
+	}
+	return start, end
+}
+
+func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fechaInicio, fechaFin string) (int64, error) {
+	if licenciaID <= 0 || empresaID <= 0 {
+		return 0, fmt.Errorf("licencia_id y empresa_id son obligatorios")
+	}
+	var currentEmpresa sql.NullInt64
+	var tipoID sql.NullInt64
+	var paisCodigo sql.NullString
+	var nombre sql.NullString
+	var descripcion sql.NullString
+	var valor sql.NullFloat64
+	var duracionDias sql.NullInt64
+	var maxDocumentosMensuales sql.NullInt64
+	var maxCajasSimultaneas sql.NullInt64
+	var modulosHabilitados sql.NullString
+	var codigoFuncion sql.NullString
+	var superRol sql.NullInt64
+	var usuarioCreador sql.NullString
+	var observaciones sql.NullString
+	var currentFechaInicio sql.NullString
+	var currentFechaFin sql.NullString
+	if err := queryRowTxSQLCompat(tx, `SELECT
+		empresa_id,
+		tipo_id,
+		COALESCE(pais_codigo, 'CO'),
+		COALESCE(nombre, ''),
+		COALESCE(descripcion, ''),
+		COALESCE(valor, 0),
+		COALESCE(duracion_dias, 0),
+		COALESCE(max_documentos_mensuales, 0),
+		COALESCE(max_cajas_simultaneas, 0),
+		COALESCE(modulos_habilitados, ''),
+		COALESCE(codigo_funcion, ''),
+		COALESCE(super_rol_habilitado, 0),
+		COALESCE(usuario_creador, ''),
+		COALESCE(observaciones, ''),
+		COALESCE(fecha_inicio, ''),
+		COALESCE(fecha_fin, '')
+	FROM licencias
+	WHERE id = ?
+	LIMIT 1`, licenciaID).Scan(
+		&currentEmpresa,
+		&tipoID,
+		&paisCodigo,
+		&nombre,
+		&descripcion,
+		&valor,
+		&duracionDias,
+		&maxDocumentosMensuales,
+		&maxCajasSimultaneas,
+		&modulosHabilitados,
+		&codigoFuncion,
+		&superRol,
+		&usuarioCreador,
+		&observaciones,
+		&currentFechaInicio,
+		&currentFechaFin,
+	); err != nil {
+		return 0, err
+	}
+
+	nowExpr := sqlNowExpr()
+	now := time.Now()
+	durationDays := resolveLicenciaDurationDays(duracionDias, fechaInicio, fechaFin)
+	anchor, err := licenciaEmpresaStackAnchorTx(tx, empresaID, now)
+	if err != nil {
+		return 0, err
+	}
+	stackedInicio, stackedFin := buildLicenciaStackWindow(now, anchor, fechaInicio, fechaFin, durationDays)
+	if currentEmpresa.Valid && currentEmpresa.Int64 == empresaID {
+		if existingEnd, ok := parseMaybeTime(currentFechaFin.String); ok && existingEnd.Before(now) {
+			start := strings.TrimSpace(fechaInicio)
+			if start == "" {
+				start = now.Format("2006-01-02 15:04:05")
+			}
+			end := now.AddDate(0, 0, durationDays).Format("2006-01-02 15:04:05")
+			if strings.TrimSpace(fechaFin) != "" {
+				end = strings.TrimSpace(fechaFin)
+			}
+			if _, err := execTxSQLCompat(tx, "UPDATE licencias SET activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", start, end, licenciaID); err != nil {
+				return 0, err
+			}
+			return licenciaID, nil
+		}
+		if strings.TrimSpace(currentFechaInicio.String) == "" && !anchor.After(now.Add(1*time.Minute)) {
+			if _, err := execTxSQLCompat(tx, "UPDATE licencias SET activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", stackedInicio, stackedFin, licenciaID); err != nil {
+				return 0, err
+			}
+			return licenciaID, nil
+		}
+	}
+
+	newID, err := insertTxSQLCompat(tx, `INSERT INTO licencias (
+		empresa_id,
+		tipo_id,
+		pais_codigo,
+		nombre,
+		descripcion,
+		valor,
+		duracion_dias,
+		max_documentos_mensuales,
+		max_cajas_simultaneas,
+		modulos_habilitados,
+		codigo_funcion,
+		super_rol_habilitado,
+		fecha_inicio,
+		fecha_fin,
+		activo,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, `+nowExpr+`, `+nowExpr+`, ?, 'activo', ?)`,
+		empresaID,
+		tipoID.Int64,
+		strings.TrimSpace(paisCodigo.String),
+		nombre.String,
+		descripcion.String,
+		valor.Float64,
+		int(duracionDias.Int64),
+		int(maxDocumentosMensuales.Int64),
+		0,
+		modulosHabilitados.String,
+		strings.TrimSpace(codigoFuncion.String),
+		int(superRol.Int64),
+		stackedInicio,
+		stackedFin,
+		usuarioCreador.String,
+		observaciones.String,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return newID, nil
+}
+
+// ActivateLicenciaForEmpresaAsignada asigna y activa una licencia para una empresa,
+// estableciendo fechas acumuladas y devolviendo el ID de la fila empresarial creada o actualizada.
+// Si la licencia base ya pertenece a otra empresa, crea una copia activa para no mover ni desactivar la licencia anterior.
+func ActivateLicenciaForEmpresaAsignada(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) (int64, error) {
+	if dbConn == nil {
+		dbConn = GetDB()
+	}
+	if err := EnsureLicenciasSchema(dbConn); err != nil {
+		return 0, err
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	assignedID, err := activateLicenciaForEmpresaTx(tx, licenciaID, empresaID, fechaInicio, fechaFin)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
+	return assignedID, nil
+}
+
+// ActivateLicenciaForEmpresa conserva el contrato historico de solo error.
+func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) error {
+	_, err := ActivateLicenciaForEmpresaAsignada(dbConn, licenciaID, empresaID, fechaInicio, fechaFin)
+	return err
+}
+
+// ConfigValueWrite representa una escritura de configuracion que debe aplicarse
+// junto con las demas entradas de la misma operacion.
+type ConfigValueWrite struct {
+	Key       string
+	Value     string
+	Encrypted bool
+}
+
+func setConfigValueTx(tx *sql.Tx, entry ConfigValueWrite, nowExpr string) error {
+	key := strings.TrimSpace(entry.Key)
+	if key == "" {
+		return errors.New("config key is required")
+	}
+	enc := 0
+	if entry.Encrypted {
+		enc = 1
+	}
+	var existing string
+	err := queryRowTxSQLCompat(tx, "SELECT config_key FROM configuraciones WHERE config_key = ? LIMIT 1", key).Scan(&existing)
+	if errors.Is(err, sql.ErrNoRows) {
+		_, err = execTxSQLCompat(tx, "INSERT INTO configuraciones (config_key, value, encrypted, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, "+nowExpr+", "+nowExpr+")", key, entry.Value, enc)
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	_, err = execTxSQLCompat(tx, "UPDATE configuraciones SET value = ?, encrypted = ?, fecha_actualizacion = "+nowExpr+" WHERE config_key = ?", entry.Value, enc, key)
+	return err
+}
+
+// SetConfigValuesAtomic aplica una configuracion compuesta en una sola
+// transaccion para impedir estados parciales visibles por otros requests.
+func SetConfigValuesAtomic(dbConn *sql.DB, entries []ConfigValueWrite) error {
+	if dbConn == nil {
+		return errors.New("configuration database is unavailable")
+	}
+	if len(entries) == 0 {
+		return nil
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer rollbackTransaction(tx)
+	nowExpr := sqlNowExpr()
+	for _, entry := range entries {
+		if err := setConfigValueTx(tx, entry, nowExpr); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// SetConfigValue inserta o actualiza una configuración en la tabla configuraciones.
+func SetConfigValue(dbConn *sql.DB, key, value string, encrypted bool) error {
+	return SetConfigValuesAtomic(dbConn, []ConfigValueWrite{{Key: key, Value: value, Encrypted: encrypted}})
+}
+
+// GetConfigEntry devuelve el valor almacenado, si está cifrado, la fecha de creación y la fecha de última actualización.
+// Si la clave no existe devuelve valores vacíos y nil error.
+func GetConfigEntry(dbConn *sql.DB, key string) (string, bool, string, string, error) {
+	row := queryRowSQLCompat(dbConn, "SELECT value, encrypted, fecha_creacion, fecha_actualizacion FROM configuraciones WHERE config_key = ? LIMIT 1", key)
+	var val sql.NullString
+	var enc sql.NullInt64
+	var fechaCre sql.NullString
+	var fechaAct sql.NullString
+	if err := row.Scan(&val, &enc, &fechaCre, &fechaAct); err != nil {
+		if err == sql.ErrNoRows {
+			return "", false, "", "", nil
+		}
+		return "", false, "", "", err
+	}
+	v := ""
+	if val.Valid {
+		v = val.String
+	}
+	isEnc := false
+	if enc.Valid && enc.Int64 == 1 {
+		isEnc = true
+	}
+	fc := ""
+	if fechaCre.Valid {
+		fc = fechaCre.String
+	}
+	fa := ""
+	if fechaAct.Valid {
+		fa = fechaAct.String
+	}
+	return v, isEnc, fc, fa, nil
+}
+
+// GetConfigValue devuelve el valor almacenado y si estaba cifrado
+func GetConfigValue(dbConn *sql.DB, key string) (string, bool, error) {
+	row := queryRowSQLCompat(dbConn, "SELECT value, encrypted FROM configuraciones WHERE config_key = ? LIMIT 1", key)
+	var val sql.NullString
+	var enc sql.NullInt64
+	if err := row.Scan(&val, &enc); err != nil {
+		return "", false, err
+	}
+	v := ""
+	if val.Valid {
+		v = val.String
+	}
+	isEnc := false
+	if enc.Valid && enc.Int64 == 1 {
+		isEnc = true
+	}
+	return v, isEnc, nil
+}
+
+// InsertMetric inserta una muestra de métricas en la tabla metrics
+func InsertMetric(dbConn *sql.DB, cpuPercent float64, memTotal, memUsed uint64, memPercent float64, diskTotal, diskUsed uint64, diskPercent float64, netRecv, netSent uint64) error {
+	_, err := execSQLCompat(dbConn, "INSERT INTO metrics (cpu_percent, mem_total, mem_used, mem_percent, disk_total, disk_used, disk_percent, net_recv, net_sent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		cpuPercent, memTotal, memUsed, memPercent, diskTotal, diskUsed, diskPercent, netRecv, netSent)
+	return err
+}
+
+// GetLatestMetric obtiene la última muestra registrada
+func GetLatestMetric(dbConn *sql.DB) (*Metric, error) {
+	row := queryRowSQLCompat(dbConn, "SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, COALESCE(disk_total, 0), COALESCE(disk_used, 0), COALESCE(disk_percent, 0), net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT 1")
+	var m Metric
+	var timestamp sql.NullString
+	var fechaCre sql.NullString
+	if err := row.Scan(&m.ID, &timestamp, &m.CPUPercent, &m.MemTotal, &m.MemUsed, &m.MemPercent, &m.DiskTotal, &m.DiskUsed, &m.DiskPercent, &m.NetRecv, &m.NetSent, &fechaCre); err != nil {
+		return nil, err
+	}
+	if timestamp.Valid {
+		m.Timestamp = timestamp.String
+	}
+	if fechaCre.Valid {
+		m.FechaCreacion = fechaCre.String
+	}
+	return &m, nil
+}
+
+// GetMetricsHistory devuelve las últimas 'limit' muestras (ordenadas de más antiguo a más reciente)
+func GetMetricsHistory(dbConn *sql.DB, limit int) ([]Metric, error) {
+	q := "SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, COALESCE(disk_total, 0), COALESCE(disk_used, 0), COALESCE(disk_percent, 0), net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT ?"
+	rows, err := querySQLCompat(dbConn, q, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Metric
+	for rows.Next() {
+		var m Metric
+		var timestamp sql.NullString
+		var fechaCre sql.NullString
+		if err := rows.Scan(&m.ID, &timestamp, &m.CPUPercent, &m.MemTotal, &m.MemUsed, &m.MemPercent, &m.DiskTotal, &m.DiskUsed, &m.DiskPercent, &m.NetRecv, &m.NetSent, &fechaCre); err != nil {
+			return nil, err
+		}
+		if timestamp.Valid {
+			m.Timestamp = timestamp.String
+		}
+		if fechaCre.Valid {
+			m.FechaCreacion = fechaCre.String
+		}
+		out = append(out, m)
+	}
+	// invertir slice para devolver de más antiguo a más reciente
+	for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
+		out[i], out[j] = out[j], out[i]
+	}
+	return out, nil
+}
+
+// ResetMetricsHistory elimina las muestras historicas del panel super.
+func ResetMetricsHistory(dbConn *sql.DB) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("db connection is required")
+	}
+	if err := InitMetricsTable(dbConn); err != nil {
+		return 0, err
+	}
+	res, err := execSQLCompat(dbConn, "DELETE FROM metrics")
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected, nil
+}

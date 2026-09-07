@@ -1,0 +1,99 @@
+body.grafologia-page {
+  --graf-bg: linear-gradient(180deg, var(--bg-alt, #f8fafc), var(--bg, #eef3f8));
+  --graf-card: var(--surface, #fff);
+  --graf-soft: var(--surface-soft, #f7f9fc);
+  --graf-text: var(--text, #162033);
+  --graf-muted: var(--muted, #64748b);
+  --graf-line: var(--border, rgba(82, 99, 122, .24));
+  --graf-accent: var(--accent, #0f766e);
+  --graf-accent-2: var(--accent-2, #2563eb);
+  --graf-panel-alpha: color-mix(in srgb, var(--surface, #fff) 92%, var(--accent, #0f766e) 8%);
+  min-height: 100vh;
+  background: var(--graf-bg);
+  color: var(--graf-text);
+}
+html[data-theme^="dark"] body.grafologia-page {
+  --graf-bg: linear-gradient(180deg, color-mix(in srgb, var(--bg-alt, #111827) 88%, #000 12%), var(--bg, #05070a));
+  --graf-card: color-mix(in srgb, var(--surface, #111827) 92%, #000 8%);
+  --graf-soft: color-mix(in srgb, var(--surface-soft, #1f2937) 82%, #000 18%);
+  --graf-muted: color-mix(in srgb, var(--text, #f8fafc) 62%, var(--muted, #94a3b8) 38%);
+  --graf-line: color-mix(in srgb, var(--border, rgba(148, 163, 184, .28)) 82%, var(--accent, #22c55e) 18%);
+  --graf-panel-alpha: color-mix(in srgb, var(--surface, #111827) 88%, var(--accent, #22c55e) 12%);
+}
+html[data-theme^="light"] body.grafologia-page {
+  --graf-bg: linear-gradient(180deg, color-mix(in srgb, var(--bg-alt, #f9fbff) 94%, #fff 6%), var(--bg, #f3f6fb));
+  --graf-card: var(--surface, #fff);
+  --graf-soft: color-mix(in srgb, var(--surface-soft, #f4f7fc) 92%, var(--accent, #0f766e) 8%);
+  --graf-muted: color-mix(in srgb, var(--text, #10243f) 52%, var(--muted, #64748b) 48%);
+  --graf-panel-alpha: color-mix(in srgb, var(--surface, #fff) 94%, var(--accent, #0f766e) 6%);
+}
+.grafologia-grid { display: grid; grid-template-columns: minmax(320px, .95fr) minmax(360px, 1.05fr); gap: 14px; align-items: start; }
+.grafologia-card { background: var(--graf-card); border: 1px solid var(--graf-line); border-radius: 8px; padding: 14px; box-shadow: none; color: var(--graf-text); }
+.grafologia-card h2, .grafologia-card h3, .grafologia-kpi strong, .grafologia-drop strong { color: var(--graf-text); }
+.grafologia-card p, .grafologia-drop p { color: var(--graf-muted); }
+.grafologia-card-spaced { margin-bottom: 14px; }
+.grafologia-card-top { margin-top: 14px; }
+.grafologia-drop { border: 2px dashed var(--graf-line); border-radius: 8px; min-height: 132px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; background: var(--graf-soft); cursor: pointer; color: var(--graf-text); }
+.grafologia-drop.drag { border-color: var(--graf-accent); background: color-mix(in srgb, var(--graf-soft) 84%, var(--graf-accent) 16%); }
+.grafologia-actions, .grafologia-export { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.grafologia-actions-flush { margin-top: 0; }
+.grafologia-canvas-wrap { margin-top: 12px; border: 1px solid var(--graf-line); border-radius: 8px; overflow: hidden; background: #fff; height: clamp(360px, 48vh, 560px); }
+#grafologiaCanvas { display: block; width: 100%; height: 100%; background: #fff; }
+.grafologia-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.grafologia-controls label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; color: var(--graf-text); }
+.grafologia-zoom-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.grafologia-zoom-row .btn { min-width: 42px; }
+.grafologia-zoom-value { font-weight: 900; color: var(--graf-text); min-width: 58px; text-align: center; }
+.grafologia-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.grafologia-kpi { background: var(--graf-card); border: 1px solid var(--graf-line); border-radius: 8px; padding: 10px; color: var(--graf-text); }
+.grafologia-kpi span { display: block; font-size: 12px; color: var(--graf-muted); }
+.grafologia-kpi strong { display: block; font-size: 21px; margin-top: 4px; }
+.grafologia-bars { display: grid; gap: 8px; }
+.grafologia-bar { border: 1px solid var(--graf-line); border-radius: 8px; padding: 9px; background: var(--graf-panel-alpha); color: var(--graf-text); }
+.grafologia-bar-head { display: flex; justify-content: space-between; gap: 10px; font-weight: 800; }
+.grafologia-track { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--graf-line) 62%, transparent); overflow: hidden; margin: 7px 0; }
+.grafologia-fill { height: 100%; background: linear-gradient(90deg, var(--graf-accent), var(--graf-accent-2)); }
+.grafologia-table { width: 100%; border-collapse: collapse; }
+.grafologia-table th, .grafologia-table td { padding: 8px; border-bottom: 1px solid var(--graf-line); text-align: left; vertical-align: top; color: var(--graf-text); }
+.grafologia-table th { background: var(--graf-soft); }
+.grafologia-history { display: grid; gap: 8px; }
+.grafologia-history-item { border: 1px solid var(--graf-line); border-radius: 8px; padding: 10px; background: var(--graf-panel-alpha); color: var(--graf-text); }
+.grafologia-preprocess { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.grafologia-preprocess-item { border: 1px solid var(--graf-line); border-radius: 8px; padding: 8px; background: var(--graf-soft); color: var(--graf-text); }
+.grafologia-preprocess-item img { display: block; width: 100%; max-height: 190px; object-fit: contain; border-radius: 6px; background: #fff; margin-top: 6px; }
+.grafologia-preprocess-item strong { color: var(--graf-text); }
+.grafologia-loader { display: none; align-items: center; gap: 8px; font-weight: 800; color: var(--graf-accent); }
+.grafologia-loader.show { display: flex; }
+.grafologia-ai-result { display: none; margin-top: 12px; border: 1px solid var(--graf-line); border-radius: 8px; background: var(--graf-panel-alpha); padding: 12px; color: var(--graf-text); }
+.grafologia-ai-result.show { display: block; }
+.grafologia-ai-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; color: var(--graf-muted); font-size: 13px; font-weight: 800; }
+.grafologia-ai-response { white-space: pre-wrap; line-height: 1.55; color: var(--graf-text); font-size: 14px; }
+.grafologia-warning { font-size: 13px; color: var(--graf-muted); line-height: 1.45; }
+.grafologia-client-grid { display: grid; grid-template-columns: 1.2fr auto; gap: 10px; align-items: end; }
+.grafologia-client-suggestions { display: grid; gap: 6px; margin-top: 8px; max-height: 220px; overflow: auto; }
+.grafologia-client-option { display: flex; justify-content: space-between; gap: 10px; align-items: center; border: 1px solid var(--graf-line); border-radius: 8px; padding: 9px; background: var(--graf-soft); color: var(--graf-text); text-align: left; }
+.grafologia-client-option small { color: var(--graf-muted); }
+.grafologia-client-selected { display: none; margin-top: 10px; border: 1px solid var(--graf-line); border-radius: 8px; padding: 10px; background: var(--graf-panel-alpha); }
+.grafologia-client-selected.show { display: block; }
+.grafologia-client-form { display: none; margin-top: 12px; border-top: 1px solid var(--graf-line); padding-top: 12px; }
+.grafologia-client-form.show { display: block; }
+.grafologia-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.grafologia-form-grid-spaced { margin-top: 12px; }
+.grafologia-form-grid label { display: flex; flex-direction: column; gap: 4px; font-weight: 800; color: var(--graf-text); }
+.grafologia-label-strong { font-weight: 800; }
+.grafologia-col-1 { grid-column: span 1; }
+.grafologia-col-2 { grid-column: span 2; }
+.grafologia-video { display: none; width: 100%; margin-top: 10px; border-radius: 8px; background: #111; }
+.grafologia-field-block { display: block; margin-top: 10px; font-weight: 800; }
+.grafologia-result { display: none; }
+@media (max-width: 920px) {
+  .grafologia-grid { grid-template-columns: 1fr; }
+  .grafologia-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grafologia-controls { grid-template-columns: 1fr; }
+  .grafologia-zoom-row .btn { flex: 1 1 120px; }
+}
+@media (max-width: 720px) {
+  .grafologia-canvas-wrap { height: clamp(300px, 56vh, 480px); }
+  .grafologia-client-grid, .grafologia-form-grid { grid-template-columns: 1fr; }
+  .grafologia-col-1, .grafologia-col-2 { grid-column: span 1; }
+}

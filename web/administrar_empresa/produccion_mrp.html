@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Produccion / MRP</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/administrar_empresa/produccion_mrp.css?v=20260813-p110-csp">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="prod-page admin-subpage">
+  <main class="prod-shell">
+    <header class="prod-head">
+      <div>
+        <h1>Produccion / MRP</h1>
+        <p>Planea recetas BOM, ordenes de produccion, consumos, calidad, capacidad y requerimientos de materiales por empresa con control de costos.</p>
+      </div>
+      <div class="prod-actions">
+        <button class="prod-btn" id="prodRefresh" type="button">Actualizar</button>
+        <button class="prod-btn" id="prodSeed" type="button">Cargar demo</button>
+        <button class="prod-btn" id="prodExport" type="button">Exportar CSV</button>
+        <button class="prod-btn" id="prodTutorial" type="button">Tutorial</button>
+        <button class="prod-btn primary" id="prodGenerateMRP" type="button">Generar MRP</button>
+      </div>
+    </header>
+
+    <section class="prod-grid" aria-label="Indicadores">
+      <article class="prod-kpi"><span>Recetas activas</span><strong id="kpiRecetas">0</strong></article>
+      <article class="prod-kpi"><span>Ordenes abiertas</span><strong id="kpiAbiertas">0</strong></article>
+      <article class="prod-kpi"><span>Programadas</span><strong id="kpiProgramadas">0</strong></article>
+      <article class="prod-kpi"><span>En proceso</span><strong id="kpiProceso">0</strong></article>
+      <article class="prod-kpi"><span>En calidad</span><strong id="kpiCalidad">0</strong></article>
+      <article class="prod-kpi"><span>Urgentes</span><strong id="kpiUrgentes">0</strong></article>
+      <article class="prod-kpi"><span>Costo abierto</span><strong id="kpiCostoAbierto">$0</strong></article>
+      <article class="prod-kpi"><span>Costo real mes</span><strong id="kpiCostoMes">$0</strong></article>
+    </section>
+
+    <nav class="prod-tabs" aria-label="Submenu de produccion">
+      <button class="prod-tab is-active" data-tab="dashboard" type="button">Tablero</button>
+      <button class="prod-tab" data-tab="recetas" type="button">Recetas / BOM</button>
+      <button class="prod-tab" data-tab="ordenes" type="button">Ordenes</button>
+      <button class="prod-tab" data-tab="consumos" type="button">Consumos</button>
+      <button class="prod-tab" data-tab="calidad" type="button">Calidad</button>
+      <button class="prod-tab" data-tab="mrp" type="button">Plan MRP</button>
+      <button class="prod-tab" data-tab="config" type="button">Configuracion</button>
+    </nav>
+    <div id="prodMsg" class="prod-msg"></div>
+
+    <section id="tab-dashboard" class="prod-panel is-active">
+      <div class="prod-command">
+        <div class="prod-command-main">
+          <h2>Centro de planeacion productiva</h2>
+          <p>Prioriza ordenes, capacidad, materiales criticos y calidad desde un tablero pensado para decidir rapido antes de liberar produccion.</p>
+          <div class="prod-quick-grid">
+            <button class="prod-btn" data-tab="recetas" type="button">Gestionar BOM</button>
+            <button class="prod-btn" data-tab="ordenes" type="button">Programar orden</button>
+            <button class="prod-btn primary" data-tab="mrp" type="button">Revisar MRP</button>
+          </div>
+        </div>
+        <aside class="prod-command-side">
+          <h2>Checklist operativo</h2>
+          <p>Controla los puntos que suelen bloquear el piso de produccion.</p>
+          <div class="prod-check">
+            <span>Recetas activas <strong id="checkRecetas">0</strong></span>
+            <span>Ordenes urgentes <strong id="checkUrgentes">0</strong></span>
+            <span>Lineas MRP en riesgo <strong id="checkMRP">0</strong></span>
+          </div>
+          <div id="prodNextAction" class="prod-next"></div>
+        </aside>
+      </div>
+      <div class="prod-overview">
+        <div class="prod-box"><div class="prod-toolbar"><h2>Flujo operativo</h2></div><div id="prodPipeline" class="prod-stage-grid"></div></div>
+        <aside class="prod-box"><div class="prod-toolbar"><h2>Alertas de produccion</h2></div><div id="prodAlerts" class="prod-alerts"></div></aside>
+      </div>
+      <div class="prod-box"><div class="prod-toolbar"><h2>Actividad reciente</h2></div><div id="prodRecent" class="prod-table-wrap"></div></div>
+    </section>
+
+    <section id="tab-recetas" class="prod-panel">
+      <div class="prod-box prod-bridge">
+        <div class="prod-bridge-copy">
+          <h2>Unificar con recetas vendibles de Productos</h2>
+          <p>Las recetas del POS siguen siendo productos vendibles. Si una receta tambien se fabrica o se planea por materiales, importala aqui como BOM de produccion sin volver a digitar ingredientes.</p>
+        </div>
+        <div class="prod-bridge-controls">
+          <div class="prod-field"><label>Receta vendible</label><select id="recetaProductoSelect"></select></div>
+          <button class="prod-btn primary" id="importRecetaProducto" type="button">Importar como BOM</button>
+        </div>
+      </div>
+      <div class="prod-two">
+        <form id="recetaForm" class="prod-box prod-form">
+          <input id="recId" type="hidden">
+          <h2>Receta / BOM</h2>
+          <div class="prod-row"><div class="prod-field"><label>Codigo</label><input id="recCodigo" required></div><div class="prod-field"><label>Version</label><input id="recVersion" value="1.0"></div></div>
+          <div class="prod-field"><label>Nombre</label><input id="recNombre" required></div>
+          <div class="prod-field"><label>Producto terminado</label><input id="recProducto" required></div>
+          <div class="prod-row"><div class="prod-field"><label>Unidad</label><input id="recUnidad" value="und"></div><div class="prod-field"><label>Cantidad base</label><input id="recCantidad" type="number" step="0.0001" value="1"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Costo estandar</label><input id="recCosto" type="number" step="0.01" value="0"></div><div class="prod-field"><label>Merma %</label><input id="recMerma" type="number" step="0.01" value="0"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Tiempo min</label><input id="recTiempo" type="number" value="0"></div><div class="prod-field"><label>Estado</label><select id="recEstado"><option value="activo">Activo</option><option value="borrador">Borrador</option><option value="inactivo">Inactivo</option></select></div></div>
+          <div class="prod-field"><label>Componentes: producto|cantidad|unidad|costo|merma|etapa</label><textarea id="recComponentes">Materia prima principal|1|und|0|0|produccion</textarea><small class="prod-hint">Un componente por linea. Ejemplo: Harina|2|kg|3500|1|mezcla.</small></div>
+          <div class="prod-row-actions"><button class="prod-btn primary" id="recSubmit" type="submit">Guardar receta</button><button class="prod-btn" id="recCancel" type="button">Limpiar</button></div>
+        </form>
+        <div class="prod-box">
+          <div class="prod-toolbar"><h2>Recetas registradas</h2><div class="prod-toolbar-actions"><div class="prod-field"><label>Estado</label><select id="recFilter"><option value="">Todos</option><option value="activo">Activas</option><option value="borrador">Borrador</option><option value="inactivo">Inactivas</option></select></div></div></div>
+          <div id="recetasList" class="prod-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-ordenes" class="prod-panel">
+      <div class="prod-two">
+        <form id="ordenForm" class="prod-box prod-form">
+          <input id="ordId" type="hidden">
+          <h2 id="ordenFormTitle">Orden de produccion</h2>
+          <div class="prod-row"><div class="prod-field"><label>Receta</label><select id="ordReceta"></select></div><div class="prod-field"><label>Cantidad</label><input id="ordCantidad" type="number" step="0.0001" value="1"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Prioridad</label><select id="ordPrioridad"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option><option value="baja">Baja</option></select></div><div class="prod-field"><label>Fecha programada</label><input id="ordFecha" type="date"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Responsable</label><input id="ordResponsable"></div><div class="prod-field"><label>Estado inicial</label><select id="ordEstado"><option value="programada">Programada</option><option value="borrador">Borrador</option><option value="en_proceso">En proceso</option></select></div></div>
+          <div class="prod-field"><label>Observaciones</label><textarea id="ordObs"></textarea></div>
+          <div class="prod-row-actions"><button class="prod-btn primary" id="ordSubmit" type="submit">Crear orden</button><button class="prod-btn" id="ordCancel" type="button">Limpiar</button></div>
+        </form>
+        <div class="prod-box">
+          <div class="prod-toolbar"><h2>Ordenes</h2><div class="prod-toolbar-actions"><div class="prod-field"><label>Estado</label><select id="ordenFilter"><option value="">Todas</option><option value="borrador">Borrador</option><option value="programada">Programadas</option><option value="en_proceso">En proceso</option><option value="calidad">Calidad</option><option value="cerrada">Cerradas</option><option value="cancelada">Canceladas</option></select></div><div class="prod-field"><label>Buscar</label><input id="ordenSearch" placeholder="Codigo, producto, responsable"></div></div></div>
+          <div id="ordenesList" class="prod-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-consumos" class="prod-panel">
+      <div class="prod-two">
+        <form id="consumoForm" class="prod-box prod-form">
+          <h2>Registrar consumo</h2>
+          <div class="prod-field"><label>Orden</label><select id="consOrden"></select></div>
+          <div class="prod-row"><div class="prod-field"><label>Producto</label><input id="consProducto" required></div><div class="prod-field"><label>Lote</label><input id="consLote"></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Cantidad consumida</label><input id="consCantidad" type="number" step="0.0001" value="1"></div><div class="prod-field"><label>Costo unitario</label><input id="consCosto" type="number" step="0.01" value="0"></div></div>
+          <button class="prod-btn primary" type="submit">Guardar consumo</button>
+        </form>
+        <div class="prod-box"><h2>Consumos recientes</h2><div id="consumosTable" class="prod-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-calidad" class="prod-panel">
+      <div class="prod-two">
+        <form id="calidadForm" class="prod-box prod-form">
+          <h2>Control de calidad</h2>
+          <div class="prod-row"><div class="prod-field"><label>Orden</label><select id="calOrden"></select></div><div class="prod-field"><label>Resultado</label><select id="calResultado"><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="rechazado">Rechazado</option><option value="reproceso">Reproceso</option></select></div></div>
+          <div class="prod-row"><div class="prod-field"><label>Cantidad aprobada</label><input id="calAprobada" type="number" step="0.0001" value="0"></div><div class="prod-field"><label>Cantidad rechazada</label><input id="calRechazada" type="number" step="0.0001" value="0"></div></div>
+          <div class="prod-field"><label>Responsable</label><input id="calResponsable"></div>
+          <div class="prod-field"><label>Observaciones</label><textarea id="calObs"></textarea></div>
+          <button class="prod-btn primary" type="submit">Guardar calidad</button>
+        </form>
+        <div class="prod-box"><h2>Revisiones de calidad</h2><div id="calidadTable" class="prod-table-wrap"></div></div>
+      </div>
+    </section>
+
+    <section id="tab-mrp" class="prod-panel">
+      <div class="prod-box">
+        <div class="prod-toolbar"><h2>Requerimientos de materiales</h2><div class="prod-toolbar-actions"><div class="prod-field"><label>Periodo</label><input id="mrpPeriodo" placeholder="2026-05"></div><button class="prod-btn primary" id="mrpGenerate" type="button">Generar periodo</button></div></div>
+        <div id="mrpSummary" class="prod-mrp-summary"></div>
+        <div id="mrpTable" class="prod-table-wrap"></div>
+      </div>
+    </section>
+
+    <section id="tab-config" class="prod-panel">
+      <form id="configForm" class="prod-box prod-form">
+        <h2>Configuracion</h2>
+        <div class="prod-row"><div class="prod-field"><label>Nombre del modulo</label><input id="cfgNombre"></div><div class="prod-field"><label>Moneda</label><input id="cfgMoneda" value="COP"></div></div>
+        <div class="prod-field"><label>Costeo</label><select id="cfgCosteo"><option value="estandar">Estandar</option><option value="promedio">Promedio</option><option value="real">Real</option></select></div>
+        <label><input id="cfgAprobar" type="checkbox"> Requerir aprobacion de ordenes</label>
+        <label><input id="cfgConsumir" type="checkbox"> Consumir inventario al iniciar orden</label>
+        <label><input id="cfgCalidad" type="checkbox"> Cerrar ordenes con control de calidad</label>
+        <button class="prod-btn primary" type="submit">Guardar configuracion</button>
+      </form>
+    </section>
+  </main>
+  <script src="/js/produccion_mrp.js?v=20260611-mrp-pro"></script>
+</body>
+</html>

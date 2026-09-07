@@ -1,0 +1,101 @@
+name: powerful-control-system-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: pcs-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - pcs_prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_BIND:-127.0.0.1}:${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - pcs_monitoring
+      - pcs_internal
+      - pcs_staging_internal
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: pcs-alertmanager
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./alertmanager.runtime.yml:/etc/alertmanager/alertmanager.yml:ro
+      - pcs_alertmanager_data:/alertmanager
+    ports:
+      - "${ALERTMANAGER_BIND:-127.0.0.1}:${ALERTMANAGER_PORT:-9093}:9093"
+    networks:
+      - pcs_monitoring
+      - pcs_mailu_internal
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: pcs-grafana
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Defina GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - pcs_grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "${GRAFANA_BIND:-127.0.0.1}:${GRAFANA_PORT:-3001}:3000"
+    networks:
+      - pcs_monitoring
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: pcs-node-exporter
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - pcs_monitoring
+
+  cadvisor:
+    # cAdvisor needs host namespaces and Docker metadata to observe containers.
+    # It remains bound only to the isolated monitoring network and exposes no host port.
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: pcs-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - pcs_monitoring
+
+networks:
+  pcs_monitoring:
+    name: pcs_monitoring
+    driver: bridge
+  pcs_internal:
+    external: true
+  pcs_staging_internal:
+    external: true
+  pcs_mailu_internal:
+    external: true
+
+volumes:
+  pcs_prometheus_data:
+  pcs_grafana_data:
+  pcs_alertmanager_data:

@@ -1,0 +1,2845 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nómina de sueldos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .nomina-help-action {
+      align-items: center;
+      display: inline-flex;
+      gap: 8px;
+      min-height: 40px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .nomina-help-action-icon {
+      align-items: center;
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+      border-radius: 999px;
+      color: var(--accent);
+      display: inline-flex;
+      font-size: 1rem;
+      font-weight: 950;
+      height: 26px;
+      justify-content: center;
+      line-height: 1;
+      width: 26px;
+    }
+    .nomina-subnav-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 14px;
+    }
+    .nomina-subnav-card {
+      align-items: flex-start;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      display: grid;
+      gap: 6px;
+      min-height: 112px;
+      padding: 12px;
+      text-decoration: none;
+    }
+    .nomina-subnav-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+      color: var(--text);
+    }
+    .nomina-subnav-card.is-active {
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+      border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+    }
+    .nomina-subnav-card strong {
+      color: var(--text);
+      font-size: .96rem;
+      line-height: 1.2;
+    }
+    .nomina-subnav-card span {
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+    .nomina-section-hidden {
+      display: none !important;
+    }
+    @media (max-width: 640px) {
+      .nomina-subnav-grid {
+        grid-template-columns: 1fr;
+      }
+      .nomina-help-action,
+      .nomina-page .empresa-section-header .form-actions .btn {
+        justify-content: center;
+        width: 100%;
+      }
+    }
+    .nomina-readiness{display:grid;gap:10px;margin:14px 0;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .nomina-readiness-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+    .nomina-readiness-head strong{font-size:16px}
+    .nomina-readiness-bar{height:12px;border-radius:999px;background:color-mix(in srgb,var(--border) 70%,transparent);overflow:hidden}
+    .nomina-readiness-bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#16a34a,#2563eb)}
+    .nomina-readiness-list{margin:0;padding-left:18px;color:var(--muted);display:grid;gap:4px}
+    .nomina-dian-dialog{border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);padding:0;width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 32px)}
+    .nomina-dian-dialog::backdrop{background:rgba(15,23,42,.64)}
+    .nomina-dian-dialog form{display:grid;gap:14px;padding:18px}
+    .nomina-dian-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+    .nomina-dian-dialog-head h2{margin:0}
+    .nomina-dian-dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .nomina-dian-dialog-grid .span-2{grid-column:1/-1}
+    .nomina-dian-dialog-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+    .nomina-dian-blockers{margin:6px 0 0;padding-left:18px;color:var(--danger,#b91c1c)}
+    @media (max-width:640px){.nomina-dian-dialog-grid{grid-template-columns:1fr}.nomina-dian-dialog-grid .span-2{grid-column:auto}.nomina-dian-dialog-actions .btn{width:100%}}
+  </style>
+</head>
+<body class="empresa-subpage nomina-page">
+  <div class="container empresa-module">
+    <section class="card empresa-section" data-nomina-section="resumen">
+      <div class="empresa-section-header">
+        <div>
+          <h1>Nómina de sueldos</h1>
+          <p id="empresaInfo" class="form-help">Empresa: cargando...</p>
+        </div>
+        <div class="form-actions">
+          <a id="nominaTutorialPage" class="btn nomina-help-action" href="/administrar_empresa/nomina_tutorial.html">
+            Tutorial
+          </a>
+          <a id="nominaHelpTutorial" class="btn secondary nomina-help-action" href="/ayuda/tutorial_nomina.html" target="_blank" rel="noopener" data-pcs-help-ai="1" data-help-page="Nomina y costo empresa" data-help-section="Nomina de sueldos" data-help-type="tutorial" data-help-detail="Guia para configurar parametros legales, empleados, festivos, liquidaciones, provisiones, pagos y preparacion de nomina electronica.">
+            <span class="nomina-help-action-icon" aria-hidden="true">?</span>
+            Ayuda
+          </a>
+          <button id="btnRecargarTodo" class="btn secondary" type="button">Actualizar</button>
+          <button id="btnNominaAgenteInternet" class="btn secondary" type="button">Agente internet</button>
+        </div>
+      </div>
+      <p class="form-help">Módulo de nómina integrado con asistencia para calcular horas ordinarias, recargos nocturnos, horas extras, provisiones, pagos y liquidación salarial por período.</p>
+      <div class="kpi-grid nomina-kpi-grid">
+        <div class="kpi-box">
+          <span class="kpi-label">Empleados nómina</span>
+          <strong id="kpiEmpleados">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Sedes activas</span>
+          <strong id="kpiSedes">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Festivos configurados</span>
+          <strong id="kpiFestivos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Liquidaciones en rango</span>
+          <strong id="kpiLiquidaciones">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Neto total</span>
+          <strong id="kpiNeto">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Pagos generados</span>
+          <strong id="kpiPagos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Costo empresa</span>
+          <strong id="kpiCostoEmpresa">$0</strong>
+        </div>
+      </div>
+      <div id="mainMsg" class="form-help"></div>
+      <div id="nominaAgenteInternetResult" class="form-help"></div>
+      <div class="nomina-readiness" aria-label="Preparacion de nomina y nomina electronica">
+        <div class="nomina-readiness-head">
+          <strong>Preparacion nomina / nomina electronica</strong>
+          <span id="nominaReadinessPct">0%</span>
+        </div>
+        <div class="nomina-readiness-bar"><span id="nominaReadinessBar"></span></div>
+        <ul id="nominaReadinessMissing" class="nomina-readiness-list"></ul>
+      </div>
+      <div class="nomina-subnav-grid" aria-label="Subpaginas de nomina">
+        <a class="nomina-subnav-card" data-nomina-nav="empleados" href="/administrar_empresa/nomina_sueldos.html?seccion=empleados">
+          <strong>Empleados de nomina</strong>
+          <span>Crear y depurar empleados, documento, contrato, salario, sede y centro de costo.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="configuracion" href="/administrar_empresa/nomina_sueldos.html?seccion=configuracion">
+          <strong>Configuracion legal</strong>
+          <span>Parametros legales, salario minimo, auxilio, recargos, provisiones y festivos.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="liquidacion" href="/administrar_empresa/nomina_sueldos.html?seccion=liquidacion">
+          <strong>Liquidaciones</strong>
+          <span>Calcular nomina por periodo, conciliar asistencia, revisar desprendibles y exportar.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="pagos" href="/administrar_empresa/nomina_sueldos.html?seccion=pagos">
+          <strong>Pagos y PILA</strong>
+          <span>Validar control contable, generar pagos, consultar provisiones y resumen PILA.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="dian" href="/administrar_empresa/nomina_sueldos.html?seccion=dian">
+          <strong>Nomina electronica DIAN</strong>
+          <span>Preparar lote documental y enviar documento soporte de pago de nomina electronica.</span>
+        </a>
+        <a class="nomina-subnav-card" data-nomina-nav="tutorial" href="/administrar_empresa/nomina_tutorial.html">
+          <strong>Tutorial de nomina</strong>
+          <span>Guia paso a paso para preparar, revisar y emitir cada nómina únicamente cuando su preflight DIAN esté completo.</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="card empresa-section" data-nomina-section="configuracion">
+      <div class="empresa-section-header">
+        <div>
+          <h2>Par&aacute;metros legales</h2>
+          <p id="legalParamsMsg" class="form-help">Verificando vigencia...</p>
+        </div>
+        <div class="form-actions">
+          <label class="form-help" for="legalAutoUpdate">
+            <input id="legalAutoUpdate" type="checkbox">
+            Autoactualizar
+          </label>
+          <button id="btnAplicarParametrosLegales" class="btn primary" type="button">Aplicar actualizaci&oacute;n legal</button>
+        </div>
+      </div>
+      <div class="kpi-grid nomina-kpi-grid">
+        <div class="kpi-box">
+          <span class="kpi-label">Aplicada</span>
+          <strong id="legalVersionAplicada">-</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Disponible</span>
+          <strong id="legalVersionDisponible">-</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Vigencia</span>
+          <strong id="legalVigencia">-</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Estado</span>
+          <strong id="legalEstado">-</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="card empresa-section" data-nomina-section="configuracion">
+      <div class="empresa-section-header">
+        <h2>Configuración legal de nómina</h2>
+      </div>
+      <form id="cfgForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgPais">País</label>
+            <input id="cfgPais" class="form-input" maxlength="2" value="CO">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgMoneda">Moneda</label>
+            <input id="cfgMoneda" class="form-input" maxlength="3" value="COP">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgSalarioMinimo">Salario minimo mensual</label>
+            <input id="cfgSalarioMinimo" class="form-input" type="number" min="0" step="1" value="1750905">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgAuxilioLegal">Auxilio transporte legal</label>
+            <input id="cfgAuxilioLegal" class="form-input" type="number" min="0" step="1" value="249095">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgHorasSemana">Horas ordinarias semana</label>
+            <input id="cfgHorasSemana" class="form-input" type="number" min="1" max="168" step="0.01" value="42">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgHorasDia">Horas ordinarias dia</label>
+            <input id="cfgHorasDia" class="form-input" type="number" min="1" max="24" step="0.01" value="8">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDiasMes">Dias nomina mes</label>
+            <input id="cfgDiasMes" class="form-input" type="number" min="1" max="31" step="1" value="30">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgPeriodoNominaDian">Periodicidad de pago DIAN</label>
+            <select id="cfgPeriodoNominaDian" class="form-input" required>
+              <option value="0">Selecciona antes de emitir</option>
+              <option value="1">1 - Semanal</option>
+              <option value="2">2 - Decenal</option>
+              <option value="3">3 - Catorcenal</option>
+              <option value="4">4 - Quincenal</option>
+              <option value="5">5 - Mensual</option>
+              <option value="6">6 - Otro</option>
+            </select>
+            <span class="form-help">Describe cada cu&aacute;nto se paga; DIAN recibe un documento consolidado por trabajador y mes.</span>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDivisorHora">Divisor hora ordinaria</label>
+            <input id="cfgDivisorHora" class="form-input" type="number" min="1" max="400" step="0.01" value="210">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgNocDesde">Hora nocturna desde</label>
+            <input id="cfgNocDesde" class="form-input" type="time" step="1" value="19:00:00">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgNocHasta">Hora nocturna hasta</label>
+            <input id="cfgNocHasta" class="form-input" type="time" step="1" value="06:00:00">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgRecargoNocturno">Recargo nocturno (%)</label>
+            <input id="cfgRecargoNocturno" class="form-input" type="number" min="0" step="0.01" value="35">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgExtraDiurna">Hora extra diurna (%)</label>
+            <input id="cfgExtraDiurna" class="form-input" type="number" min="0" step="0.01" value="25">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgExtraNocturna">Hora extra nocturna (%)</label>
+            <input id="cfgExtraNocturna" class="form-input" type="number" min="0" step="0.01" value="75">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDomDiurno">Recargo dominical diurno (%)</label>
+            <input id="cfgDomDiurno" class="form-input" type="number" min="0" step="0.01" value="75">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgDomNocturno">Recargo dominical nocturno (%)</label>
+            <input id="cfgDomNocturno" class="form-input" type="number" min="0" step="0.01" value="110">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgExtraDomDiurna">Hora extra dominical diurna (%)</label>
+            <input id="cfgExtraDomDiurna" class="form-input" type="number" min="0" step="0.01" value="100">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgExtraDomNocturna">Hora extra dominical nocturna (%)</label>
+            <input id="cfgExtraDomNocturna" class="form-input" type="number" min="0" step="0.01" value="150">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDedSalud">Deduccion salud (%)</label>
+            <input id="cfgDedSalud" class="form-input" type="number" min="0" step="0.01" value="4">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDedPension">Deduccion pension (%)</label>
+            <input id="cfgDedPension" class="form-input" type="number" min="0" step="0.01" value="4">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDedSolidaridad">Fondo solidaridad (%)</label>
+            <input id="cfgDedSolidaridad" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgObservaciones">Observaciones</label>
+            <textarea id="cfgObservaciones" class="form-textarea" placeholder="Opcional"></textarea>
+          </div>
+        </div>
+
+        <h3>Aportes patronales y provisiones</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgAporteSaludEmp">Salud empleador (%)</label>
+            <input id="cfgAporteSaludEmp" class="form-input" type="number" min="0" step="0.001" value="8.5">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgAportePensionEmp">Pensión empleador (%)</label>
+            <input id="cfgAportePensionEmp" class="form-input" type="number" min="0" step="0.001" value="12">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgAporteARL">ARL (%)</label>
+            <input id="cfgAporteARL" class="form-input" type="number" min="0" step="0.001" value="0.522">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgCajaComp">Caja compensación (%)</label>
+            <input id="cfgCajaComp" class="form-input" type="number" min="0" step="0.001" value="4">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgICBF">ICBF (%)</label>
+            <input id="cfgICBF" class="form-input" type="number" min="0" step="0.001" value="3">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgSENA">SENA (%)</label>
+            <input id="cfgSENA" class="form-input" type="number" min="0" step="0.001" value="2">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgCesantias">Cesantías (%)</label>
+            <input id="cfgCesantias" class="form-input" type="number" min="0" step="0.001" value="8.33">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgIntCesantias">Intereses cesantías (%)</label>
+            <input id="cfgIntCesantias" class="form-input" type="number" min="0" step="0.001" value="1">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgPrima">Prima (%)</label>
+            <input id="cfgPrima" class="form-input" type="number" min="0" step="0.001" value="8.33">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgVacaciones">Vacaciones (%)</label>
+            <input id="cfgVacaciones" class="form-input" type="number" min="0" step="0.001" value="4.17">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar configuración</button>
+        </div>
+        <div id="cfgMsg" class="form-help"></div>
+      </form>
+    </section>
+
+    <div class="empresa-grid-2 nomina-layout-grid" data-nomina-section="empleados configuracion">
+      <section class="card empresa-section">
+        <div class="empresa-section-header">
+          <h2>Empleados para nomina</h2>
+        </div>
+        <form id="empForm" class="form nomina-form-compact">
+          <input id="empId" type="hidden">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empCodigo">Codigo</label>
+              <input id="empCodigo" class="form-input" placeholder="EMP-001">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empNombre">Nombre empleado</label>
+              <input id="empNombre" class="form-input" required>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empDocumento">Documento</label>
+              <input id="empDocumento" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empCargo">Cargo</label>
+              <input id="empCargo" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empSedeCodigo">Codigo sede</label>
+              <input id="empSedeCodigo" class="form-input" placeholder="SEDE-01">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empSedeNombre">Sede</label>
+              <input id="empSedeNombre" class="form-input" placeholder="Sede principal">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empCentroCosto">Centro de costo</label>
+              <input id="empCentroCosto" class="form-input" placeholder="OPERACION">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empTipoContrato">Tipo contrato</label>
+              <select id="empTipoContrato" class="form-input">
+                <option value="indefinido">Indefinido</option>
+                <option value="fijo">Fijo</option>
+                <option value="obra_labor">Obra labor</option>
+                <option value="aprendizaje">Aprendizaje</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empFechaIngreso">Fecha ingreso</label>
+              <input id="empFechaIngreso" type="date" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empSalario">Salario basico mensual</label>
+              <input id="empSalario" class="form-input" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empAuxilio">Auxilio transporte mensual</label>
+              <input id="empAuxilio" class="form-input" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empBonificacion">Bonificacion fija mensual</label>
+              <input id="empBonificacion" class="form-input" type="number" min="0" step="0.01" value="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empDeduccionFija">Deduccion fija mensual</label>
+              <input id="empDeduccionFija" class="form-input" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empJornadaDia">Jornada horas dia</label>
+              <input id="empJornadaDia" class="form-input" type="number" min="1" max="24" step="0.01" value="8">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empAuxilioFlag">Auxilio transporte</label>
+              <select id="empAuxilioFlag" class="form-input">
+                <option value="1">Incluir</option>
+                <option value="0">No incluir</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn">Guardar empleado</button>
+            <button id="empCancelar" type="button" class="btn secondary">Cancelar</button>
+          </div>
+          <div id="empMsg" class="form-help"></div>
+        </form>
+
+        <div class="form nomina-filter-box">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empBuscar">Buscar empleado</label>
+              <input id="empBuscar" class="form-input" placeholder="Nombre, codigo, documento, cargo, sede o centro">
+            </div>
+            <div class="form-col nomina-filter-actions">
+              <button id="empBuscarBtn" type="button" class="btn secondary">Buscar</button>
+              <button id="empLimpiarBtn" type="button" class="btn secondary">Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Cargo</th>
+                <th>Sede</th>
+                <th>Salario</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="empTableBody">
+              <tr><td colspan="6">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card empresa-section">
+        <div class="empresa-section-header">
+          <h2>Días festivos para recargos</h2>
+        </div>
+
+        <form id="festForm" class="form nomina-form-compact">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="festFecha">Fecha festivo</label>
+              <input id="festFecha" type="date" class="form-input" required>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="festDescripcion">Descripción</label>
+              <input id="festDescripcion" class="form-input" placeholder="Ej: Jueves santo">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn">Agregar festivo</button>
+          </div>
+          <div id="festMsg" class="form-help"></div>
+        </form>
+
+        <div class="form nomina-filter-box">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="festDesde">Desde</label>
+              <input id="festDesde" type="date" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="festHasta">Hasta</label>
+              <input id="festHasta" type="date" class="form-input">
+            </div>
+            <div class="form-col nomina-filter-actions">
+              <button id="festBuscarBtn" type="button" class="btn secondary">Filtrar</button>
+              <button id="festLimpiarBtn" type="button" class="btn secondary">Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Descripcion</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="festTableBody">
+              <tr><td colspan="4">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="card empresa-section" data-nomina-section="liquidacion dian pagos">
+      <div class="empresa-section-header">
+        <h2>Calculo de nomina por asistencia</h2>
+      </div>
+      <form id="calcForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="calcDesde">Periodo desde</label>
+            <input id="calcDesde" type="date" class="form-input" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="calcHasta">Periodo hasta</label>
+            <input id="calcHasta" type="date" class="form-input" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="calcEmpleado">Empleado (opcional)</label>
+            <select id="calcEmpleado" class="form-input">
+              <option value="">Todos los empleados</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="calcOtrasDeducciones">Otras deducciones</label>
+            <input id="calcOtrasDeducciones" type="number" min="0" step="0.01" class="form-input" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="calcOverwrite">Recalcular</label>
+            <select id="calcOverwrite" class="form-input">
+              <option value="1">Si, reemplazar periodo</option>
+              <option value="0">No, mantener existentes</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Calcular nomina</button>
+          <button id="calcListarBtn" type="button" class="btn secondary">Consultar liquidaciones</button>
+          <button id="calcDesprendibleBtn" type="button" class="btn secondary">Generar desprendible</button>
+          <select id="calcConciliarFix" class="form-input" style="max-width:220px;">
+            <option value="0">Conciliar: solo auditar</option>
+            <option value="1">Conciliar y recalcular</option>
+          </select>
+          <button id="calcConciliarBtn" type="button" class="btn secondary">Conciliar asistencia</button>
+          <select id="calcExportFormat" class="form-input" style="max-width:170px;">
+            <option value="pdf">PDF</option>
+            <option value="xls">XLS (Excel)</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+          <button id="calcExportBtn" type="button" class="btn secondary">Exportar liquidaciones</button>
+        </div>
+        <div id="calcMsg" class="form-help"></div>
+      </form>
+
+      <div class="nomina-result-summary" id="calcResumen">Sin calculos recientes.</div>
+      <div class="nomina-result-summary" id="conciliacionResumen">Sin conciliacion ejecutada.</div>
+      <div class="nomina-result-summary" id="desprendiblePanel">Sin desprendible generado.</div>
+
+      <div class="table-wrap">
+        <table class="table nomina-table">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Días</th>
+              <th>Sede</th>
+              <th>Horas asistencia</th>
+              <th>Horas extra</th>
+              <th>Devengado</th>
+              <th>Deducciones</th>
+              <th>Neto pagar</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="liqTableBody">
+            <tr><td colspan="9">Sin liquidaciones para mostrar.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="empresa-grid-2 nomina-layout-grid" data-nomina-section="liquidacion pagos dian">
+      <section class="card empresa-section">
+        <div class="empresa-section-header">
+          <h2>Provisiones y costo empresa</h2>
+        </div>
+        <div class="form-row nomina-summary-grid">
+          <div class="form-col">
+            <div class="nomina-result-summary"><strong>IBC total</strong><br><span id="provIBC">$0</span></div>
+          </div>
+          <div class="form-col">
+            <div class="nomina-result-summary"><strong>Aportes patronales</strong><br><span id="provAportes">$0</span></div>
+          </div>
+          <div class="form-col">
+            <div class="nomina-result-summary"><strong>Provisiones</strong><br><span id="provProvision">$0</span></div>
+          </div>
+          <div class="form-col">
+            <div class="nomina-result-summary"><strong>Costo total empresa</strong><br><span id="provCostoEmpresa">$0</span></div>
+          </div>
+        </div>
+        <div id="provResumen" class="nomina-result-summary">Sin provisiones consultadas.</div>
+      </section>
+
+      <section class="card empresa-section">
+        <div class="empresa-section-header">
+          <h2>Pagos de nómina</h2>
+        </div>
+        <div id="controlContablePanel" class="nomina-control-card estado-pendiente">
+          <div class="nomina-control-header">
+            <div>
+              <span class="empresa-module-kicker">Control contable</span>
+              <h3>Validacion previa al pago</h3>
+            </div>
+            <strong id="controlEstado" class="nomina-control-badge">Pendiente</strong>
+          </div>
+          <div class="nomina-control-grid">
+            <div><span>Liquidaciones</span><strong id="controlLiquidaciones">0</strong></div>
+            <div><span>Pendientes de pago</span><strong id="controlPendientes">0</strong></div>
+            <div><span>Neto liquidado</span><strong id="controlNeto">$0</strong></div>
+            <div><span>Pagado</span><strong id="controlPagado">$0</strong></div>
+            <div><span>Saldo</span><strong id="controlSaldo">$0</strong></div>
+            <div><span>Costo empresa</span><strong id="controlCosto">$0</strong></div>
+          </div>
+          <div id="controlAlertas" class="nomina-control-alerts">
+            <div class="form-help">Ejecuta la validacion contable antes de generar pagos.</div>
+          </div>
+          <label id="payConfirmControlWrap" class="nomina-control-confirm" hidden>
+            <input id="payConfirmControl" type="checkbox">
+            <span>Confirmo que revise las advertencias contables y autorizo continuar con el pago.</span>
+          </label>
+          <div class="form-actions">
+            <button id="controlValidarBtn" type="button" class="btn secondary">Validar control contable</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="payMetodo">Método de pago</label>
+            <select id="payMetodo" class="form-input">
+              <option value="transferencia_bancaria">Transferencia bancaria</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="nequi">Nequi</option>
+              <option value="daviplata">Daviplata</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="payCuenta">Cuenta o referencia de pago</label>
+            <input id="payCuenta" class="form-input" placeholder="Cuenta origen o referencia interna">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="payGenerarBtn" type="button" class="btn">Generar pagos del período</button>
+          <button id="payConsultarBtn" type="button" class="btn secondary">Consultar pagos</button>
+          <button id="provConsultarBtn" type="button" class="btn secondary">Consultar provisiones</button>
+        </div>
+        <div id="payMsg" class="form-help"></div>
+        <div id="payResumen" class="nomina-result-summary">Sin pagos generados para mostrar.</div>
+        <div id="dashboardAlertas" class="nomina-alert-list"></div>
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Período</th>
+                <th>Método</th>
+                <th>Referencia</th>
+                <th>Estado</th>
+                <th>Neto pagado</th>
+              </tr>
+            </thead>
+            <tbody id="payTableBody">
+              <tr><td colspan="6">Sin pagos para mostrar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card empresa-section" id="nominaColombiaAvanzadaSection" data-nomina-section="dian pagos">
+        <div class="empresa-section-header">
+          <div>
+            <h2>Nomina Colombia avanzada</h2>
+            <p class="form-help" style="margin:4px 0 0;">Conceptos legales, novedades, PILA y trazabilidad para nomina electronica.</p>
+          </div>
+          <div class="form-actions" style="margin:0;">
+            <button id="nomCoRefreshBtn" type="button" class="btn secondary">Actualizar</button>
+            <button id="nomCoSeedBtn" type="button" class="btn secondary">Cargar parametros demo</button>
+            <button id="nomCoPilaBtn" type="button" class="btn">Generar PILA</button>
+          </div>
+        </div>
+        <div class="kpi-grid nomina-kpi-grid">
+          <div class="kpi-box">
+            <span class="kpi-label">Conceptos activos</span>
+            <strong id="nomCoConceptos">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Novedades pendientes</span>
+            <strong id="nomCoPendientes">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Novedades aprobadas</span>
+            <strong id="nomCoAprobadas">0</strong>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Total PILA</span>
+            <strong id="nomCoPilaTotal">$0</strong>
+          </div>
+        </div>
+        <div id="nomCoMsg" class="form-help"></div>
+        <div class="nomina-workflow-grid" aria-label="Cobertura profesional de nomina">
+          <div class="nomina-workflow-item"><strong>Contratos</strong><span>Fichas salariales y tipos de contrato</span></div>
+          <div class="nomina-workflow-item"><strong>Novedades</strong><span>Devengados, deducciones y aprobacion</span></div>
+          <div class="nomina-workflow-item"><strong>Liquidacion</strong><span>Asistencia, recargos, descuentos y neto</span></div>
+          <div class="nomina-workflow-item"><strong>PILA</strong><span>Seguridad social y aportes patronales</span></div>
+          <div class="nomina-workflow-item"><strong>Provisiones</strong><span>Cesantias, prima y vacaciones</span></div>
+          <div class="nomina-workflow-item"><strong>Pagos</strong><span>Control contable y desprendibles</span></div>
+        </div>
+        <div class="nomina-demo-panel">
+          <div>
+            <strong>Demo Motel Calipso</strong>
+            <span id="nomCoDemoResumen" class="form-help">Sin nomina demo creada en esta sesion.</span>
+          </div>
+          <button id="nomCoSeedProfesionalBtn" type="button" class="btn">Crear nomina demo Motel Calipso</button>
+        </div>
+        <div class="nomina-demo-panel">
+          <div>
+            <strong>Nomina electronica DIAN</strong>
+            <span id="nomCoDianResumen" class="form-help">Consulta liquidaciones pagadas, completa el perfil fiscal de cada empleado y ejecuta el preflight antes de emitir.</span>
+          </div>
+          <div class="form-actions" style="margin:0;">
+            <button id="nomCoDianVerBtn" type="button" class="btn secondary">Ver estado DIAN</button>
+            <button id="nomCoDianPrepararBtn" type="button" class="btn">Ejecutar preflight</button>
+            <button id="nomCoDianEnviarBtn" type="button" class="btn primary" disabled title="La emisión se confirma individualmente en cada fila">Emisión por empleado</button>
+          </div>
+        </div>
+        <form id="nomCoDianConfigForm" class="form nomina-result-summary" autocomplete="off">
+          <div class="empresa-section-header">
+            <div>
+              <h3>Configuraci&oacute;n DIAN separada de n&oacute;mina electr&oacute;nica</h3>
+              <p class="form-help">La secuencia es interna del empleador. No reutiliza la resoluci&oacute;n ni el rango autorizado de facturas de venta.</p>
+            </div>
+            <button id="nomCoDianConfigReloadBtn" type="button" class="btn secondary">Recargar configuraci&oacute;n</button>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigEstado">Estado</label><select id="nomCoDianConfigEstado" class="form-input"><option value="configurando">Configurando</option><option value="habilitacion">Habilitaci&oacute;n</option><option value="activo">Activo</option><option value="suspendido">Suspendido</option></select></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigAmbiente">Ambiente</label><select id="nomCoDianConfigAmbiente" class="form-input"><option value="habilitacion">Habilitaci&oacute;n</option><option value="produccion">Producci&oacute;n</option></select></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigPrefijo">Prefijo interno</label><input id="nomCoDianConfigPrefijo" class="form-input" maxlength="20" pattern="[A-Za-z0-9]+" placeholder="NE" required></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigConsecutivo">Pr&oacute;ximo consecutivo</label><input id="nomCoDianConfigConsecutivo" class="form-input" type="number" min="1" max="999999999999" step="1" value="1" required></div>
+          </div>
+          <div class="form-row">
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigModo">C&oacute;digo modo operaci&oacute;n (opcional)</label><input id="nomCoDianConfigModo" class="form-input" maxlength="120"></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigTestSet">TestSetId (habilitaci&oacute;n)</label><input id="nomCoDianConfigTestSet" class="form-input" maxlength="36" autocomplete="off" placeholder="00000000-0000-0000-0000-000000000000"></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigURL">Endpoint oficial alterno (opcional)</label><input id="nomCoDianConfigURL" class="form-input" type="url" maxlength="2048" placeholder="https://vpfe.dian.gov.co/WcfDianCustomerServices.svc"></div>
+            <div class="form-col"><label class="form-label" for="nomCoDianConfigObservaciones">Observaciones</label><input id="nomCoDianConfigObservaciones" class="form-input" maxlength="2000"></div>
+          </div>
+          <div class="form-actions"><button type="submit" class="btn">Guardar configuraci&oacute;n de n&oacute;mina</button></div>
+          <p id="nomCoDianConfigMsg" class="form-help" role="status"></p>
+        </form>
+        <div id="nomCoDianPanel" class="nomina-result-summary">Sin lote DIAN consultado.</div>
+        <dialog id="nomCoDianPerfilDialog" class="nomina-dian-dialog" aria-labelledby="nomCoDianPerfilTitle">
+          <form id="nomCoDianPerfilForm">
+            <div class="nomina-dian-dialog-head">
+              <div><h2 id="nomCoDianPerfilTitle">Perfil fiscal DIAN del empleado</h2><p id="nomCoDianPerfilHelp" class="form-help">Estos datos se usan únicamente para NominaIndividual.</p></div>
+              <button type="button" class="btn secondary" data-dian-dialog-close="perfil">Cerrar</button>
+            </div>
+            <input id="nomCoDianPerfilEmpleadoID" type="hidden">
+            <div class="nomina-dian-dialog-grid">
+              <label>Tipo documento DIAN<select id="nomCoDianPerfilTipoDocumento" class="form-input" required><option value="">Selecciona</option><option value="13">Cédula de ciudadanía</option><option value="21">Tarjeta de extranjería</option><option value="22">Cédula de extranjería</option><option value="31">NIT</option><option value="41">Pasaporte</option><option value="47">Permiso especial</option><option value="50">NIT extranjero</option><option value="91">NUIP</option></select></label>
+              <label>Tipo trabajador DIAN<input id="nomCoDianPerfilTipoTrabajador" class="form-input" maxlength="2" placeholder="01" required></label>
+              <label>Primer nombre<input id="nomCoDianPerfilPrimerNombre" class="form-input" required></label>
+              <label>Otros nombres<input id="nomCoDianPerfilOtrosNombres" class="form-input"></label>
+              <label>Primer apellido<input id="nomCoDianPerfilPrimerApellido" class="form-input" required></label>
+              <label>Segundo apellido<input id="nomCoDianPerfilSegundoApellido" class="form-input" required></label>
+              <label>Subtipo trabajador<select id="nomCoDianPerfilSubtipo" class="form-input" required><option value="00">00 - No aplica</option><option value="01">01 - Dependiente pensionado</option></select></label>
+              <label>Tipo contrato<select id="nomCoDianPerfilContrato" class="form-input" required><option value="">Selecciona</option><option value="1">1 - Término fijo</option><option value="2">2 - Término indefinido</option><option value="3">3 - Obra o labor</option><option value="4">4 - Aprendizaje</option><option value="5">5 - Prácticas/pasantías</option></select></label>
+              <label>Fecha retiro<input id="nomCoDianPerfilFechaRetiro" class="form-input" type="date"></label>
+              <label>Método de pago DIAN<input id="nomCoDianPerfilMetodoPago" class="form-input" maxlength="3" placeholder="42" required></label>
+              <label>País lugar trabajo<input id="nomCoDianPerfilPais" class="form-input" maxlength="2" value="CO" required></label>
+              <label>Departamento DANE<input id="nomCoDianPerfilDepartamento" class="form-input" maxlength="2" placeholder="11" required></label>
+              <label>Municipio DANE<input id="nomCoDianPerfilMunicipio" class="form-input" maxlength="5" placeholder="11001" required></label>
+              <label class="span-2">Dirección lugar de trabajo<input id="nomCoDianPerfilDireccion" class="form-input" required></label>
+              <label>Banco<input id="nomCoDianPerfilBanco" class="form-input"></label>
+              <label>Tipo cuenta<input id="nomCoDianPerfilTipoCuenta" class="form-input" placeholder="Ahorros"></label>
+              <label class="span-2">Número cuenta<input id="nomCoDianPerfilNumeroCuenta" class="form-input"></label>
+              <label><input id="nomCoDianPerfilIntegral" type="checkbox"> Salario integral</label>
+              <label><input id="nomCoDianPerfilAltoRiesgo" type="checkbox"> Alto riesgo pensión</label>
+            </div>
+            <p id="nomCoDianPerfilMsg" class="form-help" role="status"></p>
+            <div class="nomina-dian-dialog-actions"><button type="button" class="btn secondary" data-dian-dialog-close="perfil">Cancelar</button><button type="submit" class="btn primary">Guardar perfil fiscal</button></div>
+          </form>
+        </dialog>
+        <dialog id="nomCoDianEmitDialog" class="nomina-dian-dialog" aria-labelledby="nomCoDianEmitTitle">
+          <form id="nomCoDianEmitForm">
+            <div class="nomina-dian-dialog-head"><div><h2 id="nomCoDianEmitTitle">Emitir nómina electrónica</h2><p id="nomCoDianEmitSummary" class="form-help"></p></div><button type="button" class="btn secondary" data-dian-dialog-close="emitir">Cerrar</button></div>
+            <input id="nomCoDianEmitLiquidacionID" type="hidden">
+            <div class="nomina-alert-item">Esta acci&oacute;n firma, numera y puede transmitir un documento fiscal mensual real a la DIAN. Revisa empleado, mes, liquidaciones, fechas de pago y neto antes de continuar.</div>
+            <label><input id="nomCoDianEmitConfirmCheck" type="checkbox"> Confirmo que todas las liquidaciones y pagos reales del mes est&aacute;n revisados.</label>
+            <label>Escribe <strong>EMITIR NOMINA ELECTRONICA DIAN</strong><input id="nomCoDianEmitPhrase" class="form-input" autocomplete="off" spellcheck="false"></label>
+            <p id="nomCoDianEmitMsg" class="form-help" role="status"></p>
+            <div class="nomina-dian-dialog-actions"><button type="button" class="btn secondary" data-dian-dialog-close="emitir">Cancelar</button><button id="nomCoDianEmitSubmit" type="submit" class="btn primary" disabled>Emitir a DIAN</button></div>
+          </form>
+        </dialog>
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Concepto</th>
+                <th>Tipo</th>
+                <th>Base</th>
+                <th>PILA</th>
+                <th>Cuenta</th>
+              </tr>
+            </thead>
+            <tbody id="nomCoConceptosBody">
+              <tr><td colspan="5">Sin conceptos Colombia para mostrar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Novedad</th>
+                <th>Empleado</th>
+                <th>Periodo</th>
+                <th>Estado</th>
+                <th>Valor</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="nomCoNovedadesBody">
+              <tr><td colspan="6">Sin novedades Colombia para mostrar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Periodo</th>
+                <th>IBC</th>
+                <th>Aportes empleado</th>
+                <th>Aportes empleador</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="nomCoPilaBody">
+              <tr><td colspan="6">Sin resumen PILA generado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const state = {
+        empresaID: 0,
+        empresaNombre: '',
+        config: null,
+        empleados: [],
+        festivos: [],
+        liquidaciones: [],
+        pagos: [],
+        dashboard: null,
+        provisiones: null,
+        controlContable: null,
+        dianNomina: null,
+        nominaDianReady: false,
+        parametrosLegales: null
+      };
+
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      function syncTutorialHelpLink() {
+        const link = document.getElementById('nominaHelpTutorial');
+        const tutorial = document.getElementById('nominaTutorialPage');
+        const params = new URLSearchParams();
+        if (state.empresaID > 0) params.set('empresa_id', String(state.empresaID));
+        if (link) link.href = '/ayuda/tutorial_nomina.html' + (params.toString() ? '?' + params.toString() : '');
+        if (tutorial) tutorial.href = '/administrar_empresa/nomina_tutorial.html' + (params.toString() ? '?' + params.toString() : '');
+      }
+
+      function applyNominaSectionMode() {
+        const raw = normalize(getQueryParam('seccion')).toLowerCase();
+        const section = raw || 'todo';
+        const params = new URLSearchParams();
+        if (state.empresaID > 0) params.set('empresa_id', String(state.empresaID));
+        const sectionBlocks = Array.prototype.slice.call(document.querySelectorAll('[data-nomina-section]'));
+        sectionBlocks.forEach(function(block) {
+          const values = normalize(block.getAttribute('data-nomina-section')).toLowerCase().split(/\s+/).filter(Boolean);
+          const visible = section === 'todo' || values.indexOf('resumen') >= 0 || values.indexOf(section) >= 0;
+          block.classList.toggle('nomina-section-hidden', !visible);
+        });
+        Array.prototype.slice.call(document.querySelectorAll('[data-nomina-nav]')).forEach(function(link) {
+          const target = normalize(link.getAttribute('data-nomina-nav')).toLowerCase();
+          link.classList.toggle('is-active', target === section || (section === 'todo' && target === 'resumen'));
+          try {
+            const u = new URL(link.getAttribute('href'), window.location.origin);
+            if (state.empresaID > 0) u.searchParams.set('empresa_id', String(state.empresaID));
+            if (u.pathname.indexOf('nomina_tutorial.html') < 0) {
+              u.searchParams.set('seccion', target);
+            }
+            if (getQueryParam('submenu') === '1') u.searchParams.set('submenu', '1');
+            link.href = u.pathname + u.search;
+          } catch (_) {}
+        });
+        if (section !== 'todo') {
+          const active = document.querySelector('[data-nomina-nav="' + section + '"] strong');
+          if (active) document.title = active.textContent + ' - Nomina';
+        }
+      }
+
+      function normalize(v) {
+        return String(v == null ? '' : v).trim();
+      }
+
+      function esc(raw) {
+        return String(raw == null ? '' : raw)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function toNumber(v, fallback) {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : fallback;
+      }
+
+      function money(v) {
+        const moneda = normalize(state.config && state.config.moneda).toUpperCase() || 'COP';
+        const n = toNumber(v, 0);
+        try {
+          return n.toLocaleString('es-CO', {
+            style: 'currency',
+            currency: moneda,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+        } catch (_) {
+          return moneda + ' ' + n.toFixed(2);
+        }
+      }
+
+      function periodoActual() {
+        return {
+          desde: normalize(document.getElementById('calcDesde').value),
+          hasta: normalize(document.getElementById('calcHasta').value),
+          empleadoNominaID: Number(document.getElementById('calcEmpleado').value || 0)
+        };
+      }
+
+      async function requestJSON(url, options) {
+        const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        const text = await resp.text();
+        let data = null;
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            data = text;
+          }
+        }
+        if (!resp.ok) {
+          const msg = typeof data === 'string' ? data : (data && (data.error || data.message)) || ('HTTP ' + resp.status);
+          const err = new Error(msg);
+          err.status = resp.status;
+          err.data = data;
+          throw err;
+        }
+        return data;
+      }
+
+      function setMessage(id, text, kind) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || '';
+        if (kind === 'error') {
+          el.className = 'error';
+          return;
+        }
+        if (kind === 'success') {
+          el.className = 'success';
+          return;
+        }
+        el.className = 'form-help';
+      }
+
+      function setDefaultDates() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const firstDay = yyyy + '-' + mm + '-01';
+        const today = yyyy + '-' + mm + '-' + dd;
+
+        document.getElementById('calcDesde').value = firstDay;
+        document.getElementById('calcHasta').value = today;
+        resetFestivoRangeToYear(yyyy);
+      }
+
+      function resetFestivoRangeToYear(year) {
+        const yyyy = Number(year) || new Date().getFullYear();
+        document.getElementById('festDesde').value = yyyy + '-01-01';
+        document.getElementById('festHasta').value = yyyy + '-12-31';
+      }
+
+      function setEmpresaInfo() {
+        const label = document.getElementById('empresaInfo');
+        if (!state.empresaID) {
+          label.textContent = 'Empresa: no definida';
+          return;
+        }
+        if (state.empresaNombre) {
+          label.textContent = 'Empresa: ' + state.empresaNombre + ' (#' + state.empresaID + ')';
+          return;
+        }
+        label.textContent = 'Empresa ID: ' + state.empresaID;
+      }
+
+      async function loadEmpresaInfo() {
+        if (!state.empresaID) return;
+        try {
+          const data = await requestJSON('/super/api/empresas?id=' + encodeURIComponent(state.empresaID));
+          state.empresaNombre = normalize(data && data.nombre);
+        } catch (_) {
+          state.empresaNombre = '';
+        }
+        setEmpresaInfo();
+      }
+
+      function renderLegalParams(data) {
+        state.parametrosLegales = data || null;
+        const item = data || {};
+        const aplicada = normalize(item.version_aplicada) || 'Sin aplicar';
+        const disponible = normalize(item.version_disponible) || '-';
+        const pendiente = !!item.pendiente;
+        document.getElementById('legalVersionAplicada').textContent = aplicada;
+        document.getElementById('legalVersionDisponible').textContent = disponible;
+        document.getElementById('legalVigencia').textContent = normalize(item.vigencia_desde) || '-';
+        document.getElementById('legalEstado').textContent = pendiente ? 'Pendiente' : 'Al dia';
+        document.getElementById('legalAutoUpdate').checked = !!item.auto_actualizar;
+        document.getElementById('btnAplicarParametrosLegales').disabled = false;
+        setMessage('legalParamsMsg', normalize(item.mensaje) || (pendiente ? 'Actualizacion legal disponible.' : 'Parametros legales al dia.'), pendiente ? null : 'success');
+      }
+
+      async function loadLegalParams() {
+        const data = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=parametros_legales');
+        renderLegalParams(data || {});
+      }
+
+      async function applyLegalParams() {
+        const btn = document.getElementById('btnAplicarParametrosLegales');
+        btn.disabled = true;
+        setMessage('legalParamsMsg', 'Aplicando parametros legales...', null);
+        try {
+          const resp = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=parametros_legales_aplicar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}'
+          });
+          renderLegalParams(resp && resp.estado ? resp.estado : {});
+          await loadConfig();
+          setMessage('legalParamsMsg', 'Parametros legales aplicados correctamente.', 'success');
+        } catch (err) {
+          setMessage('legalParamsMsg', err.message || 'No se pudieron aplicar parametros legales.', 'error');
+          btn.disabled = false;
+        }
+      }
+
+      async function saveLegalAutoUpdate() {
+        const enabled = document.getElementById('legalAutoUpdate').checked;
+        setMessage('legalParamsMsg', 'Guardando preferencia...', null);
+        try {
+          const resp = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=parametros_legales_auto', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ auto_actualizar: enabled })
+          });
+          renderLegalParams(resp && resp.estado ? resp.estado : {});
+          setMessage('legalParamsMsg', enabled ? 'Autoactualizacion legal activada.' : 'Autoactualizacion legal desactivada.', 'success');
+        } catch (err) {
+          document.getElementById('legalAutoUpdate').checked = !enabled;
+          setMessage('legalParamsMsg', err.message || 'No se pudo guardar la preferencia.', 'error');
+        }
+      }
+
+      function applyConfig(cfg) {
+        state.config = cfg || null;
+        const item = cfg || {};
+        document.getElementById('cfgPais').value = normalize(item.pais_codigo || 'CO');
+        document.getElementById('cfgMoneda').value = normalize(item.moneda || 'COP');
+        document.getElementById('cfgSalarioMinimo').value = toNumber(item.salario_minimo_mensual, 1750905);
+        document.getElementById('cfgAuxilioLegal').value = toNumber(item.auxilio_transporte_legal_mensual, 249095);
+        document.getElementById('cfgHorasSemana').value = toNumber(item.horas_ordinarias_semana, 42);
+        document.getElementById('cfgHorasDia').value = toNumber(item.horas_ordinarias_dia, 8);
+        document.getElementById('cfgDiasMes').value = toNumber(item.dias_nomina_mes, 30);
+		document.getElementById('cfgPeriodoNominaDian').value = String(Math.max(0, Math.min(6, Math.round(toNumber(item.periodo_nomina_dian, 0)))));
+        document.getElementById('cfgDivisorHora').value = toNumber(item.divisor_hora_ordinaria, 210);
+        document.getElementById('cfgNocDesde').value = normalize(item.hora_nocturna_desde || '19:00:00');
+        document.getElementById('cfgNocHasta').value = normalize(item.hora_nocturna_hasta || '06:00:00');
+        document.getElementById('cfgRecargoNocturno').value = toNumber(item.recargo_nocturno_porcentaje, 35);
+        document.getElementById('cfgExtraDiurna').value = toNumber(item.hora_extra_diurna_porcentaje, 25);
+        document.getElementById('cfgExtraNocturna').value = toNumber(item.hora_extra_nocturna_porcentaje, 75);
+        document.getElementById('cfgDomDiurno').value = toNumber(item.recargo_dominical_diurno_porcentaje, 90);
+        document.getElementById('cfgDomNocturno').value = toNumber(item.recargo_dominical_nocturno_porcentaje, 125);
+        document.getElementById('cfgExtraDomDiurna').value = toNumber(item.hora_extra_dominical_diurna_porcentaje, 115);
+        document.getElementById('cfgExtraDomNocturna').value = toNumber(item.hora_extra_dominical_nocturna_porcentaje, 165);
+        document.getElementById('cfgDedSalud').value = toNumber(item.deduccion_salud_porcentaje, 4);
+        document.getElementById('cfgDedPension').value = toNumber(item.deduccion_pension_porcentaje, 4);
+        document.getElementById('cfgDedSolidaridad').value = toNumber(item.deduccion_fondo_solidaridad_porcentaje, 0);
+        document.getElementById('cfgAporteSaludEmp').value = toNumber(item.aporte_salud_empleador_porcentaje, 8.5);
+        document.getElementById('cfgAportePensionEmp').value = toNumber(item.aporte_pension_empleador_porcentaje, 12);
+        document.getElementById('cfgAporteARL').value = toNumber(item.aporte_arl_porcentaje, 0.522);
+        document.getElementById('cfgCajaComp').value = toNumber(item.aporte_caja_compensacion_porcentaje, 4);
+        document.getElementById('cfgICBF').value = toNumber(item.aporte_icbf_porcentaje, 3);
+        document.getElementById('cfgSENA').value = toNumber(item.aporte_sena_porcentaje, 2);
+        document.getElementById('cfgCesantias').value = toNumber(item.provision_cesantias_porcentaje, 8.33);
+        document.getElementById('cfgIntCesantias').value = toNumber(item.provision_intereses_cesantias_porcentaje, 1);
+        document.getElementById('cfgPrima').value = toNumber(item.provision_prima_porcentaje, 8.33);
+        document.getElementById('cfgVacaciones').value = toNumber(item.provision_vacaciones_porcentaje, 4.17);
+        document.getElementById('cfgObservaciones').value = normalize(item.observaciones);
+        if (!normalize(document.getElementById('empId').value)) {
+          const salarioInput = document.getElementById('empSalario');
+          const auxilioInput = document.getElementById('empAuxilio');
+          if (toNumber(salarioInput.value, 0) <= 0) {
+            salarioInput.value = String(toNumber(item.salario_minimo_mensual, 0));
+          }
+          if (toNumber(auxilioInput.value, 0) <= 0) {
+            auxilioInput.value = String(toNumber(item.auxilio_transporte_legal_mensual, 0));
+          }
+        }
+      }
+
+      function buildConfigPayload() {
+        return {
+          empresa_id: Number(state.empresaID),
+          pais_codigo: normalize(document.getElementById('cfgPais').value).toUpperCase(),
+          moneda: normalize(document.getElementById('cfgMoneda').value).toUpperCase(),
+          salario_minimo_mensual: toNumber(document.getElementById('cfgSalarioMinimo').value, 1750905),
+          auxilio_transporte_legal_mensual: toNumber(document.getElementById('cfgAuxilioLegal').value, 249095),
+          horas_ordinarias_semana: toNumber(document.getElementById('cfgHorasSemana').value, 42),
+          horas_ordinarias_dia: toNumber(document.getElementById('cfgHorasDia').value, 8),
+          dias_nomina_mes: Math.max(1, Math.round(toNumber(document.getElementById('cfgDiasMes').value, 30))),
+		  periodo_nomina_dian: Math.max(0, Math.min(6, Math.round(toNumber(document.getElementById('cfgPeriodoNominaDian').value, 0)))),
+          divisor_hora_ordinaria: toNumber(document.getElementById('cfgDivisorHora').value, 210),
+          hora_nocturna_desde: normalize(document.getElementById('cfgNocDesde').value),
+          hora_nocturna_hasta: normalize(document.getElementById('cfgNocHasta').value),
+          recargo_nocturno_porcentaje: toNumber(document.getElementById('cfgRecargoNocturno').value, 35),
+          hora_extra_diurna_porcentaje: toNumber(document.getElementById('cfgExtraDiurna').value, 25),
+          hora_extra_nocturna_porcentaje: toNumber(document.getElementById('cfgExtraNocturna').value, 75),
+          recargo_dominical_diurno_porcentaje: toNumber(document.getElementById('cfgDomDiurno').value, 90),
+          recargo_dominical_nocturno_porcentaje: toNumber(document.getElementById('cfgDomNocturno').value, 125),
+          hora_extra_dominical_diurna_porcentaje: toNumber(document.getElementById('cfgExtraDomDiurna').value, 115),
+          hora_extra_dominical_nocturna_porcentaje: toNumber(document.getElementById('cfgExtraDomNocturna').value, 165),
+          deduccion_salud_porcentaje: toNumber(document.getElementById('cfgDedSalud').value, 4),
+          deduccion_pension_porcentaje: toNumber(document.getElementById('cfgDedPension').value, 4),
+          deduccion_fondo_solidaridad_porcentaje: toNumber(document.getElementById('cfgDedSolidaridad').value, 0),
+          aporte_salud_empleador_porcentaje: toNumber(document.getElementById('cfgAporteSaludEmp').value, 8.5),
+          aporte_pension_empleador_porcentaje: toNumber(document.getElementById('cfgAportePensionEmp').value, 12),
+          aporte_arl_porcentaje: toNumber(document.getElementById('cfgAporteARL').value, 0.522),
+          aporte_caja_compensacion_porcentaje: toNumber(document.getElementById('cfgCajaComp').value, 4),
+          aporte_icbf_porcentaje: toNumber(document.getElementById('cfgICBF').value, 3),
+          aporte_sena_porcentaje: toNumber(document.getElementById('cfgSENA').value, 2),
+          provision_cesantias_porcentaje: toNumber(document.getElementById('cfgCesantias').value, 8.33),
+          provision_intereses_cesantias_porcentaje: toNumber(document.getElementById('cfgIntCesantias').value, 1),
+          provision_prima_porcentaje: toNumber(document.getElementById('cfgPrima').value, 8.33),
+          provision_vacaciones_porcentaje: toNumber(document.getElementById('cfgVacaciones').value, 4.17),
+          observaciones: normalize(document.getElementById('cfgObservaciones').value)
+        };
+      }
+
+      async function loadConfig() {
+        const cfg = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=config');
+        applyConfig(cfg || {});
+      }
+
+      async function saveConfig(ev) {
+        ev.preventDefault();
+        try {
+          const payload = buildConfigPayload();
+          const resp = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=config', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          applyConfig(resp && resp.configuracion ? resp.configuracion : payload);
+          setMessage('cfgMsg', 'Configuracion de nomina guardada correctamente.', 'success');
+        } catch (err) {
+          setMessage('cfgMsg', err.message || 'No se pudo guardar la configuracion.', 'error');
+        }
+      }
+
+      function resetEmployeeForm() {
+        document.getElementById('empId').value = '';
+        document.getElementById('empCodigo').value = '';
+        document.getElementById('empNombre').value = '';
+        document.getElementById('empDocumento').value = '';
+        document.getElementById('empCargo').value = '';
+        document.getElementById('empSedeCodigo').value = '';
+        document.getElementById('empSedeNombre').value = '';
+        document.getElementById('empCentroCosto').value = '';
+        document.getElementById('empTipoContrato').value = 'indefinido';
+        document.getElementById('empFechaIngreso').value = '';
+        document.getElementById('empSalario').value = String(toNumber(state.config && state.config.salario_minimo_mensual, 0));
+        document.getElementById('empAuxilio').value = String(toNumber(state.config && state.config.auxilio_transporte_legal_mensual, 0));
+        document.getElementById('empBonificacion').value = '0';
+        document.getElementById('empDeduccionFija').value = '0';
+        document.getElementById('empJornadaDia').value = '8';
+        document.getElementById('empAuxilioFlag').value = '1';
+      }
+
+      function buildEmployeePayload() {
+        return {
+          id: Number(document.getElementById('empId').value || 0),
+          empresa_id: Number(state.empresaID),
+          empleado_codigo: normalize(document.getElementById('empCodigo').value),
+          empleado_nombre: normalize(document.getElementById('empNombre').value),
+          empleado_documento: normalize(document.getElementById('empDocumento').value),
+          cargo: normalize(document.getElementById('empCargo').value),
+          sede_codigo: normalize(document.getElementById('empSedeCodigo').value),
+          sede_nombre: normalize(document.getElementById('empSedeNombre').value),
+          centro_costo: normalize(document.getElementById('empCentroCosto').value),
+          tipo_contrato: normalize(document.getElementById('empTipoContrato').value),
+          fecha_ingreso: normalize(document.getElementById('empFechaIngreso').value),
+          salario_basico_mensual: toNumber(document.getElementById('empSalario').value, 0),
+          auxilio_transporte_mensual: toNumber(document.getElementById('empAuxilio').value, 0),
+          bonificacion_fija_mensual: toNumber(document.getElementById('empBonificacion').value, 0),
+          deduccion_fija_mensual: toNumber(document.getElementById('empDeduccionFija').value, 0),
+          jornada_horas_dia: toNumber(document.getElementById('empJornadaDia').value, 8),
+          incluir_auxilio_transporte: document.getElementById('empAuxilioFlag').value === '1'
+        };
+      }
+
+      async function loadEmployees() {
+        const q = normalize(document.getElementById('empBuscar').value);
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'empleados');
+        params.set('include_inactive', '1');
+        params.set('limit', '500');
+        if (q) params.set('q', q);
+        const rows = await requestJSON('/api/empresa/nomina?' + params.toString());
+        state.empleados = Array.isArray(rows) ? rows : [];
+        renderEmployees();
+        refreshEmployeeSelector();
+      }
+
+      function renderEmployees() {
+        const body = document.getElementById('empTableBody');
+        const rows = Array.isArray(state.empleados) ? state.empleados : [];
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="6">No hay empleados de nomina.</td></tr>';
+          return;
+        }
+
+        body.innerHTML = rows.map(function (item) {
+          const id = Number(item.id || 0);
+          const estado = normalize(item.estado || 'activo').toLowerCase();
+          const action = estado === 'activo' ? 'desactivar_empleado' : 'activar_empleado';
+          const actionLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
+
+          return '<tr>' +
+            '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_codigo || item.empleado_documento || '-') + '</small></td>' +
+            '<td>' + esc(item.cargo || '-') + '</td>' +
+            '<td><strong>' + esc(item.sede_nombre || 'Sede principal') + '</strong><br><small>' + esc(item.sede_codigo || item.centro_costo || '-') + '</small></td>' +
+            '<td>' + esc(money(item.salario_basico_mensual)) + '</td>' +
+            '<td>' + esc(estado) + '</td>' +
+            '<td>' +
+              '<button type="button" class="btn secondary" data-action="edit" data-id="' + id + '">Editar</button> ' +
+              '<button type="button" class="btn secondary" data-action="toggle" data-id="' + id + '" data-next="' + action + '">' + actionLabel + '</button> ' +
+              '<button type="button" class="btn danger" data-action="delete" data-id="' + id + '">Eliminar</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      function refreshEmployeeSelector() {
+        const sel = document.getElementById('calcEmpleado');
+        const current = normalize(sel.value);
+        const options = ['<option value="">Todos los empleados</option>'];
+        state.empleados.forEach(function (item) {
+          const id = Number(item.id || 0);
+          if (id <= 0) return;
+          options.push('<option value="' + id + '">' + esc(item.empleado_nombre || ('Empleado #' + id)) + ' - ' + esc(item.empleado_documento || item.empleado_codigo || '') + '</option>');
+        });
+        sel.innerHTML = options.join('');
+        if (current) {
+          sel.value = current;
+        }
+      }
+
+      function fillEmployeeForm(item) {
+        document.getElementById('empId').value = Number(item.id || 0);
+        document.getElementById('empCodigo').value = normalize(item.empleado_codigo);
+        document.getElementById('empNombre').value = normalize(item.empleado_nombre);
+        document.getElementById('empDocumento').value = normalize(item.empleado_documento);
+        document.getElementById('empCargo').value = normalize(item.cargo);
+        document.getElementById('empSedeCodigo').value = normalize(item.sede_codigo);
+        document.getElementById('empSedeNombre').value = normalize(item.sede_nombre);
+        document.getElementById('empCentroCosto').value = normalize(item.centro_costo);
+        document.getElementById('empTipoContrato').value = normalize(item.tipo_contrato) || 'indefinido';
+        document.getElementById('empFechaIngreso').value = normalize(item.fecha_ingreso);
+        document.getElementById('empSalario').value = toNumber(item.salario_basico_mensual, 0);
+        document.getElementById('empAuxilio').value = toNumber(item.auxilio_transporte_mensual, 0);
+        document.getElementById('empBonificacion').value = toNumber(item.bonificacion_fija_mensual, 0);
+        document.getElementById('empDeduccionFija').value = toNumber(item.deduccion_fija_mensual, 0);
+        document.getElementById('empJornadaDia').value = toNumber(item.jornada_horas_dia, 8);
+        document.getElementById('empAuxilioFlag').value = item.incluir_auxilio_transporte ? '1' : '0';
+      }
+
+      async function saveEmployee(ev) {
+        ev.preventDefault();
+        try {
+          const payload = buildEmployeePayload();
+          if (!payload.empleado_nombre) {
+            throw new Error('El nombre del empleado es obligatorio.');
+          }
+          const isUpdate = payload.id > 0;
+          const action = isUpdate ? 'empleado' : 'empleado';
+          await requestJSON('/api/empresa/nomina?action=' + action, {
+            method: isUpdate ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          resetEmployeeForm();
+          await loadEmployees();
+          setMessage('empMsg', isUpdate ? 'Empleado actualizado.' : 'Empleado creado.', 'success');
+        } catch (err) {
+          setMessage('empMsg', err.message || 'No se pudo guardar empleado.', 'error');
+        }
+      }
+
+      async function deleteEmployee(id) {
+        if (!confirm('¿Eliminar empleado de nomina?')) return;
+        await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=empleado&id=' + encodeURIComponent(id), {
+          method: 'DELETE'
+        });
+      }
+
+      async function toggleEmployee(id, action) {
+        await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=' + encodeURIComponent(action), {
+          method: 'PUT'
+        });
+      }
+
+      async function onEmployeeTableClick(ev) {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = normalize(btn.getAttribute('data-action')).toLowerCase();
+        const id = Number(btn.getAttribute('data-id') || 0);
+        if (id <= 0) return;
+
+        try {
+          if (action === 'edit') {
+            const item = state.empleados.find(function (row) { return Number(row.id || 0) === id; });
+            if (!item) return;
+            fillEmployeeForm(item);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
+          if (action === 'toggle') {
+            const next = normalize(btn.getAttribute('data-next')).toLowerCase();
+            await toggleEmployee(id, next);
+            await loadEmployees();
+            setMessage('empMsg', 'Estado de empleado actualizado.', 'success');
+            return;
+          }
+          if (action === 'delete') {
+            await deleteEmployee(id);
+            await loadEmployees();
+            setMessage('empMsg', 'Empleado eliminado.', 'success');
+          }
+        } catch (err) {
+          setMessage('empMsg', err.message || 'No se pudo ejecutar la accion.', 'error');
+        }
+      }
+
+      async function loadFestivos() {
+        const desde = normalize(document.getElementById('festDesde').value);
+        const hasta = normalize(document.getElementById('festHasta').value);
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'festivos');
+        params.set('include_inactive', '1');
+        params.set('limit', '500');
+        if (desde) params.set('desde', desde);
+        if (hasta) params.set('hasta', hasta);
+        const rows = await requestJSON('/api/empresa/nomina?' + params.toString());
+        state.festivos = Array.isArray(rows) ? rows : [];
+        renderFestivos();
+      }
+
+      function renderFestivos() {
+        const body = document.getElementById('festTableBody');
+        const rows = Array.isArray(state.festivos) ? state.festivos : [];
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="4">No hay festivos configurados.</td></tr>';
+          return;
+        }
+
+        body.innerHTML = rows.map(function (item) {
+          const id = Number(item.id || 0);
+          return '<tr>' +
+            '<td>' + esc(item.fecha_festivo || '-') + '</td>' +
+            '<td>' + esc(item.descripcion || '-') + '</td>' +
+            '<td>' + esc(normalize(item.estado || 'activo').toLowerCase()) + '</td>' +
+            '<td><button type="button" class="btn danger" data-festivo-delete="' + id + '">Eliminar</button></td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      async function saveFestivo(ev) {
+        ev.preventDefault();
+        try {
+          const payload = {
+            empresa_id: Number(state.empresaID),
+            fecha_festivo: normalize(document.getElementById('festFecha').value),
+            descripcion: normalize(document.getElementById('festDescripcion').value)
+          };
+          if (!payload.fecha_festivo) {
+            throw new Error('La fecha festiva es obligatoria.');
+          }
+          await requestJSON('/api/empresa/nomina?action=festivo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          document.getElementById('festFecha').value = '';
+          document.getElementById('festDescripcion').value = '';
+          await loadFestivos();
+          setMessage('festMsg', 'Festivo agregado.', 'success');
+        } catch (err) {
+          setMessage('festMsg', err.message || 'No se pudo guardar festivo.', 'error');
+        }
+      }
+
+      async function deleteFestivo(id) {
+        if (!confirm('¿Eliminar dia festivo?')) return;
+        await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=festivo&id=' + encodeURIComponent(id), {
+          method: 'DELETE'
+        });
+      }
+
+      function sumHorasExtra(item) {
+        return toNumber(item.horas_extra_diurnas, 0) +
+          toNumber(item.horas_extra_nocturnas, 0) +
+          toNumber(item.horas_extra_dominicales_diurnas, 0) +
+          toNumber(item.horas_extra_dominicales_nocturnas, 0);
+      }
+
+      function renderLiquidaciones(rows, summaryText) {
+        const body = document.getElementById('liqTableBody');
+        const list = Array.isArray(rows) ? rows : [];
+
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="9">Sin liquidaciones para mostrar.</td></tr>';
+          document.getElementById('calcResumen').textContent = summaryText || 'Sin calculos recientes.';
+          updateKpis();
+          return;
+        }
+
+        body.innerHTML = list.map(function (item) {
+          const empleadoNominaID = Number(item.empleado_nomina_id || 0);
+          return '<tr>' +
+            '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_documento || item.empleado_codigo || '-') + '</small></td>' +
+            '<td>' + toNumber(item.dias_liquidados, 0).toFixed(2) + '</td>' +
+            '<td>' + esc(item.sede_nombre || 'Sede principal') + '<br><small>' + esc(item.centro_costo || item.sede_codigo || '-') + '</small></td>' +
+            '<td>' + toNumber(item.horas_asistencia_total, 0).toFixed(2) + '</td>' +
+            '<td>' + sumHorasExtra(item).toFixed(2) + '</td>' +
+            '<td>' + esc(money(item.devengado_total)) + '</td>' +
+            '<td>' + esc(money(item.deduccion_total)) + '</td>' +
+            '<td><strong>' + esc(money(item.neto_pagar)) + '</strong></td>' +
+            '<td><button type="button" class="btn secondary" data-liquidacion-desprendible="' + empleadoNominaID + '">Desprendible</button></td>' +
+          '</tr>';
+        }).join('');
+
+        document.getElementById('calcResumen').textContent = summaryText || ('Liquidaciones cargadas: ' + list.length);
+        updateKpis();
+      }
+
+      function renderConciliacion(result) {
+        const box = document.getElementById('conciliacionResumen');
+        if (!result || typeof result !== 'object') {
+          box.textContent = 'Sin conciliacion ejecutada.';
+          return;
+        }
+
+        const total = Number(result.total_evaluados || 0);
+        const ok = Number(result.total_conciliados || 0);
+        const inconsistencias = Number(result.total_inconsistencias || 0);
+        const recalculados = Number(result.total_recalculados || 0);
+        const auto = !!result.auto_recalcular;
+
+        let html = '<div><strong>Conciliacion asistencia vs nomina</strong> | Evaluados: ' + total + ' | Conciliados: ' + ok + ' | Inconsistencias: ' + inconsistencias + ' | Recalculados: ' + recalculados + ' | Modo: ' + (auto ? 'auto-recalculo' : 'solo auditoria') + '</div>';
+
+        const items = Array.isArray(result.items) ? result.items : [];
+        if (items.length > 0) {
+          html += '<div >' +
+            items.map(function (row) {
+              const nombre = esc(row.empleado_nombre || ('Empleado #' + String(row.empleado_nomina_id || 0)));
+              const estado = esc(row.estado || 'sin_estado');
+              const horasLiq = toNumber(row.horas_asistencia_liquidacion, 0).toFixed(2);
+              const horasCalc = toNumber(row.horas_asistencia_calculado, 0).toFixed(2);
+              const regsLiq = Number(row.registros_asistencia_liquidacion || 0);
+              const regsCalc = Number(row.registros_asistencia_calculado || 0);
+              const msg = esc(row.mensaje || '');
+              return '<div class="form-help" style="margin-bottom:4px;">[' + estado + '] ' + nombre +
+                ' | registros liq/calc: ' + regsLiq + '/' + regsCalc +
+                ' | horas liq/calc: ' + horasLiq + '/' + horasCalc +
+                (msg ? ' | ' + msg : '') +
+              '</div>';
+            }).join('') +
+          '</div>';
+        }
+
+        box.innerHTML = html;
+      }
+
+      function renderDesprendible(doc) {
+        const root = document.getElementById('desprendiblePanel');
+        if (!doc || typeof doc !== 'object') {
+          root.textContent = 'Sin desprendible generado.';
+          return;
+        }
+
+        const period = esc((doc.periodo_desde || '-') + ' a ' + (doc.periodo_hasta || '-'));
+        const empleado = esc(doc.empleado_nombre || '-');
+        const documento = esc(doc.empleado_documento || doc.empleado_codigo || '-');
+        const contrato = esc(doc.tipo_contrato || '-');
+        const cargo = esc(doc.cargo || '-');
+        const sede = esc(doc.sede_nombre || 'Sede principal');
+        const centro = esc(doc.centro_costo || doc.sede_codigo || '-');
+        const horas = toNumber(doc.horas_asistencia_total, 0).toFixed(2);
+        const dias = toNumber(doc.dias_liquidados, 0).toFixed(2);
+
+        const html = '<div><strong>Desprendible estandar</strong> | Periodo: ' + period + '</div>' +
+          '<div class="form-help" >Empleado: <strong>' + empleado + '</strong> | Documento/Codigo: ' + documento + ' | Cargo: ' + cargo + ' | Sede: ' + sede + ' | Centro: ' + centro + ' | Contrato: ' + contrato + '</div>' +
+          '<div class="form-help" >Días liquidados: ' + dias + ' | Horas asistencia: ' + horas + '</div>' +
+          '<div >' +
+            '<div class="card" ><strong>Devengado</strong><br>Base salario: ' + esc(money(doc.base_salario_proporcional)) + '<br>Recargos/Extras: ' + esc(money(doc.total_recargos_horas_extras)) + '<br>Auxilio: ' + esc(money(doc.auxilio_transporte)) + '<br>Bonificacion: ' + esc(money(doc.bonificacion)) + '<br><strong>Total devengado: ' + esc(money(doc.devengado_total)) + '</strong></div>' +
+            '<div class="card" ><strong>Deducciones</strong><br>Salud: ' + esc(money(doc.deduccion_salud)) + '<br>Pension: ' + esc(money(doc.deduccion_pension)) + '<br>Fondo solidaridad: ' + esc(money(doc.deduccion_fondo_solidaridad)) + '<br>Fija: ' + esc(money(doc.deduccion_fija)) + '<br>Otras: ' + esc(money(doc.otras_deducciones)) + '<br><strong>Total deducciones: ' + esc(money(doc.deduccion_total)) + '</strong></div>' +
+            '<div class="card" ><strong>Pago</strong><br>IBC: ' + esc(money(doc.ingreso_base_cotizacion)) + '<br>Valor hora: ' + esc(money(doc.valor_hora_ordinaria)) + '<br><strong>Neto a pagar: ' + esc(money(doc.neto_pagar)) + '</strong></div>' +
+          '</div>';
+
+        root.innerHTML = html;
+      }
+
+      async function generarDesprendible(empleadoNominaID) {
+        const id = Number(empleadoNominaID || document.getElementById('calcEmpleado').value || 0);
+        if (id <= 0) {
+          throw new Error('Selecciona un empleado para generar el desprendible.');
+        }
+
+        const desde = normalize(document.getElementById('calcDesde').value);
+        const hasta = normalize(document.getElementById('calcHasta').value);
+        if (!desde || !hasta) {
+          throw new Error('Debes indicar periodo desde y hasta.');
+        }
+
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'desprendible');
+        params.set('empleado_nomina_id', String(id));
+        params.set('periodo_desde', desde);
+        params.set('periodo_hasta', hasta);
+
+        const doc = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderDesprendible(doc);
+      }
+
+      async function conciliarAsistenciaNomina() {
+        const desde = normalize(document.getElementById('calcDesde').value);
+        const hasta = normalize(document.getElementById('calcHasta').value);
+        if (!desde || !hasta) {
+          throw new Error('Debes indicar periodo desde y hasta para conciliar.');
+        }
+
+        const empleadoNominaID = Number(document.getElementById('calcEmpleado').value || 0);
+        const autoRecalcular = document.getElementById('calcConciliarFix').value === '1';
+        const payload = {
+          empresa_id: Number(state.empresaID),
+          periodo_desde: desde,
+          periodo_hasta: hasta,
+          empleado_nomina_id: empleadoNominaID > 0 ? empleadoNominaID : 0,
+          auto_recalcular: autoRecalcular
+        };
+
+        const result = await requestJSON('/api/empresa/nomina?action=conciliar_asistencia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        renderConciliacion(result);
+
+        if (autoRecalcular) {
+          await loadLiquidaciones();
+        }
+      }
+
+      async function loadLiquidaciones() {
+        const current = periodoActual();
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'liquidaciones');
+        params.set('limit', '500');
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
+
+        const rows = await requestJSON('/api/empresa/nomina?' + params.toString());
+        state.liquidaciones = Array.isArray(rows) ? rows : [];
+        renderLiquidaciones(state.liquidaciones, 'Liquidaciones consultadas para el rango seleccionado.');
+      }
+
+      function renderPagos(rows, summaryText) {
+        const body = document.getElementById('payTableBody');
+        const list = Array.isArray(rows) ? rows : [];
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="6">Sin pagos para mostrar.</td></tr>';
+          document.getElementById('payResumen').textContent = summaryText || 'Sin pagos generados para mostrar.';
+          updateKpis();
+          return;
+        }
+        body.innerHTML = list.map(function (item) {
+          return '<tr>' +
+            '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_documento || '-') + '</small></td>' +
+            '<td>' + esc((item.periodo_desde || '-') + ' a ' + (item.periodo_hasta || '-')) + '</td>' +
+            '<td>' + esc(item.metodo_pago || '-') + '</td>' +
+            '<td>' + esc(item.referencia_pago || '-') + '</td>' +
+            '<td>' + esc(item.estado_pago || 'pagado') + '</td>' +
+            '<td><strong>' + esc(money(item.neto_pagado)) + '</strong></td>' +
+          '</tr>';
+        }).join('');
+        document.getElementById('payResumen').textContent = summaryText || ('Pagos registrados: ' + list.length);
+        updateKpis();
+      }
+
+      function renderProvisiones(resumen) {
+        state.provisiones = resumen || null;
+        if (!resumen || typeof resumen !== 'object') {
+          document.getElementById('provIBC').textContent = money(0);
+          document.getElementById('provAportes').textContent = money(0);
+          document.getElementById('provProvision').textContent = money(0);
+          document.getElementById('provCostoEmpresa').textContent = money(0);
+          document.getElementById('provResumen').textContent = 'Sin provisiones consultadas.';
+          updateKpis();
+          return;
+        }
+        const aportes = toNumber(resumen.aporte_salud_empleador, 0) +
+          toNumber(resumen.aporte_pension_empleador, 0) +
+          toNumber(resumen.aporte_arl, 0) +
+          toNumber(resumen.aporte_caja_compensacion, 0) +
+          toNumber(resumen.aporte_icbf, 0) +
+          toNumber(resumen.aporte_sena, 0);
+        const provisiones = toNumber(resumen.provision_cesantias, 0) +
+          toNumber(resumen.provision_intereses_cesantias, 0) +
+          toNumber(resumen.provision_prima, 0) +
+          toNumber(resumen.provision_vacaciones, 0);
+        document.getElementById('provIBC').textContent = money(resumen.total_ibc);
+        document.getElementById('provAportes').textContent = money(aportes);
+        document.getElementById('provProvision').textContent = money(provisiones);
+        document.getElementById('provCostoEmpresa').textContent = money(resumen.costo_empresa_estimado);
+        document.getElementById('provResumen').textContent =
+          'Liquidaciones: ' + Number(resumen.liquidaciones || 0) +
+          ' | Devengado: ' + money(resumen.total_devengado) +
+          ' | Neto: ' + money(resumen.total_neto_pagar) +
+          ' | Costo empresa: ' + money(resumen.costo_empresa_estimado);
+        updateKpis();
+      }
+
+      function controlEstadoLabel(estado) {
+        const value = normalize(estado).toLowerCase();
+        if (value === 'listo') return 'Listo';
+        if (value === 'advertencia') return 'Con advertencias';
+        if (value === 'bloqueado') return 'Bloqueado';
+        return 'Pendiente';
+      }
+
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function renderControlContable(control) {
+        state.controlContable = control || null;
+        const panel = document.getElementById('controlContablePanel');
+        const confirmWrap = document.getElementById('payConfirmControlWrap');
+        const confirmInput = document.getElementById('payConfirmControl');
+        const estado = normalize(control && control.estado).toLowerCase() || 'pendiente';
+        if (panel) {
+          panel.classList.remove('estado-pendiente', 'estado-listo', 'estado-advertencia', 'estado-bloqueado');
+          panel.classList.add('estado-' + estado);
+        }
+        setText('controlEstado', controlEstadoLabel(estado));
+        setText('controlLiquidaciones', String(Number(control && control.liquidaciones || 0)));
+        setText('controlPendientes', String(Number(control && control.pendientes_pago || 0)));
+        setText('controlNeto', money(control && control.total_neto || 0));
+        setText('controlPagado', money(control && control.total_pagado || 0));
+        setText('controlSaldo', money(control && control.saldo_pendiente || 0));
+        setText('controlCosto', money(control && control.costo_empresa_estimado || 0));
+
+        const bloqueos = Array.isArray(control && control.bloqueos) ? control.bloqueos : [];
+        const alertas = Array.isArray(control && control.alertas) ? control.alertas : [];
+        const conceptos = Array.isArray(control && control.conceptos_sin_cuenta) ? control.conceptos_sin_cuenta : [];
+        const items = [];
+        bloqueos.forEach(function (item) { items.push({ kind: 'bloqueo', text: item }); });
+        alertas.forEach(function (item) { items.push({ kind: 'alerta', text: item }); });
+        if (conceptos.length) {
+          items.push({ kind: 'alerta', text: 'Conceptos sin cuenta: ' + conceptos.slice(0, 6).join(', ') + (conceptos.length > 6 ? '...' : '') });
+        }
+
+        const box = document.getElementById('controlAlertas');
+        if (box) {
+          box.innerHTML = items.length
+            ? items.map(function (item) {
+                return '<div class="nomina-control-alert ' + esc(item.kind) + '">' + esc(item.text) + '</div>';
+              }).join('')
+            : '<div class="nomina-control-ok">Control contable listo para generar pagos.</div>';
+        }
+        if (confirmWrap && confirmInput) {
+          const needsConfirm = !!(control && control.requiere_confirmacion);
+          confirmWrap.hidden = !needsConfirm;
+          if (!needsConfirm) confirmInput.checked = false;
+        }
+      }
+
+      async function loadControlContable() {
+        const current = periodoActual();
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'control_contable');
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
+        const control = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderControlContable(control);
+        return control;
+      }
+
+      function renderDashboard(data) {
+        state.dashboard = data || null;
+        const alerts = Array.isArray(data && data.alertas) ? data.alertas : [];
+        document.getElementById('dashboardAlertas').innerHTML = alerts.length
+          ? alerts.map(function (item) { return '<div class="nomina-alert-item">' + esc(item) + '</div>'; }).join('')
+          : '<div class="form-help">Sin alertas críticas para el período actual.</div>';
+        if (data && data.provisiones) {
+          renderProvisiones(data.provisiones);
+        }
+        if (data && data.control_contable) {
+          renderControlContable(data.control_contable);
+        }
+        updateKpis();
+      }
+
+      async function loadPagos() {
+        const current = periodoActual();
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'pagos');
+        params.set('limit', '500');
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
+        const rows = await requestJSON('/api/empresa/nomina?' + params.toString());
+        state.pagos = Array.isArray(rows) ? rows : [];
+        renderPagos(state.pagos, 'Pagos consultados para el período seleccionado.');
+      }
+
+      async function loadProvisiones() {
+        const current = periodoActual();
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'provisiones');
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
+        const data = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderProvisiones(data);
+      }
+
+      async function loadDashboard() {
+        const current = periodoActual();
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'dashboard');
+        if (current.desde) params.set('periodo_desde', current.desde);
+        if (current.hasta) params.set('periodo_hasta', current.hasta);
+        if (current.empleadoNominaID > 0) params.set('empleado_nomina_id', String(current.empleadoNominaID));
+        const data = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderDashboard(data);
+      }
+
+      async function generarPagosNomina() {
+        const current = periodoActual();
+        if (!current.desde || !current.hasta) {
+          throw new Error('Debes indicar período desde y hasta para generar pagos.');
+        }
+        const control = await loadControlContable();
+        if (!control || control.puede_generar_pagos === false) {
+          throw new Error('El control contable no permite generar pagos. Revisa los bloqueos del panel.');
+        }
+        const confirmInput = document.getElementById('payConfirmControl');
+        const confirmarAdvertencias = !!(control.requiere_confirmacion && confirmInput && confirmInput.checked);
+        if (control.requiere_confirmacion && !confirmarAdvertencias) {
+          throw new Error('Debes confirmar la revision de advertencias contables antes de generar pagos.');
+        }
+        const payload = {
+          empresa_id: Number(state.empresaID),
+          periodo_desde: current.desde,
+          periodo_hasta: current.hasta,
+          empleado_nomina_id: current.empleadoNominaID > 0 ? current.empleadoNominaID : 0,
+          metodo_pago: normalize(document.getElementById('payMetodo').value),
+          cuenta_bancaria: normalize(document.getElementById('payCuenta').value),
+          confirmar_advertencias: confirmarAdvertencias
+        };
+        let result;
+        try {
+          result = await requestJSON('/api/empresa/nomina?action=generar_pagos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } catch (err) {
+          if (err && err.data && err.data.control_contable) {
+            renderControlContable(err.data.control_contable);
+          }
+          throw err;
+        }
+        state.pagos = Array.isArray(result && result.pagos) ? result.pagos : [];
+        renderPagos(state.pagos, 'Pagos generados: ' + Number(result && result.generados || 0) + ' | Omitidos: ' + Number(result && result.omitidos || 0) + ' | Total pagado: ' + money(result && result.total_neto_pagado || 0));
+        await loadDashboard();
+        return result;
+      }
+
+      async function exportarLiquidaciones() {
+    const select = document.getElementById('calcExportFormat');
+    const formato = normalize(select && select.value).toLowerCase() || 'pdf';
+    const permitidos = ['pdf', 'xls', 'csv', 'json', 'txt'];
+    if (permitidos.indexOf(formato) < 0) {
+      throw new Error('Formato de exportacion no soportado.');
+    }
+
+    const desde = normalize(document.getElementById('calcDesde').value);
+    const hasta = normalize(document.getElementById('calcHasta').value);
+    const empleadoNominaID = Number(document.getElementById('calcEmpleado').value || 0);
+
+    const params = new URLSearchParams();
+    params.set('action', 'export');
+    params.set('empresa_id', String(state.empresaID));
+    params.set('dataset', 'contable_nomina_liquidaciones');
+    params.set('format', formato);
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
+    if (empleadoNominaID > 0) params.set('empleado_nomina_id', String(empleadoNominaID));
+
+    const response = await fetch('/api/empresa/reportes?' + params.toString(), {
+      credentials: 'same-origin'
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(body || 'No se pudo exportar liquidaciones de nomina.');
+    }
+
+    const blob = await response.blob();
+    const contentDisposition = String(response.headers.get('content-disposition') || '');
+    const fileNameMatch = contentDisposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+    const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+    const fallback = 'nomina_liquidaciones_empresa_' + state.empresaID + '_' + stamp + '.' + formato;
+    const fileName = fileNameMatch && fileNameMatch[1] ? fileNameMatch[1] : fallback;
+
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(function () { URL.revokeObjectURL(href); }, 0);
+  }
+
+      async function calcularNomina(ev) {
+        ev.preventDefault();
+        try {
+          const payload = {
+            empresa_id: Number(state.empresaID),
+            periodo_desde: normalize(document.getElementById('calcDesde').value),
+            periodo_hasta: normalize(document.getElementById('calcHasta').value),
+            empleado_nomina_id: Number(document.getElementById('calcEmpleado').value || 0),
+            overwrite: document.getElementById('calcOverwrite').value === '1',
+            otras_deducciones: toNumber(document.getElementById('calcOtrasDeducciones').value, 0)
+          };
+
+          if (!payload.periodo_desde || !payload.periodo_hasta) {
+            throw new Error('Debes indicar periodo desde y hasta.');
+          }
+
+          setMessage('calcMsg', 'Calculando nomina...', null);
+          const result = await requestJSON('/api/empresa/nomina?action=calcular', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          state.liquidaciones = Array.isArray(result && result.liquidaciones) ? result.liquidaciones : [];
+          const resumen = 'Calculadas: ' + Number(result && result.calculados || 0) +
+            ' | Devengado: ' + money(result && result.total_devengado || 0) +
+            ' | Deducciones: ' + money(result && result.total_deduccion || 0) +
+            ' | Neto: ' + money(result && result.total_neto || 0);
+
+          renderLiquidaciones(state.liquidaciones, resumen);
+          await Promise.all([loadDashboard(), loadProvisiones(), loadPagos()]);
+          setMessage('calcMsg', 'Nomina calculada correctamente.', 'success');
+        } catch (err) {
+          setMessage('calcMsg', err.message || 'No se pudo calcular la nomina.', 'error');
+        }
+      }
+
+      function updateKpis() {
+        const empleados = Array.isArray(state.empleados) ? state.empleados : [];
+        const festivos = Array.isArray(state.festivos) ? state.festivos : [];
+        const liquidaciones = Array.isArray(state.liquidaciones) ? state.liquidaciones : [];
+        const pagos = Array.isArray(state.pagos) ? state.pagos : [];
+        const dashboard = state.dashboard || {};
+        const provisiones = state.provisiones || {};
+        const sedes = Array.isArray(dashboard.sedes) ? dashboard.sedes : [];
+
+        const neto = liquidaciones.reduce(function (acc, item) {
+          return acc + toNumber(item.neto_pagar, 0);
+        }, 0);
+
+        document.getElementById('kpiEmpleados').textContent = String(empleados.length);
+        document.getElementById('kpiSedes').textContent = String(sedes.length || countEmployeeSedes(empleados));
+        document.getElementById('kpiFestivos').textContent = String(festivos.length);
+        document.getElementById('kpiLiquidaciones').textContent = String(liquidaciones.length);
+        document.getElementById('kpiNeto').textContent = money(neto);
+        document.getElementById('kpiPagos').textContent = String(pagos.length || Number(dashboard.pagos_generados || 0));
+        document.getElementById('kpiCostoEmpresa').textContent = money(provisiones.costo_empresa_estimado || dashboard.costo_empresa_estimado || 0);
+        updateNominaReadiness();
+      }
+
+      function updateNominaReadiness() {
+        const empleados = Array.isArray(state.empleados) ? state.empleados : [];
+        const empleadosActivos = empleados.filter(function (item) {
+          return normalize(item.estado || 'activo').toLowerCase() === 'activo';
+        });
+        const liquidaciones = Array.isArray(state.liquidaciones) ? state.liquidaciones : [];
+        const pagos = Array.isArray(state.pagos) ? state.pagos : [];
+        const festivos = Array.isArray(state.festivos) ? state.festivos : [];
+        const cfg = state.config || {};
+        const provisiones = state.provisiones || {};
+        const items = [
+          { ok: empleadosActivos.length > 0, label: 'Crear empleados activos de nomina' },
+          { ok: empleadosActivos.some(function (e) { return normalize(e.numero_documento || e.documento || e.identificacion); }), label: 'Completar documentos de empleados' },
+          { ok: empleadosActivos.some(function (e) { return toNumber(e.salario_base || e.salario_mensual || e.salario, 0) > 0; }), label: 'Registrar salarios base' },
+          { ok: toNumber(cfg.salario_minimo_mensual || cfg.salario_minimo || 0, 0) > 0, label: 'Configurar salario minimo legal' },
+          { ok: festivos.length > 0, label: 'Cargar festivos y parametros legales' },
+          { ok: liquidaciones.length > 0, label: 'Calcular liquidaciones del periodo' },
+          { ok: pagos.length > 0 || Number((state.dashboard || {}).pagos_generados || 0) > 0, label: 'Generar o registrar pagos de nomina' },
+          { ok: toNumber(provisiones.costo_empresa_estimado || (state.dashboard || {}).costo_empresa_estimado || 0, 0) > 0, label: 'Revisar provisiones y costo empresa' },
+          { ok: liquidaciones.some(function (l) { return normalize(l.estado || '').toLowerCase() !== 'borrador'; }), label: 'Revisar/guardar liquidaciones definitivas' },
+          { ok: state.nominaDianReady === true, label: 'Superar preflight de al menos una nomina electronica DIAN' }
+        ];
+        const done = items.filter(function (item) { return item.ok; }).length;
+        const pctValue = Math.round((done / items.length) * 100);
+        const bar = document.getElementById('nominaReadinessBar');
+        const pct = document.getElementById('nominaReadinessPct');
+        const list = document.getElementById('nominaReadinessMissing');
+        if (bar) bar.style.width = pctValue + '%';
+        if (pct) pct.textContent = pctValue + '%';
+        if (list) {
+          const missing = items.filter(function (item) { return !item.ok; });
+          list.innerHTML = missing.length
+            ? missing.map(function (item) { return '<li>' + escapeNominaReadinessHTML(item.label) + '</li>'; }).join('')
+            : '<li>Listo para revisión y emisión individual controlada.</li>';
+        }
+      }
+
+      function escapeNominaReadinessHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      window.PCSNominaReadinessSetDianReady = function (ready) {
+        state.nominaDianReady = ready === true;
+        updateNominaReadiness();
+      };
+
+      function countEmployeeSedes(rows) {
+        const map = {};
+        (Array.isArray(rows) ? rows : []).forEach(function (item) {
+          const key = [item.sede_codigo || '', item.sede_nombre || 'Sede principal', item.centro_costo || ''].join('|').toLowerCase();
+          if (normalize(item.estado || 'activo').toLowerCase() === 'activo') map[key] = true;
+        });
+        return Object.keys(map).length;
+      }
+
+      async function refreshAll() {
+        await Promise.all([loadConfig(), loadLegalParams(), loadEmployees(), loadFestivos()]);
+        await Promise.all([loadLiquidaciones(), loadPagos(), loadDashboard(), loadProvisiones()]);
+        updateKpis();
+      }
+
+      function bindEvents() {
+        document.getElementById('btnAplicarParametrosLegales').addEventListener('click', function () {
+          applyLegalParams().catch(function (err) {
+            setMessage('legalParamsMsg', err.message || 'No se pudieron aplicar parametros legales.', 'error');
+          });
+        });
+        document.getElementById('legalAutoUpdate').addEventListener('change', function () {
+          saveLegalAutoUpdate().catch(function (err) {
+            setMessage('legalParamsMsg', err.message || 'No se pudo guardar la preferencia.', 'error');
+          });
+        });
+        document.getElementById('cfgForm').addEventListener('submit', saveConfig);
+        document.getElementById('empForm').addEventListener('submit', saveEmployee);
+        document.getElementById('empCancelar').addEventListener('click', function () {
+          resetEmployeeForm();
+          setMessage('empMsg', '', null);
+        });
+        document.getElementById('empBuscarBtn').addEventListener('click', function () {
+          loadEmployees().catch(function (err) {
+            setMessage('empMsg', err.message || 'No se pudo listar empleados.', 'error');
+          });
+        });
+        document.getElementById('empLimpiarBtn').addEventListener('click', function () {
+          document.getElementById('empBuscar').value = '';
+          loadEmployees().catch(function (err) {
+            setMessage('empMsg', err.message || 'No se pudo listar empleados.', 'error');
+          });
+        });
+        document.getElementById('empTableBody').addEventListener('click', onEmployeeTableClick);
+
+        document.getElementById('festForm').addEventListener('submit', saveFestivo);
+        document.getElementById('festBuscarBtn').addEventListener('click', function () {
+          loadFestivos().catch(function (err) {
+            setMessage('festMsg', err.message || 'No se pudo listar festivos.', 'error');
+          });
+        });
+        document.getElementById('festLimpiarBtn').addEventListener('click', function () {
+          resetFestivoRangeToYear(new Date().getFullYear());
+          loadFestivos().catch(function (err) {
+            setMessage('festMsg', err.message || 'No se pudo listar festivos.', 'error');
+          });
+        });
+        document.getElementById('festTableBody').addEventListener('click', function (ev) {
+          const btn = ev.target.closest('button[data-festivo-delete]');
+          if (!btn) return;
+          const id = Number(btn.getAttribute('data-festivo-delete') || 0);
+          if (id <= 0) return;
+          deleteFestivo(id)
+            .then(function () { return loadFestivos(); })
+            .then(function () { setMessage('festMsg', 'Festivo eliminado.', 'success'); })
+            .catch(function (err) {
+              setMessage('festMsg', err.message || 'No se pudo eliminar festivo.', 'error');
+            });
+        });
+
+        document.getElementById('calcForm').addEventListener('submit', calcularNomina);
+        document.getElementById('calcListarBtn').addEventListener('click', function () {
+          Promise.all([loadLiquidaciones(), loadPagos(), loadDashboard(), loadProvisiones()]).catch(function (err) {
+            setMessage('calcMsg', err.message || 'No se pudo consultar liquidaciones.', 'error');
+          });
+        });
+        document.getElementById('calcExportBtn').addEventListener('click', function () {
+      exportarLiquidaciones()
+        .then(function () {
+          setMessage('calcMsg', 'Exportacion de liquidaciones generada correctamente.', 'success');
+        })
+        .catch(function (err) {
+          setMessage('calcMsg', err.message || 'No se pudo exportar liquidaciones.', 'error');
+        });
+    });
+
+        document.getElementById('calcDesprendibleBtn').addEventListener('click', function () {
+          generarDesprendible()
+            .then(function () {
+              setMessage('calcMsg', 'Desprendible generado correctamente.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('calcMsg', err.message || 'No se pudo generar el desprendible.', 'error');
+            });
+        });
+
+        document.getElementById('calcConciliarBtn').addEventListener('click', function () {
+          conciliarAsistenciaNomina()
+            .then(function () {
+              setMessage('calcMsg', 'Conciliacion ejecutada correctamente.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('calcMsg', err.message || 'No se pudo conciliar asistencia contra nomina.', 'error');
+            });
+        });
+
+        document.getElementById('payGenerarBtn').addEventListener('click', function () {
+          generarPagosNomina()
+            .then(function (result) {
+              setMessage('payMsg', 'Pagos generados: ' + Number(result && result.generados || 0) + '. Omitidos: ' + Number(result && result.omitidos || 0) + '.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('payMsg', err.message || 'No se pudieron generar pagos de nómina.', 'error');
+            });
+        });
+
+        document.getElementById('payConsultarBtn').addEventListener('click', function () {
+          Promise.all([loadPagos(), loadDashboard()]).then(function () {
+            setMessage('payMsg', 'Pagos consultados correctamente.', 'success');
+          }).catch(function (err) {
+            setMessage('payMsg', err.message || 'No se pudieron consultar los pagos.', 'error');
+          });
+        });
+
+        document.getElementById('provConsultarBtn').addEventListener('click', function () {
+          Promise.all([loadProvisiones(), loadDashboard()]).then(function () {
+            setMessage('payMsg', 'Provisiones consultadas correctamente.', 'success');
+          }).catch(function (err) {
+            setMessage('payMsg', err.message || 'No se pudieron consultar las provisiones.', 'error');
+          });
+        });
+
+        document.getElementById('controlValidarBtn').addEventListener('click', function () {
+          loadControlContable()
+            .then(function (control) {
+              const estado = controlEstadoLabel(control && control.estado).toLowerCase();
+              setMessage('payMsg', 'Control contable ' + estado + '.', control && control.estado === 'bloqueado' ? 'error' : 'success');
+            })
+            .catch(function (err) {
+              setMessage('payMsg', err.message || 'No se pudo validar el control contable.', 'error');
+            });
+        });
+
+        document.getElementById('liqTableBody').addEventListener('click', function (ev) {
+          const btn = ev.target.closest('button[data-liquidacion-desprendible]');
+          if (!btn) return;
+          const empleadoNominaID = Number(btn.getAttribute('data-liquidacion-desprendible') || 0);
+          if (empleadoNominaID <= 0) return;
+          generarDesprendible(empleadoNominaID)
+            .then(function () {
+              setMessage('calcMsg', 'Desprendible generado correctamente.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('calcMsg', err.message || 'No se pudo generar el desprendible.', 'error');
+            });
+        });
+
+        document.getElementById('btnRecargarTodo').addEventListener('click', function () {
+          refreshAll()
+            .then(function () {
+              setMessage('mainMsg', 'Datos de nomina actualizados.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('mainMsg', err.message || 'No se pudo actualizar el modulo de nomina.', 'error');
+            });
+        });
+        var agenteBtn = document.getElementById('btnNominaAgenteInternet');
+        if (agenteBtn) agenteBtn.addEventListener('click', function () {
+          ejecutarAgenteInternetNomina().catch(function (err) {
+            setMessage('nominaAgenteInternetResult', err.message || 'No se pudo ejecutar agente internet.', 'error');
+          });
+        });
+        var agenteResult = document.getElementById('nominaAgenteInternetResult');
+        if (agenteResult) agenteResult.addEventListener('click', function (ev) {
+          var btn = ev.target.closest('button[data-nomina-agent-field]');
+          if (!btn) return;
+          aplicarPropuestaNomina(btn).catch(function (err) {
+            setMessage('nominaAgenteInternetResult', err.message || 'No se pudo aplicar el dato seleccionado.', 'error');
+          });
+        });
+
+        window.addEventListener('nomina:refresh-all', function () {
+          refreshAll().catch(function (err) {
+            setMessage('mainMsg', err.message || 'No se pudo actualizar el modulo de nomina.', 'error');
+          });
+        });
+      }
+
+      async function ejecutarAgenteInternetNomina() {
+        var box = document.getElementById('nominaAgenteInternetResult');
+        if (!box) return;
+        box.textContent = 'Consultando agente internet...';
+        var data = await requestJSON('/api/empresa/nomina/agente_internet?empresa_id=' + encodeURIComponent(String(state.empresaID)), { method: 'POST' });
+        var proposals = data.proposals || [];
+        box.innerHTML = '<strong>Comparacion normativa para aprobar campo por campo</strong><div class="table-wrap"><table><thead><tr><th>Dato</th><th>Actual</th><th>Propuesto</th><th>Vigencia y fuente</th><th>Accion</th></tr></thead><tbody>' + proposals.map(function (p) {
+          var source = p.fuente_url ? '<a href="' + esc(p.fuente_url) + '" target="_blank" rel="noopener">' + esc(p.fuente || 'Fuente oficial') + '</a>' : esc(p.fuente || '-');
+          var value = typeof p.valor_sugerido === 'undefined' ? p.sugerido : p.valor_sugerido;
+          return '<tr><td><b>' + esc(p.campo || '') + '</b><br><small>' + esc(p.observacion || '') + '</small></td><td>' + esc(p.actual || '-') + '</td><td>' + esc(p.sugerido || '-') + '</td><td>' + source + '<br><small>' + esc(p.vigencia || '') + '</small></td><td><button type="button" class="btn secondary" data-nomina-agent-field="' + esc(p.campo_config || '') + '" data-nomina-agent-value="' + esc(String(value == null ? '' : value)) + '">Aplicar este dato</button></td></tr>';
+        }).join('') + '</tbody></table></div><span>Ningun valor se modifica hasta presionar su boton de confirmacion.</span>';
+      }
+
+      async function aplicarPropuestaNomina(btn) {
+        var field = normalize(btn.getAttribute('data-nomina-agent-field'));
+        var rawValue = normalize(btn.getAttribute('data-nomina-agent-value'));
+        var inputByField = {
+          salario_minimo_mensual: 'cfgSalarioMinimo',
+          auxilio_transporte_legal_mensual: 'cfgAuxilioLegal',
+          horas_ordinarias_semana: 'cfgHorasSemana',
+          divisor_hora_ordinaria: 'cfgDivisorHora',
+          hora_nocturna_desde: 'cfgNocDesde',
+          recargo_dominical_diurno_porcentaje: 'cfgDomDiurno',
+          recargo_dominical_nocturno_porcentaje: 'cfgDomNocturno',
+          hora_extra_dominical_diurna_porcentaje: 'cfgExtraDomDiurna',
+          hora_extra_dominical_nocturna_porcentaje: 'cfgExtraDomNocturna'
+        };
+        var input = document.getElementById(inputByField[field] || '');
+        if (!field || !input) throw new Error('La propuesta no corresponde a un campo editable.');
+        if (!window.confirm('Actualizar solo "' + field + '" de ' + input.value + ' a ' + rawValue + '?')) return;
+        input.value = rawValue;
+        var payload = buildConfigPayload();
+        var resp = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        applyConfig(resp && resp.configuracion ? resp.configuracion : payload);
+        setMessage('cfgMsg', 'Dato normativo actualizado: ' + field + '.', 'success');
+        await ejecutarAgenteInternetNomina();
+      }
+
+      async function bootstrap() {
+        state.empresaID = Number(getQueryParam('empresa_id') || 0);
+        if (!state.empresaID) {
+          setMessage('mainMsg', 'Falta empresa_id en la URL.', 'error');
+          return;
+        }
+
+        syncTutorialHelpLink();
+        applyNominaSectionMode();
+        setDefaultDates();
+        bindEvents();
+        setEmpresaInfo();
+        updateNominaReadiness();
+
+        try {
+          await loadEmpresaInfo();
+          await refreshAll();
+          setMessage('mainMsg', 'Modulo de nomina listo para operar.', 'success');
+        } catch (err) {
+          updateNominaReadiness();
+          setMessage('mainMsg', err.message || 'No se pudo inicializar el modulo de nomina.', 'error');
+        }
+      }
+
+      bootstrap();
+    })();
+  </script>
+  <script>
+    (function () {
+      const state = { empresaID: 0, moneda: 'COP', dianNomina: null, dianNominaConfig: null };
+
+      function qp(name) {
+        return new URLSearchParams(window.location.search).get(name);
+      }
+
+      function txt(value) {
+        return String(value == null ? '' : value).trim();
+      }
+
+      function esc(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function money(value) {
+        const n = Number(value || 0);
+        try {
+          return n.toLocaleString('es-CO', { style: 'currency', currency: state.moneda || 'COP' });
+        } catch (_) {
+          return (state.moneda || 'COP') + ' ' + n.toFixed(2);
+        }
+      }
+
+      async function requestJSON(url, options) {
+        const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        const raw = await resp.text();
+        let body = raw;
+        if (raw) {
+          try { body = JSON.parse(raw); } catch (_) {}
+        }
+        if (!resp.ok) {
+		  const error = new Error(typeof body === 'string' ? body : ((body && (body.error || body.message)) || ('HTTP ' + resp.status)));
+		  error.status = resp.status;
+		  error.data = body;
+		  throw error;
+        }
+        return body;
+      }
+
+      function msg(text, kind) {
+        const el = document.getElementById('nomCoMsg');
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = kind === 'error' ? 'error' : (kind === 'success' ? 'success' : 'form-help');
+      }
+
+      function setNominaDianConfigMessage(text, kind) {
+		const el = document.getElementById('nomCoDianConfigMsg');
+		if (!el) return;
+		el.textContent = text || '';
+		el.className = kind === 'error' ? 'error' : (kind === 'success' ? 'success' : 'form-help');
+	  }
+
+	  function setNominaDianConfigForm(item) {
+		item = item || {};
+		state.dianNominaConfig = item && item.id ? item : null;
+		const set = function (id, value) {
+		  const el = document.getElementById(id);
+		  if (el) el.value = value == null ? '' : String(value);
+		};
+		set('nomCoDianConfigEstado', item.estado || 'configurando');
+		set('nomCoDianConfigAmbiente', item.tipo_ambiente || 'habilitacion');
+		set('nomCoDianConfigPrefijo', item.prefijo || 'NE');
+		set('nomCoDianConfigConsecutivo', Number(item.consecutivo_actual || 1));
+		set('nomCoDianConfigModo', item.modo_operacion_codigo || '');
+		set('nomCoDianConfigTestSet', item.test_set_id || '');
+		set('nomCoDianConfigURL', item.url_dian_override || '');
+		set('nomCoDianConfigObservaciones', item.observaciones || '');
+	  }
+
+	  async function loadNominaDianConfig() {
+		if (!state.empresaID) return null;
+		const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'configuracion_documentos_dian' });
+		const data = await requestJSON('/api/empresa/facturacion_electronica?' + params.toString());
+		const items = data && Array.isArray(data.items) ? data.items : [];
+		const item = items.find(function (row) { return txt(row && row.tipo_documento) === 'nomina_electronica'; }) || null;
+		setNominaDianConfigForm(item || {});
+		setNominaDianConfigMessage(item ? 'Configuración separada cargada.' : 'Aún no existe configuración separada para nómina electrónica.', item ? 'success' : '');
+		return item;
+	  }
+
+	  async function saveNominaDianConfig(ev) {
+		if (ev) ev.preventDefault();
+		const prefix = txt(document.getElementById('nomCoDianConfigPrefijo').value).toUpperCase();
+		const consecutive = Number(document.getElementById('nomCoDianConfigConsecutivo').value || 0);
+		const environment = txt(document.getElementById('nomCoDianConfigAmbiente').value);
+		const testSetID = txt(document.getElementById('nomCoDianConfigTestSet').value);
+		if (!/^[A-Z0-9]{1,20}$/.test(prefix)) throw new Error('El prefijo interno debe ser alfanumérico y tener máximo 20 caracteres.');
+		if (!Number.isSafeInteger(consecutive) || consecutive < 1 || consecutive > 999999999999) throw new Error('El próximo consecutivo interno no es válido.');
+		if (environment === 'habilitacion' && !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(testSetID)) throw new Error('El TestSetId de habilitación debe ser un UUID DIAN válido.');
+		const payload = {
+		  empresa_id: state.empresaID,
+		  tipo_documento: 'nomina_electronica',
+		  estado: txt(document.getElementById('nomCoDianConfigEstado').value),
+		  tipo_ambiente: environment,
+		  modo_operacion_codigo: txt(document.getElementById('nomCoDianConfigModo').value),
+		  test_set_id: testSetID, prefijo: prefix, resolucion_numero: '', resolucion_fecha_desde: '', resolucion_fecha_hasta: '',
+		  rango_desde: 0, rango_hasta: 0, consecutivo_actual: consecutive,
+		  url_dian_override: txt(document.getElementById('nomCoDianConfigURL').value),
+		  observaciones: txt(document.getElementById('nomCoDianConfigObservaciones').value)
+		};
+		setNominaDianConfigMessage('Guardando configuración separada...', '');
+		const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'configuracion_documentos_dian' });
+		const data = await requestJSON('/api/empresa/facturacion_electronica?' + params.toString(), {
+		  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+		});
+		setNominaDianConfigForm(data && data.item ? data.item : payload);
+		setNominaDianConfigMessage('Configuración separada de nómina guardada.', 'success');
+		await cargarNominaDian(false);
+		return data;
+	  }
+
+      function periodo() {
+        return {
+          desde: txt(document.getElementById('calcDesde') && document.getElementById('calcDesde').value),
+          hasta: txt(document.getElementById('calcHasta') && document.getElementById('calcHasta').value)
+        };
+      }
+
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function renderConceptos(rows) {
+        const body = document.getElementById('nomCoConceptosBody');
+        const list = Array.isArray(rows) ? rows : [];
+        if (!body) return;
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="5">Sin conceptos Colombia para mostrar.</td></tr>';
+          return;
+        }
+        body.innerHTML = list.slice(0, 30).map(function (item) {
+          return '<tr>' +
+            '<td><strong>' + esc(item.codigo) + '</strong><br><span class="form-help">' + esc(item.nombre) + '</span></td>' +
+            '<td>' + esc(item.tipo) + '</td>' +
+            '<td>' + (item.base_cotizacion ? 'Si' : 'No') + '</td>' +
+            '<td>' + (item.afecta_pila ? 'Si' : 'No') + '</td>' +
+            '<td>' + esc(item.cuenta_contable || '-') + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      function renderNovedades(rows) {
+        const body = document.getElementById('nomCoNovedadesBody');
+        const list = Array.isArray(rows) ? rows : [];
+        if (!body) return;
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="6">Sin novedades Colombia para mostrar.</td></tr>';
+          return;
+        }
+        body.innerHTML = list.slice(0, 30).map(function (item) {
+          const id = Number(item.id || 0);
+          const estado = txt(item.estado_aprobacion).toLowerCase();
+          const acciones = estado === 'pendiente'
+            ? '<button type="button" class="btn secondary" data-novedad-aprobar="' + id + '" data-estado="aprobado">Aprobar</button> <button type="button" class="btn secondary" data-novedad-aprobar="' + id + '" data-estado="rechazado">Rechazar</button>'
+            : '<span class="form-help">Procesada</span>';
+          return '<tr>' +
+            '<td><strong>' + esc(item.codigo_concepto || item.tipo) + '</strong><br><span class="form-help">' + esc(item.descripcion) + '</span></td>' +
+            '<td>' + esc(item.empleado_nombre || ('Empleado #' + item.empleado_nomina_id)) + '</td>' +
+            '<td>' + esc(item.periodo_desde) + ' / ' + esc(item.periodo_hasta) + '</td>' +
+            '<td>' + esc(item.estado_aprobacion) + '</td>' +
+            '<td>' + money(item.valor_total) + '</td>' +
+            '<td>' + acciones + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      function renderPila(rows) {
+        const body = document.getElementById('nomCoPilaBody');
+        const list = Array.isArray(rows) ? rows : [];
+        if (!body) return;
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="6">Sin resumen PILA generado.</td></tr>';
+          return;
+        }
+        body.innerHTML = list.slice(0, 30).map(function (item) {
+          const empleado = Number(item.salud_empleado || 0) + Number(item.pension_empleado || 0);
+          const empleador = Number(item.salud_empleador || 0) + Number(item.pension_empleador || 0) + Number(item.arl || 0) + Number(item.caja_compensacion || 0) + Number(item.icbf || 0) + Number(item.sena || 0);
+          return '<tr>' +
+            '<td>' + esc(item.empleado_nombre) + '<br><span class="form-help">' + esc(item.empleado_documento || '') + '</span></td>' +
+            '<td>' + esc(item.periodo) + '</td>' +
+            '<td>' + money(item.ibc) + '</td>' +
+            '<td>' + money(empleado) + '</td>' +
+            '<td>' + money(empleador) + '</td>' +
+            '<td><strong>' + money(item.total_aportes) + '</strong></td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      async function loadDashboard(silent) {
+        if (!state.empresaID) return;
+        const p = periodo();
+        const periodoParam = (p.desde || '').slice(0, 7);
+        const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'dashboard_colombia' });
+        if (periodoParam) params.set('periodo', periodoParam);
+        const data = await requestJSON('/api/empresa/nomina?' + params.toString());
+        setText('nomCoConceptos', String(Number(data.conceptos_activos || 0)));
+        setText('nomCoPendientes', String(Number(data.novedades_pendientes || 0)));
+        setText('nomCoAprobadas', String(Number(data.novedades_aprobadas || 0)));
+        setText('nomCoPilaTotal', money(data.total_pila || 0));
+        renderConceptos(data.conceptos);
+        renderNovedades(data.novedades);
+        renderPila(data.pila);
+        if (!silent) msg('Nomina Colombia avanzada actualizada.', 'success');
+      }
+
+      function renderNominaDian(data) {
+        state.dianNomina = data || null;
+        if (typeof window.PCSNominaReadinessSetDianReady === 'function') {
+          window.PCSNominaReadinessSetDianReady(!!(data && typeof data === 'object' && Array.isArray(data.documentos_preparados) && data.documentos_preparados.some(function (item) { return item && item.puede_emitir === true; })));
+        }
+        const panel = document.getElementById('nomCoDianPanel');
+        const resumen = document.getElementById('nomCoDianResumen');
+        if (!panel || !resumen) return;
+        if (!data || typeof data !== 'object') {
+          panel.textContent = 'Sin lote DIAN consultado.';
+          resumen.textContent = 'Consulta liquidaciones y prepara el lote por empleado para firma, CUNE y envio documental.';
+          return;
+        }
+        const docs = Array.isArray(data.documentos_preparados) ? data.documentos_preparados : [];
+        const pendientes = Array.isArray(data.requisitos_pendientes) ? data.requisitos_pendientes : [];
+        resumen.textContent = 'Estado: ' + txt(data.estado || '-') + ' | Documentos: ' + Number(data.total_documentos || docs.length || 0) + ' | Neto: ' + money(data.total_neto || 0);
+        const docsHTML = docs.slice(0, 50).map(function (item) {
+          const blockers = Array.isArray(item.bloqueos) ? item.bloqueos : [];
+          const blockersHTML = blockers.length ? '<ul class="nomina-dian-blockers">' + blockers.map(function (blocker) { return '<li>' + esc(blocker) + '</li>'; }).join('') + '</ul>' : '';
+          const emitDisabled = item.puede_emitir === true ? '' : ' disabled';
+          const emitTitle = blockers.length ? ' title="' + esc(blockers.join(' | ')) + '"' : '';
+          return '<tr>' +
+            '<td>' + esc(item.empleado_nombre || '-') + '<br><small>' + esc(item.empleado_documento || item.empleado_codigo || '-') + '</small></td>' +
+            '<td>' + esc(item.sede_nombre || 'Sede principal') + '<br><small>' + esc(item.periodo_reporte || '-') + ' | ' + Number(Array.isArray(item.liquidacion_ids) ? item.liquidacion_ids.length : 1) + ' liquidaci&oacute;n(es)</small></td>' +
+            '<td>' + esc(money(item.devengado_total)) + '</td>' +
+            '<td>' + esc(money(item.deduccion_total)) + '</td>' +
+            '<td><strong>' + esc(money(item.neto_pagar)) + '</strong></td>' +
+            '<td>' + esc(item.estado_documental || '-') + (item.numero_legal ? '<br><small>' + esc(item.numero_legal) + '</small>' : '') + blockersHTML + '</td>' +
+            '<td><div class="form-actions" style="margin:0"><button type="button" class="btn secondary" data-dian-perfil="' + Number(item.empleado_nomina_id || 0) + '" data-dian-liquidacion="' + Number(item.liquidacion_id || 0) + '">Perfil fiscal</button><button type="button" class="btn primary" data-dian-emitir="' + Number(item.liquidacion_id || 0) + '"' + emitDisabled + emitTitle + '>Emitir</button></div></td>' +
+          '</tr>';
+        }).join('');
+        const pendientesHTML = pendientes.length
+          ? '<div class="nomina-alert-list">' + pendientes.map(function (item) { return '<div class="nomina-alert-item">' + esc(item) + '</div>'; }).join('') + '</div>'
+          : '<div class="form-help">Sin requisitos pendientes en las liquidaciones consultadas.</div>';
+        panel.innerHTML =
+          '<div><strong>Documentos electronicos de nomina Colombia</strong> | Periodo: ' + esc(data.periodo_desde || '-') + ' a ' + esc(data.periodo_hasta || '-') + '</div>' +
+          '<div class="form-help">Endpoint documental sugerido: ' + esc(data.endpoint_envio_sugerido || '-') + '</div>' +
+          '<div class="form-help">Totales: Devengado ' + esc(money(data.total_devengado || 0)) + ' | Deducciones ' + esc(money(data.total_deducciones || 0)) + ' | Neto ' + esc(money(data.total_neto || 0)) + '</div>' +
+          pendientesHTML +
+          '<div class="table-wrap" style="margin-top:10px;"><table class="table nomina-table"><thead><tr><th>Empleado</th><th>Sede</th><th>Devengado</th><th>Deducciones</th><th>Neto</th><th>Estado / bloqueos</th><th>Acciones</th></tr></thead><tbody>' +
+          (docsHTML || '<tr><td colspan="7">Sin documentos preparados.</td></tr>') +
+          '</tbody></table></div>';
+      }
+
+      async function cargarNominaDian(preparar) {
+        const desde = txt(document.getElementById('calcDesde').value);
+        const hasta = txt(document.getElementById('calcHasta').value);
+        if (preparar) {
+          const data = await requestJSON('/api/empresa/nomina?action=preparar_nomina_electronica', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ empresa_id: state.empresaID, periodo_desde: desde, periodo_hasta: hasta })
+          });
+          renderNominaDian(data);
+          msg('Preflight de nomina electronica ejecutado sin reservar consecutivos.', 'success');
+          return data;
+        }
+        const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'documentos_electronicos_colombia', periodo_desde: desde, periodo_hasta: hasta });
+        const data = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderNominaDian(data);
+        return data;
+      }
+
+      function nominaDianDocumentoPorLiquidacion(liquidacionID) {
+        const docs = state.dianNomina && Array.isArray(state.dianNomina.documentos_preparados) ? state.dianNomina.documentos_preparados : [];
+        return docs.find(function (item) { return Number(item && item.liquidacion_id || 0) === Number(liquidacionID || 0); }) || null;
+      }
+
+      function setDianProfileValue(id, value) {
+        const input = document.getElementById(id);
+        if (input) input.value = value == null ? '' : String(value);
+      }
+
+      async function abrirPerfilNominaDian(empleadoNominaID, liquidacionID) {
+        const dialog = document.getElementById('nomCoDianPerfilDialog');
+        const help = document.getElementById('nomCoDianPerfilHelp');
+        const status = document.getElementById('nomCoDianPerfilMsg');
+        if (!dialog || !empleadoNominaID) throw new Error('Empleado de nómina inválido.');
+        document.getElementById('nomCoDianPerfilForm').reset();
+        setDianProfileValue('nomCoDianPerfilEmpleadoID', empleadoNominaID);
+        setDianProfileValue('nomCoDianPerfilPais', 'CO');
+        setDianProfileValue('nomCoDianPerfilSubtipo', '00');
+        status.textContent = '';
+        const doc = nominaDianDocumentoPorLiquidacion(liquidacionID);
+        help.textContent = (doc ? (doc.empleado_nombre || 'Empleado') + ' | ' + (doc.periodo_desde || '-') + ' a ' + (doc.periodo_hasta || '-') : 'Empleado ' + empleadoNominaID) + '. No se infieren apellidos ni catálogos fiscales.';
+        try {
+          const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'perfil_dian', empleado_nomina_id: String(empleadoNominaID) });
+          const profile = await requestJSON('/api/empresa/nomina?' + params.toString());
+          setDianProfileValue('nomCoDianPerfilTipoDocumento', profile.tipo_documento_dian);
+          setDianProfileValue('nomCoDianPerfilTipoTrabajador', profile.tipo_trabajador_dian);
+          setDianProfileValue('nomCoDianPerfilPrimerNombre', profile.primer_nombre);
+          setDianProfileValue('nomCoDianPerfilOtrosNombres', profile.otros_nombres);
+          setDianProfileValue('nomCoDianPerfilPrimerApellido', profile.primer_apellido);
+          setDianProfileValue('nomCoDianPerfilSegundoApellido', profile.segundo_apellido);
+          setDianProfileValue('nomCoDianPerfilSubtipo', profile.subtipo_trabajador_dian || '00');
+          setDianProfileValue('nomCoDianPerfilContrato', profile.tipo_contrato_dian);
+          setDianProfileValue('nomCoDianPerfilFechaRetiro', profile.fecha_retiro);
+          setDianProfileValue('nomCoDianPerfilMetodoPago', profile.metodo_pago_dian);
+          setDianProfileValue('nomCoDianPerfilPais', profile.lugar_trabajo_pais || 'CO');
+          setDianProfileValue('nomCoDianPerfilDepartamento', profile.lugar_trabajo_departamento_codigo_dane);
+          setDianProfileValue('nomCoDianPerfilMunicipio', profile.lugar_trabajo_municipio_codigo_dane);
+          setDianProfileValue('nomCoDianPerfilDireccion', profile.lugar_trabajo_direccion);
+          setDianProfileValue('nomCoDianPerfilBanco', profile.banco);
+          setDianProfileValue('nomCoDianPerfilTipoCuenta', profile.tipo_cuenta);
+          setDianProfileValue('nomCoDianPerfilNumeroCuenta', profile.numero_cuenta);
+          document.getElementById('nomCoDianPerfilIntegral').checked = profile.salario_integral === true;
+          document.getElementById('nomCoDianPerfilAltoRiesgo').checked = profile.alto_riesgo_pension === true;
+		} catch (err) {
+		  if (Number(err && err.status || 0) !== 404) throw err;
+		  status.textContent = 'No existe un perfil guardado; completa todos los campos fiscales obligatorios.';
+        }
+        dialog.showModal();
+      }
+
+      async function guardarPerfilNominaDian(ev) {
+        ev.preventDefault();
+        const status = document.getElementById('nomCoDianPerfilMsg');
+        const payload = {
+          empresa_id: state.empresaID,
+          empleado_nomina_id: Number(document.getElementById('nomCoDianPerfilEmpleadoID').value || 0),
+          tipo_documento_dian: txt(document.getElementById('nomCoDianPerfilTipoDocumento').value),
+          primer_apellido: txt(document.getElementById('nomCoDianPerfilPrimerApellido').value),
+          segundo_apellido: txt(document.getElementById('nomCoDianPerfilSegundoApellido').value),
+          primer_nombre: txt(document.getElementById('nomCoDianPerfilPrimerNombre').value),
+          otros_nombres: txt(document.getElementById('nomCoDianPerfilOtrosNombres').value),
+          tipo_trabajador_dian: txt(document.getElementById('nomCoDianPerfilTipoTrabajador').value),
+          subtipo_trabajador_dian: txt(document.getElementById('nomCoDianPerfilSubtipo').value),
+          alto_riesgo_pension: document.getElementById('nomCoDianPerfilAltoRiesgo').checked,
+          salario_integral: document.getElementById('nomCoDianPerfilIntegral').checked,
+          fecha_retiro: txt(document.getElementById('nomCoDianPerfilFechaRetiro').value),
+          lugar_trabajo_pais: txt(document.getElementById('nomCoDianPerfilPais').value),
+          lugar_trabajo_departamento_codigo_dane: txt(document.getElementById('nomCoDianPerfilDepartamento').value),
+          lugar_trabajo_municipio_codigo_dane: txt(document.getElementById('nomCoDianPerfilMunicipio').value),
+          lugar_trabajo_direccion: txt(document.getElementById('nomCoDianPerfilDireccion').value),
+          tipo_contrato_dian: txt(document.getElementById('nomCoDianPerfilContrato').value),
+          metodo_pago_dian: txt(document.getElementById('nomCoDianPerfilMetodoPago').value),
+          banco: txt(document.getElementById('nomCoDianPerfilBanco').value),
+          tipo_cuenta: txt(document.getElementById('nomCoDianPerfilTipoCuenta').value),
+          numero_cuenta: txt(document.getElementById('nomCoDianPerfilNumeroCuenta').value),
+          estado: 'activo'
+        };
+        status.textContent = 'Guardando perfil fiscal...';
+        await requestJSON('/api/empresa/nomina?action=perfil_dian', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        status.textContent = 'Perfil fiscal guardado.';
+        document.getElementById('nomCoDianPerfilDialog').close();
+        await cargarNominaDian(false);
+        msg('Perfil fiscal DIAN del empleado actualizado.', 'success');
+      }
+
+      function actualizarGuardEmisionNominaDian() {
+        const checked = document.getElementById('nomCoDianEmitConfirmCheck').checked;
+        const phrase = document.getElementById('nomCoDianEmitPhrase').value.trim();
+        document.getElementById('nomCoDianEmitSubmit').disabled = !(checked && phrase === 'EMITIR NOMINA ELECTRONICA DIAN');
+      }
+
+      async function abrirEmisionNominaDian(liquidacionID) {
+        const doc = nominaDianDocumentoPorLiquidacion(liquidacionID);
+		if (!doc || doc.puede_emitir !== true) throw new Error('La nómina mensual no superó el preflight DIAN.');
+        const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'nomina_electronica_preflight', liquidacion_id: String(liquidacionID) });
+        const preflight = await requestJSON('/api/empresa/nomina?' + params.toString());
+        if (!preflight || preflight.ok !== true || preflight.bloqueado === true) throw new Error((preflight && preflight.error) || 'El preflight DIAN bloqueó la emisión.');
+        document.getElementById('nomCoDianEmitLiquidacionID').value = String(liquidacionID);
+		document.getElementById('nomCoDianEmitSummary').textContent = (doc.empleado_nombre || 'Empleado') + ' | mes ' + (doc.periodo_reporte || '-') + ' | ' + Number(Array.isArray(doc.liquidacion_ids) ? doc.liquidacion_ids.length : 1) + ' liquidación(es) | Neto ' + money(doc.neto_pagar || 0);
+        document.getElementById('nomCoDianEmitConfirmCheck').checked = false;
+        document.getElementById('nomCoDianEmitPhrase').value = '';
+        document.getElementById('nomCoDianEmitMsg').textContent = '';
+        actualizarGuardEmisionNominaDian();
+        document.getElementById('nomCoDianEmitDialog').showModal();
+      }
+
+      async function enviarNominaElectronicaDian(ev) {
+        ev.preventDefault();
+        actualizarGuardEmisionNominaDian();
+        const submit = document.getElementById('nomCoDianEmitSubmit');
+        if (submit.disabled) throw new Error('Confirma la operación y escribe la frase exacta.');
+        submit.disabled = true;
+        const status = document.getElementById('nomCoDianEmitMsg');
+        status.textContent = 'Firmando y enviando la nómina electrónica...';
+        const result = await requestJSON('/api/empresa/facturacion_electronica?action=emitir_nomina_electronica', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa_id: state.empresaID, liquidacion_id: Number(document.getElementById('nomCoDianEmitLiquidacionID').value || 0), confirmar_emision: true, mensaje_confirmacion_dian: 'EMITIR NOMINA ELECTRONICA DIAN' })
+        });
+        status.textContent = result && result.ok ? 'DIAN recibió o aceptó el documento.' : 'La emisión quedó pendiente de revisión.';
+        document.getElementById('nomCoDianEmitDialog').close();
+        await cargarNominaDian(false);
+        msg(result && result.ok ? 'Nómina electrónica procesada por el flujo DIAN.' : 'Revisa el estado DIAN de la nómina.', result && result.ok ? 'success' : 'error');
+      }
+
+      async function seedParametros() {
+        await requestJSON('/api/empresa/nomina?action=seed_colombia&empresa_id=' + encodeURIComponent(String(state.empresaID)), { method: 'POST' });
+        await loadDashboard(true);
+        msg('Parametros demo de nomina Colombia cargados.', 'success');
+      }
+
+      async function seedNominaProfesional() {
+        const data = await requestJSON('/api/empresa/nomina?action=seed_motel_calipso&empresa_id=' + encodeURIComponent(String(state.empresaID)), { method: 'POST' });
+        await loadDashboard(true);
+        const resumen = document.getElementById('nomCoDemoResumen');
+        if (resumen) {
+          const empleados = Array.isArray(data && data.empleados) ? data.empleados.length : 0;
+          const liq = data && data.liquidacion ? Number(data.liquidacion.calculados || 0) : 0;
+          const pagos = data && data.pagos ? Number(data.pagos.generados || 0) : 0;
+          resumen.textContent = 'Periodo ' + esc(data.periodo_desde || '-') + ' a ' + esc(data.periodo_hasta || '-') +
+            ' | Empleados: ' + empleados +
+            ' | Asistencias: ' + Number(data && data.asistencias_creadas || 0) +
+            ' | Novedades: ' + Number(data && data.novedades_creadas || 0) +
+            ' | Liquidaciones: ' + liq +
+            ' | Pagos nuevos: ' + pagos;
+        }
+        window.dispatchEvent(new CustomEvent('nomina:refresh-all'));
+        cargarNominaDian(false).catch(function () {});
+        msg('Nomina demo profesional de Motel Calipso creada y liquidada.', 'success');
+      }
+
+      async function cambiarEstadoNovedad(id, estado) {
+        await requestJSON('/api/empresa/nomina?action=aprobar_novedad_colombia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa_id: state.empresaID, id: Number(id), estado_aprobacion: estado })
+        });
+        await loadDashboard(true);
+        window.dispatchEvent(new CustomEvent('nomina:refresh-all'));
+        msg('Estado de novedad actualizado.', 'success');
+      }
+
+      async function generarPila() {
+        const p = periodo();
+        if (!p.desde || !p.hasta) {
+          throw new Error('Debes indicar periodo desde y hasta para generar PILA.');
+        }
+        await requestJSON('/api/empresa/nomina?action=generar_pila', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa_id: state.empresaID, periodo_desde: p.desde, periodo_hasta: p.hasta })
+        });
+        await loadDashboard(true);
+        msg('Resumen PILA generado para el periodo seleccionado.', 'success');
+      }
+
+      function bind() {
+        const refresh = document.getElementById('nomCoRefreshBtn');
+        const seed = document.getElementById('nomCoSeedBtn');
+        const seedPro = document.getElementById('nomCoSeedProfesionalBtn');
+        const pila = document.getElementById('nomCoPilaBtn');
+        const dianVer = document.getElementById('nomCoDianVerBtn');
+        const dianPreparar = document.getElementById('nomCoDianPrepararBtn');
+        const dianEnviar = document.getElementById('nomCoDianEnviarBtn');
+		const dianConfigForm = document.getElementById('nomCoDianConfigForm');
+		const dianConfigReload = document.getElementById('nomCoDianConfigReloadBtn');
+        if (refresh) refresh.addEventListener('click', function () { loadDashboard(false).catch(function (err) { msg(err.message, 'error'); }); });
+        if (seed) seed.addEventListener('click', function () { seedParametros().catch(function (err) { msg(err.message, 'error'); }); });
+        if (seedPro) seedPro.addEventListener('click', function () { seedNominaProfesional().catch(function (err) { msg(err.message, 'error'); }); });
+        if (pila) pila.addEventListener('click', function () { generarPila().catch(function (err) { msg(err.message, 'error'); }); });
+        if (dianVer) dianVer.addEventListener('click', function () { cargarNominaDian(false).catch(function (err) { msg(err.message, 'error'); }); });
+        if (dianPreparar) dianPreparar.addEventListener('click', function () { cargarNominaDian(true).catch(function (err) { msg(err.message, 'error'); }); });
+		if (dianEnviar) dianEnviar.addEventListener('click', function () { msg('Selecciona Emitir en la fila mensual de un empleado que haya superado el preflight.', 'error'); });
+		if (dianConfigForm) dianConfigForm.addEventListener('submit', function (ev) { saveNominaDianConfig(ev).catch(function (err) { setNominaDianConfigMessage(err.message || 'No se pudo guardar la configuración de nómina.', 'error'); }); });
+		if (dianConfigReload) dianConfigReload.addEventListener('click', function () { loadNominaDianConfig().catch(function (err) { setNominaDianConfigMessage(err.message || 'No se pudo cargar la configuración de nómina.', 'error'); }); });
+        const dianPanel = document.getElementById('nomCoDianPanel');
+        if (dianPanel) {
+          dianPanel.addEventListener('click', function (ev) {
+            const profileButton = ev.target.closest('button[data-dian-perfil]');
+            if (profileButton) {
+              abrirPerfilNominaDian(Number(profileButton.getAttribute('data-dian-perfil') || 0), Number(profileButton.getAttribute('data-dian-liquidacion') || 0)).catch(function (err) { msg(err.message || 'No se pudo abrir el perfil fiscal.', 'error'); });
+              return;
+            }
+            const emitButton = ev.target.closest('button[data-dian-emitir]');
+            if (emitButton && !emitButton.disabled) {
+              abrirEmisionNominaDian(Number(emitButton.getAttribute('data-dian-emitir') || 0)).catch(function (err) { msg(err.message || 'No se pudo abrir la emisión DIAN.', 'error'); });
+            }
+          });
+        }
+        const profileForm = document.getElementById('nomCoDianPerfilForm');
+        if (profileForm) profileForm.addEventListener('submit', function (ev) { guardarPerfilNominaDian(ev).catch(function (err) { document.getElementById('nomCoDianPerfilMsg').textContent = err.message || 'No se pudo guardar el perfil fiscal.'; }); });
+        const emitForm = document.getElementById('nomCoDianEmitForm');
+        if (emitForm) emitForm.addEventListener('submit', function (ev) { enviarNominaElectronicaDian(ev).catch(function (err) { document.getElementById('nomCoDianEmitMsg').textContent = err.message || 'No se pudo emitir la nómina electrónica.'; actualizarGuardEmisionNominaDian(); }); });
+        ['nomCoDianEmitConfirmCheck', 'nomCoDianEmitPhrase'].forEach(function (id) {
+          const input = document.getElementById(id);
+          if (input) input.addEventListener('input', actualizarGuardEmisionNominaDian);
+          if (input) input.addEventListener('change', actualizarGuardEmisionNominaDian);
+        });
+        document.querySelectorAll('[data-dian-dialog-close]').forEach(function (button) {
+          button.addEventListener('click', function () {
+            const target = button.getAttribute('data-dian-dialog-close') === 'perfil' ? 'nomCoDianPerfilDialog' : 'nomCoDianEmitDialog';
+            const dialog = document.getElementById(target);
+            if (dialog && dialog.open) dialog.close();
+          });
+        });
+        const novedadesBody = document.getElementById('nomCoNovedadesBody');
+        if (novedadesBody) {
+          novedadesBody.addEventListener('click', function (ev) {
+            const btn = ev.target.closest('button[data-novedad-aprobar]');
+            if (!btn) return;
+            cambiarEstadoNovedad(btn.getAttribute('data-novedad-aprobar'), btn.getAttribute('data-estado')).catch(function (err) {
+              msg(err.message || 'No se pudo actualizar la novedad.', 'error');
+            });
+          });
+        }
+      }
+
+      state.empresaID = Number(qp('empresa_id') || 0);
+      bind();
+	  loadNominaDianConfig().catch(function (err) { setNominaDianConfigMessage(err.message || 'No se pudo cargar la configuración de nómina.', 'error'); });
+      loadDashboard(true).catch(function (err) { msg(err.message || 'No se pudo cargar nomina Colombia avanzada.', 'error'); });
+    })();
+  </script>
+</body>
+</html>
+

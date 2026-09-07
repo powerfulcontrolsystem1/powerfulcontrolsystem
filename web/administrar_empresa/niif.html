@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NIIF</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    :root{color-scheme:light}
+    body.niif-page{margin:0;background:#f3f6fa;color:#172033;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    .niif-shell{max-width:1280px;margin:0 auto;padding:16px;display:grid;gap:12px}
+    .niif-header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end;background:#fff;border:1px solid #d8e1ee;border-radius:8px;padding:16px}
+    .niif-kicker{margin:0 0 5px;color:#53657d;font-size:.74rem;font-weight:850;text-transform:uppercase}
+    .niif-title{margin:0;color:#101828;font-size:1.45rem;line-height:1.15}
+    .niif-copy{max-width:880px;margin:7px 0 0;color:#475467;font-size:.92rem;line-height:1.42}
+    .niif-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .niif-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid #1f4e79;background:#1f4e79;color:#fff;border-radius:8px;padding:9px 11px;font-weight:850;cursor:pointer;text-decoration:none}
+    .niif-btn.secondary{background:#fff;color:#1f4e79}
+    .niif-btn img{width:16px;height:16px}
+    .niif-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+    .niif-metric{background:#fff;border:1px solid #d8e1ee;border-radius:8px;padding:12px;min-width:0}
+    .niif-metric span{display:block;color:#667085;font-size:.7rem;font-weight:850;text-transform:uppercase}
+    .niif-metric strong{display:block;margin-top:5px;color:#101828;font-size:1.04rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .niif-tabs{display:flex;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid #d8e1ee;border-radius:8px;padding:8px}
+    .niif-tab{border:1px solid #cad6e5;background:#f8fafc;color:#26374d;border-radius:8px;padding:9px 11px;font-weight:850;cursor:pointer}
+    .niif-tab.is-active{background:#1f4e79;color:#fff;border-color:#1f4e79}
+    .niif-view{display:none;gap:12px}
+    .niif-view.is-active{display:grid}
+    .niif-panel{background:#fff;border:1px solid #d8e1ee;border-radius:8px;padding:14px;min-width:0}
+    .niif-panel h2{margin:0 0 10px;color:#101828;font-size:1.05rem;line-height:1.25}
+    .niif-panel p{margin:0;color:#53657d;font-size:.88rem;line-height:1.38}
+    .niif-grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+    .niif-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .niif-standard-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .niif-standard{border:1px solid #d8e1ee;border-radius:8px;background:#fbfcfe;padding:12px;display:grid;gap:8px}
+    .niif-standard-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .niif-standard h3{margin:0;color:#101828;font-size:.95rem}
+    .niif-standard small{color:#667085;line-height:1.35}
+    .niif-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:.7rem;font-weight:850}
+    .niif-pill.ok{background:#e7f6ef;color:#067647}
+    .niif-pill.warn{background:#fff7e6;color:#b54708}
+    .niif-pill.bad{background:#fff1f3;color:#b42318}
+    .niif-progress{height:9px;background:#e7edf5;border-radius:999px;overflow:hidden}
+    .niif-progress span{display:block;height:100%;background:#1f4e79;border-radius:999px;width:0}
+    .niif-table-wrap{overflow:auto;border:1px solid #d8e1ee;border-radius:8px}
+    .niif-table{width:100%;border-collapse:collapse;background:#fff;min-width:720px}
+    .niif-table th,.niif-table td{padding:9px 10px;border-bottom:1px solid #e6edf5;text-align:left;font-size:.84rem;vertical-align:top}
+    .niif-table th{background:#f8fafc;color:#53657d;font-size:.72rem;text-transform:uppercase}
+    .niif-table tr:last-child td{border-bottom:0}
+    .niif-field{display:grid;gap:5px}
+    .niif-field label{color:#53657d;font-size:.74rem;font-weight:850;text-transform:uppercase}
+    .niif-field input,.niif-field select,.niif-field textarea{width:100%;box-sizing:border-box;border:1px solid #cbd6e5;border-radius:8px;background:#fff;color:#172033;padding:9px 10px;font:inherit}
+    .niif-field textarea{min-height:104px;resize:vertical}
+    .niif-result{display:grid;gap:8px}
+    .niif-result-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #e6edf5;padding:8px 0}
+    .niif-result-row:last-child{border-bottom:0}
+    .niif-result-row span{color:#53657d;font-size:.86rem}
+    .niif-result-row strong{color:#101828;text-align:right}
+    .niif-checklist{display:grid;gap:8px}
+    .niif-check{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;border:1px solid #d8e1ee;border-radius:8px;background:#fbfcfe;padding:10px}
+    .niif-check input{margin-top:3px}
+    .niif-check strong{display:block;color:#101828;font-size:.9rem}
+    .niif-check span{display:block;margin-top:3px;color:#667085;font-size:.78rem;line-height:1.35}
+    .niif-check code{color:#1f4e79;font-weight:850}
+    .niif-note-output{white-space:pre-wrap;background:#0f172a;color:#e6edf5;border-radius:8px;padding:12px;line-height:1.45;max-height:360px;overflow:auto;font-size:.85rem}
+    .niif-status-line{color:#667085;font-size:.84rem}
+    @media(max-width:1040px){.niif-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.niif-standard-grid,.niif-grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}.niif-header{grid-template-columns:1fr}.niif-actions{justify-content:flex-start}}
+    @media(max-width:720px){.niif-shell{padding:12px}.niif-metrics,.niif-standard-grid,.niif-grid-2,.niif-grid-3{grid-template-columns:1fr}.niif-actions .niif-btn{width:100%;justify-content:center}.niif-tab{flex:1 1 130px}.niif-check{grid-template-columns:auto 1fr}}
+  </style>
+</head>
+<body class="niif-page">
+  <main class="niif-shell">
+    <header class="niif-header">
+      <div>
+        <p class="niif-kicker">Centro financiero y contable</p>
+        <h1 class="niif-title">Modulo NIIF</h1>
+        <p class="niif-copy">Gobierno NIIF por empresa con lectura contable real, politicas, mediciones, conciliacion fiscal, cierre y notas listas para revision profesional.</p>
+      </div>
+      <div class="niif-actions">
+        <button class="niif-btn secondary" type="button" id="btnRefresh"><img src="/img/analytics-color.svg" alt="">Actualizar</button>
+        <button class="niif-btn secondary" type="button" id="btnExportJSON"><img src="/img/excel.svg" alt="">JSON</button>
+        <button class="niif-btn" type="button" id="btnExportTXT"><img src="/img/report.svg" alt="">Reporte</button>
+      </div>
+    </header>
+
+    <section class="niif-metrics" aria-label="Resumen NIIF">
+      <div class="niif-metric"><span>Base NIIF</span><strong id="metricBase">Sin cargar</strong></div>
+      <div class="niif-metric"><span>Periodo</span><strong id="metricPeriod">--</strong></div>
+      <div class="niif-metric"><span>Balance mes</span><strong id="metricBalance">--</strong></div>
+      <div class="niif-metric"><span>Avance NIIF</span><strong id="metricProgress">0%</strong></div>
+      <div class="niif-metric"><span>Alertas</span><strong id="metricAlerts">0</strong></div>
+    </section>
+
+    <nav class="niif-tabs" aria-label="Secciones NIIF">
+      <button class="niif-tab is-active" type="button" data-view="diagnostico">Diagnostico</button>
+      <button class="niif-tab" type="button" data-view="politicas">Politicas</button>
+      <button class="niif-tab" type="button" data-view="medicion">Medicion</button>
+      <button class="niif-tab" type="button" data-view="conciliacion">Conciliacion</button>
+      <button class="niif-tab" type="button" data-view="cierre">Cierre</button>
+      <button class="niif-tab" type="button" data-view="notas">Notas</button>
+    </nav>
+
+    <section class="niif-view is-active" id="view-diagnostico">
+      <div class="niif-grid-2">
+        <article class="niif-panel">
+          <h2>Mapa de adopcion NIIF</h2>
+          <div class="niif-progress" aria-label="Avance de adopcion"><span id="adoptionBar"></span></div>
+          <p class="niif-status-line" id="adoptionText">Calculando avance...</p>
+        </article>
+        <article class="niif-panel">
+          <h2>Estado contable conectado</h2>
+          <div class="niif-result">
+            <div class="niif-result-row"><span>Cuentas PUC/NIIF</span><strong id="dashAccounts">--</strong></div>
+            <div class="niif-result-row"><span>Terceros</span><strong id="dashThirds">--</strong></div>
+            <div class="niif-result-row"><span>Comprobantes del periodo</span><strong id="dashDocs">--</strong></div>
+            <div class="niif-result-row"><span>Diferencia debito/credito</span><strong id="dashDiff">--</strong></div>
+          </div>
+        </article>
+      </div>
+      <div class="niif-standard-grid" id="standardsGrid"></div>
+    </section>
+
+    <section class="niif-view" id="view-politicas">
+      <article class="niif-panel">
+        <h2>Politicas contables NIIF</h2>
+        <div class="niif-table-wrap">
+          <table class="niif-table">
+            <thead><tr><th>Area</th><th>Politica</th><th>Estado</th><th>Responsable</th><th>Proxima revision</th></tr></thead>
+            <tbody id="policyTable"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="niif-view" id="view-medicion">
+      <div class="niif-grid-3">
+        <article class="niif-panel">
+          <h2>Deterioro</h2>
+          <div class="niif-field"><label for="impCarrying">Importe en libros</label><input id="impCarrying" type="number" min="0" step="1000" value="10000000"></div>
+          <div class="niif-field"><label for="impRecoverable">Importe recuperable</label><input id="impRecoverable" type="number" min="0" step="1000" value="9200000"></div>
+          <div class="niif-result">
+            <div class="niif-result-row"><span>Perdida por deterioro</span><strong id="impLoss">--</strong></div>
+            <div class="niif-result-row"><span>Valor NIIF posterior</span><strong id="impAfter">--</strong></div>
+          </div>
+        </article>
+        <article class="niif-panel">
+          <h2>Depreciacion</h2>
+          <div class="niif-field"><label for="depCost">Costo del activo</label><input id="depCost" type="number" min="0" step="1000" value="48000000"></div>
+          <div class="niif-field"><label for="depResidual">Valor residual</label><input id="depResidual" type="number" min="0" step="1000" value="3000000"></div>
+          <div class="niif-field"><label for="depMonths">Vida util meses</label><input id="depMonths" type="number" min="1" step="1" value="60"></div>
+          <div class="niif-result">
+            <div class="niif-result-row"><span>Depreciacion mensual</span><strong id="depMonthly">--</strong></div>
+          </div>
+        </article>
+        <article class="niif-panel">
+          <h2>Valor razonable</h2>
+          <div class="niif-field"><label for="fairMarket">Precio observable</label><input id="fairMarket" type="number" min="0" step="1000" value="55000000"></div>
+          <div class="niif-field"><label for="fairCosts">Costos de venta</label><input id="fairCosts" type="number" min="0" step="1000" value="1200000"></div>
+          <div class="niif-field"><label for="fairUse">Valor en uso</label><input id="fairUse" type="number" min="0" step="1000" value="52000000"></div>
+          <div class="niif-result">
+            <div class="niif-result-row"><span>Valor razonable neto</span><strong id="fairNet">--</strong></div>
+            <div class="niif-result-row"><span>Mayor referencia</span><strong id="fairBest">--</strong></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="niif-view" id="view-conciliacion">
+      <div class="niif-grid-2">
+        <article class="niif-panel">
+          <h2>Conciliacion contable fiscal</h2>
+          <div class="niif-field"><label for="taxProfit">Utilidad contable NIIF</label><input id="taxProfit" type="number" step="1000" value="85000000"></div>
+          <div class="niif-field"><label for="taxPermanent">Diferencias permanentes</label><input id="taxPermanent" type="number" step="1000" value="0"></div>
+          <div class="niif-field"><label for="taxTemporary">Diferencias temporarias</label><input id="taxTemporary" type="number" step="1000" value="12000000"></div>
+          <div class="niif-field"><label for="taxRate">Tarifa renta %</label><input id="taxRate" type="number" min="0" max="100" step=".1" value="35"></div>
+        </article>
+        <article class="niif-panel">
+          <h2>Resultado fiscal estimado</h2>
+          <div class="niif-result">
+            <div class="niif-result-row"><span>Base fiscal estimada</span><strong id="taxBase">--</strong></div>
+            <div class="niif-result-row"><span>Impuesto corriente</span><strong id="taxCurrent">--</strong></div>
+            <div class="niif-result-row"><span>Impuesto diferido estimado</span><strong id="taxDeferred">--</strong></div>
+            <div class="niif-result-row"><span>Utilidad despues de impuesto</span><strong id="taxAfter">--</strong></div>
+          </div>
+          <p class="niif-status-line">Estimacion gerencial. La declaracion oficial debe cerrarse en el modulo tributario y con revision del contador.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="niif-view" id="view-cierre">
+      <article class="niif-panel">
+        <h2>Plan de cierre NIIF</h2>
+        <div class="niif-checklist" id="closeChecklist"></div>
+      </article>
+    </section>
+
+    <section class="niif-view" id="view-notas">
+      <div class="niif-grid-2">
+        <article class="niif-panel">
+          <h2>Notas a estados financieros</h2>
+          <div class="niif-field"><label for="noteJudgement">Juicios y estimaciones relevantes</label><textarea id="noteJudgement">La administracion revisa deterioro, vida util, valor residual, provisiones, ingresos y clasificacion de instrumentos financieros al cierre de cada periodo.</textarea></div>
+          <div class="niif-field"><label for="noteRisk">Riesgos financieros</label><textarea id="noteRisk">Riesgo de credito en cartera, liquidez operativa, concentracion de proveedores y exposicion a cambios de precios segun la actividad de la empresa.</textarea></div>
+        </article>
+        <article class="niif-panel">
+          <h2>Borrador generado</h2>
+          <div class="niif-note-output" id="notesOutput"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var state={empresaId:"",dashboard:null,config:null,progress:0,alerts:0};
+      var standards=[
+        {key:"presentacion",title:"Presentacion de estados financieros",ref:"NIC 1 / NIIF Pymes 3",risk:"Consistencia, comparabilidad y revelaciones base.",weight:12},
+        {key:"instrumentos",title:"Instrumentos financieros",ref:"NIIF 9 / NIIF Pymes 11",risk:"Cartera, proveedores, deterioro esperado y clasificacion.",weight:12},
+        {key:"inventarios",title:"Inventarios",ref:"NIC 2 / NIIF Pymes 13",risk:"Costo, VNR, obsolescencia y margen bruto.",weight:10},
+        {key:"propiedad",title:"Propiedad, planta y equipo",ref:"NIC 16 / NIIF Pymes 17",risk:"Vida util, componente, depreciacion y deterioro.",weight:12},
+        {key:"intangibles",title:"Intangibles",ref:"NIC 38 / NIIF Pymes 18",risk:"Reconocimiento, amortizacion y soporte documental.",weight:8},
+        {key:"arrendamientos",title:"Arrendamientos",ref:"NIIF 16 / NIIF Pymes 20",risk:"Derecho de uso, pasivo o gasto operativo.",weight:8},
+        {key:"ingresos",title:"Ingresos ordinarios",ref:"NIIF 15 / NIIF Pymes 23",risk:"Obligacion de desempeno, descuentos y devoluciones.",weight:12},
+        {key:"beneficios",title:"Beneficios a empleados",ref:"NIC 19 / NIIF Pymes 28",risk:"Nomina, prestaciones, provisiones y beneficios.",weight:8},
+        {key:"impuestos",title:"Impuesto diferido",ref:"NIC 12 / NIIF Pymes 29",risk:"Diferencias temporarias y conciliacion fiscal.",weight:10},
+        {key:"provisiones",title:"Provisiones y contingencias",ref:"NIC 37 / NIIF Pymes 21",risk:"Probabilidad, medicion y revelacion.",weight:8}
+      ];
+      var policies=[
+        {key:"base",area:"Base de preparacion",policy:"NIIF para Pymes o NIIF plenas segun clasificacion vigente.",status:"definida",owner:"Contador",review:"Anual"},
+        {key:"moneda",area:"Moneda funcional",policy:"Medicion en moneda funcional de la empresa; presentacion en COP salvo configuracion distinta.",status:"definida",owner:"Gerencia",review:"Anual"},
+        {key:"ingresos",area:"Ingresos",policy:"Reconocer ingresos al transferir control del bien o servicio, netos de descuentos y devoluciones.",status:"revision",owner:"Contabilidad",review:"Mensual"},
+        {key:"inventario",area:"Inventarios",policy:"Medir al menor entre costo y valor neto realizable; revisar obsolescencia.",status:"revision",owner:"Inventario",review:"Mensual"},
+        {key:"activos",area:"Activos fijos",policy:"Costo menos depreciacion y deterioro; vida util revisada al cierre.",status:"pendiente",owner:"Contabilidad",review:"Trimestral"},
+        {key:"cartera",area:"Cartera",policy:"Deterioro por evidencia objetiva y antiguedad de saldos.",status:"revision",owner:"Cartera",review:"Mensual"},
+        {key:"diferido",area:"Impuesto diferido",policy:"Reconocer diferencias temporarias cuando exista base confiable y recuperabilidad probable.",status:"pendiente",owner:"Impuestos",review:"Cierre"}
+      ];
+      var closeTasks=[
+        {key:"puc",title:"PUC y cuentas NIIF revisadas",desc:"Cuentas activas, naturaleza, terceros e impuestos requeridos."},
+        {key:"terceros",title:"Terceros conciliados",desc:"NIT, DV, regimen, ciudad y saldos por tercero."},
+        {key:"inventario",title:"Inventario medido",desc:"Costo, VNR, rotacion y deterioro por obsolescencia."},
+        {key:"activos",title:"Activos depreciados",desc:"Vida util, residual, componentes y deterioro."},
+        {key:"cartera",title:"Deterioro de cartera",desc:"Antiguedad, incobrabilidad y evidencia objetiva."},
+        {key:"impuesto",title:"Conciliacion fiscal",desc:"Diferencias permanentes, temporarias e impuesto diferido."},
+        {key:"revelaciones",title:"Notas y revelaciones",desc:"Politicas, riesgos, estimaciones y hechos posteriores."},
+        {key:"bloqueo",title:"Periodo listo para cierre",desc:"Diferencia debito/credito en cero y soporte disponible."}
+      ];
+      function qs(id){return document.getElementById(id);}
+      function money(v){var n=Number(v||0);return n.toLocaleString("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0});}
+      function pct(v){return Math.max(0,Math.min(100,Math.round(Number(v)||0)))+"%";}
+      function resolveEmpresaId(){
+        try{return (parent&&parent.__resolveEmpresaIdContext&&parent.__resolveEmpresaIdContext())||new URLSearchParams(location.search).get("empresa_id")||new URLSearchParams(location.search).get("id")||"";}catch(e){return new URLSearchParams(location.search).get("empresa_id")||"";}
+      }
+      function storageKey(){return "pcs:niif:"+String(state.empresaId||"global");}
+      function loadStore(){try{return JSON.parse(localStorage.getItem(storageKey())||"{}")||{};}catch(e){return {};}}
+      function saveStore(data){try{localStorage.setItem(storageKey(),JSON.stringify(data));}catch(e){}}
+      function statusClass(status){return status==="definida"?"ok":status==="revision"?"warn":"bad";}
+      function statusLabel(status){return status==="definida"?"Definida":status==="revision"?"En revision":"Pendiente";}
+      function renderStandards(){
+        var store=loadStore();
+        var checks=store.standards||{};
+        var html=standards.map(function(item){
+          var done=!!checks[item.key];
+          return '<article class="niif-standard"><div class="niif-standard-top"><h3>'+item.title+'</h3><label class="niif-pill '+(done?"ok":"bad")+'"><input type="checkbox" data-standard="'+item.key+'" '+(done?"checked":"")+'> '+(done?"Cubierto":"Pendiente")+'</label></div><small>'+item.ref+'</small><small>'+item.risk+'</small></article>';
+        }).join("");
+        qs("standardsGrid").innerHTML=html;
+      }
+      function renderPolicies(){
+        var store=loadStore();
+        var saved=store.policies||{};
+        qs("policyTable").innerHTML=policies.map(function(item){
+          var row=Object.assign({},item,saved[item.key]||{});
+          return '<tr><td><strong>'+row.area+'</strong></td><td>'+row.policy+'</td><td><select data-policy="'+item.key+'" data-field="status"><option value="definida" '+(row.status==="definida"?"selected":"")+'>Definida</option><option value="revision" '+(row.status==="revision"?"selected":"")+'>En revision</option><option value="pendiente" '+(row.status==="pendiente"?"selected":"")+'>Pendiente</option></select></td><td><input data-policy="'+item.key+'" data-field="owner" value="'+row.owner.replace(/"/g,"&quot;")+'"></td><td><input data-policy="'+item.key+'" data-field="review" value="'+row.review.replace(/"/g,"&quot;")+'"></td></tr>';
+        }).join("");
+      }
+      function renderChecklist(){
+        var store=loadStore();
+        var checked=store.closeTasks||{};
+        qs("closeChecklist").innerHTML=closeTasks.map(function(item,index){
+          return '<label class="niif-check"><input type="checkbox" data-close="'+item.key+'" '+(checked[item.key]?"checked":"")+'><span><strong>'+item.title+'</strong><span>'+item.desc+'</span></span><code>'+(index+1)+'</code></label>';
+        }).join("");
+      }
+      function calculateProgress(){
+        var store=loadStore();
+        var checks=store.standards||{};
+        var policySaved=store.policies||{};
+        var close=store.closeTasks||{};
+        var standardScore=standards.reduce(function(sum,item){return sum+(checks[item.key]?item.weight:0);},0);
+        var policyScore=policies.reduce(function(sum,item){var status=(policySaved[item.key]&&policySaved[item.key].status)||item.status;return sum+(status==="definida"?3:status==="revision"?1.5:0);},0)/(policies.length*3)*100;
+        var closeScore=closeTasks.filter(function(item){return close[item.key];}).length/closeTasks.length*100;
+        var progress=Math.round((standardScore*.45)+(policyScore*.3)+(closeScore*.25));
+        var alerts=standards.length-Object.keys(checks).filter(function(key){return checks[key];}).length;
+        state.progress=progress;
+        state.alerts=alerts;
+        qs("adoptionBar").style.width=pct(progress);
+        qs("adoptionText").textContent="Avance operativo NIIF "+pct(progress)+" con "+alerts+" areas pendientes de evidencia.";
+        qs("metricProgress").textContent=pct(progress);
+        qs("metricAlerts").textContent=String(alerts);
+      }
+      function renderDashboard(){
+        var dash=state.dashboard||{};
+        var cfg=(dash.config||state.config||{});
+        qs("metricBase").textContent=cfg.base_niif||"NIIF pymes";
+        qs("metricPeriod").textContent=cfg.periodo_actual||"--";
+        qs("metricBalance").textContent=typeof dash.diferencia_mes==="number"?money(dash.diferencia_mes):"--";
+        qs("dashAccounts").textContent=dash.cuentas!=null?dash.cuentas:"--";
+        qs("dashThirds").textContent=dash.terceros!=null?dash.terceros:"--";
+        qs("dashDocs").textContent=dash.comprobantes_mes!=null?dash.comprobantes_mes:"--";
+        qs("dashDiff").textContent=dash.diferencia_mes!=null?money(dash.diferencia_mes):"--";
+      }
+      function recalcMeasurements(){
+        var carrying=Number(qs("impCarrying").value||0);
+        var recoverable=Number(qs("impRecoverable").value||0);
+        var loss=Math.max(carrying-recoverable,0);
+        qs("impLoss").textContent=money(loss);
+        qs("impAfter").textContent=money(Math.max(carrying-loss,0));
+        var depBase=Math.max(Number(qs("depCost").value||0)-Number(qs("depResidual").value||0),0);
+        var months=Math.max(Number(qs("depMonths").value||1),1);
+        qs("depMonthly").textContent=money(depBase/months);
+        var net=Math.max(Number(qs("fairMarket").value||0)-Number(qs("fairCosts").value||0),0);
+        var use=Number(qs("fairUse").value||0);
+        qs("fairNet").textContent=money(net);
+        qs("fairBest").textContent=money(Math.max(net,use));
+      }
+      function recalcTax(){
+        var profit=Number(qs("taxProfit").value||0);
+        var permanent=Number(qs("taxPermanent").value||0);
+        var temporary=Number(qs("taxTemporary").value||0);
+        var rate=Number(qs("taxRate").value||0)/100;
+        var base=profit+permanent+temporary;
+        var current=Math.max(base*rate,0);
+        var deferred=temporary*rate;
+        qs("taxBase").textContent=money(base);
+        qs("taxCurrent").textContent=money(current);
+        qs("taxDeferred").textContent=money(deferred);
+        qs("taxAfter").textContent=money(profit-current);
+      }
+      function buildNotes(){
+        var cfg=(state.dashboard&&state.dashboard.config)||state.config||{};
+        var store=loadStore();
+        var policySaved=store.policies||{};
+        var pending=policies.filter(function(item){var status=(policySaved[item.key]&&policySaved[item.key].status)||item.status;return status!=="definida";}).map(function(item){return "- "+item.area+": "+statusLabel((policySaved[item.key]&&policySaved[item.key].status)||item.status);});
+        var text=[
+          "NOTAS NIIF - EMPRESA "+(state.empresaId||"actual"),
+          "Base: "+(cfg.base_niif||"NIIF pymes")+" | Periodo: "+(cfg.periodo_actual||"--"),
+          "",
+          "1. Base de preparacion",
+          "Los estados financieros se preparan bajo "+(cfg.base_niif||"NIIF pymes")+", con medicion en "+(cfg.moneda||"COP")+".",
+          "",
+          "2. Politicas pendientes de cierre",
+          pending.length?pending.join("\n"):"- Todas las politicas base estan marcadas como definidas en este diagnostico.",
+          "",
+          "3. Juicios y estimaciones",
+          qs("noteJudgement").value.trim(),
+          "",
+          "4. Riesgos financieros",
+          qs("noteRisk").value.trim(),
+          "",
+          "5. Control de cierre",
+          "Avance operativo NIIF: "+pct(state.progress)+". Alertas abiertas: "+state.alerts+"."
+        ].join("\n");
+        qs("notesOutput").textContent=text;
+        return text;
+      }
+      function snapshot(){
+        return {empresa_id:state.empresaId,fecha:new Date().toISOString(),dashboard:state.dashboard,config:state.config,progreso:state.progress,alertas:state.alerts,local:loadStore(),notas:buildNotes()};
+      }
+      function download(filename,content,type){
+        var blob=new Blob([content],{type:type||"text/plain;charset=utf-8"});
+        var link=document.createElement("a");
+        link.href=URL.createObjectURL(blob);
+        link.download=filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(function(){URL.revokeObjectURL(link.href);},0);
+      }
+      function loadAccounting(){
+        if(!state.empresaId){renderDashboard();return Promise.resolve();}
+        return fetch("/api/empresa/contabilidad_colombia?action=dashboard&empresa_id="+encodeURIComponent(state.empresaId),{credentials:"same-origin"})
+          .then(function(resp){return resp.ok?resp.json():null;})
+          .then(function(data){if(data){state.dashboard=data;state.config=data.config||null;}renderDashboard();})
+          .catch(function(){renderDashboard();});
+      }
+      function bind(){
+        document.querySelectorAll(".niif-tab").forEach(function(tab){
+          tab.addEventListener("click",function(){
+            document.querySelectorAll(".niif-tab").forEach(function(x){x.classList.toggle("is-active",x===tab);});
+            document.querySelectorAll(".niif-view").forEach(function(view){view.classList.toggle("is-active",view.id==="view-"+tab.getAttribute("data-view"));});
+            buildNotes();
+          });
+        });
+        document.addEventListener("change",function(event){
+          var store=loadStore();
+          if(event.target.matches("[data-standard]")){
+            store.standards=store.standards||{};
+            store.standards[event.target.getAttribute("data-standard")]=event.target.checked;
+            saveStore(store);renderStandards();calculateProgress();buildNotes();
+          }
+          if(event.target.matches("[data-close]")){
+            store.closeTasks=store.closeTasks||{};
+            store.closeTasks[event.target.getAttribute("data-close")]=event.target.checked;
+            saveStore(store);calculateProgress();buildNotes();
+          }
+          if(event.target.matches("[data-policy]")){
+            var key=event.target.getAttribute("data-policy");
+            var field=event.target.getAttribute("data-field");
+            store.policies=store.policies||{};
+            store.policies[key]=store.policies[key]||{};
+            store.policies[key][field]=event.target.value;
+            saveStore(store);calculateProgress();buildNotes();
+          }
+        });
+        ["impCarrying","impRecoverable","depCost","depResidual","depMonths","fairMarket","fairCosts","fairUse"].forEach(function(id){qs(id).addEventListener("input",recalcMeasurements);});
+        ["taxProfit","taxPermanent","taxTemporary","taxRate"].forEach(function(id){qs(id).addEventListener("input",recalcTax);});
+        ["noteJudgement","noteRisk"].forEach(function(id){qs(id).addEventListener("input",buildNotes);});
+        qs("btnRefresh").addEventListener("click",function(){loadAccounting().then(function(){calculateProgress();buildNotes();});});
+        qs("btnExportJSON").addEventListener("click",function(){download("niif_empresa_"+(state.empresaId||"actual")+".json",JSON.stringify(snapshot(),null,2),"application/json;charset=utf-8");});
+        qs("btnExportTXT").addEventListener("click",function(){download("reporte_niif_empresa_"+(state.empresaId||"actual")+".txt",buildNotes(),"text/plain;charset=utf-8");});
+      }
+      function init(){
+        state.empresaId=resolveEmpresaId();
+        renderStandards();
+        renderPolicies();
+        renderChecklist();
+        bind();
+        recalcMeasurements();
+        recalcTax();
+        loadAccounting().then(function(){calculateProgress();buildNotes();});
+      }
+      init();
+    })();
+  </script>
+</body>
+</html>

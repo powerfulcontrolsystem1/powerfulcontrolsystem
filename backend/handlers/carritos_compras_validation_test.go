@@ -1,0 +1,123 @@
+package handlers
+
+import (
+	"strings"
+	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
+)
+
+func TestValidateCarritoItemPayloadRequiresNaturalPositiveQuantity(t *testing.T) {
+	base := dbpkg.CarritoCompraItem{
+		EmpresaID:      7,
+		CarritoID:      3,
+		Descripcion:    "Producto prueba",
+		Cantidad:       1,
+		PrecioUnitario: 1000,
+		TipoItem:       "producto",
+	}
+
+	valid := base
+	valid.Cantidad = 2
+	if err := validateCarritoItemPayload(valid); err != nil {
+		t.Fatalf("expected natural quantity to pass, got %v", err)
+	}
+
+	for _, tc := range []struct {
+		name     string
+		cantidad float64
+	}{
+		{name: "zero", cantidad: 0},
+		{name: "negative", cantidad: -1},
+		{name: "decimal", cantidad: 1.5},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			payload := base
+			payload.Cantidad = tc.cantidad
+			err := validateCarritoItemPayload(payload)
+			if err == nil {
+				t.Fatalf("expected quantity %v to fail", tc.cantidad)
+			}
+			if !strings.Contains(err.Error(), "numero natural positivo") {
+				t.Fatalf("expected natural quantity error, got %q", err.Error())
+			}
+		})
+	}
+}
+
+func TestCarritoDocumentoYCobroKeepsTipOutsideDocumentTotal(t *testing.T) {
+	documento, cobro := carritoDocumentoYCobro(100000, 10000, "COP")
+	if documento != 100000 {
+		t.Fatalf("document total must exclude tip, got %v", documento)
+	}
+	if cobro != 110000 {
+		t.Fatalf("collection total must include tip, got %v", cobro)
+	}
+
+	documento, cobro = carritoDocumentoYCobro(100000, -5000, "COP")
+	if documento != 100000 || cobro != 100000 {
+		t.Fatalf("negative tip must be ignored, got document=%v collection=%v", documento, cobro)
+	}
+}
+
+func TestBuildVentaDocumentoCodigoUsesImmutableCarritoID(t *testing.T) {
+	carritoA := &dbpkg.CarritoCompra{ID: 101, Codigo: "VENTA-DIRECTA-12"}
+	carritoB := &dbpkg.CarritoCompra{ID: 102, Codigo: "VENTA-DIRECTA-12"}
+
+	codigoA := buildVentaDocumentoCodigo(carritoA, "comprobante_pago")
+	codigoB := buildVentaDocumentoCodigo(carritoB, "comprobante_pago")
+	if codigoA == codigoB {
+		t.Fatalf("dos carritos distintos no pueden reutilizar codigo de documento: %q", codigoA)
+	}
+	if codigoA != "CP-VENTA-DIRECTA-12-CRT-101" || codigoB != "CP-VENTA-DIRECTA-12-CRT-102" {
+		t.Fatalf("codigos inesperados: %q y %q", codigoA, codigoB)
+	}
+	if got := buildVentaDocumentoCodigo(carritoA, "factura_electronica"); got != "FV-VENTA-DIRECTA-12-CRT-101" {
+		t.Fatalf("codigo de factura electronica=%q", got)
+	}
+}
+
+func TestBuildVentaDocumentoCodigoSeparaCierresDelMismoCarrito(t *testing.T) {
+	primera := &dbpkg.CarritoCompra{
+		ID:       117,
+		Codigo:   "VENTA-DIRECTA-12",
+		PagadoEn: "2026-08-08 03:17:59.789233-05",
+	}
+	segunda := &dbpkg.CarritoCompra{
+		ID:       117,
+		Codigo:   "VENTA-DIRECTA-12",
+		PagadoEn: "2026-08-08 03:54:09.375891-05",
+	}
+
+	codigoPrimera := buildVentaDocumentoCodigo(primera, "comprobante_pago")
+	codigoSegunda := buildVentaDocumentoCodigo(segunda, "comprobante_pago")
+	if codigoPrimera == codigoSegunda {
+		t.Fatalf("cierres distintos del mismo carrito no pueden compartir documento: %q", codigoPrimera)
+	}
+	if codigoPrimera != "CP-VENTA-DIRECTA-12-CRT-117-PG-2026080803175978923305" {
+		t.Fatalf("codigo primera venta inesperado: %q", codigoPrimera)
+	}
+	if codigoSegunda != "CP-VENTA-DIRECTA-12-CRT-117-PG-2026080803540937589105" {
+		t.Fatalf("codigo segunda venta inesperado: %q", codigoSegunda)
+	}
+	if repetido := buildVentaDocumentoCodigo(primera, "comprobante_pago"); repetido != codigoPrimera {
+		t.Fatalf("el mismo cierre debe conservar idempotencia: got %q want %q", repetido, codigoPrimera)
+	}
+	if factura := buildVentaDocumentoCodigo(segunda, "factura_electronica"); factura != "FV-VENTA-DIRECTA-12-CRT-117-PG-2026080803540937589105" {
+		t.Fatalf("factura debe conservar identidad de la venta: %q", factura)
+	}
+}
+
+func TestFilterCarritosByExactCodeDoesNotFallbackToOlderDirectSaleCart(t *testing.T) {
+	rows := []dbpkg.CarritoCompra{
+		{ID: 31, Codigo: "VENTA-DIRECTA-12"},
+		{ID: 32, Codigo: "QA-DIAN-REAL-123"},
+	}
+	got := filterCarritosByExactCode(rows, "qa-dian-real-123")
+	if len(got) != 1 || got[0].ID != 32 {
+		t.Fatalf("filtro exacto=%+v; no debe recuperar el carrito directo anterior", got)
+	}
+	if got := filterCarritosByExactCode(rows, "QA-DIAN-REAL-INEXISTENTE"); len(got) != 0 {
+		t.Fatalf("un codigo inexistente no puede degradarse a otro carrito: %+v", got)
+	}
+}

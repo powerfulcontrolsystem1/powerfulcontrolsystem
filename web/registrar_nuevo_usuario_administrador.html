@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Registrar nuevo usuario administrador - Powerful Control System - Sistema POS Multiempresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="register-admin-body">
+  <div class="login-page register-admin-page">
+    <div class="login-header">
+      <h1 class="login-title">Registrar nuevo usuario administrador</h1>
+      <div><a class="btn secondary login-help-btn" href="/ayuda/login_administradores.html">Saber más</a></div>
+    </div>
+    <div class="container">
+      <div class="form-actions auth-alt-actions auth-actions-top" style="margin-bottom: 20px; justify-content: center;">
+        <a class="btn secondary admin-link-btn" href="/index.html">Ir al inicio</a>
+      </div>
+      <div class="card">
+        <h2>Crear cuenta administrativa</h2>
+        <p class="login-subtitle">Completa tus datos. Te enviaremos un correo para confirmar la cuenta antes del primer acceso y luego podrás continuar a seleccionar empresa.</p>
+        <form class="form auth-alt-form" id="adminRegisterForm" autocomplete="on" novalidate>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerEmail">Correo</label>
+              <input id="registerEmail" class="form-input" type="email" autocomplete="email" placeholder="tu@correo.com" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerName">Nombre completo</label>
+              <input id="registerName" class="form-input" type="text" autocomplete="name" placeholder="Nombre y apellidos" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerPhone">Celular</label>
+              <input id="registerPhone" class="form-input" type="tel" autocomplete="tel" placeholder="Número de contacto" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerCountry">País</label>
+              <select id="registerCountry" class="form-input" autocomplete="country-name" required></select>
+              <div id="registerCountryHelp" class="form-help">Detectamos tu país automáticamente; puedes cambiarlo manualmente.</div>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="registerCity">Ciudad</label>
+              <select id="registerCity" class="form-input" autocomplete="address-level2" required></select>
+              <input id="registerCityCustom" class="form-input" type="text" autocomplete="address-level2" placeholder="Escribe tu ciudad o municipio" hidden>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerPassword">Contraseña</label>
+              <input id="registerPassword" class="form-input" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerPasswordConfirm">Confirmar contraseña</label>
+              <input id="registerPasswordConfirm" class="form-input" type="password" autocomplete="new-password" placeholder="Repite tu contraseña" required>
+            </div>
+          </div>
+          <div class="form-actions auth-alt-actions">
+            <button id="adminRegisterBtn" class="btn" type="submit">Registrar cuenta</button>
+            <a class="btn secondary admin-link-btn" href="/login.html">Volver al login</a>
+          </div>
+          <div id="adminRegisterRecaptcha" class="form-help" style="display:none"></div>
+          <div id="adminRegisterMessage" class="form-help auth-message is-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+        </form>
+        <p class="footer login-card-note">Después de confirmar tu correo podrás iniciar por Google o con tu correo y contraseña, y continuar a seleccionar empresa.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+  </script>
+  <script src="/config.js?v=20260510-mobile-login"></script>
+  <script src="/js/recaptcha_helper.js?v=20260510-mobile-login"></script>
+  <script src="/js/auth_response.js?v=20260825-gateway-safe"></script>
+  <script src="/js/registrar_nuevo_usuario_administrador.js"></script>
+  <script src="/js/ai_chat_drawer.js"></script>
+</body>
+</html>

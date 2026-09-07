@@ -1,0 +1,170 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Seleccionar Empresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
+</head>
+<body data-auto-collapse-menu="true">
+  
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible is-collapsed">
+      <h2>Panel global</h2>
+        <ul class="nav" id="seleccionarEmpresaSidebarNav">
+        <li><a id="linkAgregarEmpresa" href="#"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Inicio</a></li>
+        <li><a id="linkLicencias" href="/super/licencias.html?scope=mine&con_empresa=1" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Licencias</a></li>
+        <li><a id="linkMisClientes" href="/mis_clientes.html" target="contentFrame" class="is-hidden"><img class="icon" src="/img/user-avatar-color.svg" alt="">Mis clientes</a></li>
+        <li><a id="linkAdministradores" href="/super/administradores.html?scope=principal" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Administradores</a></li>
+        <li><a id="linkAuditoriaGlobal" href="/super/auditoria_global.html?scope=principal" target="contentFrame"><img class="icon" src="/img/audit.svg" alt="">Auditoría</a></li>
+        <li><a id="linkReportesGlobales" href="/super/reportes_globales.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Reportes globales</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="seleccionarEmpresaSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+          <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <section id="empresasPanel">
+        <div class="container">
+        <div class="page-header">
+          <h1 class="selector-page-title">Empresas y panel global</h1>
+          <button id="addBtn" class="btn add selector-add-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Agregar Empresa</span>
+          </button>
+        </div>
+
+        <form id="form" class="form selector-form is-hidden">
+          <input type="hidden" id="itemId">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label">Tipo de empresa</label>
+              <select id="tipo_id" class="form-input"></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label">Nombre</label>
+              <input id="nombre" class="form-input" required />
+            </div>
+          </div>
+          <div id="tipoEmpresaPreview" class="selector-type-preview" hidden></div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label">NIT</label>
+              <input id="nit" class="form-input" />
+            </div>
+            <div class="form-col">
+              <label class="form-label">Observaciones</label>
+              <input id="observaciones" class="form-input" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="saveBtn" class="btn">Guardar</button>
+            <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+          </div>
+          <div class="form-help" id="msg"></div>
+        </form>
+
+        <div id="selectorShareNotice" class="form-help selector-share-notice is-hidden"></div>
+
+        <p class="form-help" style="margin-top:-6px;">Administra tus empresas, entra a cada operación o revisa licencias y reportes desde un solo lugar.</p>
+
+        <div id="cards" class="empresa-groups">Cargando empresas...</div>
+        </div>
+      </section>
+
+      <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido" class="admin-empresa-frame is-hidden"></iframe>
+    </main>
+  </div>
+
+  <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
+    <img class="icon ai-openai-mark ai-mark-shell" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true"><span class="ai-chat-toggle-label">Asistente IA</span>
+  </button>
+
+  <div id="aiChatBackdrop" class="ai-chat-backdrop" aria-hidden="true"></div>
+
+  <section id="aiChatDrawer" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">
+    <div class="ai-chat-minibar" id="aiChatMinibar" hidden>
+      <span class="ai-chat-minibar-label">Asistente IA</span>
+      <button type="button" id="aiChatMinibarExpand" class="ai-chat-minibar-btn" aria-label="Abrir asistente IA">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M7 14l5-5 5 5H7z"/></svg>
+      </button>
+    </div>
+    <div class="ai-chat-drawer-surface">
+      <div class="ai-chat-header">
+        <div class="ai-chat-header-title-row">
+          <span class="ai-chat-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+          </span>
+          <div>
+            <h2 id="aiChatTitle">Asistente IA</h2>
+          </div>
+        </div>
+        <div class="ai-chat-header-actions">
+          <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
+          <button id="aiChatConfigBtn" type="button" class="ai-chat-header-icon-btn" aria-label="Configurar chat flotante" title="Configuración chat flotante">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm7.4 4.5c.04-.3.06-.6.06-.9s-.02-.6-.06-.9l2-1.6a.5.5 0 0 0 .1-.6l-1.8-3.1a.5.5 0 0 0-.6-.2l-2.4 1a7 7 0 0 0-1.6-1l-.4-2.6A.5.5 0 0 0 13.5 2h-3a.5.5 0 0 0-.5.4l-.4 2.6a7 7 0 0 0-1.6 1l-2.4-1a.5.5 0 0 0-.6.2L4.5 7a.5.5 0 0 0 .1.6l2 1.6c-.1.3-.1.6-.1.9s.02.6.06.9l-2 1.6a.5.5 0 0 0-.1.6l1.8 3.1a.5.5 0 0 0 .6.2l2.4-1c.5.4 1.1.7 1.6 1l.4 2.6a.5.5 0 0 0 .5.4h3a.5.5 0 0 0 .5-.4l.4-2.6c.6-.2 1.1-.5 1.6-1l2.4 1a.5.5 0 0 0 .6-.2l1.8-3.1a.5.5 0 0 0-.1-.6l-2-1.6z"/></svg>
+          </button>
+          <button id="aiChatMinimize" type="button" class="ai-chat-header-icon-btn" aria-label="Minimizar chat" title="Minimizar">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M5 12h14v2H5z"/></svg>
+          </button>
+          <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>
+        </div>
+      </div>
+      <div id="aiChatNotice" class="ai-chat-notice"></div>
+      <div class="ai-chat-body-scroll">
+        <div id="aiChatMessages" class="ai-chat-messages"></div>
+        <div id="aiChatHints" class="ai-chat-hints is-hidden">
+          <p>Ejemplos de consultas rápidas:</p>
+          <ul>
+            <li>Muéstrame el estado de licencias y empresas.</li>
+            <li>Asigna una tarea a un usuario para revisar productos próximos a vencer.</li>
+            <li>Envía un mensaje a un administrador sobre permisos o roles faltantes.</li>
+            <li>Haz un pedido de inventario o sugiere cerrar una venta pendiente.</li>
+          </ul>
+        </div>
+      </div>
+      <form id="aiChatForm" class="ai-chat-form">
+        <div class="ai-chat-toolbar-row">
+          <div class="ai-chat-voice-toolbar" role="toolbar" aria-label="Voz y conversación">
+            <button id="aiChatNewBtn" type="button" class="ai-chat-icon-btn" aria-label="Nuevo chat" title="Nuevo chat">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6v-2z"/></svg>
+            </button>
+            <button type="button" id="aiChatConvBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversación" title="Modo conversación"></button>
+            <button type="button" id="aiChatMicBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Dictar mensaje" title="Dictar"></button>
+            <button type="button" id="aiChatVoiceBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Voz del asistente" title="Leer respuestas"></button>
+            <button type="button" id="aiChatStopBtn" class="ai-chat-icon-btn ai-chat-stop-btn" aria-label="Detener audio y respuesta" title="Detener audio y respuesta">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
+            </button>
+          </div>
+          <div class="ai-chat-controls">
+            <input id="aiChatMode" type="hidden" value="operativo">
+            <div class="ai-chat-control-field">
+              <span>Adjunto</span>
+              <div class="ai-chat-attachment-row">
+                <input id="aiChatAttachment" type="file" class="ai-chat-file-input" aria-label="Adjuntar archivo para IA" />
+                <button id="aiChatAttachBtn" type="button" class="ai-chat-icon-btn" aria-label="Adjuntar archivo" title="Adjuntar">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M16.5 6.5v9a4.5 4.5 0 0 1-9 0v-10a3 3 0 0 1 6 0v9a1.5 1.5 0 0 1-3 0v-8h2v8a.5.5 0 0 0 1 0v-9a2 2 0 1 0-4 0v10a2.5 2.5 0 0 0 5 0v-9h2z"/></svg>
+                </button>
+            <button id="aiChatClearAttachment" type="button" class="ai-chat-icon-btn is-hidden" aria-label="Quitar adjunto" title="Quitar adjunto">×</button>
+              </div>
+              <div id="aiChatAttachmentName" class="ai-chat-attachment-name is-hidden"></div>
+            </div>
+          </div>
+        </div>
+        <textarea id="aiChatInput" placeholder="Escribe tu consulta o comando aquí..." aria-label="Mensaje al asistente IA"></textarea>
+        <button type="submit" class="btn primary">Enviar</button>
+      </form>
+    </div>
+  </section>
+
+  <script src="/js/seleccionar_empresa.js"></script>
+  <script src="/js/ai_chat_drawer.js"></script>
+
+  </body>
+</html>

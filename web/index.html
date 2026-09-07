@@ -1,0 +1,2613 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Powerful Control System - POS Multiempresa SaaS</title>
+  <link rel="stylesheet" href="/estilos.css?v=20260615-cart-ia-visual">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" href="/img/pwa-icon-192.png">
+  <link rel="apple-touch-icon" href="/img/pwa-icon-192.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Montserrat:wght@600;800&family=Inter:wght@400;700&display=swap"
+    rel="stylesheet">
+  <script src="/menu.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .portal {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .portal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 4%;
+      background: linear-gradient(135deg, var(--surface-soft), var(--surface));
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 4px 20px color-mix(in srgb, #020617 18%, transparent);
+    }
+
+    .portal-header .brand-logo {
+      font-size: 1.4rem;
+      font-weight: 800;
+      font-family: 'Montserrat', sans-serif;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    html[data-theme="dark"] .portal-header .brand-logo,
+    html[data-theme="dark-violet"] .portal-header .brand-logo,
+    html[data-theme="dark-emerald"] .portal-header .brand-logo,
+    html[data-theme="dark-corporate"] .portal-header .brand-logo {
+      /* Más claro en modo oscuro: mejor contraste y legibilidad */
+      color: var(--text);
+      text-shadow:
+        0 1px 0 color-mix(in srgb, #020617 30%, transparent),
+        0 10px 26px color-mix(in srgb, #020617 42%, transparent);
+    }
+
+    .portal-header-btn {
+      text-decoration: none;
+      padding: 10px 20px;
+      font-weight: bold;
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--btn-primary-text, #fff);
+      transition: opacity 0.3s;
+    }
+
+    .portal-header-btn:hover {
+      opacity: 0.9;
+    }
+
+    .portal .nav-actions > a.btn.dark {
+      background: linear-gradient(135deg, var(--btn-primary-bg, var(--accent)), color-mix(in srgb, var(--accent) 76%, var(--surface)));
+      color: var(--btn-primary-text, #fff);
+      border: 1px solid color-mix(in srgb, var(--accent) 52%, transparent);
+      box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    html[data-theme^="light"] .portal .nav-actions > a.btn.dark {
+      background: linear-gradient(135deg, #ffffff, color-mix(in srgb, var(--accent) 12%, #f8fafc));
+      color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 34%, #dbeafe);
+      box-shadow: 0 10px 24px color-mix(in srgb, #0f172a 10%, transparent);
+    }
+
+    .portal-intro {
+      text-align: center;
+      margin: 80px 20px;
+    }
+
+    .portal-intro h1 {
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-family: 'Playfair Display', serif;
+      margin-bottom: 20px;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .portal-intro h1 span {
+      color: var(--accent);
+    }
+
+    .portal-intro p {
+      font-size: 1.25rem;
+      max-width: 800px;
+      margin: 0 auto 40px auto;
+      color: var(--muted);
+    }
+
+    .portal-intro-actions .btn {
+      font-size: 1.1rem;
+      padding: 14px 32px;
+      border-radius: 12px;
+    }
+
+    .portal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      margin: 0 auto 28px auto;
+      max-width: 1200px;
+      padding: 0 20px;
+    }
+
+    .portal-systems-carousel {
+      max-width: 1200px;
+      margin: 0 auto 42px;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+
+    .portal-systems-carousel[hidden] {
+      display: none !important;
+    }
+
+    .portal-carousel-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .portal-carousel-title {
+      margin: 0;
+      color: var(--text);
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(1.05rem, 2vw, 1.35rem);
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .portal-carousel-arrows {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .portal-carousel-arrow {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      font-size: 1.4rem;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .portal-carousel-arrow:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .portal-carousel-arrow:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .portal-cards-carousel {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: clamp(210px, 22vw, 250px);
+      align-items: start;
+      gap: 18px;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-snap-type: inline mandatory;
+      scroll-behavior: smooth;
+      padding: 8px 2px 16px;
+      scrollbar-width: thin;
+    }
+
+    .portal-cards-carousel .home-offer-card {
+      scroll-snap-align: start;
+      min-width: 0;
+    }
+
+    .portal-cards-carousel .portal-carousel-card {
+      border-radius: 14px;
+      border-color: color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
+      box-shadow: 0 14px 34px color-mix(in srgb, #020617 12%, transparent);
+    }
+
+    .portal-cards-carousel .portal-carousel-card:not(.home-offer-card-banner) {
+      aspect-ratio: 5 / 6;
+      min-height: 0 !important;
+      height: auto;
+      padding: 15px 14px !important;
+      overflow: hidden;
+    }
+
+    .portal-cards-carousel .portal-carousel-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 18px 38px color-mix(in srgb, #020617 18%, transparent);
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-head {
+      min-height: 42px;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-head .card-logo {
+      width: 30px !important;
+      height: 30px !important;
+      min-width: 30px !important;
+      min-height: 30px !important;
+      flex-basis: 30px !important;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-title {
+      font-size: clamp(.92rem, 1.15vw, 1.04rem) !important;
+      line-height: 1.16;
+      max-height: calc(1.16em * 2);
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-figure {
+      height: clamp(82px, 8vw, 106px);
+      margin-bottom: 10px;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-body {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .portal-cards-carousel .home-offer-body {
+      overflow: hidden;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-body p {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      overflow: hidden;
+      font-size: .84rem;
+      line-height: 1.34;
+      text-align: left;
+      margin-bottom: 10px;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .card-actions {
+      margin-top: 6px !important;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-btn {
+      min-height: 36px;
+      padding: 8px 10px;
+      font-size: .86rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .portal-cards-carousel .home-offer-card-banner {
+      aspect-ratio: 5 / 6;
+      min-height: 0;
+    }
+
+    .portal-cards-carousel .home-offer-card:nth-child(6n+1){--home-offer-a:#ff7b54;--home-offer-b:#ff4d8d}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+2){--home-offer-a:#2563eb;--home-offer-b:#06b6d4}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+3){--home-offer-a:#14b8a6;--home-offer-b:#84cc16}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+4){--home-offer-a:#f59e0b;--home-offer-b:#ef4444}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+5){--home-offer-a:#8b5cf6;--home-offer-b:#ec4899}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+6){--home-offer-a:#0ea5e9;--home-offer-b:#22c55e}
+
+    @media (max-width: 920px) {
+      .portal-cards-carousel {
+        grid-auto-columns: clamp(210px, 42vw, 250px);
+        gap: 16px;
+      }
+    }
+
+    .portal-modules-section {
+      max-width: 1240px;
+      margin: 20px auto 80px;
+      padding: 0 20px 30px;
+    }
+
+    .portal-modules-section--summary {
+      margin-top: 12px;
+      margin-bottom: 64px;
+    }
+
+    .portal-modules-summary {
+      margin: 0;
+      padding: 22px 24px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, var(--accent) 4%), color-mix(in srgb, var(--surface-soft) 94%, var(--accent-2) 6%));
+      color: var(--text);
+      box-shadow: var(--shadow);
+      font-size: clamp(1rem, 1.8vw, 1.18rem);
+      line-height: 1.7;
+    }
+
+    .portal-modules-summary h2 {
+      margin: 0 0 16px;
+      color: var(--accent);
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 900;
+      font-size: clamp(1.35rem, 2.4vw, 2rem);
+      letter-spacing: 0;
+    }
+
+    .portal-modules-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+      gap: 10px;
+    }
+
+    .portal-modules-list > li {
+      padding: 12px;
+      border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 84%, transparent);
+      color: var(--text);
+      min-height: 100%;
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      align-items: start;
+      gap: 8px;
+    }
+
+    .portal-module-icon {
+      width: 46px;
+      height: 46px;
+      object-fit: contain;
+      border-radius: 12px;
+      padding: 7px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), color-mix(in srgb, var(--surface-soft) 96%, transparent));
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
+      box-sizing: border-box;
+    }
+
+    .portal-module-text {
+      min-width: 0;
+      line-height: 1.48;
+      text-align: left;
+      display: block;
+    }
+
+    .portal-module-feature-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      column-gap: 16px;
+      row-gap: 4px;
+      margin: 7px 0 0;
+      padding-left: 0;
+      list-style: none;
+      line-height: 1.48;
+      text-align: left;
+      text-align-last: left;
+    }
+
+    .portal-module-feature-list li {
+      position: relative;
+      padding-left: 18px;
+      margin: 0;
+      break-inside: avoid;
+      color: var(--text);
+    }
+
+    .portal-module-feature-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: .72em;
+      width: .48em;
+      height: .48em;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 78%, var(--text) 22%);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+      transform: translateY(-50%);
+    }
+
+    html[data-theme="dark"] .portal-module-feature-list li::before,
+    html[data-theme="dark-violet"] .portal-module-feature-list li::before,
+    html[data-theme="dark-emerald"] .portal-module-feature-list li::before,
+    html[data-theme="dark-corporate"] .portal-module-feature-list li::before {
+      background: color-mix(in srgb, var(--accent-yellow, #fbbf24) 74%, var(--text) 26%);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-yellow, #fbbf24) 20%, transparent);
+    }
+
+    .portal-modules-list strong {
+      color: var(--accent);
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 900;
+    }
+
+    .home-offer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 22px;
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .home-offer-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .home-offer-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 25px 50px color-mix(in srgb, #020617 24%, transparent);
+      border-color: var(--accent);
+    }
+
+    .home-offer-card:hover::before {
+      opacity: 1;
+    }
+
+    .home-offer-card-banner {
+      padding: 0 !important;
+      min-height: 280px;
+      aspect-ratio: 4 / 3;
+      background: var(--surface);
+    }
+
+    .home-offer-card-banner::before {
+      display: none;
+    }
+
+    .home-offer-card-banner:hover {
+      transform: translateY(-4px);
+    }
+
+    .home-offer-banner-img {
+      width: 100%;
+      height: 100%;
+      min-height: inherit;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Arriba: logo pequeño + título */
+    .home-offer-head {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px 12px;
+      flex-wrap: nowrap;
+      margin-bottom: 16px;
+      text-align: left;
+      /* Reserva un bloque uniforme para que la imagen empiece alineada */
+      min-height: 64px;
+    }
+
+    .home-offer-card .home-offer-head .card-logo {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      object-fit: contain;
+      flex: 0 0 36px;
+      opacity: 0.95;
+    }
+
+    .home-offer-head h3 {
+      font-size: 1.45rem;
+      font-family: 'Montserrat', sans-serif;
+      margin: 0;
+      color: var(--text);
+      line-height: 1.2;
+      text-align: left;
+      /* Mantener simetría entre tarjetas sin recortar con "..." */
+      line-height: 1.15;
+      max-height: calc(1.15em * 3);
+      overflow: hidden;
+      flex: 1 1 auto;
+    }
+
+    /* Imagen principal debajo del título, centrada (mismo tamaño en todas las tarjetas) */
+    .home-offer-figure {
+      margin: 0 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      /* Alto fijo para uniformidad (se estira con object-fit: fill) */
+      height: 180px;
+      /* +12.5% vs 160px */
+    }
+
+    .home-offer-figure .card-figure-img {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: fill;
+      /* estirar para garantizar mismo tamaño visual */
+      display: block;
+      opacity: 0.98;
+      filter: none;
+      margin: 0;
+    }
+
+    @media (max-width: 520px) {
+      .home-offer-figure {
+        height: 158px;
+      }
+
+  /* +12.5% vs 140px (â‰ˆ157.5px) */
+      .home-offer-head {
+        min-height: 58px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .portal-modules-header {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .home-offer-card .home-offer-body {
+      text-align: left;
+    }
+
+    .home-offer-card p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin: 0 0 18px;
+      line-height: 1.45;
+      padding: 0;
+      text-align: justify;
+      text-align-last: left;
+    }
+
+    /* Sobre-escribir reglas globales de estilos.css para h3/p dentro de la nueva estructura */
+    .home-offer-card .home-offer-head h3 {
+      padding: 0;
+    }
+
+    .home-offer-body p {
+      margin: 0 0 18px;
+    }
+
+    .home-offer-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      width: 100%;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .home-offer-card:hover .home-offer-btn {
+      background: var(--accent);
+      color: var(--btn-primary-text, #fff);
+    }
+
+    .portal-cards-heading {
+      margin: 10px auto 6px auto;
+      text-align: center;
+      color: var(--text);
+      font-family: 'Montserrat', 'Segoe UI', sans-serif;
+      font-size: clamp(1.65rem, 3.1vw, 2.5rem);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1.15;
+      text-wrap: balance;
+      text-shadow: 0 8px 24px color-mix(in srgb, #020617 22%, transparent);
+    }
+
+    .portal-cards-subheading {
+      margin: 0 auto 22px auto;
+      max-width: 48rem;
+      text-align: center;
+      color: var(--muted);
+      font-family: 'Montserrat', 'Segoe UI', sans-serif;
+      font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      line-height: 1.4;
+      text-wrap: balance;
+    }
+
+    .portal-hero-title {
+      padding: 14px 12px 10px;
+      margin: 8px auto 10px;
+      max-width: 980px;
+      border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+      border-radius: 18px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), color-mix(in srgb, var(--surface-soft) 96%, transparent));
+      box-shadow: 0 20px 48px color-mix(in srgb, #020617 18%, transparent);
+    }
+
+    .portal-ai-subheading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 0 auto 22px auto;
+      max-width: 52rem;
+    }
+
+    .portal-ai-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border) 65%);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, var(--surface)), color-mix(in srgb, var(--surface-soft) 96%, transparent));
+      color: color-mix(in srgb, var(--accent) 80%, var(--text) 20%);
+      box-shadow: 0 12px 26px color-mix(in srgb, var(--accent) 14%, transparent);
+      flex: 0 0 38px;
+    }
+
+    .portal-ai-badge svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+    }
+
+    .portal-footer {
+      text-align: center;
+      padding: 40px;
+      margin-top: auto;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-dropdown {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .header-dropdown-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 10px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .header-dropdown-toggle:hover {
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface-soft));
+    }
+
+    .header-dropdown-toggle .caret {
+      font-weight: 900;
+      opacity: 0.9;
+    }
+
+    .header-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      min-width: 220px;
+      padding: 8px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 92%, transparent), var(--surface));
+      box-shadow: 0 22px 50px color-mix(in srgb, #020617 24%, transparent);
+      display: none;
+      z-index: 50;
+    }
+
+    .header-dropdown.is-open .header-dropdown-menu {
+      display: block;
+    }
+
+    .header-dropdown-menu a {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .header-dropdown-menu a:hover {
+      background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    }
+
+    .portal-public-page {
+      display: none;
+      max-width: 1180px;
+      margin: 22px auto 72px;
+      padding: 0 20px;
+    }
+
+    .portal-public-page.is-active {
+      display: block;
+    }
+
+    .portal-public-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+      gap: 24px;
+      align-items: stretch;
+      min-height: 390px;
+      border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
+      border-radius: 10px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 90%, var(--accent) 10%), var(--surface-soft));
+      box-shadow: 0 24px 58px color-mix(in srgb, #020617 16%, transparent);
+      overflow: hidden;
+    }
+
+    .portal-public-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+      padding: clamp(24px, 5vw, 48px);
+    }
+
+    .portal-public-kicker {
+      width: fit-content;
+      margin: 0;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 13%, var(--surface) 87%);
+      color: color-mix(in srgb, var(--accent) 82%, var(--text) 18%);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .portal-public-copy h1 {
+      margin: 0;
+      color: var(--text);
+      font-family: "Montserrat", "Segoe UI", system-ui, sans-serif;
+      font-size: clamp(2rem, 4.3vw, 3.4rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .portal-public-copy p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.8vw, 1.16rem);
+      line-height: 1.62;
+    }
+
+    .portal-public-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .portal-public-media {
+      position: relative;
+      min-height: 330px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .portal-public-media img {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .portal-public-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent, color-mix(in srgb, #020617 34%, transparent));
+      pointer-events: none;
+    }
+
+    .portal-public-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .portal-public-metric,
+    .portal-public-card,
+    .portal-contact-channel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 14px 34px color-mix(in srgb, #020617 10%, transparent);
+    }
+
+    .portal-public-metric {
+      padding: 16px;
+    }
+
+    .portal-public-metric span,
+    .portal-public-card span {
+      display: block;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .portal-public-metric strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--text);
+      font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+      line-height: 1.08;
+    }
+
+    .portal-public-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .portal-public-card {
+      padding: 18px;
+    }
+
+    .portal-public-card h2,
+    .portal-contact-channel h2 {
+      margin: 8px 0 8px;
+      color: var(--text);
+      font-size: 1.08rem;
+      line-height: 1.2;
+    }
+
+    .portal-public-card p,
+    .portal-contact-channel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: .95rem;
+    }
+
+    .portal-contact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .portal-contact-channel {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      padding: 18px;
+      text-decoration: none;
+    }
+
+    .portal-contact-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    }
+
+    .portal-home-content.is-hidden {
+      display: none !important;
+    }
+
+    .ai-chat-bubble {
+      display: flex;
+      margin: 10px 0;
+    }
+
+    .ai-chat-bubble .ai-chat-content {
+      max-width: 92%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--surface-soft);
+      color: var(--text);
+      font-family: "Google Sans Flex", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+      font-size: 1.02rem;
+    }
+
+    .ai-chat-bubble.user {
+      justify-content: flex-end;
+    }
+
+    .ai-chat-bubble.user .ai-chat-content {
+      background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+      color: color-mix(in srgb, var(--text) 92%, var(--accent) 8%);
+    }
+
+    .ai-chat-bubble.assistant {
+      justify-content: flex-start;
+    }
+
+    .ai-chat-bubble.assistant .ai-chat-content {
+      color: color-mix(in srgb, var(--text) 92%, var(--success) 8%);
+    }
+
+    .error {
+      color: var(--danger);
+    }
+
+    /* Chat (Index): input del mismo ancho del panel y tipografía más grande */
+    #pcsPublicChatForm {
+      width: 100%;
+    }
+
+    #pcsPublicChatInput {
+      width: 100%;
+      box-sizing: border-box;
+      font-family: "Google Sans Flex", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
+
+    .brand-logo .brand-title-wrap {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      line-height: 1.12;
+    }
+
+    .brand-logo .brand-subtitle {
+      font-size: clamp(0.94rem, 1.1vw, 1.05rem);
+      font-weight: 800;
+      letter-spacing: 0.25px;
+      color: var(--warning, #f59e0b);
+      opacity: 1;
+    }
+
+    html[data-theme="dark"] .brand-logo .brand-subtitle,
+    html[data-theme="dark-violet"] .brand-logo .brand-subtitle,
+    html[data-theme="dark-emerald"] .brand-logo .brand-subtitle,
+    html[data-theme="dark-corporate"] .brand-logo .brand-subtitle {
+      color: var(--accent-yellow, #fbbf24);
+      text-shadow: 0 1px 8px color-mix(in srgb, #020617 34%, transparent);
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    .portal-header,
+    .portal-main,
+    .portal-grid,
+    .home-offer-card,
+    .home-offer-body {
+      min-width: 0;
+    }
+
+    .portal-header {
+      flex-wrap: wrap;
+      gap: 12px 16px;
+    }
+
+    .portal-header .brand-logo {
+      flex: 1 1 360px;
+      min-width: 0;
+    }
+
+    .portal-header .brand-logo img {
+      flex: 0 0 auto;
+    }
+
+    .brand-logo .brand-title-wrap {
+      min-width: 0;
+    }
+
+    .brand-logo .brand-title-wrap span {
+      overflow-wrap: anywhere;
+    }
+
+    .nav-actions {
+      justify-content: flex-end;
+      min-width: 0;
+    }
+
+    .portal-main.container {
+      width: min(100% - 24px, 1200px);
+      margin-inline: auto;
+      overflow-x: hidden;
+    }
+
+    .portal-grid {
+      width: 100%;
+      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+      box-sizing: border-box;
+      padding-inline: clamp(10px, 3vw, 20px);
+    }
+
+    .portal-home-grid .home-offer-card .home-offer-head .card-logo {
+      width: 36px !important;
+      height: 36px !important;
+      min-width: 36px !important;
+      min-height: 36px !important;
+      flex: 0 0 36px !important;
+    }
+
+    .home-offer-head,
+    .home-offer-head h3,
+    .home-offer-card p,
+    .home-offer-btn {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .home-offer-card p {
+      text-align: left;
+      hyphens: auto;
+    }
+
+    .home-offer-btn {
+      box-sizing: border-box;
+      white-space: normal;
+    }
+
+    .whatsapp-floating-cta,
+    .ai-chat-toggle-button {
+      max-width: calc(100vw - 24px);
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 640px) {
+      .portal-header {
+        align-items: flex-start;
+        padding: 12px 14px;
+      }
+
+      .portal-header .brand-logo {
+        flex-basis: 100%;
+        font-size: clamp(1.05rem, 5vw, 1.3rem);
+      }
+
+      .portal-header .brand-logo img {
+        width: 30px;
+        height: 30px;
+      }
+
+      .brand-logo .brand-subtitle {
+        font-size: 0.9rem;
+      }
+
+      .nav-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
+        align-items: stretch;
+      }
+
+      .nav-actions .btn,
+      .header-dropdown-toggle {
+        width: 100%;
+        min-height: 42px;
+        justify-content: center;
+        padding: 10px 8px;
+        font-size: 0.88rem;
+      }
+
+      .header-dropdown {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .header-dropdown-menu {
+        right: 0;
+        max-width: calc(100vw - 28px);
+      }
+
+      .portal-main.container {
+        width: 100%;
+        margin: 0;
+        padding: 14px 0 88px;
+      }
+
+      .portal-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+        padding-inline: 14px;
+      }
+
+      .portal-public-page {
+        padding: 0 14px;
+        margin-top: 14px;
+      }
+
+      .portal-public-hero,
+      .portal-public-grid,
+      .portal-public-metrics,
+      .portal-contact-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .portal-public-copy {
+        padding: 22px 18px;
+      }
+
+      .portal-public-media {
+        min-height: 220px;
+      }
+
+      .portal-contact-channel {
+        grid-template-columns: 56px minmax(0, 1fr);
+      }
+
+      .portal-contact-avatar {
+        width: 56px;
+        height: 56px;
+      }
+
+      .portal-systems-carousel {
+        padding-inline: 14px;
+        margin-bottom: 32px;
+      }
+
+      .portal-carousel-toolbar {
+        align-items: flex-start;
+      }
+
+      .portal-cards-carousel {
+        grid-auto-columns: clamp(205px, 74vw, 260px);
+        gap: 14px;
+        padding-bottom: 14px;
+      }
+
+      .portal-cards-carousel .portal-carousel-card:not(.home-offer-card-banner) {
+        aspect-ratio: 5 / 6;
+        height: auto;
+        min-height: 0 !important;
+        padding: 14px 12px !important;
+      }
+
+      .portal-cards-carousel .portal-carousel-card .home-offer-figure {
+        height: 86px;
+        margin-bottom: 9px;
+      }
+
+      .portal-cards-carousel .portal-carousel-card .home-offer-body p {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+        font-size: .82rem;
+        line-height: 1.32;
+      }
+
+      .portal-cards-carousel .portal-carousel-card .home-offer-btn {
+        min-height: 34px;
+        font-size: .82rem;
+      }
+
+      .home-offer-card {
+        border-radius: 10px;
+        padding: 20px 14px !important;
+      }
+
+      .home-offer-card-banner {
+        padding: 0 !important;
+      }
+
+      .home-offer-head {
+        align-items: flex-start;
+        gap: 8px;
+        min-height: auto;
+      }
+
+      .home-offer-head h3,
+      .portal-home-grid[data-text-size="grande"] .home-offer-card h3 {
+        font-size: 1.08rem !important;
+        line-height: 1.24;
+        max-height: none;
+        overflow: visible;
+      }
+
+      .home-offer-card p,
+      .portal-home-grid[data-text-size="grande"] .home-offer-card p {
+        font-size: 0.92rem !important;
+        line-height: 1.45;
+      }
+
+      .home-offer-figure {
+        height: 158px;
+        overflow: hidden;
+      }
+
+      .portal-visit-shell {
+        grid-template-columns: 1fr;
+        padding: 14px;
+      }
+
+      .portal-visit-head {
+        flex-direction: column;
+      }
+
+      .portal-visit-total {
+        text-align: left;
+      }
+
+      .portal-visit-country {
+        grid-template-columns: 1fr auto;
+      }
+
+      .portal-visit-bar {
+        grid-column: 1 / -1;
+        order: 3;
+      }
+
+      .whatsapp-floating-cta,
+      .ai-chat-toggle-button {
+        right: 12px !important;
+        left: auto !important;
+        bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 12px)) !important;
+        transform: none !important;
+      }
+    }
+    @media (max-width: 360px) {
+      .nav-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="portal">
+    <header class="portal-header">
+      <a href="/" class="brand-logo"
+        style="font-family: 'Montserrat', sans-serif; font-weight: 600; letter-spacing: 0.5px;">
+        <img src="/img/pwa-icon-192.png" alt="Logo" width="32" height="32" style="border-radius: 4px;">
+        <span class="brand-title-wrap">
+          <span>Powerful Control System - Plataforma SaaS POS Multiempresa</span>
+          <span class="brand-subtitle">Sistema de Facturaci&oacute;n Electr&oacute;nica con dom&oacute;tica integrada</span>
+        </span>
+      </a>
+      <nav class="nav-actions">
+        <a class="btn dark" href="/login.html">Iniciar sesi&oacute;n</a>
+        <a class="btn dark" href="/registrar_nuevo_usuario_administrador.html">Crear cuenta</a>
+        <div class="header-dropdown" id="headerMoreMenu">
+          <button type="button" class="header-dropdown-toggle" aria-haspopup="true" aria-expanded="false"
+            aria-controls="headerMoreMenuList" id="headerMoreMenuToggle">
+            M&aacute;s <span class="caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="header-dropdown-menu" role="menu" id="headerMoreMenuList" aria-label="M&aacute;s opciones">
+            <a role="menuitem" data-public-page-link href="/index.html?pagina=contacto">Informaci&oacute;n de contacto</a>
+            <a role="menuitem" data-public-page-link href="/index.html?pagina=privacidad">Privacidad y datos</a>
+            <a role="menuitem" data-public-page-link href="/index.html?pagina=quienes-somos">Qui&eacute;nes somos</a>
+            <a role="menuitem" data-public-page-link href="/index.html?pagina=hotel-motel">Sistema Hotel / Motel</a>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="portal-main container">
+      <section id="publicPageContacto" class="portal-public-page" data-public-page="contacto" aria-labelledby="publicContactoTitle">
+        <div class="portal-public-hero">
+          <div class="portal-public-copy">
+            <p class="portal-public-kicker">Atencion empresarial</p>
+            <h1 id="publicContactoTitle">Conversemos sobre la operacion de tu empresa</h1>
+            <p>Powerful Control System acompana a negocios que necesitan ordenar ventas, inventario, facturacion, usuarios, reportes y crecimiento desde una plataforma profesional.</p>
+            <div class="portal-public-actions">
+              <a class="btn dark" href="https://wa.me/573043306506" rel="noopener noreferrer">WhatsApp principal</a>
+              <a class="btn secondary" href="mailto:soporte@powerfulcontrolsystem.com">Enviar correo</a>
+            </div>
+          </div>
+          <figure class="portal-public-media"><img src="/img/portal-systems/realistic/punto-venta.jpg" alt="Punto de venta moderno con atencion al cliente" loading="lazy"></figure>
+        </div>
+        <div class="portal-contact-grid">
+          <a class="portal-contact-channel" href="mailto:soporte@powerfulcontrolsystem.com"><img class="portal-contact-avatar" src="/img/Logo pcs 1.png" alt="" loading="lazy"><span><span>Soporte</span><h2>soporte@powerfulcontrolsystem.com</h2><p>Ayuda operativa, configuracion y continuidad del sistema.</p></span></a>
+          <a class="portal-contact-channel" href="mailto:ventas@powerfulcontrolsystem.com"><img class="portal-contact-avatar" src="/img/brand/pcs-logo-concepts/pcs-wordmark-v4-clean-pos.png" alt="" loading="lazy"><span><span>Ventas</span><h2>ventas@powerfulcontrolsystem.com</h2><p>Planes, licencias, implementacion y demostraciones.</p></span></a>
+          <a class="portal-contact-channel" href="https://wa.me/573043306506" rel="noopener noreferrer"><img class="portal-contact-avatar" src="/img/red social.png" alt="" loading="lazy"><span><span>WhatsApp comercial</span><h2>+57 304 330 6506</h2><p>Contacto rapido para orientacion y seguimiento.</p></span></a>
+          <a class="portal-contact-channel" href="https://wa.me/573332745198" rel="noopener noreferrer"><img class="portal-contact-avatar" src="/img/company-briefcase-color.svg" alt="" loading="lazy"><span><span>Asesor en ventas</span><h2>Jose Lubo Guarnizo</h2><p>Asesoria comercial y acompanamiento inicial.</p></span></a>
+        </div>
+      </section>
+
+      <section id="publicPagePrivacidad" class="portal-public-page" data-public-page="privacidad" aria-labelledby="publicPrivacidadTitle">
+        <div class="portal-public-hero">
+          <div class="portal-public-copy">
+            <p class="portal-public-kicker">Privacidad y datos</p>
+            <h1 id="publicPrivacidadTitle">Cada empresa conserva la responsabilidad y el control de su informacion</h1>
+            <p>La informacion de cada empresa se transmite mediante conexiones cifradas y se administra en un espacio logico separado por empresa. El sistema valida sesion, empresa y rol antes de permitir acceso a ventas, clientes, inventario o documentos; las credenciales y configuraciones sensibles se almacenan cifradas.</p>
+            <p>Solo los usuarios autorizados de la misma empresa pueden consultar su informacion desde la aplicacion. Es responsabilidad de cada empresa conservar sus respaldos: PCS ofrece opciones para descargar su informacion y para solicitar o ejecutar eliminacion permanente cuando corresponda.</p>
+          </div>
+          <figure class="portal-public-media"><img src="/img/portal-systems/realistic/gestion-documental-contratos.jpg" alt="Documentos empresariales protegidos" loading="lazy"></figure>
+        </div>
+        <div class="portal-public-metrics">
+          <article class="portal-public-metric"><span>Separacion</span><strong>Datos por empresa</strong></article>
+          <article class="portal-public-metric"><span>Control</span><strong>Descarga de informacion</strong></article>
+          <article class="portal-public-metric"><span>Salida</span><strong>Eliminacion definitiva</strong></article>
+        </div>
+        <div class="portal-public-grid">
+          <article class="portal-public-card"><span>Seguridad</span><h2>Datos empresariales protegidos</h2><p>Las conexiones cifradas, el aislamiento por empresa y los permisos por rol protegen la informacion operativa entre negocios.</p></article>
+          <article class="portal-public-card"><span>Responsabilidad</span><h2>Respaldos por empresa</h2><p>Cada empresa debe descargar y conservar sus copias cuando su operacion lo requiera.</p></article>
+          <article class="portal-public-card"><span>Transparencia</span><h2>Descargar o eliminar</h2><p>El sistema contempla herramientas para exportar informacion y para retirar datos de forma permanente cuando sea necesario.</p></article>
+        </div>
+      </section>
+
+      <section id="publicPageQuienes" class="portal-public-page" data-public-page="quienes-somos" aria-labelledby="publicQuienesTitle">
+        <div class="portal-public-hero">
+          <div class="portal-public-copy">
+            <p class="portal-public-kicker">Quienes somos</p>
+            <h1 id="publicQuienesTitle">Mas de 20 anos creando soluciones para puntos de venta</h1>
+            <p>Powerful Control System nace de experiencia real en sistemas POS, cajas, inventarios, estaciones de trabajo y operacion empresarial. Esa experiencia evoluciono hacia una plataforma SaaS multiempresa con tecnologia moderna.</p>
+            <p>Trabajamos con Go, PostgreSQL, Docker, interfaces web responsivas, una arquitectura multiempresa y una API movil versionada. La inteligencia artificial configurable ayuda a las empresas a operar, revisar documentos, entender informacion y crecer con herramientas profesionales.</p>
+          </div>
+          <figure class="portal-public-media"><img src="/img/baner_ia.png" alt="Tecnologia e inteligencia artificial empresarial" loading="lazy"></figure>
+        </div>
+        <div class="portal-public-grid">
+          <article class="portal-public-card"><span>Experiencia</span><h2>POS y operacion real</h2><p>Conocemos el dia a dia de ventas, caja, inventario, clientes, turnos y reportes.</p></article>
+          <article class="portal-public-card"><span>Tecnologia</span><h2>Go, PostgreSQL y Docker</h2><p>Base tecnica moderna para estabilidad, rendimiento, despliegue y crecimiento.</p></article>
+          <article class="portal-public-card"><span>Escalabilidad</span><h2>Arquitectura multiempresa</h2><p>Modulos, permisos, datos y reintentos se controlan por empresa para que la plataforma pueda crecer sin mezclar operaciones.</p></article>
+          <article class="portal-public-card"><span>Vision</span><h2>Herramientas al alcance de todos</h2><p>Queremos darle a pequenas empresas en crecimiento funciones que antes solo tenian sistemas costosos.</p></article>
+        </div>
+      </section>
+
+      <section id="publicPageHotelMotel" class="portal-public-page" data-public-page="hotel-motel" aria-labelledby="publicHotelTitle">
+        <div class="portal-public-hero">
+          <div class="portal-public-copy">
+            <p class="portal-public-kicker">Hotel / Motel inteligente</p>
+            <h1 id="publicHotelTitle">Control de habitaciones, cuentas y sensores de puertas</h1>
+            <p>El sistema para hotel y motel permite administrar habitaciones, tarifas, estados, cuentas, permanencia, caja y reportes. La domotica y los sensores de puertas ayudan a controlar eventos reales de ocupacion y operacion.</p>
+            <p>La meta es que cada negocio tenga trazabilidad clara: cuando una habitacion se ocupa, cuando queda disponible, cuanto tiempo lleva activa y que cuenta debe cobrarse.</p>
+          </div>
+          <figure class="portal-public-media"><img src="/img/sistema motel con sensor en puertas.png" alt="Sistema motel con sensor en puertas" loading="lazy"></figure>
+        </div>
+        <div class="portal-public-grid">
+          <article class="portal-public-card"><span>Habitaciones</span><h2>Tarifas y estados</h2><p>Control por categoria, precio, ocupacion, aseo, disponibilidad y tiempos de uso.</p></article>
+          <article class="portal-public-card"><span>Domotica</span><h2>Sensores de puertas</h2><p>Eventos de apertura/cierre para apoyar control de cuentas, permanencia y trazabilidad.</p></article>
+          <article class="portal-public-card"><span>Caja</span><h2>Cobro y reportes</h2><p>Integracion con POS, turnos, cortes, pagos y reportes de operacion.</p></article>
+        </div>
+      </section>
+
+      <div id="portalHomeContent" class="portal-home-content">
+      <!-- Sección principal reservada para tarjetas, sin texto introductorio superior -->
+      <p id="portalCardsStatus" class="form-help portal-cards-status" role="status" style="text-align:center;"></p>
+      <section id="portalCardsGrid" class="portal-grid portal-home-grid" aria-live="polite"></section>
+      <section id="portalCardsCarouselSection" class="portal-systems-carousel" aria-labelledby="portalCardsCarouselTitle" hidden>
+        <div class="portal-carousel-toolbar">
+          <h2 id="portalCardsCarouselTitle" class="portal-carousel-title">M&aacute;s sistemas</h2>
+          <div class="portal-carousel-arrows" role="group" aria-label="Navegar tarjetas de sistemas">
+            <button type="button" id="portalCarouselPrev" class="portal-carousel-arrow" aria-controls="portalCardsCarousel" aria-label="Ver tarjetas anteriores">&lsaquo;</button>
+            <button type="button" id="portalCarouselNext" class="portal-carousel-arrow" aria-controls="portalCardsCarousel" aria-label="Ver tarjetas siguientes">&rsaquo;</button>
+          </div>
+        </div>
+        <div id="portalCardsCarousel" class="portal-cards-carousel portal-home-grid" tabindex="0" aria-live="polite"></div>
+      </section>
+      <section class="portal-modules-section portal-modules-section--summary" aria-label="M&oacute;dulos y funciones principales">
+        <div class="portal-modules-summary">
+          <h2 id="portalModulesTitle">53 m&oacute;dulos activos y 13 plantillas empresariales</h2>
+          <ul id="portalModulesList" class="portal-modules-list">
+            <li><img class="portal-module-icon" src="/img/money.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Vida personal:</strong><ul class="portal-module-feature-list"><li>Gastos por usuario</li><li>Foto privada de facturas</li><li>Categor&iacute;as mensuales</li><li>Suscripciones</li><li>Recordatorios para renovar o cancelar</li><li>Proyecci&oacute;n mensual y anual</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/warehouse-color.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Inventario profesional:</strong><ul class="portal-module-feature-list"><li>Productos</li><li>Servicios</li><li>Recetas</li><li>Categor&iacute;as</li><li>Bodegas</li><li>Kardex</li><li>Traslados</li><li>Compras</li><li>Proveedores</li><li>Control de existencias</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/punto_venta.png" alt="" loading="lazy"><div class="portal-module-text"><strong>Ventas POS:</strong><ul class="portal-module-feature-list"><li>Venta directa</li><li>Carritos por estaci&oacute;n</li><li>Pagos mixtos</li><li>Abonos</li><li>Descuentos</li><li>C&oacute;digos promocionales</li><li>Caja por usuario</li><li>Varias cajas simult&aacute;neas</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/money.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Pagos y hardware:</strong><ul class="portal-module-feature-list"><li>Manejo de dat&aacute;fonos</li><li>Pagos QR</li><li>Caj&oacute;n monedero</li><li>Impresoras POS</li><li>Impresoras por &aacute;rea o producto</li><li>Facturaci&oacute;n offline</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/invoice.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Documentos electr&oacute;nicos:</strong><ul class="portal-module-feature-list"><li>Documentos electr&oacute;nicos DIAN Colombia</li><li>Activa los documentos del Sistema de Facturaci&oacute;n Electr&oacute;nica que la empresa usar&aacute;. Las obligaciones de contador se separan para no mezclarlas con documentos UBL de venta.</li><li>Documentos y eventos del SFE</li><li>Factura electr&oacute;nica de venta - Venta: venta de bienes o servicios validada previamente por DIAN.</li><li>Nota cr&eacute;dito electr&oacute;nica - Ajustes de venta: disminuye, corrige o reversa valores de una factura electr&oacute;nica.</li><li>Nota d&eacute;bito electr&oacute;nica - Ajustes de venta: aumenta o corrige valores de una factura electr&oacute;nica.</li><li>Reporte de factura de talonario o papel por contingencia - Contingencia: reporte para validaci&oacute;n posterior cuando hubo inconveniente tecnol&oacute;gico del facturador.</li><li>Documento soporte en adquisiciones a no obligados - Compras: soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.</li><li>Nota de ajuste del documento soporte - Compras: ajusta o corrige un documento soporte de adquisiciones.</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/taxes.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Finanzas y cumplimiento:</strong><ul class="portal-module-feature-list"><li>Suite contador 360</li><li>Portal contador multicliente</li><li>PUC/NIIF Colombia</li><li>IVA, retenciones e ICA</li><li>Documentos DIAN</li><li>Declaraciones tributarias</li><li>Certificados tributarios</li><li>Renta IA</li><li>Cierres fiscales</li><li>Reportes financieros</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/hotel-logo.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Operaci&oacute;n por estaciones:</strong><ul class="portal-module-feature-list"><li>Estaciones</li><li>Mesas</li><li>Habitaciones</li><li>Zonas o bah&iacute;as configurables</li><li>Control de estados</li><li>Turnos</li><li>Reservas</li><li>Alertas de tiempo</li><li>Aseo</li><li>Cierre/corte de caja</li></ul></div></li>
+            <li><img class="portal-module-icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Automatizaci&oacute;n e IA:</strong><ul class="portal-module-feature-list"><li>Integraci&oacute;n con IA</li><li>Documentos inteligentes</li><li>IA GPT-5.5 para compras</li><li>Soporte operativo</li><li>Reportes asistidos</li><li>Acciones confirmables</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/solar-energy.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Energía solar:</strong><ul class="portal-module-feature-list"><li>Monitoreo de paneles</li><li>Controladoras Victron</li><li>SMA Sunny Portal</li><li>SolarEdge Monitoring</li><li>Baterías Powerwall, BYD, Pylontech y Enphase</li><li>Alertas por correo</li><li>Lecturas por gateway local</li><li>BMS y estado de salud</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/sensor.png" alt="" loading="lazy"><div class="portal-module-text"><strong>Dom&oacute;tica y control f&iacute;sico:</strong><ul class="portal-module-feature-list"><li>Dom&oacute;tica por estaci&oacute;n</li><li>Manejo de sensores</li><li>Puertas</li><li>Aparatos</li><li>Permanencia</li><li>Acceso</li><li>Veh&iacute;culos</li><li>Parqueaderos</li><li>Trazabilidad operativa</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/company-briefcase-color.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Gesti&oacute;n empresarial:</strong><ul class="portal-module-feature-list"><li>Clientes</li><li>CRM</li><li>Usuarios</li><li>Roles</li><li>Permisos</li><li>Licencias</li><li>Auditor&iacute;a</li><li>Backups</li><li>Comunicaciones</li><li>Soporte</li><li>Chat y tareas</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/analytics-color.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>13 plantillas listas:</strong><ul class="portal-module-feature-list"><li>Parqueadero</li><li>Domicilios</li><li>Alquileres</li><li>Construcci&oacute;n / AIU</li><li>Eventos y boleter&iacute;a</li><li>Sal&oacute;n, barber&iacute;a y spa</li><li>Veterinaria y pet shop</li><li>Lavander&iacute;a y tintorer&iacute;a</li><li>Taller mec&aacute;nico</li><li>Transporte de carga / TMS</li><li>Servicios t&eacute;cnicos</li><li>Funeraria y servicios exequiales</li><li>Parque recreativo</li></ul></div></li>
+          </ul>
+        </div>
+      </section>
+      </div>
+
+    </main>
+    <div hidden data-portal-visits-widget data-count-visit="1" aria-hidden="true"></div>
+    <footer class="portal-footer">&copy; 2026 - Powerful Control System - Plataforma SaaS POS Multiempresa- Derechos
+      reservados - Email: powerfulcontrolsystem@gmail.com  Domótica</footer>
+  </div>
+
+  <a class="whatsapp-floating-cta" href="https://wa.me/573043306506" rel="noopener noreferrer"
+    aria-label="Contactenos por WhatsApp">
+    <span class="whatsapp-floating-icon" aria-hidden="true">
+      <svg viewBox="0 0 32 32" role="img" focusable="false" fill="currentColor">
+        <path
+          d="M16.02 4C9.39 4 4 9.23 4 15.67c0 2.3.7 4.44 1.91 6.24L4.34 28l6.33-1.64a12.2 12.2 0 0 0 5.35 1.23C22.64 27.59 28 22.36 28 15.93 28 9.23 22.64 4 16.02 4Zm0 21.57a9.84 9.84 0 0 1-5.02-1.36l-.36-.21-3.75.97 1-3.63-.23-.37a9.38 9.38 0 0 1-1.5-5.03c0-5.2 4.36-9.45 9.86-9.45 5.44 0 9.85 4.17 9.85 9.44 0 5.2-4.41 9.64-9.85 9.64Zm5.4-7.24c-.3-.15-1.74-.84-2-1-.27-.1-.46-.15-.66.15-.2.3-.76 1-.94 1.2-.17.18-.33.21-.63.07-.3-.15-1.24-.45-2.37-1.43a8.94 8.94 0 0 1-1.64-2c-.17-.3-.02-.47.13-.61.14-.14.3-.36.46-.54.15-.18.2-.3.3-.5.1-.2.05-.38-.03-.53-.07-.15-.67-1.56-.92-2.13-.24-.58-.48-.5-.66-.5h-.56c-.2 0-.53.08-.8.38-.28.3-1.06 1.02-1.06 2.5 0 1.46 1.1 2.9 1.26 3.1.15.18 2.12 3.32 5.25 4.52.74.3 1.32.47 1.77.6.74.23 1.41.2 1.95.12.6-.08 1.74-.7 1.98-1.38.25-.68.25-1.26.18-1.38-.08-.12-.28-.2-.58-.35Z" />
+      </svg>
+    </span>
+    <span class="whatsapp-floating-text">Chat Soporte</span>
+  </a>
+
+  <script src="/js/plantillas_nuevas_catalogo.js?v=portal-systems-20260610-realistic"></script>
+  <script src="/js/portal_visits.js?v=20260525-portal-visitas-compartido"></script>
+  <script>
+    window.__pcsAutoInjectChatShell = true;
+    window.__pcsUseFloatingPublicChat = true;
+    window.__pcsPublicChatContext = { scope: 'portal' };
+
+    (function () {
+      (function initHeaderDropdown() {
+        var wrap = document.getElementById('headerMoreMenu');
+        var toggle = document.getElementById('headerMoreMenuToggle');
+        if (!wrap || !toggle) return;
+
+        function setOpen(open) {
+          wrap.classList.toggle('is-open', !!open);
+          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        toggle.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          setOpen(!wrap.classList.contains('is-open'));
+        });
+
+        document.addEventListener('click', function (ev) {
+          if (!wrap.classList.contains('is-open')) return;
+          if (wrap.contains(ev.target)) return;
+          setOpen(false);
+        });
+
+        document.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Escape') {
+            if (!wrap.classList.contains('is-open')) return;
+            setOpen(false);
+            try { toggle.focus(); } catch (e) { }
+          }
+        });
+      })();
+
+      (function initPublicPages() {
+        var home = document.getElementById('portalHomeContent');
+        var pages = Array.prototype.slice.call(document.querySelectorAll('[data-public-page]'));
+        var links = Array.prototype.slice.call(document.querySelectorAll('[data-public-page-link]'));
+        var allowed = { contacto: true, privacidad: true, 'quienes-somos': true, 'hotel-motel': true };
+
+        function currentPage() {
+          var params = new URLSearchParams(window.location.search || '');
+          var page = String(params.get('pagina') || '').trim().toLowerCase();
+          if (!allowed[page]) page = '';
+          return page;
+        }
+
+        function showPage(page, push) {
+          page = allowed[page] ? page : '';
+          pages.forEach(function (section) {
+            section.classList.toggle('is-active', section.getAttribute('data-public-page') === page);
+          });
+          if (home) home.classList.toggle('is-hidden', !!page);
+          links.forEach(function (link) {
+            var hrefPage = '';
+            try { hrefPage = new URL(link.href, window.location.origin).searchParams.get('pagina') || ''; } catch (e) {}
+            link.setAttribute('aria-current', hrefPage === page && page ? 'page' : 'false');
+          });
+          if (push) {
+            var url = page ? ('/index.html?pagina=' + encodeURIComponent(page)) : '/index.html';
+            window.history.pushState({ publicPage: page }, '', url);
+          }
+          if (page) {
+            var active = document.querySelector('[data-public-page="' + page + '"]');
+            if (active) active.scrollIntoView({ block: 'start' });
+          }
+        }
+
+        links.forEach(function (link) {
+          link.addEventListener('click', function (event) {
+            var page = '';
+            try { page = new URL(link.href, window.location.origin).searchParams.get('pagina') || ''; } catch (e) {}
+            if (!allowed[page]) return;
+            event.preventDefault();
+            showPage(page, true);
+            var menu = document.getElementById('headerMoreMenu');
+            var toggle = document.getElementById('headerMoreMenuToggle');
+            if (menu) menu.classList.remove('is-open');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+          });
+        });
+
+        window.addEventListener('popstate', function () { showPage(currentPage(), false); });
+        showPage(currentPage(), false);
+      })();
+
+      var gridEl = document.getElementById('portalCardsGrid');
+      var carouselSectionEl = document.getElementById('portalCardsCarouselSection');
+      var carouselEl = document.getElementById('portalCardsCarousel');
+      var carouselPrevBtn = document.getElementById('portalCarouselPrev');
+      var carouselNextBtn = document.getElementById('portalCarouselNext');
+      var statusEl = document.getElementById('portalCardsStatus');
+      var whatsAppFloatingCTA = document.querySelector('.whatsapp-floating-cta');
+      var portalModulesTitleEl = document.getElementById('portalModulesTitle');
+      var portalModulesListEl = document.getElementById('portalModulesList');
+
+      var fallbackCards = [
+        {
+          module: 'vida',
+          titulo: 'Vida',
+          descripcion: 'Gastos personales por usuario, fotos privadas de facturas, suscripciones y recordatorios antes de renovar o cancelar.',
+          imagen_url: '/img/money.svg',
+          imagen_secundaria_url: '/img/Sistema para la vida.png',
+          enlace: '/administrar_empresa.html?module=vida'
+        },
+        {
+          titulo: 'Punto de venta',
+          descripcion: 'POS profesional para vender productos, servicios, recetas y tarifas con caja, factura electronica, pagos mixtos, descuentos, propinas y auditoria.',
+          imagen_url: '/img/punto_venta.png',
+          imagen_secundaria_url: '/img/sistema punto de venta.png',
+          enlace: '/administrar_empresa.html?module=punto_venta'
+        },
+        {
+          titulo: 'Motel',
+          descripcion: 'Operacion motelera con estaciones, tarifas por minutos, reservas, minibar, carta publica, domotica por estacion y facturacion tarifada.',
+          imagen_url: '/img/motel.png',
+          imagen_secundaria_url: '/img/sistema motel.png',
+          enlace: '/administrar_empresa.html?module=motel'
+        },
+        {
+          titulo: 'Restaurante',
+          descripcion: 'Gestion de mesas, pedidos, productos, recetas, cocina, caja, domicilios, carta publica con QR y facturacion para restaurantes.',
+          imagen_url: '/img/restaurante.png',
+          imagen_secundaria_url: '/img/sistema restaurante.png',
+          enlace: '/administrar_empresa.html?module=restaurante'
+        },
+        {
+          titulo: 'Control por sensor',
+          descripcion: 'Sensores y domotica para accesos, estaciones, lamparas, motobombas, jacuzzi, aire, puertas y automatizaciones por estacion.',
+          imagen_url: '/img/sensor.png',
+          imagen_secundaria_url: '/img/sistema sensor.png',
+          enlace: '/administrar_empresa.html?module=sensor'
+        },
+        {
+          titulo: 'Hotel',
+          descripcion: 'Administracion hotelera con reservas, ocupacion, tarifas por dia, check-in, productos, servicios, estaciones y reportes ejecutivos.',
+          imagen_url: '/img/hotel-logo.svg',
+          imagen_secundaria_url: '/img/sistema motel.png',
+          enlace: '/administrar_empresa.html?module=configuracion'
+        },
+        {
+          titulo: 'Clientes y CRM',
+          descripcion: 'Leads, clientes, historial comercial, pipeline, campanas, seguimientos, cotizaciones y conversion a ventas centrales por empresa.',
+          imagen_url: '/img/customer.svg',
+          imagen_secundaria_url: '/img/analytics-color.svg',
+          enlace: '/administrar_empresa.html?module=crm_unificado'
+        },
+        {
+          module: 'parqueadero',
+          titulo: 'Parqueaderos con ticket QR',
+          descripcion: 'Genera tickets de entrada con QR, calcula cobros automaticos por tiempo o tipo de vehiculo y emite recibo para salida controlada.',
+          imagen_url: '/img/vehiculos-flotas-logo.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/parqueaderos-ticket-qr.jpg',
+          enlace: '/administrar_empresa.html?module=parqueadero'
+        },
+        {
+          module: 'alquileres',
+          titulo: 'Alquileres de activos',
+          descripcion: 'Alquiler de herramientas, motos, maquinaria u objetos con contratos, garantias, checklist, devoluciones, mantenimiento y venta central conectada a clientes y servicios.',
+          imagen_url: '/img/company-briefcase-color.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/alquileres-activos.jpg',
+          enlace: '/administrar_empresa.html?module=alquileres'
+        },
+        {
+          module: 'domicilios',
+          titulo: 'Domicilios y entregas',
+          descripcion: 'Modulo tipo Rappi para restaurantes, domiciliarios y central administrativa, con pedidos, asignacion, estados, seguimiento en tiempo real e integracion Rappi configurable por empresa.',
+          imagen_url: '/img/logo.png',
+          imagen_secundaria_url: '/img/portal-systems/realistic/domicilios-entregas.jpg',
+          enlace: '/administrar_empresa.html?module=domicilios'
+        },
+        {
+          titulo: 'Turnos de atencion',
+          descripcion: 'Gestiona filas, ventanillas, llamados, pantalla publica, prioridades y tiempos de atencion para empresas de servicio.',
+          imagen_url: '/img/turnos-logo.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/turnos-atencion.jpg',
+          enlace: '/administrar_empresa.html?module=turnos_atencion'
+        },
+        {
+          titulo: 'Carnets empresariales',
+          descripcion: 'Emite carnets modernos para empleados, usuarios, contratistas y visitantes con plantillas, QR, foto, impresion y exportacion profesional.',
+          imagen_url: '/img/shield-license-color.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/carnets-empresariales.jpg',
+          enlace: '/administrar_empresa.html?module=carnets'
+        },
+        {
+          titulo: 'Produccion / MRP',
+          descripcion: 'Gestiona recetas, componentes, ordenes de produccion, consumos, calidad y planeacion de materiales por empresa.',
+          imagen_url: '/img/analytics-color.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/produccion-mrp.jpg',
+          enlace: '/administrar_empresa.html?module=produccion_mrp'
+        },
+        {
+          titulo: 'Compras con IA GPT-5.5',
+          descripcion: 'Radica fotos, PDF o XML de compras y gastos, extrae datos con IA, detecta duplicados y contabiliza soportes aprobados como cuentas por pagar.',
+          imagen_url: '/img/pcs_ia_logo.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/compras-ocr-ia.jpg',
+          enlace: '/administrar_empresa.html?module=soportes_compras_ia'
+        },
+        {
+          titulo: 'Logistica WMS',
+          descripcion: 'Ubicaciones internas, conteos, picking, packing, despachos, rutas y bitacora conectados al inventario central por empresa.',
+          imagen_url: '/img/warehouse-color.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/logistica-wms.jpg',
+          enlace: '/administrar_empresa.html?module=logistica_wms'
+        },
+        {
+          titulo: 'Bancos y pagos masivos',
+          descripcion: 'Cuentas bancarias, conciliacion, extractos, lotes de pagos, aprobaciones, caja y tesoreria conectados al centro financiero.',
+          imagen_url: '/img/money.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/bancos-pagos-masivos.jpg',
+          enlace: '/administrar_empresa.html?module=bancos_pagos'
+        },
+        {
+          titulo: 'Gestion documental y contratos',
+          descripcion: 'Expedientes, documentos, contratos, obligaciones, vencimientos, firma externa/manual, aprobaciones y trazabilidad por empresa.',
+          imagen_url: '/img/report.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/gestion-documental-contratos.jpg',
+          enlace: '/administrar_empresa.html?module=gestion_documental'
+        },
+        {
+          titulo: 'Tickets de ayuda y calidad',
+          descripcion: 'Tickets propios de soporte, conversaciones, prioridades, auditorias, procesos, no conformidades, responsables y evidencias para operacion interna.',
+          imagen_url: '/img/customer.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/tickets-ayuda-calidad.jpg',
+          enlace: '/administrar_empresa.html'
+        },
+        {
+          titulo: 'Tesoreria y presupuesto',
+          descripcion: 'Controla bancos, caja, presupuesto, partidas y flujo de caja proyectado para cuidar liquidez empresarial.',
+          imagen_url: '/img/money.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/tesoreria-presupuesto.jpg',
+          enlace: '/administrar_empresa.html?module=tesoreria_presupuesto'
+        },
+        {
+          titulo: 'Facturacion electronica Colombia',
+          descripcion: 'Factura electronica, notas, documento soporte, nomina electronica, POS electronico, impuestos Colombia y trazabilidad DIAN por empresa.',
+          imagen_url: '/img/invoice.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/facturacion-electronica-colombia.jpg',
+          enlace: '/administrar_empresa.html?module=facturacion'
+        },
+        {
+          titulo: 'Cierre fiscal',
+          descripcion: 'Bloquea periodos cerrados, controla reaperturas con motivo, politicas por modulo, excepciones aprobadas, simulador y bitacora de auditoria.',
+          imagen_url: '/img/shield-security-color.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/cierre-fiscal.jpg',
+          enlace: '/administrar_empresa.html?module=cierre_fiscal'
+        },
+        {
+          titulo: 'Centros de costo',
+          descripcion: 'Mide rentabilidad por sucursal, area, unidad de negocio o proyecto con reglas de imputacion, presupuesto, comparativos y dashboard.',
+          imagen_url: '/img/analytics-color.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/centros-costo.jpg',
+          enlace: '/administrar_empresa.html?module=centros_costo'
+        },
+        {
+          titulo: 'Activos fijos NIIF/Fiscal',
+          descripcion: 'Administra PPE e intangibles con vida util NIIF y fiscal, deterioro, valor fiscal, depreciacion, seguros, traslados, bajas y mantenimientos.',
+          imagen_url: '/img/company-briefcase-color.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/activos-fijos-niif-fiscal.jpg',
+          enlace: '/administrar_empresa.html?module=activos_fijos_niif_fiscal'
+        },
+        {
+          titulo: 'Cobranza profesional',
+          descripcion: 'Recupera cartera con cuentas priorizadas, plantillas, campanas, gestiones, promesas de pago, alertas de mora y exportacion operativa.',
+          imagen_url: '/img/money.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/cobranza-profesional.jpg',
+          enlace: '/administrar_empresa.html?module=cobranza'
+        },
+        {
+          titulo: 'Suite contador',
+          descripcion: 'Centro profesional para contadores: clientes, obligaciones, PUC/NIIF, impuestos, DIAN, certificados, cierres, reportes y Renta IA por empresa.',
+          imagen_url: '/img/report.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/suite-contador.jpg',
+          enlace: '/administrar_empresa.html?module=suite_contador'
+        },
+        {
+          titulo: 'Certificados tributarios',
+          descripcion: 'Portal de terceros para emitir certificados de retencion, ingresos y soportes tributarios con enlace publico seguro, impresion y bitacora de descargas.',
+          imagen_url: '/img/report.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/certificados-tributarios.jpg',
+          enlace: '/administrar_empresa.html?module=portal_terceros_certificados'
+        },
+        {
+          module: 'aiu_construccion',
+          titulo: 'AIU construccion',
+          descripcion: 'Control de contratos de obra con Administracion, Imprevistos y Utilidad, retenciones, anticipos, garantias y factura AIU.',
+          imagen_url: '/img/taxes.svg',
+          imagen_secundaria_url: '/img/portal-systems/realistic/aiu-construccion.jpg',
+          enlace: '/administrar_empresa.html?module=aiu_construccion'
+        }
+      ];
+
+      var classicTemplateModules = { parqueadero: true, domicilios: true, alquileres: true, aiu_construccion: true };
+      var publicClassicTemplateCards = fallbackCards.filter(function (card) {
+        return !!classicTemplateModules[String((card && card.module) || '').trim().toLowerCase()];
+      });
+
+      var allLocalVerticalCatalog = window.PCS_NUEVAS_PLANTILLAS || [];
+      var hiddenPublicVerticalModules = {};
+      var localVerticalCatalog = allLocalVerticalCatalog.filter(isVerticalPublicOperational);
+      var localVerticalVisualsByModule = {};
+      allLocalVerticalCatalog.forEach(function(item) {
+        if (item && item.module) localVerticalVisualsByModule[item.module] = item;
+      });
+
+      function isVerticalPublicOperational(item) {
+        if (!item) return false;
+        var module = String((item.module || item.modulo) || '').trim().toLowerCase();
+        if (hiddenPublicVerticalModules[module]) return false;
+        if (item.operationalVisible === false || item.operational_visible === false || item.visible_operativo === false || item.visible_operacional === false) return false;
+        var decision = String(item.decisionPreconfig || item.decision_preconfig || '').trim();
+        if (decision === 'no_productivo') return false;
+        if (item.productionMass === true || item.production_mass === true || item.produccion_masiva === true) return true;
+        var rank = parseInt(item.productionRank || item.prioridad_produccion || item.production_rank, 10) || 0;
+        if (rank > 0) return true;
+        return !decision;
+      }
+
+      function verticalCardFromCatalogItem(item) {
+        var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
+        var local = localVerticalVisualsByModule[module] || {};
+        var rankRaw = item && (item.productionRank || item.prioridad_produccion || item.production_rank);
+        var productionRank = parseInt(rankRaw, 10) || 0;
+        var productionMass = !!(item && (item.productionMass || item.production_mass || item.produccion_masiva || productionRank > 0));
+        var status = (item && (item.portalStatus || item.portal_status || item.estado_portal || item.decisionLabel || item.decision_label)) || (productionMass ? ('Produccion #' + productionRank) : 'No productivo');
+        var description = (item && (item.portalDescription || item.portal_description || item.description || item.descripcion_larga || item.descripcion || item.lead || item.summary || item.resumen)) || 'Modulo plantilla empresarial con configuracion, operacion, permisos y reportes.';
+        if (status && description.indexOf(status) !== 0) {
+          description = status + '. ' + description;
+        }
+        return {
+          __verticalModule: module,
+          __productionMass: productionMass,
+          __productionRank: productionRank,
+          module: module,
+          full_title: (item && (item.full_title || item.fullTitle || item.title || item.titulo || item.module)) || module,
+          sections: item && Array.isArray(item.sections) ? item.sections.slice() : [],
+          detalle_id: 'vertical-' + module,
+          titulo: (item && (item.full_title || item.fullTitle || item.title || item.titulo || item.module)) || module,
+          descripcion: description,
+          imagen_url: local.icon || (item && item.icon) || '/img/company-briefcase-color.svg',
+          imagen_secundaria_url: local.secondaryIcon || (item && item.secondaryIcon) || '/img/portal-systems/realistic/punto-venta.jpg',
+          enlace: '/administrar_empresa.html?module=' + encodeURIComponent(module)
+        };
+      }
+
+      function sortVerticalItems(a, b) {
+        var ar = parseInt(a && (a.productionRank || a.prioridad_produccion || a.production_rank), 10) || 0;
+        var br = parseInt(b && (b.productionRank || b.prioridad_produccion || b.production_rank), 10) || 0;
+        if (ar && br) return ar - br;
+        if (ar) return -1;
+        if (br) return 1;
+        return String((a && (a.title || a.titulo || a.module)) || '').localeCompare(String((b && (b.title || b.titulo || b.module)) || ''));
+      }
+
+      var publicVerticalCards = localVerticalCatalog.slice().sort(sortVerticalItems).map(verticalCardFromCatalogItem);
+      fallbackCards = fallbackCards.concat(publicVerticalCards);
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function normalizeModuleIcon(raw) {
+        var value = String(raw || '').trim();
+        if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) {
+          return '/img/company-briefcase-color.svg';
+        }
+        return value;
+      }
+
+      function normalizeModuleFeatures(raw) {
+        var source = Array.isArray(raw) ? raw : [];
+        var out = [];
+        source.forEach(function (item) {
+          var value = String(item || '').trim();
+          if (value) out.push(value);
+        });
+        return out.length ? out : ['Caracteristica principal'];
+      }
+
+      function normalizeModuleInfoItems(rawModules) {
+        var source = Array.isArray(rawModules) ? rawModules : [];
+        return source.map(function (item, index) {
+          return {
+            titulo: String((item && item.titulo) || '').trim() || ('Modulo ' + (index + 1)),
+            icono_url: normalizeModuleIcon(item && item.icono_url),
+            caracteristicas: normalizeModuleFeatures(item && item.caracteristicas)
+          };
+        }).filter(function (item) {
+          return item.titulo && item.caracteristicas.length;
+        });
+      }
+
+      function renderModuleInfo(payload) {
+        if (!portalModulesListEl) return;
+        var modules = normalizeModuleInfoItems(payload && payload.modulos);
+        if (!modules.length) return;
+        if (portalModulesTitleEl) {
+          portalModulesTitleEl.textContent = String((payload && payload.titulo) || '').trim() || 'Modulos y caracteristicas principales';
+        }
+        portalModulesListEl.innerHTML = modules.map(function (mod) {
+          return '' +
+            '<li><img class="portal-module-icon" src="' + escapeHTML(mod.icono_url) + '" alt="" loading="lazy">' +
+            '<div class="portal-module-text"><strong>' + escapeHTML(mod.titulo) + ':</strong>' +
+            '<ul class="portal-module-feature-list">' + mod.caracteristicas.map(function (feature) {
+              return '<li>' + escapeHTML(feature) + '</li>';
+            }).join('') + '</ul></div></li>';
+        }).join('');
+      }
+
+      async function loadModuleInfo() {
+        if (!portalModulesListEl) return;
+        try {
+          var response = await fetch('/api/public/informacion_de_modulos', { credentials: 'same-origin' });
+          var payload = null;
+          try { payload = await response.json(); } catch (_) { payload = null; }
+          if (!response.ok) {
+            throw new Error((payload && (payload.error || payload.message)) || ('HTTP ' + response.status));
+          }
+          renderModuleInfo(payload);
+        } catch (_) {
+          // El HTML estatico queda como respaldo del portal publico.
+        }
+      }
+
+      function slugifyTitle(value, index) {
+        var normalized = String(value || '').toLowerCase();
+        if (normalized.normalize) {
+          normalized = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        normalized = normalized.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        if (!normalized) {
+          normalized = 'tarjeta';
+        }
+        return normalized + '-detalle-' + (index + 1);
+      }
+
+      function normalizeDetailId(raw, fallback) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value.normalize) {
+          value = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        value = value.replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+        return value || fallback;
+      }
+
+      function normalizeLink(raw) {
+        var value = String(raw || '').trim();
+        if (!value) return '/login.html';
+        var lower = value.toLowerCase();
+        if (lower.indexOf('http://') === 0 || lower.indexOf('https://') === 0 || value.indexOf('/') === 0) {
+          return value;
+        }
+        return '/' + value.replace(/^\/+/, '');
+      }
+
+      function normalizeImage(raw) {
+        var value = String(raw || '').trim();
+        if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) {
+          return '/img/punto_venta.png';
+        }
+        return value;
+      }
+
+      function isRealisticPortalFigure(value) {
+        return String(value || '').indexOf('/img/portal-systems/realistic/') === 0;
+      }
+
+      function normalizeVisualSize(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'small') value = 'pequeno';
+        if (value === 'medium') value = 'mediano';
+        if (value === 'large') value = 'grande';
+        if (value !== 'pequeno' && value !== 'mediano' && value !== 'grande') {
+          value = 'mediano';
+        }
+        return value;
+      }
+
+      function normalizeVisualSettings(raw) {
+        var source = raw && typeof raw === 'object' ? raw : {};
+        return {
+          index_card_size: normalizeVisualSize(source.index_card_size),
+          index_text_size: normalizeVisualSize(source.index_text_size)
+        };
+      }
+
+      function normalizeCardType(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'banner' || value === 'baner' || value === 'tarjeta_banner' || value === 'tarjeta_baner') {
+          return 'banner';
+        }
+        return 'info_foto';
+      }
+
+      function normalizeCardLookupKey(value) {
+        var normalized = String(value || '').trim().toLowerCase();
+        if (normalized.normalize) {
+          normalized = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        return normalized.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      }
+
+      var retiredPortalCardModules = {
+        grafologia: true,
+        gimnasio: true,
+        taxi_system: true,
+        apartamentos_turisticos: true,
+        propiedad_horizontal: true,
+        odontologia: true,
+        consultorio_odontologico: true,
+        drogueria_farmacia: true,
+        drogueria_y_farmacia: true,
+        agencia_viajes: true,
+        operador_turistico: true,
+        clinica_consultorios: true,
+        laboratorio_clinico: true,
+        colegio_academia: true,
+        guarderia_infantil: true,
+        seguridad_privada: true,
+        club_deportivo: true,
+        inmobiliaria_comercial: true,
+        cooperativa_fondo: true,
+        capacitacion_empresarial: true
+      };
+
+      function portalCardModuleKey(card) {
+        var direct = normalizeCardLookupKey(card && (card.module || card.__verticalModule || card.modulo));
+        if (direct) return direct;
+        var link = String((card && card.enlace) || '').trim();
+        if (!link) return '';
+        try {
+          return normalizeCardLookupKey(new URL(link, window.location.origin).searchParams.get('module'));
+        } catch (_) {
+          var match = link.match(/[?&]module=([^&#]+)/i);
+          return match ? normalizeCardLookupKey(decodeURIComponent(match[1])) : '';
+        }
+      }
+
+      function isRetiredPortalCard(card) {
+        var module = portalCardModuleKey(card);
+        if (module && retiredPortalCardModules[module]) return true;
+        var title = normalizeCardLookupKey(card && card.titulo);
+        return !!retiredPortalCardModules[title];
+      }
+
+      var preferredPortalPrimaryCards = {
+        punto_de_venta: { rank: 1, figure: '/img/sistema punto de venta.png' },
+        motel: { rank: 2, figure: '/img/sistema motel.png' },
+        restaurante: { rank: 3, figure: '/img/sistema restaurante.png' },
+        control_por_sensor: { rank: 4, figure: '/img/sistema sensor.png' },
+        sensor: { rank: 4, figure: '/img/sistema sensor.png' },
+        hotel: { rank: 5, figure: '/img/sistema motel.png' },
+        configuracion: { rank: 5, figure: '/img/sistema motel.png' },
+        clientes_y_crm: { rank: 6, figure: '/img/analytics-color.svg' },
+        crm_unificado: { rank: 6, figure: '/img/analytics-color.svg' }
+      };
+
+      function preferredPortalCardInfo(card) {
+        var keys = [
+          normalizeCardLookupKey(card && (card.module || card.__verticalModule || card.modulo)),
+          normalizeCardLookupKey(card && card.titulo)
+        ];
+        for (var i = 0; i < keys.length; i += 1) {
+          if (keys[i] && preferredPortalPrimaryCards[keys[i]]) {
+            return preferredPortalPrimaryCards[keys[i]];
+          }
+        }
+        return null;
+      }
+
+      function restorePreferredPortalCard(card) {
+        var info = preferredPortalCardInfo(card);
+        if (!info) return card;
+        var restored = Object.assign({}, card);
+        restored.__primaryPortalRank = info.rank;
+        restored.imagen_secundaria_url = info.figure;
+        return restored;
+      }
+
+      function orderPortalCards(cards) {
+        return (cards || []).map(function(card, idx) {
+          var restored = restorePreferredPortalCard(card);
+          restored.__originalPortalIndex = idx;
+          return restored;
+        }).sort(function(a, b) {
+          var ar = a && a.__primaryPortalRank ? a.__primaryPortalRank : 9999;
+          var br = b && b.__primaryPortalRank ? b.__primaryPortalRank : 9999;
+          if (ar !== br) return ar - br;
+          return (a.__originalPortalIndex || 0) - (b.__originalPortalIndex || 0);
+        }).map(function(card) {
+          delete card.__primaryPortalRank;
+          delete card.__originalPortalIndex;
+          return card;
+        });
+      }
+
+      function fallbackCardFor(card, idx) {
+        var module = normalizeCardLookupKey(card && (card.module || card.__verticalModule || card.modulo));
+        var title = normalizeCardLookupKey(card && card.titulo);
+        for (var i = 0; i < fallbackCards.length; i += 1) {
+          var item = fallbackCards[i];
+          if (!item) continue;
+          var itemModule = normalizeCardLookupKey(item.module || item.__verticalModule || item.modulo);
+          var itemTitle = normalizeCardLookupKey(item.titulo);
+          if (module && itemModule && module === itemModule) return item;
+          if (title && itemTitle && title === itemTitle) return item;
+        }
+        return fallbackCards[idx % fallbackCards.length];
+      }
+
+      function applyVisualSettings(raw) {
+        var settings = normalizeVisualSettings(raw);
+        gridEl.setAttribute('data-card-size', settings.index_card_size);
+        gridEl.setAttribute('data-text-size', settings.index_text_size);
+        if (carouselEl) {
+          carouselEl.setAttribute('data-card-size', settings.index_card_size);
+          carouselEl.setAttribute('data-text-size', settings.index_text_size);
+        }
+      }
+
+      function normalizeWhatsAppNumber(raw) {
+        return String(raw || '').replace(/[^\d]/g, '').trim();
+      }
+
+      function applyWhatsAppContactNumber(raw) {
+        if (!whatsAppFloatingCTA) {
+          return;
+        }
+        var normalized = normalizeWhatsAppNumber(raw) || '573043306506';
+        whatsAppFloatingCTA.setAttribute('href', 'https://wa.me/' + normalized);
+      }
+
+      function normalizeCards(rawCards) {
+        var source = Array.isArray(rawCards) && rawCards.length ? rawCards : fallbackCards;
+        source = source.filter(function (card) { return !isRetiredPortalCard(card); });
+        if (!source.length) {
+          source = fallbackCards.filter(function (card) { return !isRetiredPortalCard(card); });
+        }
+        return source.map(function (card, idx) {
+          var fallback = fallbackCardFor(card, idx);
+          var titulo = String((card && card.titulo) || '').trim() || fallback.titulo;
+          var descripcion = String((card && card.descripcion) || '').trim() || fallback.descripcion;
+          var imagen = normalizeImage((card && card.imagen_url) || fallback.imagen_url);
+          var rawImagenSecValue = String((card && card.imagen_secundaria_url) || '').trim();
+          var imagenSec = rawImagenSecValue ? normalizeImage(rawImagenSecValue) : normalizeImage(fallback && fallback.imagen_secundaria_url);
+          if (!imagenSec) {
+            imagenSec = '/img/portal-systems/realistic/punto-venta.jpg';
+          }
+          var enlace = normalizeLink((card && card.enlace) || fallback.enlace);
+          var tipoTarjeta = normalizeCardType(card && card.tipo_tarjeta);
+          var detalleId = normalizeDetailId(card && card.detalle_id, slugifyTitle(titulo, idx));
+          var module = String((card && (card.module || card.__verticalModule || card.modulo)) || '').trim().toLowerCase();
+          var sections = Array.isArray(card && card.sections) ? card.sections : [];
+          return {
+            tipo_tarjeta: tipoTarjeta,
+            titulo: titulo,
+            descripcion: descripcion,
+            imagen_url: imagen,
+            imagen_secundaria_url: imagenSec,
+            enlace: enlace,
+            module: module,
+            full_title: String((card && (card.full_title || card.fullTitle)) || titulo).trim(),
+            sections: sections,
+            detalle_id: detalleId,
+            detalle_href: buildDetailHref(card, titulo, descripcion, detalleId, enlace, module, sections)
+          };
+        });
+      }
+
+      function buildDetailHref(card, titulo, descripcion, detalleId, enlace, module, sections) {
+        var params = new URLSearchParams();
+        params.set('origen', 'index');
+        params.set('accion', 'probar_gratis');
+        params.set('detalle_id', detalleId);
+        params.set('titulo', titulo);
+        params.set('descripcion', descripcion);
+        if (module) {
+          params.set('module', module);
+          params.set('tipo_empresa', module);
+        }
+        var fullTitle = String((card && (card.full_title || card.fullTitle)) || titulo).trim();
+        if (fullTitle) params.set('titulo_completo', fullTitle);
+        if (enlace) params.set('enlace_operativo', enlace);
+        if (Array.isArray(sections) && sections.length) {
+          params.set('secciones', sections.join('|'));
+        }
+        return '/descripcion_de_los_sistemas.html?' + params.toString() + '#' + encodeURIComponent(detalleId);
+      }
+
+      async function refreshFallbackVerticalCards() {
+        try {
+          var response = await fetch('/api/public/plantillas_nuevas/catalogo', { credentials: 'same-origin' });
+          if (!response.ok) return;
+          var payload = await response.json();
+          var rows = payload && Array.isArray(payload.items) ? payload.items : [];
+          if (!rows.length) return;
+          var modules = {};
+          rows.forEach(function(item) {
+            var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
+            if (module) modules[module] = true;
+          });
+          publicVerticalCards = rows.filter(isVerticalPublicOperational).sort(sortVerticalItems).map(verticalCardFromCatalogItem);
+          fallbackCards = fallbackCards.filter(function(card) {
+            return !card.__verticalModule || !modules[card.__verticalModule];
+          }).concat(publicVerticalCards);
+        } catch (_) {}
+      }
+
+      function mergeCardsWithVerticals(rawCards) {
+        if (!Array.isArray(rawCards) || !rawCards.length) {
+          return fallbackCards;
+        }
+        var publicTemplateCards = publicClassicTemplateCards.concat(publicVerticalCards);
+        if (!publicTemplateCards.length) {
+          return rawCards;
+        }
+        var modules = {};
+        publicTemplateCards.forEach(function(card) {
+          var module = portalCardModuleKey(card);
+          if (module) modules[module] = true;
+        });
+        return rawCards.filter(function(card) {
+          var module = portalCardModuleKey(card);
+          return !module || !modules[module];
+        }).concat(publicTemplateCards);
+      }
+
+      function buildPortalCardHTML(card, idx, carouselMode) {
+          if (card.tipo_tarjeta === 'banner') {
+            return '' +
+              '<article class="portal-card home-offer-card home-offer-card-banner' + (carouselMode ? ' portal-carousel-card' : '') + '" style="animation-delay:' + (idx * 90) + 'ms" aria-label="Banner: ' + escapeHTML(card.titulo) + '">' +
+              '  <img class="home-offer-banner-img" src="' + escapeHTML(card.imagen_url) + '" alt="Banner: ' + escapeHTML(card.titulo) + '">' +
+              '</article>';
+          }
+          var figureSrc = card.imagen_secundaria_url || "/img/portal-systems/realistic/punto-venta.jpg";
+          return '' +
+            '<article class="portal-card home-offer-card' + (carouselMode ? ' portal-carousel-card' : '') + '" style="animation-delay:' + (idx * 90) + 'ms">' +
+            '  <div class="home-offer-head">' +
+            '    <img src="' + escapeHTML(card.imagen_url) + '" alt="Logo: ' + escapeHTML(card.titulo) + '" class="card-logo" width="36" height="36">' +
+            '    <h3 class="home-offer-title">' + escapeHTML(card.titulo) + '</h3>' +
+            '  </div>' +
+            '  <div class="home-offer-figure">' +
+            '    <img class="card-figure-img" src="' + escapeHTML(figureSrc) + '" alt="Ilustración: ' + escapeHTML(card.titulo) + '">' +
+            '  </div>' +
+            '  <div class="home-offer-body">' +
+            '    <p>' + escapeHTML(card.descripcion) + '</p>' +
+            '  </div>' +
+            '  <div class="card-actions" style="margin-top:auto;">' +
+        '    <a class="home-offer-btn" href="' + escapeHTML(card.detalle_href) + '" data-source="index" data-module="' + escapeHTML(card.module || '') + '" data-title="' + escapeHTML(card.full_title || card.titulo) + '" data-description="' + escapeHTML(card.descripcion) + '">Probar Gratis</a>' +
+            '  </div>' +
+            '</article>';
+      }
+
+      function renderCards(cards) {
+        var primaryCards = cards.slice(0, 6);
+        var carouselCards = cards.slice(6);
+        gridEl.innerHTML = primaryCards.map(function (card, idx) {
+          return buildPortalCardHTML(card, idx, false);
+        }).join('');
+        if (carouselEl && carouselSectionEl) {
+          carouselSectionEl.hidden = carouselCards.length === 0;
+          carouselEl.innerHTML = carouselCards.map(function (card, idx) {
+            return buildPortalCardHTML(card, idx, true);
+          }).join('');
+          carouselEl.scrollLeft = 0;
+          updateCarouselButtons();
+        }
+        fitHomeOfferTitles();
+      }
+
+      function getCarouselStep() {
+        if (!carouselEl) return 320;
+        var firstCard = carouselEl.querySelector('.home-offer-card');
+        if (!firstCard) return Math.max(280, Math.round(carouselEl.clientWidth * 0.8));
+        var rect = firstCard.getBoundingClientRect();
+        var styles = window.getComputedStyle(carouselEl);
+        var gap = parseFloat(styles.columnGap || styles.gap) || 0;
+        return Math.max(260, Math.round(rect.width + gap));
+      }
+
+      function updateCarouselButtons() {
+        if (!carouselEl || !carouselPrevBtn || !carouselNextBtn) return;
+        var maxScroll = Math.max(0, carouselEl.scrollWidth - carouselEl.clientWidth - 2);
+        var hasOverflow = maxScroll > 4;
+        carouselPrevBtn.disabled = !hasOverflow || carouselEl.scrollLeft <= 2;
+        carouselNextBtn.disabled = !hasOverflow || carouselEl.scrollLeft >= maxScroll;
+      }
+
+      function scrollCarousel(direction) {
+        if (!carouselEl) return;
+        carouselEl.scrollBy({ left: getCarouselStep() * direction, behavior: 'smooth' });
+        window.setTimeout(updateCarouselButtons, 260);
+      }
+
+      var carouselAutoScrollTimer = null;
+      var carouselAutoDirection = 1;
+
+      function stopCarouselAutoScroll() {
+        if (carouselAutoScrollTimer) {
+          window.clearInterval(carouselAutoScrollTimer);
+          carouselAutoScrollTimer = null;
+        }
+      }
+
+      function startCarouselAutoScroll() {
+        if (!carouselEl || carouselAutoScrollTimer || window.matchMedia('(hover: none)').matches) return;
+        carouselAutoScrollTimer = window.setInterval(function () {
+          if (!carouselEl) return;
+          var maxScroll = Math.max(0, carouselEl.scrollWidth - carouselEl.clientWidth - 2);
+          if (maxScroll <= 4) return;
+          if (carouselAutoDirection > 0 && carouselEl.scrollLeft >= maxScroll - 2) {
+            carouselAutoDirection = -1;
+          } else if (carouselAutoDirection < 0 && carouselEl.scrollLeft <= 2) {
+            carouselAutoDirection = 1;
+          }
+          carouselEl.scrollBy({ left: Math.max(120, Math.round(getCarouselStep() * 0.55)) * carouselAutoDirection, behavior: 'smooth' });
+          window.requestAnimationFrame(updateCarouselButtons);
+        }, 1150);
+      }
+
+      var __homeOfferTitleFitScheduled = false;
+      function scheduleFitHomeOfferTitles() {
+        if (__homeOfferTitleFitScheduled) return;
+        __homeOfferTitleFitScheduled = true;
+        window.requestAnimationFrame(function () {
+          __homeOfferTitleFitScheduled = false;
+          fitHomeOfferTitles();
+        });
+      }
+
+      function fitHomeOfferTitles() {
+        if (!gridEl) return;
+        var titleNodes = [];
+        titleNodes = titleNodes.concat(Array.prototype.slice.call(gridEl.querySelectorAll('.home-offer-title')));
+        if (carouselEl) {
+          titleNodes = titleNodes.concat(Array.prototype.slice.call(carouselEl.querySelectorAll('.home-offer-title')));
+        }
+        var titles = titleNodes;
+        if (!titles || !titles.length) return;
+
+        for (var i = 0; i < titles.length; i += 1) {
+          var el = titles[i];
+          if (!el) continue;
+
+          // Reset a tamaño base antes de ajustar.
+          el.style.fontSize = '';
+          var cs = window.getComputedStyle(el);
+
+          // Base en px
+          var basePx = parseFloat(cs.fontSize) || 16;
+          var minPx = Math.max(12, Math.round(basePx * 0.78)); // ~1.13rem desde 1.45rem
+          var stepPx = Math.max(0.5, Math.round(basePx * 0.04)); // ajuste fino
+
+          var lh = cs.lineHeight;
+          var lineHeightPx = 0;
+          if (lh && lh !== 'normal') {
+            lineHeightPx = parseFloat(lh) || 0;
+          }
+          if (!lineHeightPx) {
+            // fallback coherente con el CSS (1.15)
+            lineHeightPx = basePx * 1.15;
+          }
+          var maxHeightPx = Math.ceil(lineHeightPx * 3 + 0.5);
+
+          // Reducir hasta que quepa en 3 líneas (sin recorte con "...")
+          var current = basePx;
+          var guard = 0;
+          while (el.scrollHeight > maxHeightPx && current > minPx && guard < 40) {
+            current = current - stepPx;
+            el.style.fontSize = current.toFixed(2) + 'px';
+            guard += 1;
+          }
+        }
+      }
+
+      async function loadCards() {
+        statusEl.textContent = 'Cargando ofertas...';
+        try {
+          await refreshFallbackVerticalCards();
+          var response = await fetch('/api/public/pagina_principal', { credentials: 'same-origin' });
+          var payload = null;
+          try {
+            payload = await response.json();
+          } catch (_) {
+            payload = null;
+          }
+
+          if (!response.ok) {
+            throw new Error((payload && (payload.error || payload.message)) || ('HTTP ' + response.status));
+          }
+
+          applyVisualSettings(payload && payload.estilos);
+          applyWhatsAppContactNumber(payload && payload.whatsapp_contact_number);
+          var cards = orderPortalCards(normalizeCards(mergeCardsWithVerticals(payload && payload.tarjetas)));
+          renderCards(cards);
+          statusEl.textContent = '';
+        } catch (err) {
+          applyVisualSettings(null);
+          applyWhatsAppContactNumber('573043306506');
+          renderCards(orderPortalCards(normalizeCards(fallbackCards)));
+          statusEl.textContent = 'Se mostraron ofertas predeterminadas por un problema temporal de conexion.';
+        }
+      }
+
+      // Chat público (portal) — 10 consultas/5 min por usuario
+      (function initPublicPortalChat() {
+        if (window.__pcsUseFloatingPublicChat) return;
+        var box = document.getElementById("pcsPublicChat");
+        var form = document.getElementById("pcsPublicChatForm");
+        var input = document.getElementById("pcsPublicChatInput");
+        var msg = document.getElementById("pcsPublicChatMsg");
+        var btnClear = document.getElementById("pcsPublicChatClear");
+        var btnSend = document.getElementById("pcsPublicChatSend");
+        var btnStream = document.getElementById("pcsPublicChatStreamBtn");
+        if (!box || !form || !input || !msg || !btnSend) return;
+
+        function normalize(v) { return (v == null ? "" : String(v)).trim(); }
+        function esc(v) {
+          return String(v == null ? "" : v)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+        function setMsg(text, isErr) {
+          msg.textContent = text || "";
+          msg.className = isErr ? "error" : "form-help";
+        }
+        function append(role, text) {
+          var cls = role === "user" ? "ai-chat-bubble user" : (role === "assistant" ? "ai-chat-bubble assistant" : "ai-chat-bubble");
+          box.insertAdjacentHTML("beforeend", "<div class=\"" + cls + "\"><div class=\"ai-chat-content\">" + esc(text) + "</div></div>");
+          box.scrollTop = box.scrollHeight;
+        }
+
+        var history = [];
+        function pushHistory(role, content) {
+          history.push({ rol: role, contenido: content });
+          if (history.length > 6) history = history.slice(-6);
+        }
+
+        var localKey = "pcs_public_portal_chat_limit_v1";
+        function localLimitCheck() {
+          try {
+            var raw = window.localStorage.getItem(localKey);
+            if (!raw) return { ok: true };
+            var st = JSON.parse(raw);
+            var now = Date.now();
+            if (!st || !st.resetAt || now > st.resetAt) return { ok: true };
+            if ((st.used || 0) >= 10) {
+              var sec = Math.max(1, Math.floor((st.resetAt - now) / 1000));
+              return { ok: false, retry: sec };
+            }
+            return { ok: true };
+          } catch (e) { return { ok: true }; }
+        }
+        function localLimitConsume() {
+          try {
+            var raw = window.localStorage.getItem(localKey);
+            var st = raw ? JSON.parse(raw) : null;
+            var now = Date.now();
+            if (!st || !st.resetAt || now > st.resetAt) st = { resetAt: now + 5 * 60 * 1000, used: 0 };
+            st.used = (st.used || 0) + 1;
+            window.localStorage.setItem(localKey, JSON.stringify(st));
+          } catch (e) { }
+        }
+
+        async function send() {
+          var q = normalize(input.value);
+          if (!q) return;
+          var pre = localLimitCheck();
+          if (!pre.ok) {
+            setMsg("Límite alcanzado. Espera " + pre.retry + "s o escríbenos por WhatsApp.", true);
+            return;
+          }
+          input.value = "";
+          append("user", q);
+          pushHistory("user", q);
+            setMsg("Consultando…", false);
+          btnSend.disabled = true;
+          try {
+            var res = await fetch("/api/public/chat_portal", {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pregunta: q, historial: history })
+            });
+            var data = null;
+            try { data = await res.json(); } catch (e) { data = null; }
+            if (!res.ok) {
+              var err = (data && (data.error || data.message)) ? String(data.error || data.message) : ("HTTP " + res.status);
+              if (res.status === 429) {
+                var retry = data && data.retry_after_seconds ? Number(data.retry_after_seconds) : 300;
+                setMsg(err, true);
+                append("assistant", err);
+                pushHistory("assistant", err);
+                // bloquear solo en el cliente también
+                try {
+                  window.localStorage.setItem(localKey, JSON.stringify({ resetAt: Date.now() + (retry * 1000), used: 10 }));
+                } catch (e2) { }
+                return;
+              }
+              throw new Error(err);
+            }
+            var a = data && data.respuesta ? String(data.respuesta) : "";
+            if (!a) a = "No pude responder en este momento. Intenta de nuevo.";
+            append("assistant", a);
+            pushHistory("assistant", a);
+            localLimitConsume();
+            setMsg("Listo.", false);
+          } catch (e) {
+            setMsg(e.message || "No se pudo consultar.", true);
+          } finally {
+            btnSend.disabled = false;
+          }
+        }
+
+        async function sendStream() {
+          var q = normalize(input.value);
+          if (!q) return;
+          var pre = localLimitCheck();
+          if (!pre.ok) {
+            setMsg("Límite alcanzado. Espera " + pre.retry + "s.", true);
+            return;
+          }
+          input.value = "";
+          append("user", q);
+          pushHistory("user", q);
+          setMsg("Generando respuesta fluida...", false);
+          btnSend.disabled = true;
+          if (btnStream) btnStream.disabled = true;
+
+          try {
+            var res = await fetch("/api/public/chat_portal_stream", {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pregunta: q, historial: history })
+            });
+
+            if (!res.ok || !res.body) {
+              var data = null;
+              try { data = await res.json(); } catch (e) { }
+              var err = (data && (data.error || data.message)) ? String(data.error || data.message) : ("HTTP " + res.status);
+              if (res.status === 429) {
+                var retry = data && data.retry_after_seconds ? Number(data.retry_after_seconds) : 300;
+                setMsg(err, true);
+                append("assistant", err);
+                pushHistory("assistant", err);
+                try {
+                  window.localStorage.setItem(localKey, JSON.stringify({ resetAt: Date.now() + (retry * 1000), used: 10 }));
+                } catch (e2) { }
+                return;
+              }
+              throw new Error(err);
+            }
+
+            var bubble = document.createElement("div");
+            bubble.className = "ai-chat-bubble assistant";
+            var contentDiv = document.createElement("div");
+            contentDiv.className = "ai-chat-content";
+            bubble.appendChild(contentDiv);
+            box.appendChild(bubble);
+            box.scrollTop = box.scrollHeight;
+
+            var reader = res.body.getReader();
+            var decoder = new TextDecoder();
+            var assistantReply = "";
+            var done = false;
+
+            while (!done) {
+              var { value, done: doneReading } = await reader.read();
+              done = doneReading;
+              if (value) {
+                var chunk = decoder.decode(value, { stream: true });
+                var lines = chunk.split("\n");
+                for (var i = 0; i < lines.length; i++) {
+                  var line = lines[i];
+                  if (line.startsWith("data: ")) {
+                    var dataStr = line.slice(6).trim();
+                    if (dataStr === "[DONE]") {
+                      done = true;
+                      break;
+                    }
+                    try {
+                      var parsed = JSON.parse(dataStr);
+                      if (parsed.text) {
+                        assistantReply += parsed.text;
+                        contentDiv.textContent = assistantReply;
+                        box.scrollTop = box.scrollHeight;
+                      }
+                    } catch (e) { }
+                  }
+                }
+              }
+            }
+            pushHistory("assistant", assistantReply);
+            localLimitConsume();
+            setMsg("Listo.", false);
+          } catch (e) {
+            setMsg(e.message || "No se pudo generar el stream.", true);
+          } finally {
+            btnSend.disabled = false;
+            if (btnStream) btnStream.disabled = false;
+          }
+        }
+
+        form.addEventListener("submit", function (ev) { ev.preventDefault(); send(); });
+        if (btnStream) {
+          btnStream.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            sendStream();
+          });
+        }
+        if (btnClear) btnClear.addEventListener("click", function () { box.innerHTML = ""; history = []; setMsg("", false); });
+      })();
+
+      if (carouselPrevBtn) {
+        carouselPrevBtn.addEventListener('click', function () { scrollCarousel(-1); });
+      }
+      if (carouselNextBtn) {
+        carouselNextBtn.addEventListener('click', function () { scrollCarousel(1); });
+      }
+      if (carouselEl) {
+        carouselEl.addEventListener('scroll', function () {
+          window.requestAnimationFrame(updateCarouselButtons);
+        }, { passive: true });
+        carouselEl.addEventListener('mouseenter', function () {
+          startCarouselAutoScroll();
+        });
+        carouselEl.addEventListener('mouseleave', function () {
+          stopCarouselAutoScroll();
+        });
+        carouselEl.addEventListener('touchstart', function () {
+          stopCarouselAutoScroll();
+        }, { passive: true });
+      }
+
+      loadCards();
+      loadModuleInfo();
+
+      // Reajustar títulos si cambia el ancho (móvil/desktop)
+      try {
+        window.addEventListener('resize', function () {
+          stopCarouselAutoScroll();
+          scheduleFitHomeOfferTitles();
+          updateCarouselButtons();
+        });
+      } catch (e) { }
+    })();
+  </script>
+  <script src="/js/ai_button_icons.js?v=20260615-ia-logo-theme"></script>
+  <script src="/js/ai_chat_drawer.js?v=20260713-chat-resultados"></script>
+
+</body>
+
+</html>

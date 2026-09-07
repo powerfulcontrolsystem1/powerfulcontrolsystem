@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar clientes</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+<div class="page-header">
+      <div>
+        <h1 id="pageTitle">Administrar clientes</h1>
+</div>
+      <button id="addBtn" class="btn add">Agregar</button>
+    </div>
+
+    <p class="form-help my-0-12">
+      Datos orientados a facturación electrónica en Colombia (DIAN): documento, razón social, régimen, ubicación y contacto.
+    </p>
+
+    <form id="form" class="form">
+      <input type="hidden" id="itemId">
+      <input type="hidden" id="empresa_id">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Tipo documento</label>
+          <select id="tipo_documento" class="form-input" required>
+            <option value="NIT">NIT</option>
+            <option value="CC">CC</option>
+            <option value="CE">CE</option>
+            <option value="PAS">Pasaporte</option>
+            <option value="TI">TI</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Número documento</label>
+          <input id="numero_documento" class="form-input" required placeholder="Ej: 900123456">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Dígito verificación</label>
+          <input id="digito_verificacion" class="form-input" placeholder="0-9">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Tipo persona</label>
+          <select id="tipo_persona" class="form-input">
+            <option value="juridica">Jurídica</option>
+            <option value="natural">Natural</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre / Razón social</label>
+          <input id="nombre_razon_social" class="form-input" required placeholder="Nombre completo o razón social">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre comercial</label>
+          <input id="nombre_comercial" class="form-input" placeholder="Opcional">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Régimen fiscal</label>
+          <input id="regimen_fiscal" class="form-input" placeholder="Ej: Responsable de IVA, No responsable IVA, SIMPLE">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Responsabilidad tributaria</label>
+          <input id="responsabilidad_tributaria" class="form-input" placeholder="Ej: R-99-PN, O-13, O-15">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Correo</label>
+          <input id="email" type="email" class="form-input" placeholder="cliente@dominio.com">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Teléfono</label>
+          <input id="telefono" class="form-input" placeholder="3001234567">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Dirección</label>
+          <input id="direccion" class="form-input" placeholder="Dirección fiscal / de correspondencia">
+        </div>
+        <div class="form-col">
+          <label class="form-label">País</label>
+          <input id="pais" class="form-input" value="CO" placeholder="CO">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Departamento</label>
+          <input id="departamento" class="form-input" placeholder="Ej: Antioquia">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Código DANE departamento</label>
+          <input id="departamento_codigo_dane" class="form-input" inputmode="numeric" maxlength="2" placeholder="05">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Municipio</label>
+          <input id="municipio" class="form-input" placeholder="Ej: Medellín">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Código DANE municipio</label>
+          <input id="municipio_codigo_dane" class="form-input" inputmode="numeric" maxlength="5" placeholder="05001">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Código postal</label>
+          <input id="codigo_postal" class="form-input" placeholder="Opcional">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <div class="form mt-14">
+      <div class="form-row mb-0">
+        <div class="form-col">
+          <label class="form-label">Buscar cliente</label>
+          <input id="buscar" class="form-input" placeholder="Buscar por nombre comercial, razón social o documento">
+        </div>
+        <div class="form-col maxw-180 flex-end">
+          <button id="buscarBtn" class="btn secondary w-full" type="button">Buscar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="list">Cargando...</div>
+
+    <div class="form mt-14">
+      <div class="page-header mb-10">
+        <h2 class="section-heading">Segmentación de clientes (punto 6)</h2>
+      </div>
+      <div id="segmentacionList">Cargando segmentación...</div>
+    </div>
+
+    <div class="form mt-14">
+      <div class="page-header mb-10">
+        <h2 class="section-heading">Exportación masiva por segmento</h2>
+      </div>
+      <p class="form-help my-0-10">Descarga el listado comercial de clientes segmentados para ejecutar campañas de fidelización, reactivación o upsell.</p>
+      <div class="form-row mb-0">
+        <div class="form-col maxw-220">
+          <label class="form-label">Formato</label>
+          <select id="segmentExportFormat" class="form-input">
+            <option value="xls">Excel (XLS)</option>
+            <option value="pdf">PDF</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+        </div>
+        <div class="form-col maxw-220 flex-end">
+          <button id="segmentExportBtn" class="btn secondary w-full" type="button">Exportar segmentos</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form mt-14 is-hidden" id="perfilClientePanel">
+      <div class="page-header mb-10">
+        <h2 class="section-heading">Perfil e historial del cliente</h2>
+      </div>
+      <p id="perfilClienteInfo" class="form-help">Selecciona un cliente para ver su perfil comercial.</p>
+      <div id="historialClienteList"></div>
+    </div>
+  </div>
+
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script>
+    const state = {
+      empresaID: 0,
+      clientes: [],
+    q: '',
+    segmentacion: [],
+    perfilCliente: null,
+    historialCliente: []
+    };
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById('msg');
+      el.textContent = text || '';
+      el.classList.remove('value-negative');
+      if (isError) {
+        el.classList.add('value-negative');
+      }
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      if (res.status === 401) {
+        try {
+          if (window.top && window.top !== window) {
+            window.top.location.href = '/login.html';
+            throw new Error('Tu sesión expiró. Redirigiendo al login.');
+          }
+        } catch (_) {}
+        window.location.href = '/login.html';
+        throw new Error('Tu sesión expiró. Redirigiendo al login.');
+      }
+      const t = await res.text();
+      if (res.status === 403) {
+        throw new Error('No tienes permiso para usar este módulo con tu rol actual.');
+      }
+      throw new Error(t || ('HTTP ' + res.status));
+    }
+
+    function normalize(value) {
+      return (value || '').toString().trim();
+    }
+
+    function esc(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getDownloadFilename(response, fallbackName) {
+      const disposition = String(response.headers.get('Content-Disposition') || '');
+      const utfMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      if (utfMatch && utfMatch[1]) {
+        try {
+          return decodeURIComponent(utfMatch[1]);
+        } catch (_) {}
+      }
+      const plainMatch = disposition.match(/filename="?([^";]+)"?/i);
+      return plainMatch && plainMatch[1] ? plainMatch[1] : fallbackName;
+    }
+
+    function saveBlob(blob, filename) {
+      const objectURL = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectURL;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectURL);
+    }
+
+    async function downloadInBackground(url, fallbackName) {
+      const response = await fetch(url, { credentials: 'same-origin' });
+      await ensureOk(response);
+      const blob = await response.blob();
+      saveBlob(blob, getDownloadFilename(response, fallbackName));
+    }
+
+    function money(value) {
+      return Number(value || 0).toFixed(2);
+    }
+
+    function renderSegmentacion() {
+      const root = document.getElementById('segmentacionList');
+      if (!Array.isArray(state.segmentacion) || !state.segmentacion.length) {
+        root.innerHTML = '<p class="form-help">Sin datos de segmentación para el filtro actual.</p>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>Segmento</th>' +
+        '<th>Clientes</th>' +
+        '<th>Compras</th>' +
+        '<th>Monto compras</th>' +
+        '<th>Ticket promedio</th>' +
+      '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.segmentacion.forEach(function(row) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + esc(normalize(row.segmento) || 'nuevo') + '</td>' +
+          '<td>' + Number(row.clientes || 0) + '</td>' +
+          '<td>' + Number(row.compras || 0) + '</td>' +
+          '<td>' + money(row.monto_compras) + '</td>' +
+          '<td>' + money(row.ticket_promedio_global) + '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      root.innerHTML = '';
+      root.appendChild(table);
+    }
+
+    function renderPerfilCliente() {
+      const panel = document.getElementById('perfilClientePanel');
+      const info = document.getElementById('perfilClienteInfo');
+      if (!state.perfilCliente || !state.perfilCliente.cliente) {
+        panel.style.display = 'none';
+        info.textContent = 'Selecciona un cliente para ver su perfil comercial.';
+        document.getElementById('historialClienteList').innerHTML = '';
+        return;
+      }
+
+      panel.style.display = '';
+      const perfil = state.perfilCliente;
+      const cliente = perfil.cliente;
+      info.innerHTML =
+        '<strong>' + esc(normalize(cliente.nombre_razon_social)) + '</strong> (' + esc(normalize(cliente.tipo_documento)) + ' ' + esc(normalize(cliente.numero_documento)) + ')' +
+        ' · Segmento: <strong>' + esc(normalize(perfil.segmento)) + '</strong>' +
+        ' · Compras: <strong>' + Number(perfil.numero_compras || 0) + '</strong>' +
+        ' · Monto: <strong>' + money(perfil.monto_compras) + '</strong>' +
+        ' · Ticket promedio: <strong>' + money(perfil.ticket_promedio) + '</strong>' +
+        ' · Última compra: <strong>' + esc(normalize(perfil.ultima_compra) || 'N/D') + '</strong>' +
+        ' · Días sin compra: <strong>' + Number(perfil.dias_sin_compra || 0) + '</strong>';
+    }
+
+    function renderHistorialCliente() {
+      const root = document.getElementById('historialClienteList');
+      if (!Array.isArray(state.historialCliente) || !state.historialCliente.length) {
+        root.innerHTML = '<p class="form-help">Sin compras registradas para este cliente.</p>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>Fecha</th>' +
+        '<th>Código</th>' +
+        '<th>Canal</th>' +
+        '<th>Estado venta</th>' +
+        '<th>Items</th>' +
+        '<th>Monto</th>' +
+      '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.historialCliente.forEach(function(item) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + esc(normalize(item.fecha_operacion)) + '</td>' +
+          '<td>' + esc(normalize(item.codigo)) + '</td>' +
+          '<td>' + esc(normalize(item.canal_venta)) + '</td>' +
+          '<td>' + esc(normalize(item.estado_venta)) + '</td>' +
+          '<td>' + Number(item.items_activos || 0) + '</td>' +
+          '<td>' + money(item.monto_total) + '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      root.innerHTML = '';
+      root.appendChild(table);
+    }
+
+    function resetForm(hide) {
+      document.getElementById('itemId').value = '';
+      document.getElementById('tipo_documento').value = 'NIT';
+      document.getElementById('numero_documento').value = '';
+      document.getElementById('digito_verificacion').value = '';
+      document.getElementById('tipo_persona').value = 'juridica';
+      document.getElementById('nombre_razon_social').value = '';
+      document.getElementById('nombre_comercial').value = '';
+      document.getElementById('regimen_fiscal').value = '';
+      document.getElementById('responsabilidad_tributaria').value = '';
+      document.getElementById('email').value = '';
+      document.getElementById('telefono').value = '';
+      document.getElementById('direccion').value = '';
+      document.getElementById('pais').value = 'CO';
+      document.getElementById('departamento').value = '';
+      document.getElementById('departamento_codigo_dane').value = '';
+      document.getElementById('municipio').value = '';
+      document.getElementById('municipio_codigo_dane').value = '';
+      document.getElementById('codigo_postal').value = '';
+      document.getElementById('observaciones').value = '';
+      document.getElementById('saveBtn').textContent = 'Guardar';
+      document.getElementById('cancelBtn').style.display = 'none';
+      setMessage('', false);
+
+      if (hide) {
+        document.getElementById('form').style.display = 'none';
+        document.getElementById('addBtn').style.display = '';
+      }
+    }
+
+    function renderList() {
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>ID</th>' +
+        '<th>Documento</th>' +
+        '<th>Razón social</th>' +
+        '<th>Nombre comercial</th>' +
+        '<th>Correo</th>' +
+        '<th>Teléfono</th>' +
+        '<th>Ciudad</th>' +
+        '<th>Estado</th>' +
+        '<th>Acciones</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.clientes.forEach(function(item) {
+        const estado = normalize(item.estado) || 'activo';
+        const activo = estado === 'activo';
+        const toggleLabel = activo ? 'Desactivar' : 'Activar';
+
+        const doc = [normalize(item.tipo_documento), normalize(item.numero_documento)].filter(Boolean).join(' ');
+        const ciudad = [normalize(item.municipio), normalize(item.departamento)].filter(Boolean).join(' / ');
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + item.id + '</td>' +
+          '<td>' + doc + '</td>' +
+          '<td>' + (normalize(item.nombre_razon_social) || '') + '</td>' +
+          '<td>' + (normalize(item.nombre_comercial) || '') + '</td>' +
+          '<td>' + (normalize(item.email) || '') + '</td>' +
+          '<td>' + (normalize(item.telefono) || '') + '</td>' +
+          '<td>' + (ciudad || '') + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+            '<button data-id="' + item.id + '" class="perfil btn secondary">Perfil</button> ' +
+            '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
+            '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button> ' +
+            '<button data-id="' + item.id + '" data-activo="' + (activo ? '1' : '0') + '" class="toggle btn">' + toggleLabel + '</button>' +
+          '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      list.appendChild(table);
+
+      document.querySelectorAll('.edit').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.clientes.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+
+          document.getElementById('form').style.display = '';
+          document.getElementById('addBtn').style.display = 'none';
+
+          document.getElementById('itemId').value = String(item.id || '');
+          document.getElementById('tipo_documento').value = normalize(item.tipo_documento) || 'NIT';
+          document.getElementById('numero_documento').value = normalize(item.numero_documento);
+          document.getElementById('digito_verificacion').value = normalize(item.digito_verificacion);
+          document.getElementById('tipo_persona').value = normalize(item.tipo_persona) || 'juridica';
+          document.getElementById('nombre_razon_social').value = normalize(item.nombre_razon_social);
+          document.getElementById('nombre_comercial').value = normalize(item.nombre_comercial);
+          document.getElementById('regimen_fiscal').value = normalize(item.regimen_fiscal);
+          document.getElementById('responsabilidad_tributaria').value = normalize(item.responsabilidad_tributaria);
+          document.getElementById('email').value = normalize(item.email);
+          document.getElementById('telefono').value = normalize(item.telefono);
+          document.getElementById('direccion').value = normalize(item.direccion);
+          document.getElementById('pais').value = normalize(item.pais) || 'CO';
+          document.getElementById('departamento').value = normalize(item.departamento);
+          document.getElementById('departamento_codigo_dane').value = normalize(item.departamento_codigo_dane);
+          document.getElementById('municipio').value = normalize(item.municipio);
+          document.getElementById('municipio_codigo_dane').value = normalize(item.municipio_codigo_dane);
+          document.getElementById('codigo_postal').value = normalize(item.codigo_postal);
+          document.getElementById('observaciones').value = normalize(item.observaciones);
+
+          document.getElementById('saveBtn').textContent = 'Actualizar';
+          document.getElementById('cancelBtn').style.display = '';
+          setMessage('', false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+      });
+
+      document.querySelectorAll('.del').forEach(function(btn) {
+        btn.onclick = async function() {
+          if (!confirm('Eliminar cliente?')) return;
+          const id = Number(btn.getAttribute('data-id'));
+          try {
+            const res = await fetch('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id), { method: 'DELETE' });
+            await ensureOk(res);
+            setMessage('Cliente eliminado', false);
+			await loadData();
+          } catch (err) {
+            setMessage(err.message || 'Error eliminando cliente', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.toggle').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const activo = btn.getAttribute('data-activo') === '1';
+          const action = activo ? 'desactivar' : 'activar';
+          const label = activo ? 'Desactivar' : 'Activar';
+          if (!confirm(label + ' cliente?')) return;
+
+          try {
+            const res = await fetch('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=' + encodeURIComponent(action), {
+              method: 'PUT'
+            });
+            await ensureOk(res);
+            setMessage('Estado actualizado', false);
+			await loadData();
+          } catch (err) {
+            setMessage(err.message || 'Error cambiando estado', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.perfil').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          if (!id) return;
+          try {
+            await loadPerfilCliente(id);
+            setMessage('Perfil de cliente cargado.', false);
+          } catch (err) {
+            setMessage(err.message || 'No se pudo cargar el perfil del cliente.', true);
+          }
+        };
+      });
+    }
+
+    async function loadSegmentacion() {
+      const url = new URL('/api/empresa/clientes', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('action', 'segmentacion');
+      url.searchParams.set('include_inactive', '1');
+      if (state.q) {
+        url.searchParams.set('q', state.q);
+      }
+
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      state.segmentacion = await res.json();
+      renderSegmentacion();
+    }
+
+    async function loadPerfilCliente(clienteID) {
+      const perfilRes = await fetch('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=perfil&id=' + encodeURIComponent(clienteID));
+      await ensureOk(perfilRes);
+      state.perfilCliente = await perfilRes.json();
+
+      const histRes = await fetch('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=historial&id=' + encodeURIComponent(clienteID) + '&limit=20');
+      await ensureOk(histRes);
+      state.historialCliente = await histRes.json();
+
+      renderPerfilCliente();
+      renderHistorialCliente();
+      document.getElementById('perfilClientePanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function exportSegmentacionComercial() {
+      const format = normalize(document.getElementById('segmentExportFormat').value) || 'xls';
+      const url = new URL('/api/empresa/reportes', window.location.origin);
+      url.searchParams.set('action', 'export');
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('dataset', 'operativo_clientes_segmentacion_comercial');
+      url.searchParams.set('format', format);
+      url.searchParams.set('include_inactive', '1');
+      url.searchParams.set('max_rows', '1000');
+      downloadInBackground(url.pathname + url.search, 'clientes_segmentados_empresa_' + String(state.empresaID) + '.' + format)
+        .catch(function(err) {
+          setMessage('No se pudo descargar la segmentación: ' + (err && err.message ? err.message : err), true);
+        });
+    }
+
+    async function loadEmpresaTitle() {
+      try {
+        const res = await fetch('/super/api/empresas?id=' + encodeURIComponent(state.empresaID));
+        if (!res.ok) return;
+        const empresa = await res.json();
+        if (empresa && empresa.nombre) {
+          document.getElementById('pageTitle').textContent = 'Administrar clientes - ' + empresa.nombre;
+        }
+      } catch (_) {}
+    }
+
+    async function loadClients() {
+      const url = new URL('/api/empresa/clientes', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('include_inactive', '1');
+      if (state.q) {
+        url.searchParams.set('q', state.q);
+      }
+
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      state.clientes = await res.json();
+      renderList();
+    }
+
+    async function loadData() {
+      await loadClients();
+      await loadSegmentacion();
+      state.perfilCliente = null;
+      state.historialCliente = [];
+      renderPerfilCliente();
+    }
+
+    document.getElementById('form').onsubmit = async function(e) {
+      e.preventDefault();
+
+      const id = Number(document.getElementById('itemId').value || 0);
+      const payload = {
+        id: id,
+        empresa_id: Number(state.empresaID),
+        tipo_documento: normalize(document.getElementById('tipo_documento').value) || 'NIT',
+        numero_documento: normalize(document.getElementById('numero_documento').value),
+        digito_verificacion: normalize(document.getElementById('digito_verificacion').value),
+        tipo_persona: normalize(document.getElementById('tipo_persona').value) || 'juridica',
+        nombre_razon_social: normalize(document.getElementById('nombre_razon_social').value),
+        nombre_comercial: normalize(document.getElementById('nombre_comercial').value),
+        regimen_fiscal: normalize(document.getElementById('regimen_fiscal').value),
+        responsabilidad_tributaria: normalize(document.getElementById('responsabilidad_tributaria').value),
+        email: normalize(document.getElementById('email').value),
+        telefono: normalize(document.getElementById('telefono').value),
+        direccion: normalize(document.getElementById('direccion').value),
+        pais: normalize(document.getElementById('pais').value) || 'CO',
+        departamento: normalize(document.getElementById('departamento').value),
+        departamento_codigo_dane: normalize(document.getElementById('departamento_codigo_dane').value),
+        municipio: normalize(document.getElementById('municipio').value),
+        municipio_codigo_dane: normalize(document.getElementById('municipio_codigo_dane').value),
+        codigo_postal: normalize(document.getElementById('codigo_postal').value),
+        observaciones: normalize(document.getElementById('observaciones').value)
+      };
+
+      if (!payload.empresa_id || !payload.numero_documento || !payload.nombre_razon_social) {
+        setMessage('Empresa, número de documento y razón social son obligatorios', true);
+        return;
+      }
+
+      try {
+        const isEdit = id > 0;
+        const method = isEdit ? 'PUT' : 'POST';
+        const res = await fetch('/api/empresa/clientes', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+
+        setMessage(isEdit ? 'Cliente actualizado' : 'Cliente creado', false);
+        resetForm(true);
+		await loadData();
+      } catch (err) {
+        setMessage(err.message || 'Error guardando cliente', true);
+      }
+    };
+
+    document.getElementById('addBtn').onclick = function() {
+      document.getElementById('form').style.display = '';
+      document.getElementById('addBtn').style.display = 'none';
+      resetForm(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    document.getElementById('cancelBtn').onclick = function() {
+      resetForm(true);
+    };
+
+    document.getElementById('buscarBtn').onclick = async function() {
+      state.q = normalize(document.getElementById('buscar').value);
+      try {
+		await loadData();
+      } catch (err) {
+        setMessage(err.message || 'Error buscando clientes', true);
+      }
+    };
+
+    document.getElementById('buscar').addEventListener('keydown', async function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      document.getElementById('buscarBtn').click();
+    });
+
+    document.getElementById('segmentExportBtn').onclick = function() {
+      try {
+        exportSegmentacionComercial();
+        setMessage('Exportación de segmentos generada.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo generar la exportación de segmentos.', true);
+      }
+    };
+
+    (async function init() {
+      const empresaID = Number(getQueryParam('empresa_id') || 0);
+      if (!empresaID) {
+        document.getElementById('list').textContent = 'empresa_id requerido en la URL';
+        document.getElementById('addBtn').disabled = true;
+        return;
+      }
+
+      state.empresaID = empresaID;
+      document.getElementById('empresa_id').value = String(empresaID);
+      document.getElementById('form').style.display = 'none';
+      document.getElementById('cancelBtn').style.display = 'none';
+
+      await loadEmpresaTitle();
+      try {
+        await loadData();
+      } catch (err) {
+        document.getElementById('list').textContent = 'Error cargando clientes';
+        setMessage(err.message || 'Error cargando datos', true);
+      }
+    })();
+  </script>
+</body>
+</html>

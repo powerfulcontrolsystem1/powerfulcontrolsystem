@@ -1,0 +1,239 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Super Administrador</title>
+  <link rel="stylesheet" href="/estilos.css?v=20260615-cart-ia-visual">
+  <script src="/menu.js"></script>
+</head>
+<body class="admin-empresa-shell super-admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <div class="super-console-brand">
+        <span class="super-console-mark" aria-hidden="true">PCS</span>
+        <div>
+          <h2>Super Admin</h2>
+          <p class="admin-sidebar-kicker">Control global</p>
+        </div>
+      </div>
+      <ul class="nav admin-nav-grouped" id="superSidebarNav">
+        <li class="admin-nav-standalone super-select-company-first">
+          <a href="/seleccionar_empresa.html" target="_top"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Seleccionar empresa</a>
+        </li>
+        <li class="admin-nav-standalone">
+          <a href="/super/licencias_resumen.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Panel</a>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Portal publico e index</div>
+          <ul class="admin-nav-sublist">
+            <li><a href="/super/pagina_principal.html" target="contentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Tarjetas del index</a></li>
+            <li><a href="/super/informacion_de_modulos.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Modulos del index</a></li>
+            <li><a href="/super/noticias.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Noticias</a></li>
+            <li><a href="/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html" target="contentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Descripcion de sistemas</a></li>
+            <li><a href="/super/configuracion/whatsapp_portal.html" target="contentFrame"><img class="icon" src="/img/social.svg" alt="">WhatsApp del portal</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Comercial y licencias</div>
+          <ul class="admin-nav-sublist">
+            <li><a href="/super/licencias_codigos_descuento.html" target="contentFrame"><img class="icon" src="/img/tags-color.svg" alt="">Códigos descuento</a></li>
+            <li><a href="/super/empresas.html" target="contentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Empresas</a></li>
+            <li><a href="/super/tipos_empresas.html" target="contentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Tipos de empresa</a></li>
+            <li><a href="/super/preconfiguracion_tipos_empresa.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Preconfiguracion</a></li>
+            <li><a href="/super/plantillas_produccion_masiva.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Plantillas 20</a></li>
+            <li><a href="/super/licencias.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Licencias</a></li>
+            <li><a href="/super/pagos_auditoria.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Auditoría de pagos</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Acceso</div>
+          <ul class="admin-nav-sublist">
+            <li><a href="/super/administradores.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Administradores</a></li>
+            <li><a href="/super/administradores_frecuencia_fe.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Admins Frecuencia FE</a></li>
+            <li><a href="/super/contrato.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Contrato de uso</a></li>
+            <li><a href="/super/roles_de_usuario.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Roles de usuario</a></li>
+            <li><a href="/super/permisos_rol.html" target="contentFrame"><img class="icon" src="/img/shield-security-color.svg" alt="">Permisos por rol</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">IA</div>
+          <ul class="admin-nav-sublist">
+            <li><a href="/super/configuracion/ia_global.html" target="contentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Configuración IA</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Mensajería y alertas</div>
+          <ul class="admin-nav-sublist">
+            <li><a href="/super/alertas_sistema.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Alertas sistema</a></li>
+            <li><a href="/super/configuracion/alertas_licencia.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Alertas licencia</a></li>
+            <li><a href="/super/configuracion/whatsapp_notificaciones.html" target="contentFrame"><img class="icon" src="/img/social.svg" alt="">WhatsApp notificaciones</a></li>
+            <li><a href="/super/formato_para_emviar_email.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Formatos de email</a></li>
+            <li><a href="/super/correos_masivos.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Mensajes masivos</a></li>
+            <li><a href="/super/recordatorios_infraestructura.html" target="contentFrame"><img class="icon" src="/img/backup.svg" alt="">Vencimientos externos</a></li>
+            <li><a href="/super/agentes_de_mantenimiento_qutomatico.html" target="contentFrame"><img class="icon" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="">Agentes mantenimiento</a></li>
+            <li><a href="/super/mantenimiento_sistema.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Mantenimiento</a></li>
+            <li><a href="/super/email_corporativo.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Email corporativo</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Plataforma</div>
+          <ul class="admin-nav-sublist">
+            <li><a href="/super/capacidad_colas.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Capacidad de colas</a></li>
+            <li><a href="/super/seguridad.html" target="contentFrame"><img class="icon" src="/img/shield-security-color.svg" alt="">Seguridad VPS</a></li>
+            <li><a href="/super/auditoria_global.html" target="contentFrame"><img class="icon" src="/img/audit.svg" alt="">Auditoría global</a></li>
+            <li><a href="/super/vps2.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">VPS2</a></li>
+            <li><a href="/super/servidores.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Servidores</a></li>
+            <li><a href="/super/docker_portabilidad.html" target="contentFrame"><img class="icon" src="/img/backup.svg" alt="">Docker VPS</a></li>
+            <li><a href="/super/administrar_disco_vps.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Administrar disco VPS</a></li>
+            <li><a href="/super/soporte_remoto.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Soporte remoto</a></li>
+            <li><a href="/super/domotica_storage.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Storage Imagenes</a></li>
+            <li><a href="/super/domotica_raspberry_trafico.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Consumo y límites Raspberry</a></li>
+            <li><a href="/super/tickets_ayuda.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Tickets de ayuda</a></li>
+            <li><a href="/super/explorador_archivos.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Explorador de Archivos</a></li>
+            <li><a href="/super/administrar_base_de_datos.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">PostgreSQL</a></li>
+            <li id="superHelpNavItem"><a href="/ayuda/ayuda.html" target="contentFrame"><img class="icon" src="/img/shield-security-color.svg" alt="">Ayuda</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Configuración</div>
+          <ul class="admin-nav-sublist">
+            <li><a href="/super/configuracion_avanzada.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Configuración avanzada</a></li>
+            <li><a href="/super/configuracion/consumos.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Consumos</a></li>
+            <li><a href="/super/configuracion/rustdesk_vps.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">RustDesk VPS</a></li>
+            <li><a href="/super/configuracion/limitaciones.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Limitaciones</a></li>
+            <li><a href="/super/configuracion/onlyoffice.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">OnlyOffice</a></li>
+            <li><a href="/super/configuracion/epayco.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Epayco</a></li>
+            <li><a href="/super/configuracion/wompi_nequi.html" target="contentFrame"><img class="icon" src="/img/bancolombia-logo.svg" alt="">Wompi / Nequi</a></li>
+            <li><a href="/super/configuracion/recaptcha.html" target="contentFrame"><img class="icon" src="/img/shield-security-color.svg" alt="">reCAPTCHA</a></li>
+            <li><a href="/super/configuracion/login_2fa.html" target="contentFrame"><img class="icon" src="/img/shield-security-color.svg" alt="">2FA login</a></li>
+            <li><a href="/super/configuracion/respaldo.html" target="contentFrame"><img class="icon" src="/img/backup.svg" alt="">Respaldo</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Diagramas tecnicos</div>
+          <ul class="admin-nav-sublist">
+            <li><a href="/super/diagramas/documentacion_tecnica_completa.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Documentacion tecnica completa</a></li>
+              <li><a href="/super/diagramas/arquitectura_general.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Arquitectura general</a></li>
+              <li><a href="/super/diagramas/mapa_de_modulos.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Mapa de modulos</a></li>
+              <li><a href="/super/diagramas/mapa_de_navegacion.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Mapa de navegacion</a></li>
+              <li><a href="/super/diagramas/diagrama_entidad_relacion_postgresql.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">ERD PostgreSQL completo</a></li>
+            <li><a href="/super/diagramas/casos_de_uso.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Casos de uso</a></li>
+            <li><a href="/super/diagramas/diagrama_de_clases_uml.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Clases UML</a></li>
+            <li><a href="/super/diagramas/login_y_resolucion_de_empresa.html" target="contentFrame"><img class="icon" src="/img/shield-security-color.svg" alt="">Secuencia login</a></li>
+            <li><a href="/super/diagramas/venta_pos_con_inventario_y_caja.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Secuencia venta POS</a></li>
+            <li><a href="/super/diagramas/facturacion_electronica_dian.html" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Secuencia DIAN</a></li>
+            <li><a href="/super/diagramas/webhook_rappi_separado_por_empresa.html" target="contentFrame"><img class="icon" src="/img/social.svg" alt="">Secuencia Rappi</a></li>
+            <li><a href="/super/diagramas/cierre_de_venta.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Actividad cierre venta</a></li>
+            <li><a href="/super/diagramas/despliegue_rs.html" target="contentFrame"><img class="icon" src="/img/backup.svg" alt="">Actividad rs</a></li>
+            <li><a href="/super/diagramas/diagramas_de_estados.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Estados carrito</a></li>
+              <li><a href="/super/diagramas/diagramas_de_estados_2.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Estados facturacion</a></li>
+            <li><a href="/super/diagramas/diagramas_de_estados_3.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Estados licencia</a></li>
+              <li><a href="/super/diagramas/diagrama_de_componentes.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Componentes</a></li>
+              <li><a href="/super/diagramas/diagrama_de_despliegue.html" target="contentFrame"><img class="icon" src="/img/backup.svg" alt="">Despliegue</a></li>
+              <li><a href="/super/diagramas/diagrama_de_paquetes.html" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Paquetes</a></li>
+              <li><a href="/super/diagramas/diagrama_de_flujo_de_datos.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Flujo de datos</a></li>
+          </ul>
+        </li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="superSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="admin-frame-toolbar super-frame-toolbar" aria-label="Acciones de pagina super administrador">
+        <button id="superFavoriteBtn" class="admin-favorite-btn super-favorite-btn" type="button" aria-pressed="false" title="Agregar a favoritos" aria-label="Agregar pagina de super administrador a favoritos">&#9733;</button>
+      </div>
+      <iframe name="contentFrame" id="contentFrame" src="/super/licencias_resumen.html" title="Contenido" class="admin-empresa-frame"></iframe>
+    </main>
+  </div>
+
+  <button id="openAIDrawer" class="ai-chat-toggle-button" aria-haspopup="dialog" aria-expanded="false" type="button">
+    <img class="icon ai-openai-mark ai-mark-shell" data-ai-logo="true" src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true"><span class="ai-chat-toggle-label">Asistente IA</span>
+  </button>
+
+  <div id="aiChatBackdrop" class="ai-chat-backdrop" aria-hidden="true"></div>
+
+  <section id="aiChatDrawer" class="ai-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">
+    <div class="ai-chat-minibar" id="aiChatMinibar" hidden>
+      <span class="ai-chat-minibar-label">Asistente IA</span>
+      <button type="button" id="aiChatMinibarExpand" class="ai-chat-minibar-btn" aria-label="Abrir asistente IA">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M7 14l5-5 5 5H7z"/></svg>
+      </button>
+    </div>
+    <div class="ai-chat-drawer-surface">
+      <div class="ai-chat-header">
+        <div class="ai-chat-header-title-row">
+          <span class="ai-chat-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+          </span>
+          <div>
+            <h2 id="aiChatTitle">Asistente IA</h2>
+          </div>
+        </div>
+        <div class="ai-chat-header-actions">
+          <button id="aiChatHintToggle" type="button" class="btn secondary small">Ver ejemplos</button>
+          <button id="aiChatConfigBtn" type="button" class="ai-chat-header-icon-btn" aria-label="Configurar chat flotante" title="Configuración chat flotante">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm7.4 4.5c.04-.3.06-.6.06-.9s-.02-.6-.06-.9l2-1.6a.5.5 0 0 0 .1-.6l-1.8-3.1a.5.5 0 0 0-.6-.2l-2.4 1a7 7 0 0 0-1.6-1l-.4-2.6A.5.5 0 0 0 13.5 2h-3a.5.5 0 0 0-.5.4l-.4 2.6a7 7 0 0 0-1.6 1l-2.4-1a.5.5 0 0 0-.6.2L4.5 7a.5.5 0 0 0 .1.6l2 1.6c-.1.3-.1.6-.1.9s.02.6.06.9l-2 1.6a.5.5 0 0 0-.1.6l1.8 3.1a.5.5 0 0 0 .6.2l2.4-1c.5.4 1.1.7 1.6 1l.4 2.6a.5.5 0 0 0 .5.4h3a.5.5 0 0 0 .5-.4l.4-2.6c.6-.2 1.1-.5 1.6-1l2.4 1a.5.5 0 0 0 .6-.2l1.8-3.1a.5.5 0 0 0-.1-.6l-2-1.6z"/></svg>
+          </button>
+          <button id="aiChatMinimize" type="button" class="ai-chat-header-icon-btn" aria-label="Minimizar chat" title="Minimizar">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M5 12h14v2H5z"/></svg>
+          </button>
+          <button id="closeAIDrawer" type="button" class="ai-chat-close" aria-label="Cerrar asistente IA">×</button>
+        </div>
+      </div>
+      <div id="aiChatNotice" class="ai-chat-notice"></div>
+      <div class="ai-chat-body-scroll">
+        <div id="aiChatMessages" class="ai-chat-messages"></div>
+        <div id="aiChatHints" class="ai-chat-hints is-hidden">
+          <p>Ejemplos de consultas rápidas:</p>
+          <ul>
+            <li>Muéstrame el estado global de licencias, empresas y administradores.</li>
+            <li>Resume los riesgos operativos o financieros detectados hoy.</li>
+            <li>Indícame qué configuraciones de IA, pagos o correo requieren revisión.</li>
+          </ul>
+        </div>
+      </div>
+      <form id="aiChatForm" class="ai-chat-form">
+        <div class="ai-chat-toolbar-row">
+          <div class="ai-chat-voice-toolbar" role="toolbar" aria-label="Voz y conversación">
+            <button id="aiChatNewBtn" type="button" class="ai-chat-icon-btn" aria-label="Nuevo chat" title="Nuevo chat">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6v-2z"/></svg>
+            </button>
+            <button type="button" id="aiChatConvBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Modo conversación" title="Modo conversación"></button>
+            <button type="button" id="aiChatMicBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Dictar mensaje" title="Dictar"></button>
+            <button type="button" id="aiChatVoiceBtn" class="ai-chat-icon-btn" aria-pressed="false" aria-label="Voz del asistente" title="Leer respuestas"></button>
+            <button type="button" id="aiChatStopBtn" class="ai-chat-icon-btn ai-chat-stop-btn" aria-label="Detener audio y respuesta" title="Detener audio y respuesta">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
+            </button>
+          </div>
+          <div class="ai-chat-controls">
+            <input id="aiChatMode" type="hidden" value="operativo">
+            <div class="ai-chat-control-field">
+              <span>Adjunto</span>
+              <div class="ai-chat-attachment-row">
+                <input id="aiChatAttachment" type="file" class="ai-chat-file-input" aria-label="Adjuntar archivo para IA" />
+                <button id="aiChatAttachBtn" type="button" class="ai-chat-icon-btn" aria-label="Adjuntar archivo" title="Adjuntar">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M16.5 6.5v9a4.5 4.5 0 0 1-9 0v-10a3 3 0 0 1 6 0v9a1.5 1.5 0 0 1-3 0v-8h2v8a.5.5 0 0 0 1 0v-9a2 2 0 1 0-4 0v10a2.5 2.5 0 0 0 5 0v-9h2z"/></svg>
+                </button>
+                <button id="aiChatClearAttachment" type="button" class="ai-chat-icon-btn is-hidden" aria-label="Quitar adjunto" title="Quitar adjunto">×</button>
+              </div>
+              <div id="aiChatAttachmentName" class="ai-chat-attachment-name is-hidden"></div>
+            </div>
+          </div>
+        </div>
+        <textarea id="aiChatInput" placeholder="Escribe tu consulta o comando aquí..." aria-label="Mensaje al asistente IA"></textarea>
+        <button type="submit" class="btn primary">Enviar</button>
+      </form>
+    </div>
+  </section>
+
+  <script src="/js/super_administrador.js"></script>
+  <script src="/js/ai_button_icons.js?v=20260615-ia-logo-theme"></script>
+  <script src="/js/ai_chat_drawer.js?v=20260713-chat-resultados"></script>
+</body>
+</html>

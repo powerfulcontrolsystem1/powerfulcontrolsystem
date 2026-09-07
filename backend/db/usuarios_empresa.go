@@ -1,0 +1,1318 @@
+package db
+
+import (
+	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/you/pos-backend/internal/platform/valueutil"
+)
+
+var (
+	empresaUsuariosAuthSchemaMu    sync.Mutex
+	empresaUsuariosAuthSchemaReady bool
+)
+
+const reservedSuperAdminEmpresaUsuarioEmail = "powerfulcontrolsystem@gmail.com"
+
+// EmpresaUsuario representa un usuario gestionado dentro del contexto de una empresa.
+type EmpresaUsuario struct {
+	ID                       int64  `json:"id"`
+	EmpresaID                int64  `json:"empresa_id"`
+	Email                    string `json:"email"`
+	Nombre                   string `json:"nombre"`
+	DocumentoIdentidad       string `json:"documento_identidad,omitempty"`
+	PasswordHash             string `json:"-"`
+	PasswordSalt             string `json:"-"`
+	PasswordSet              int    `json:"password_set,omitempty"`
+	PasswordActualizadaEn    string `json:"password_actualizada_en,omitempty"`
+	LoginFailedAttempts      int    `json:"-"`
+	LoginFailedLastAt        string `json:"-"`
+	LoginLockedUntil         string `json:"-"`
+	PasswordResetToken       string `json:"-"`
+	PasswordResetExpira      string `json:"-"`
+	PasswordResetRequestedEn string `json:"-"`
+	AceptaContrato           int    `json:"acepta_contrato,omitempty"`
+	ContratoVersionAceptada  int    `json:"contrato_version_aceptada,omitempty"`
+	FechaAceptaContrato      string `json:"fecha_acepta_contrato,omitempty"`
+	RolUsuarioID             int64  `json:"rol_usuario_id"`
+	RolNombre                string `json:"rol_nombre,omitempty"`
+	FotoURL                  string `json:"foto_url,omitempty"`
+	ControlAseoEstaciones    int    `json:"control_aseo_estaciones,omitempty"`
+	EmailConfirmado          int    `json:"email_confirmado"`
+	EmailConfirmToken        string `json:"-"`
+	EmailConfirmExpira       string `json:"-"`
+	EmailConfirmadoEn        string `json:"email_confirmado_en,omitempty"`
+	FechaCreacion            string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion       string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador           string `json:"usuario_creador,omitempty"`
+	Estado                   string `json:"estado,omitempty"`
+	Observaciones            string `json:"observaciones,omitempty"`
+}
+
+func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return errors.New("db connection is required")
+	}
+
+	empresaUsuariosAuthSchemaMu.Lock()
+	defer empresaUsuariosAuthSchemaMu.Unlock()
+
+	if empresaUsuariosAuthSchemaReady {
+		return nil
+	}
+
+	if isPostgresDialect() {
+		if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS users (
+			id BIGSERIAL PRIMARY KEY,
+			email TEXT UNIQUE,
+			name TEXT,
+			role TEXT DEFAULT 'administrador',
+			empresa_id BIGINT,
+			documento_identidad TEXT,
+			rol_usuario_id BIGINT,
+			foto_url TEXT,
+			control_aseo_estaciones INTEGER DEFAULT 0,
+			email_confirmado INTEGER DEFAULT 0,
+			email_confirm_token TEXT,
+			email_confirm_expira TEXT,
+			email_confirmado_en TEXT,
+			password_hash TEXT,
+			password_salt TEXT,
+			password_set INTEGER DEFAULT 0,
+			password_actualizada_en TEXT,
+			login_failed_attempts INTEGER DEFAULT 0,
+			login_failed_last_at TEXT,
+			login_locked_until TEXT,
+			password_reset_token TEXT,
+			password_reset_expira TEXT,
+			password_reset_requested_en TEXT,
+			acepta_contrato INTEGER DEFAULT 0,
+			contrato_version_aceptada INTEGER DEFAULT 0,
+			fecha_acepta_contrato TEXT,
+			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_actualizacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_lower_email_empresa ON users ((lower(email)), empresa_id)`); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`); err != nil {
+			return err
+		}
+		if err := dropLegacyEmpresaUsuariosEmailUniqueConstraints(dbConn); err != nil {
+			return err
+		}
+		if err := dropLegacyEmpresaUsuariosEmailUniqueIndexes(dbConn); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_users_lower_email_empresa ON users ((lower(email)), empresa_id)`); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_email_confirm_token ON users (email_confirm_token)`); err != nil {
+			return err
+		}
+	} else {
+		if _, err := execSQLCompat(dbConn, `CREATE TABLE IF NOT EXISTS users (
+			id BIGSERIAL PRIMARY KEY,
+			email TEXT UNIQUE,
+			name TEXT,
+			role TEXT DEFAULT 'administrador',
+			empresa_id INTEGER,
+			documento_identidad TEXT,
+			rol_usuario_id INTEGER,
+			foto_url TEXT,
+			control_aseo_estaciones INTEGER DEFAULT 0,
+			email_confirmado INTEGER DEFAULT 0,
+			email_confirm_token TEXT,
+			email_confirm_expira TEXT,
+			email_confirmado_en TEXT,
+			password_hash TEXT,
+			password_salt TEXT,
+			password_set INTEGER DEFAULT 0,
+			password_actualizada_en TEXT,
+			login_failed_attempts INTEGER DEFAULT 0,
+			login_failed_last_at TEXT,
+			login_locked_until TEXT,
+			password_reset_token TEXT,
+			password_reset_expira TEXT,
+			password_reset_requested_en TEXT,
+			acepta_contrato INTEGER DEFAULT 0,
+			contrato_version_aceptada INTEGER DEFAULT 0,
+			fecha_acepta_contrato TEXT,
+			fecha_creacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			fecha_actualizacion TEXT DEFAULT (CURRENT_TIMESTAMP),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_lower_email_empresa ON users (lower(email), empresa_id)`); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_email_confirm_token ON users (email_confirm_token)`); err != nil {
+			return err
+		}
+	}
+
+	columns := []struct {
+		name string
+		def  string
+	}{
+		{name: "documento_identidad", def: "TEXT"},
+		{name: "rol_usuario_id", def: "INTEGER"},
+		{name: "foto_url", def: "TEXT"},
+		{name: "control_aseo_estaciones", def: "INTEGER DEFAULT 0"},
+		{name: "email_confirmado", def: "INTEGER DEFAULT 0"},
+		{name: "email_confirm_token", def: "TEXT"},
+		{name: "email_confirm_expira", def: "TEXT"},
+		{name: "email_confirmado_en", def: "TEXT"},
+		{name: "password_hash", def: "TEXT"},
+		{name: "password_salt", def: "TEXT"},
+		{name: "password_set", def: "INTEGER DEFAULT 0"},
+		{name: "password_actualizada_en", def: "TEXT"},
+		{name: "login_failed_attempts", def: "INTEGER DEFAULT 0"},
+		{name: "login_failed_last_at", def: "TEXT"},
+		{name: "login_locked_until", def: "TEXT"},
+		{name: "password_reset_token", def: "TEXT"},
+		{name: "password_reset_expira", def: "TEXT"},
+		{name: "password_reset_requested_en", def: "TEXT"},
+		{name: "acepta_contrato", def: "INTEGER DEFAULT 0"},
+		{name: "contrato_version_aceptada", def: "INTEGER DEFAULT 0"},
+		{name: "fecha_acepta_contrato", def: "TEXT"},
+		{name: "fecha_creacion", def: "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{name: "fecha_actualizacion", def: "TEXT DEFAULT (CURRENT_TIMESTAMP)"},
+		{name: "usuario_creador", def: "TEXT"},
+		{name: "estado", def: "TEXT DEFAULT 'activo'"},
+		{name: "observaciones", def: "TEXT"},
+	}
+
+	for _, column := range columns {
+		if err := ensureColumnIfMissing(dbConn, "users", column.name, column.def); err != nil {
+			return err
+		}
+	}
+
+	if err := purgeReservedSuperAdminEmpresaUsuarios(dbConn); err != nil {
+		return err
+	}
+
+	empresaUsuariosAuthSchemaReady = true
+	return nil
+}
+
+func purgeReservedSuperAdminEmpresaUsuarios(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+	_, err := execSQLCompat(dbConn, `DELETE FROM users WHERE lower(email) = lower(?)`, reservedSuperAdminEmpresaUsuarioEmail)
+	return err
+}
+
+func PurgeReservedSuperAdminEmpresaUsuarios(dbConn *sql.DB) error {
+	return purgeReservedSuperAdminEmpresaUsuarios(dbConn)
+}
+
+func dropLegacyEmpresaUsuariosEmailUniqueConstraints(dbConn *sql.DB) error {
+	if !isPostgresDialect() {
+		return nil
+	}
+	rows, err := dbConn.Query(`
+		SELECT tc.constraint_name
+		FROM information_schema.table_constraints tc
+		JOIN information_schema.key_column_usage kcu
+		  ON kcu.constraint_schema = tc.constraint_schema
+		 AND kcu.constraint_name = tc.constraint_name
+		 AND kcu.table_schema = tc.table_schema
+		 AND kcu.table_name = tc.table_name
+		WHERE tc.table_schema = current_schema()
+		  AND tc.table_name = 'users'
+		  AND tc.constraint_type = 'UNIQUE'
+		GROUP BY tc.constraint_name
+		HAVING array_agg(kcu.column_name ORDER BY kcu.ordinal_position) = ARRAY['email']::text[]`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		if strings.TrimSpace(name) == "" {
+			continue
+		}
+		stmt := fmt.Sprintf(`ALTER TABLE users DROP CONSTRAINT IF EXISTS %s`, quotePostgresIdentifier(name))
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+func dropLegacyEmpresaUsuariosEmailUniqueIndexes(dbConn *sql.DB) error {
+	if !isPostgresDialect() {
+		return nil
+	}
+	rows, err := dbConn.Query(`
+		SELECT idx.relname
+		FROM pg_index ix
+		JOIN pg_class tbl ON tbl.oid = ix.indrelid
+		JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+		JOIN pg_class idx ON idx.oid = ix.indexrelid
+		JOIN LATERAL unnest(ix.indkey) WITH ORDINALITY AS keys(attnum, ord) ON true
+		JOIN pg_attribute att ON att.attrelid = tbl.oid AND att.attnum = keys.attnum
+		WHERE ns.nspname = current_schema()
+		  AND tbl.relname = 'users'
+		  AND ix.indisunique
+		  AND NOT ix.indisprimary
+		GROUP BY idx.relname
+		HAVING array_agg(att.attname::text ORDER BY keys.ord) = ARRAY['email']::text[]`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		if strings.TrimSpace(name) == "" || strings.EqualFold(name, "ux_users_lower_email_empresa") {
+			continue
+		}
+		stmt := fmt.Sprintf(`DROP INDEX IF EXISTS %s`, quotePostgresIdentifier(name))
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+// CreateEmpresaUsuario crea un usuario de empresa en estado pendiente de confirmación de correo.
+func repairEmpresaUsuariosScopedEmailUniqueness(dbConn *sql.DB) error {
+	if dbConn == nil || !isPostgresDialect() {
+		return nil
+	}
+	if _, err := execSQLCompat(dbConn, `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`); err != nil {
+		return err
+	}
+	if err := dropLegacyEmpresaUsuariosEmailUniqueConstraints(dbConn); err != nil {
+		return err
+	}
+	if err := dropLegacyEmpresaUsuariosEmailUniqueIndexes(dbConn); err != nil {
+		return err
+	}
+	_, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_users_lower_email_empresa ON users ((lower(email)), empresa_id)`)
+	return err
+}
+
+func isEmpresaUsuarioUniqueError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "unique") ||
+		strings.Contains(msg, "duplicate key") ||
+		strings.Contains(msg, "duplicado")
+}
+
+func CreateEmpresaUsuario(
+	dbConn *sql.DB,
+	empresaID int64,
+	email, nombre, documentoIdentidad string,
+	rolUsuarioID int64,
+	controlAseoEstaciones int,
+	rolNombre, observaciones, usuarioCreador, confirmToken, confirmExpira string,
+) (int64, error) {
+	confirmToken = hashOneTimeSecret(confirmToken)
+	insertUser := func() (int64, error) {
+		return insertSQLCompat(dbConn, `INSERT INTO users (
+			email,
+			name,
+			role,
+			empresa_id,
+			documento_identidad,
+			rol_usuario_id,
+			control_aseo_estaciones,
+			email_confirmado,
+			email_confirm_token,
+			email_confirm_expira,
+			usuario_creador,
+			estado,
+			observaciones,
+			fecha_creacion,
+			fecha_actualizacion
+		) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'inactivo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+			email,
+			nombre,
+			rolNombre,
+			empresaID,
+			documentoIdentidad,
+			rolUsuarioID,
+			normalizeEmpresaUsuarioBinaryFlag(controlAseoEstaciones),
+			confirmToken,
+			confirmExpira,
+			usuarioCreador,
+			observaciones,
+		)
+	}
+	id, err := insertUser()
+	if err != nil && isPostgresDialect() && isEmpresaUsuarioUniqueError(err) {
+		if repairErr := repairEmpresaUsuariosScopedEmailUniqueness(dbConn); repairErr != nil {
+			return 0, fmt.Errorf("create empresa usuario: %w; no se pudo reparar unicidad por empresa: %v", err, repairErr)
+		}
+		id, err = insertUser()
+	}
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func normalizeEmpresaUsuarioBinaryFlag(value int) int {
+	if value != 0 {
+		return 1
+	}
+	return 0
+}
+
+// GetEmpresaUsuarios lista usuarios por empresa.
+func GetEmpresaUsuarios(dbConn *sql.DB, empresaID int64, incluirInactivos bool) ([]EmpresaUsuario, error) {
+	query := `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
+		COALESCE(control_aseo_estaciones, 0),
+		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
+		COALESCE(email_confirmado_en, ''),
+		COALESCE(acepta_contrato, 0),
+		COALESCE(contrato_version_aceptada, 0),
+		COALESCE(fecha_acepta_contrato, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM users
+	WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+
+	if !incluirInactivos {
+		query += ` AND COALESCE(estado, 'activo') = 'activo'`
+	}
+	query += ` ORDER BY id DESC`
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaUsuario, 0)
+	for rows.Next() {
+		var item EmpresaUsuario
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.Email,
+			&item.Nombre,
+			&item.DocumentoIdentidad,
+			&item.RolUsuarioID,
+			&item.RolNombre,
+			&item.FotoURL,
+			&item.ControlAseoEstaciones,
+			&item.EmailConfirmado,
+			&item.EmailConfirmToken,
+			&item.EmailConfirmExpira,
+			&item.EmailConfirmadoEn,
+			&item.AceptaContrato,
+			&item.ContratoVersionAceptada,
+			&item.FechaAceptaContrato,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+// GetEmpresaUsuarioByID obtiene un usuario por id dentro de una empresa.
+func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario, error) {
+	row := queryRowSQLCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
+		COALESCE(control_aseo_estaciones, 0),
+		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
+		COALESCE(email_confirmado_en, ''),
+		COALESCE(acepta_contrato, 0),
+		COALESCE(contrato_version_aceptada, 0),
+		COALESCE(fecha_acepta_contrato, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM users
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, id)
+
+	var item EmpresaUsuario
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Email,
+		&item.Nombre,
+		&item.DocumentoIdentidad,
+		&item.RolUsuarioID,
+		&item.RolNombre,
+		&item.FotoURL,
+		&item.ControlAseoEstaciones,
+		&item.EmailConfirmado,
+		&item.EmailConfirmToken,
+		&item.EmailConfirmExpira,
+		&item.EmailConfirmadoEn,
+		&item.AceptaContrato,
+		&item.ContratoVersionAceptada,
+		&item.FechaAceptaContrato,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// ResolveEmpresaUsuarioByReference vincula un identificador operativo con un usuario creado de la empresa.
+func ResolveEmpresaUsuarioByReference(dbConn *sql.DB, empresaID int64, reference string) (*EmpresaUsuario, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	reference = strings.TrimSpace(reference)
+	if reference == "" {
+		return nil, sql.ErrNoRows
+	}
+	lookupReference := normalizeEmpresaUsuarioReferenceLookup(reference)
+
+	scan := func(row *sql.Row) (*EmpresaUsuario, error) {
+		var item EmpresaUsuario
+		if err := row.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.Email,
+			&item.Nombre,
+			&item.DocumentoIdentidad,
+			&item.RolUsuarioID,
+			&item.RolNombre,
+			&item.Estado,
+		); err != nil {
+			return nil, err
+		}
+		return &item, nil
+	}
+
+	row := queryRowSQLCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(estado, 'activo')
+	FROM users
+	WHERE empresa_id = ?
+		AND (
+			lower(email) = lower(?)
+			OR CAST(id AS TEXT) = ?
+			OR lower(COALESCE(documento_identidad, '')) = lower(?)
+		)
+	ORDER BY CASE WHEN COALESCE(estado, 'activo') = 'activo' THEN 0 ELSE 1 END, id ASC
+	LIMIT 1`, empresaID, lookupReference, lookupReference, lookupReference)
+	if item, err := scan(row); err == nil {
+		return item, nil
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	row = queryRowSQLCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(estado, 'activo')
+	FROM users
+	WHERE empresa_id = ? AND lower(COALESCE(name, '')) = lower(?)
+	ORDER BY CASE WHEN COALESCE(estado, 'activo') = 'activo' THEN 0 ELSE 1 END, id ASC
+	LIMIT 1`, empresaID, reference)
+	return scan(row)
+}
+
+func normalizeEmpresaUsuarioReferenceLookup(reference string) string {
+	reference = strings.TrimSpace(reference)
+	start := strings.LastIndex(reference, "(")
+	end := strings.LastIndex(reference, ")")
+	if start >= 0 && end > start {
+		inside := strings.TrimSpace(reference[start+1 : end])
+		if strings.Contains(inside, "@") {
+			return inside
+		}
+	}
+	return reference
+}
+
+func resolveEmpresaUsuarioIDByReferenceSilent(dbConn *sql.DB, empresaID, currentID int64, reference string) int64 {
+	if currentID > 0 {
+		return currentID
+	}
+	item, err := ResolveEmpresaUsuarioByReference(dbConn, empresaID, reference)
+	if err != nil || item == nil || item.EmpresaID != empresaID {
+		return 0
+	}
+	return item.ID
+}
+
+// GetEmpresaUsuarioByEmailScoped obtiene un usuario por correo con alcance opcional por empresa.
+func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int64) (*EmpresaUsuario, error) {
+	query := `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(password_hash, ''),
+		COALESCE(password_salt, ''),
+		COALESCE(password_set, 0),
+		COALESCE(password_actualizada_en, ''),
+		COALESCE(login_failed_attempts, 0),
+		COALESCE(login_failed_last_at, ''),
+		COALESCE(login_locked_until, ''),
+		COALESCE(password_reset_token, ''),
+		COALESCE(password_reset_expira, ''),
+		COALESCE(password_reset_requested_en, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
+		COALESCE(control_aseo_estaciones, 0),
+		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
+		COALESCE(email_confirmado_en, ''),
+		COALESCE(acepta_contrato, 0),
+		COALESCE(contrato_version_aceptada, 0),
+		COALESCE(fecha_acepta_contrato, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM users
+	WHERE lower(email) = lower(?)`
+	args := []interface{}{email}
+	if empresaID > 0 {
+		query += " AND empresa_id = ?"
+		args = append(args, empresaID)
+	}
+	query += ` ORDER BY
+		CASE WHEN COALESCE(estado, 'activo') = 'activo' THEN 0 ELSE 1 END,
+		CASE WHEN COALESCE(email_confirmado, 0) = 1 THEN 0 ELSE 1 END,
+		CASE WHEN COALESCE(password_set, 0) = 1 AND COALESCE(password_hash, '') <> '' THEN 0 ELSE 1 END,
+		id DESC
+	LIMIT 1`
+
+	row := queryRowSQLCompat(dbConn, query, args...)
+
+	var item EmpresaUsuario
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Email,
+		&item.Nombre,
+		&item.DocumentoIdentidad,
+		&item.PasswordHash,
+		&item.PasswordSalt,
+		&item.PasswordSet,
+		&item.PasswordActualizadaEn,
+		&item.LoginFailedAttempts,
+		&item.LoginFailedLastAt,
+		&item.LoginLockedUntil,
+		&item.PasswordResetToken,
+		&item.PasswordResetExpira,
+		&item.PasswordResetRequestedEn,
+		&item.RolUsuarioID,
+		&item.RolNombre,
+		&item.FotoURL,
+		&item.ControlAseoEstaciones,
+		&item.EmailConfirmado,
+		&item.EmailConfirmToken,
+		&item.EmailConfirmExpira,
+		&item.EmailConfirmadoEn,
+		&item.AceptaContrato,
+		&item.ContratoVersionAceptada,
+		&item.FechaAceptaContrato,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// GetEmpresaUsuariosByEmail lista todas las cuentas asociadas a un correo sin asumir empresa.
+func GetEmpresaUsuariosByEmail(dbConn *sql.DB, email string) ([]EmpresaUsuario, error) {
+	rows, err := ExecQueryCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(password_hash, ''),
+		COALESCE(password_salt, ''),
+		COALESCE(password_set, 0),
+		COALESCE(password_actualizada_en, ''),
+		COALESCE(login_failed_attempts, 0),
+		COALESCE(login_failed_last_at, ''),
+		COALESCE(login_locked_until, ''),
+		COALESCE(password_reset_token, ''),
+		COALESCE(password_reset_expira, ''),
+		COALESCE(password_reset_requested_en, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
+		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
+		COALESCE(email_confirmado_en, ''),
+		COALESCE(acepta_contrato, 0),
+		COALESCE(contrato_version_aceptada, 0),
+		COALESCE(fecha_acepta_contrato, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM users
+	WHERE lower(email) = lower(?)
+	ORDER BY
+		empresa_id ASC,
+		CASE WHEN COALESCE(estado, 'activo') = 'activo' THEN 0 ELSE 1 END,
+		CASE WHEN COALESCE(email_confirmado, 0) = 1 THEN 0 ELSE 1 END,
+		CASE WHEN COALESCE(password_set, 0) = 1 AND COALESCE(password_hash, '') <> '' THEN 0 ELSE 1 END,
+		id DESC`, strings.TrimSpace(email))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaUsuario, 0)
+	for rows.Next() {
+		var item EmpresaUsuario
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.Email,
+			&item.Nombre,
+			&item.DocumentoIdentidad,
+			&item.PasswordHash,
+			&item.PasswordSalt,
+			&item.PasswordSet,
+			&item.PasswordActualizadaEn,
+			&item.LoginFailedAttempts,
+			&item.LoginFailedLastAt,
+			&item.LoginLockedUntil,
+			&item.PasswordResetToken,
+			&item.PasswordResetExpira,
+			&item.PasswordResetRequestedEn,
+			&item.RolUsuarioID,
+			&item.RolNombre,
+			&item.FotoURL,
+			&item.EmailConfirmado,
+			&item.EmailConfirmToken,
+			&item.EmailConfirmExpira,
+			&item.EmailConfirmadoEn,
+			&item.AceptaContrato,
+			&item.ContratoVersionAceptada,
+			&item.FechaAceptaContrato,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetEmpresaUsuarioByEmail obtiene un usuario por correo (case-insensitive).
+func GetEmpresaUsuarioByEmail(dbConn *sql.DB, email string) (*EmpresaUsuario, error) {
+	return GetEmpresaUsuarioByEmailScoped(dbConn, email, 0)
+}
+
+// GetEmpresaUsuarioByConfirmToken obtiene la invitacion pendiente asociada a un token.
+func GetEmpresaUsuarioByConfirmToken(dbConn *sql.DB, token string) (*EmpresaUsuario, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, sql.ErrNoRows
+	}
+	row := queryRowSQLCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(password_hash, ''),
+		COALESCE(password_salt, ''),
+		COALESCE(password_set, 0),
+		COALESCE(password_actualizada_en, ''),
+		COALESCE(login_failed_attempts, 0),
+		COALESCE(login_failed_last_at, ''),
+		COALESCE(login_locked_until, ''),
+		COALESCE(password_reset_token, ''),
+		COALESCE(password_reset_expira, ''),
+		COALESCE(password_reset_requested_en, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
+		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
+		COALESCE(email_confirmado_en, ''),
+		COALESCE(acepta_contrato, 0),
+		COALESCE(contrato_version_aceptada, 0),
+		COALESCE(fecha_acepta_contrato, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM users
+	WHERE email_confirm_token = ?
+	LIMIT 1`, hashOneTimeSecret(token))
+
+	var item EmpresaUsuario
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Email,
+		&item.Nombre,
+		&item.DocumentoIdentidad,
+		&item.PasswordHash,
+		&item.PasswordSalt,
+		&item.PasswordSet,
+		&item.PasswordActualizadaEn,
+		&item.LoginFailedAttempts,
+		&item.LoginFailedLastAt,
+		&item.LoginLockedUntil,
+		&item.PasswordResetToken,
+		&item.PasswordResetExpira,
+		&item.PasswordResetRequestedEn,
+		&item.RolUsuarioID,
+		&item.RolNombre,
+		&item.FotoURL,
+		&item.EmailConfirmado,
+		&item.EmailConfirmToken,
+		&item.EmailConfirmExpira,
+		&item.EmailConfirmadoEn,
+		&item.AceptaContrato,
+		&item.ContratoVersionAceptada,
+		&item.FechaAceptaContrato,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// SetEmpresaUsuarioPassword define la contraseña de acceso para un usuario de empresa.
+func SetEmpresaUsuarioPassword(dbConn *sql.DB, empresaID, id int64, passwordHash, passwordSalt string) error {
+	_, err := execSQLCompat(dbConn, `UPDATE users
+		SET password_hash = ?,
+			password_salt = ?,
+			password_set = 1,
+			password_actualizada_en = CAST(CURRENT_TIMESTAMP AS TEXT),
+			password_reset_token = '',
+			password_reset_expira = '',
+			password_reset_requested_en = '',
+			login_failed_attempts = 0,
+			login_failed_last_at = '',
+			login_locked_until = '',
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`, passwordHash, passwordSalt, id, empresaID)
+	return err
+}
+
+// CompleteEmpresaUsuarioInvitationPassword consume la invitacion, confirma el correo y define la contrasena inicial.
+func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int64, passwordHash, passwordSalt string) error {
+	res, err := execSQLCompat(dbConn, `UPDATE users
+		SET password_hash = ?,
+			password_salt = ?,
+			password_set = 1,
+			password_actualizada_en = CAST(CURRENT_TIMESTAMP AS TEXT),
+			email_confirmado = 1,
+			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CAST(CURRENT_TIMESTAMP AS TEXT) ELSE email_confirmado_en END,
+			email_confirm_token = '',
+			email_confirm_expira = '',
+			password_reset_token = '',
+			password_reset_expira = '',
+			password_reset_requested_en = '',
+			login_failed_attempts = 0,
+			login_failed_last_at = '',
+			login_locked_until = '',
+			estado = 'activo',
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`, passwordHash, passwordSalt, id, empresaID)
+	if err != nil {
+		return err
+	}
+	if affected, err := res.RowsAffected(); err == nil && affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// CompleteEmpresaUsuarioInvitationGoogle consume la invitacion cuando el usuario
+// valida su correo con Google y decide entrar sin crear contrasena local.
+func CompleteEmpresaUsuarioInvitationGoogle(dbConn *sql.DB, empresaID, id int64) error {
+	_, err := execSQLCompat(dbConn, `UPDATE users
+		SET email_confirmado = 1,
+			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN CAST(CURRENT_TIMESTAMP AS TEXT) ELSE email_confirmado_en END,
+			email_confirm_token = '',
+			email_confirm_expira = '',
+			password_reset_token = '',
+			password_reset_expira = '',
+			password_reset_requested_en = '',
+			login_failed_attempts = 0,
+			login_failed_last_at = '',
+			login_locked_until = '',
+			estado = 'activo',
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`, id, empresaID)
+	return err
+}
+
+// SetEmpresaUsuarioPasswordResetToken registra un token temporal para recuperacion de contrasena.
+func SetEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64, token, expira string) error {
+	_, err := execSQLCompat(dbConn, `UPDATE users
+		SET password_reset_token = ?,
+			password_reset_expira = ?,
+			password_reset_requested_en = CURRENT_TIMESTAMP,
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`, hashOneTimeSecret(token), expira, id, empresaID)
+	return err
+}
+
+// ClearEmpresaUsuarioPasswordResetToken invalida el token de recuperación actual de un usuario.
+func ClearEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64) error {
+	_, err := execSQLCompat(dbConn, `UPDATE users
+		SET password_reset_token = '',
+			password_reset_expira = '',
+			password_reset_requested_en = '',
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`, id, empresaID)
+	return err
+}
+
+// RegisterEmpresaUsuarioLoginFailure incrementa intentos fallidos y aplica bloqueo temporal.
+func RegisterEmpresaUsuarioLoginFailure(dbConn *sql.DB, empresaID, id int64, maxAttempts int, window, lockDuration time.Duration) (int, string, error) {
+	if maxAttempts <= 0 {
+		maxAttempts = 5
+	}
+	if window <= 0 {
+		window = 15 * time.Minute
+	}
+	if lockDuration <= 0 {
+		lockDuration = 15 * time.Minute
+	}
+
+	row := queryRowSQLCompat(dbConn, `SELECT
+		COALESCE(login_failed_attempts, 0),
+		COALESCE(login_failed_last_at, ''),
+		COALESCE(login_locked_until, '')
+	FROM users
+	WHERE id = ? AND empresa_id = ?
+	LIMIT 1`, id, empresaID)
+
+	var currentAttempts int
+	var lastFailedRaw string
+	var lockedUntilRaw string
+	if err := row.Scan(&currentAttempts, &lastFailedRaw, &lockedUntilRaw); err != nil {
+		return 0, "", err
+	}
+
+	now := time.Now()
+	attempts := currentAttempts
+	lockedUntil := ""
+
+	if lockAt, ok := parseDateTimeLocal(lockedUntilRaw); ok && now.Before(lockAt) {
+		attempts = maxAttempts
+		lockedUntil = lockAt.Format("2006-01-02 15:04:05")
+	} else {
+		if lastFailedAt, ok := parseDateTimeLocal(lastFailedRaw); !ok || now.Sub(lastFailedAt) > window {
+			attempts = 0
+		}
+		attempts++
+		if attempts >= maxAttempts {
+			lockedUntil = now.Add(lockDuration).Format("2006-01-02 15:04:05")
+		}
+	}
+
+	_, err := execSQLCompat(dbConn, `UPDATE users
+		SET login_failed_attempts = ?,
+			login_failed_last_at = ?,
+			login_locked_until = ?,
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`,
+		attempts,
+		now.Format("2006-01-02 15:04:05"),
+		lockedUntil,
+		id,
+		empresaID,
+	)
+	if err != nil {
+		return 0, "", err
+	}
+
+	return attempts, lockedUntil, nil
+}
+
+// ClearEmpresaUsuarioLoginFailures limpia contador y bloqueo de intentos fallidos.
+func ClearEmpresaUsuarioLoginFailures(dbConn *sql.DB, empresaID, id int64) error {
+	_, err := execSQLCompat(dbConn, `UPDATE users
+		SET login_failed_attempts = 0,
+			login_failed_last_at = '',
+			login_locked_until = '',
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`, id, empresaID)
+	return err
+}
+
+// IsEmpresaUsuarioLocked evalúa si un usuario está bloqueado por intentos fallidos.
+func IsEmpresaUsuarioLocked(item *EmpresaUsuario, now time.Time) (bool, string) {
+	if item == nil {
+		return false, ""
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	lockAt, ok := parseDateTimeLocal(item.LoginLockedUntil)
+	if !ok {
+		return false, ""
+	}
+	if now.Before(lockAt) {
+		return true, lockAt.Format("2006-01-02 15:04:05")
+	}
+	return false, ""
+}
+
+func parseDateTimeLocal(raw string) (time.Time, bool) {
+	return valueutil.ParseDateTimeLocal(raw)
+}
+
+// UpdateEmpresaUsuario actualiza los datos de un usuario de empresa.
+func UpdateEmpresaUsuario(
+	dbConn *sql.DB,
+	id, empresaID int64,
+	email, nombre, documentoIdentidad string,
+	rolUsuarioID int64,
+	controlAseoEstaciones int,
+	rolNombre, observaciones string,
+	resetConfirmacion bool,
+	confirmToken, confirmExpira string,
+) error {
+	if resetConfirmacion {
+		_, err := execSQLCompat(dbConn, `UPDATE users
+			SET email = ?,
+				name = ?,
+				documento_identidad = ?,
+				rol_usuario_id = ?,
+				control_aseo_estaciones = ?,
+				role = ?,
+				observaciones = ?,
+				email_confirmado = 0,
+				email_confirmado_en = '',
+				estado = 'inactivo',
+				email_confirm_token = ?,
+				email_confirm_expira = ?,
+				fecha_actualizacion = CURRENT_TIMESTAMP
+			WHERE id = ? AND empresa_id = ?`,
+			email,
+			nombre,
+			documentoIdentidad,
+			rolUsuarioID,
+			normalizeEmpresaUsuarioBinaryFlag(controlAseoEstaciones),
+			rolNombre,
+			observaciones,
+			confirmToken,
+			confirmExpira,
+			id,
+			empresaID,
+		)
+		return err
+	}
+
+	_, err := execSQLCompat(dbConn, `UPDATE users
+		SET email = ?,
+			name = ?,
+			documento_identidad = ?,
+			rol_usuario_id = ?,
+			control_aseo_estaciones = ?,
+			role = ?,
+			observaciones = ?,
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`,
+		email,
+		nombre,
+		documentoIdentidad,
+		rolUsuarioID,
+		normalizeEmpresaUsuarioBinaryFlag(controlAseoEstaciones),
+		rolNombre,
+		observaciones,
+		id,
+		empresaID,
+	)
+	return err
+}
+
+// UpdateEmpresaUsuarioFoto actualiza la foto de perfil de un usuario dentro de su empresa.
+func UpdateEmpresaUsuarioFoto(dbConn *sql.DB, empresaID, id int64, fotoURL string) error {
+	res, err := execSQLCompat(dbConn, `UPDATE users
+		SET foto_url = ?,
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`,
+		strings.TrimSpace(fotoURL),
+		id,
+		empresaID,
+	)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err == nil && affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// DeleteEmpresaUsuario elimina un usuario de empresa.
+func DeleteEmpresaUsuario(dbConn *sql.DB, empresaID, id int64) error {
+	_, err := execSQLCompat(dbConn, `DELETE FROM users WHERE id = ? AND empresa_id = ?`, id, empresaID)
+	return err
+}
+
+// DeleteEmpresaUsuariosPreconfiguracion elimina usuarios guia creados por una preconfiguracion.
+func DeleteEmpresaUsuariosPreconfiguracion(dbConn *sql.DB, empresaID int64, marker string) (int64, error) {
+	marker = strings.TrimSpace(marker)
+	if marker == "" {
+		return 0, nil
+	}
+	res, err := execSQLCompat(dbConn, `DELETE FROM users
+		WHERE empresa_id = ?
+		  AND COALESCE(observaciones, '') LIKE ?`,
+		empresaID,
+		"%"+marker+"%",
+	)
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected, nil
+}
+
+// SetEmpresaUsuarioEstado activa o desactiva un usuario de empresa.
+func SetEmpresaUsuarioEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
+	_, err := execSQLCompat(dbConn, `UPDATE users SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ? AND empresa_id = ?`, estado, id, empresaID)
+	return err
+}
+
+// SetEmpresaUsuarioConfirmToken actualiza token de confirmación para reenvíos.
+func SetEmpresaUsuarioConfirmToken(dbConn *sql.DB, empresaID, id int64, confirmToken, confirmExpira string) error {
+	_, err := execSQLCompat(dbConn, `UPDATE users
+		SET email_confirm_token = ?,
+			email_confirm_expira = ?,
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`, hashOneTimeSecret(confirmToken), confirmExpira, id, empresaID)
+	return err
+}
+
+// ConfirmEmpresaUsuarioByToken confirma el correo de un usuario usando su token.
+func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
+	tokenHash := hashOneTimeSecret(token)
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer rollbackTransaction(tx)
+	row := queryRowTxSQLCompat(tx, `SELECT id, empresa_id, COALESCE(email_confirm_expira, '') FROM users WHERE email_confirm_token = ? LIMIT 1 FOR UPDATE`, tokenHash)
+	var id int64
+	var empresaID int64
+	var expiraRaw string
+	if err := row.Scan(&id, &empresaID, &expiraRaw); err != nil {
+		return 0, err
+	}
+
+	expiraAt, validExpiry := parseAuthTokenExpiration(expiraRaw)
+	if !validExpiry || time.Now().After(expiraAt) {
+		if _, clearErr := execTxSQLCompat(tx, `UPDATE users SET email_confirm_token = '', email_confirm_expira = '' WHERE id = ? AND empresa_id = ? AND email_confirm_token = ?`, id, empresaID, tokenHash); clearErr != nil {
+			return 0, clearErr
+		}
+		if commitErr := tx.Commit(); commitErr != nil {
+			return 0, commitErr
+		}
+		return 0, fmt.Errorf("token de confirmacion invalido o expirado")
+	}
+
+	result, err := execTxSQLCompat(tx, `UPDATE users
+		SET email_confirmado = 1,
+			email_confirmado_en = CAST(CURRENT_TIMESTAMP AS TEXT),
+			estado = 'activo',
+			email_confirm_token = '',
+			email_confirm_expira = '',
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ? AND email_confirm_token = ?`, id, empresaID, tokenHash)
+	if err != nil {
+		return 0, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil || affected != 1 {
+		return 0, sql.ErrNoRows
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return empresaID, nil
+}
+
+func SetEmpresaUsuarioPasswordFromResetToken(dbConn *sql.DB, empresaID, id int64, token, passwordHash, passwordSalt string) error {
+	result, err := execSQLCompat(dbConn, `UPDATE users
+		SET password_hash = ?, password_salt = ?, password_set = 1,
+			password_actualizada_en = CAST(CURRENT_TIMESTAMP AS TEXT),
+			password_reset_token = '', password_reset_expira = '', password_reset_requested_en = '',
+			login_failed_attempts = 0, login_failed_last_at = '', login_locked_until = '',
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ? AND password_reset_token = ?`,
+		passwordHash, passwordSalt, id, empresaID, hashOneTimeSecret(token))
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != 1 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// EmpresaUsuarioTokenMatches compares an original browser/email token with the
+// SHA-256 verifier persisted for an enterprise user.
+func EmpresaUsuarioTokenMatches(storedHash, suppliedToken string) bool {
+	return AdministradorPasswordResetTokenMatches(storedHash, suppliedToken)
+}
+
+// MigrateEmpresaUsuarioTemporaryTokens replaces legacy plaintext invitation
+// and password-reset tokens. dryRun reports the rows that would be changed.
+func MigrateEmpresaUsuarioTemporaryTokens(dbConn *sql.DB, dryRun bool) (int, error) {
+	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+		return 0, err
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT id, COALESCE(password_reset_token, ''), COALESCE(email_confirm_token, '') FROM users WHERE COALESCE(password_reset_token, '') <> '' OR COALESCE(email_confirm_token, '') <> ''`)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	type item struct {
+		id             int64
+		reset, confirm string
+	}
+	legacy := make([]item, 0)
+	for rows.Next() {
+		var value item
+		if err := rows.Scan(&value.id, &value.reset, &value.confirm); err != nil {
+			return 0, err
+		}
+		if (value.reset != "" && !isSHA256Hex(value.reset)) || (value.confirm != "" && !isSHA256Hex(value.confirm)) {
+			legacy = append(legacy, value)
+		}
+	}
+	if err := rows.Err(); err != nil || dryRun {
+		return len(legacy), err
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, value := range legacy {
+		reset, confirm := value.reset, value.confirm
+		if reset != "" && !isSHA256Hex(reset) {
+			reset = hashOneTimeSecret(reset)
+		}
+		if confirm != "" && !isSHA256Hex(confirm) {
+			confirm = hashOneTimeSecret(confirm)
+		}
+		if _, err := tx.Exec(rebindCompatQuery(`UPDATE users SET password_reset_token = ?, email_confirm_token = ? WHERE id = ?`), reset, confirm, value.id); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(legacy), nil
+}
+
+func SetEmpresaUsuarioContratoAceptado(dbConn *sql.DB, empresaID, id int64, version int) error {
+	_, err := execSQLCompat(dbConn, `UPDATE users
+		SET acepta_contrato = 1,
+			contrato_version_aceptada = ?,
+			fecha_acepta_contrato = CAST(CURRENT_TIMESTAMP AS TEXT),
+			fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ? AND empresa_id = ?`, version, id, empresaID)
+	return err
+}

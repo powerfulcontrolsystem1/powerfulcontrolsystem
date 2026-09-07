@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tesorería y presupuesto</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/administrar_empresa/tesoreria_presupuesto.css">
+</head>
+<body class="tes-page">
+  <main class="tes-shell">
+    <header class="tes-head">
+      <div><h1>Tesorería y presupuesto</h1><p>Controla cuentas bancarias y caja, presupuesto por periodo, ejecución y flujo de caja proyectado por empresa.</p></div>
+      <div class="tes-actions"><button class="tes-btn" id="tesRefresh" type="button">Actualizar</button><button class="tes-btn" id="tesSeed" type="button">Cargar demo</button><button class="tes-btn primary" id="tesGenerar" type="button">Generar flujo</button></div>
+    </header>
+    <section class="tes-grid">
+      <article class="tes-kpi"><span>Cuentas activas</span><strong id="kpiCuentas">0</strong></article>
+      <article class="tes-kpi"><span>Presupuestos</span><strong id="kpiPres">0</strong></article>
+      <article class="tes-kpi"><span>Saldo disponible</span><strong id="kpiSaldo">$0</strong></article>
+      <article class="tes-kpi"><span>Ingresos proyectados</span><strong id="kpiIng">$0</strong></article>
+      <article class="tes-kpi"><span>Egresos proyectados</span><strong id="kpiEgr">$0</strong></article>
+      <article class="tes-kpi"><span>Flujo neto</span><strong id="kpiNeto">$0</strong></article>
+    </section>
+    <nav class="tes-tabs"><button class="tes-tab is-active" data-tab="cuentas" type="button">Cuentas</button><button class="tes-tab" data-tab="presupuesto" type="button">Presupuesto</button><button class="tes-tab" data-tab="flujo" type="button">Flujo</button><button class="tes-tab" data-tab="config" type="button">Configuración</button></nav>
+    <div id="tesMsg" class="tes-msg"></div>
+    <section id="tab-cuentas" class="tes-panel is-active"><div class="tes-two"><form id="cuentaForm" class="tes-box tes-form"><h2>Cuenta banco/caja</h2><div class="tes-row"><div class="tes-field"><label>Código</label><input id="ctaCodigo" required></div><div class="tes-field"><label>Tipo</label><select id="ctaTipo"><option value="banco">Banco</option><option value="caja">Caja</option><option value="pasarela">Pasarela</option><option value="fiducia">Fiducia</option></select></div></div><div class="tes-field"><label>Nombre</label><input id="ctaNombre" required></div><div class="tes-row"><div class="tes-field"><label>Entidad</label><input id="ctaEntidad"></div><div class="tes-field"><label>Número</label><input id="ctaNumero"></div></div><div class="tes-row"><div class="tes-field"><label>Saldo actual</label><input id="ctaSaldo" type="number" step="0.01" value="0"></div><div class="tes-field"><label>Saldo mínimo</label><input id="ctaMinimo" type="number" step="0.01" value="0"></div></div><button class="tes-btn primary" type="submit">Guardar cuenta</button></form><div class="tes-box"><h2>Cuentas</h2><div id="cuentasList" class="tes-list"></div></div></div></section>
+    <section id="tab-presupuesto" class="tes-panel"><div class="tes-two"><form id="presForm" class="tes-box tes-form"><h2>Presupuesto</h2><div class="tes-row"><div class="tes-field"><label>Código</label><input id="presCodigo" required></div><div class="tes-field"><label>Periodo</label><input id="presPeriodo" placeholder="2026-05"></div></div><div class="tes-field"><label>Nombre</label><input id="presNombre" required></div><div class="tes-row"><div class="tes-field"><label>Ingresos meta</label><input id="presIngresos" type="number" step="0.01" value="0"></div><div class="tes-field"><label>Egresos meta</label><input id="presEgresos" type="number" step="0.01" value="0"></div></div><div class="tes-field"><label>Responsable</label><input id="presResp"></div><button class="tes-btn primary" type="submit">Guardar presupuesto</button></form><form id="partidaForm" class="tes-box tes-form"><h2>Partida</h2><div class="tes-field"><label>Presupuesto</label><select id="partPres"></select></div><div class="tes-row"><div class="tes-field"><label>Tipo</label><select id="partTipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select></div><div class="tes-field"><label>Categoría</label><input id="partCat" value="general"></div></div><div class="tes-field"><label>Concepto</label><input id="partConcepto" required></div><div class="tes-row"><div class="tes-field"><label>Presupuestado</label><input id="partValor" type="number" step="0.01" value="0"></div><div class="tes-field"><label>Ejecutado</label><input id="partEjecutado" type="number" step="0.01" value="0"></div></div><button class="tes-btn primary" type="submit">Guardar partida</button></form></div><div class="tes-box"><h2>Presupuestos y partidas</h2><div id="presList" class="tes-list"></div></div></section>
+    <section id="tab-flujo" class="tes-panel"><div class="tes-box"><h2>Flujo de caja proyectado</h2><div id="flujoTable" class="tes-table-wrap"></div></div></section>
+    <section id="tab-config" class="tes-panel"><form id="configForm" class="tes-box tes-form"><h2>Configuración</h2><div class="tes-row"><div class="tes-field"><label>Nombre</label><input id="cfgNombre"></div><div class="tes-field"><label>Moneda</label><input id="cfgMoneda" value="COP"></div></div><div class="tes-row"><div class="tes-field"><label>Periodo trabajo</label><input id="cfgPeriodo" placeholder="2026-05"></div><div class="tes-field"><label>Proyección</label><select id="cfgMetodo"><option value="mensual">Mensual</option><option value="semanal">Semanal</option><option value="trimestral">Trimestral</option><option value="manual">Manual</option></select></div></div><label><input id="cfgAlerta" type="checkbox"> Alertar saldo mínimo</label><label><input id="cfgAprobar" type="checkbox"> Requerir aprobación de pagos</label><button class="tes-btn primary" type="submit">Guardar configuración</button></form></section>
+  </main>
+  <script src="/js/tesoreria_presupuesto.js"></script>
+</body>
+</html>

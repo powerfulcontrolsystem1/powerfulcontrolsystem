@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial de nomina - Powerful Control System</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    .payroll-help-page {
+      background: linear-gradient(180deg, var(--bg), var(--bg-alt));
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .payroll-tutorial-shell {
+      display: grid;
+      gap: 16px;
+      margin: 0 auto;
+      max-width: 1180px;
+      padding: 18px;
+    }
+    .payroll-tutorial-hero,
+    .payroll-slide,
+    .payroll-side-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+    }
+    .payroll-tutorial-hero {
+      display: grid;
+      gap: 10px;
+      padding: 18px;
+    }
+    .payroll-tutorial-hero h1 {
+      color: var(--text);
+      font-size: clamp(1.6rem, 3vw, 2.45rem);
+      letter-spacing: 0;
+      margin: 0;
+    }
+    .payroll-tutorial-hero p {
+      color: var(--muted);
+      margin: 0;
+      max-width: 940px;
+    }
+    .payroll-tutorial-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .payroll-tutorial-grid {
+      align-items: start;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+    }
+    .payroll-slides {
+      display: grid;
+      gap: 14px;
+    }
+    .payroll-slide {
+      display: grid;
+      gap: 14px;
+      overflow: hidden;
+      padding: 16px;
+      scroll-margin-top: 20px;
+    }
+    .payroll-slide-head {
+      align-items: start;
+      display: grid;
+      gap: 10px;
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .payroll-step-badge {
+      align-items: center;
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface-soft));
+      border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+      border-radius: 8px;
+      color: var(--text);
+      display: inline-flex;
+      font-size: 1.15rem;
+      font-weight: 950;
+      height: 42px;
+      justify-content: center;
+      line-height: 1;
+      width: 42px;
+    }
+    .payroll-slide h2 {
+      color: var(--text);
+      font-size: 1.15rem;
+      letter-spacing: 0;
+      margin: 0;
+    }
+    .payroll-slide p {
+      color: var(--muted);
+      margin: 4px 0 0;
+    }
+    .payroll-visual {
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 48%),
+        color-mix(in srgb, var(--surface-soft) 88%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--border) 86%, var(--accent) 14%);
+      border-radius: 8px;
+      display: grid;
+      gap: 10px;
+      min-height: 170px;
+      padding: 14px;
+    }
+    .payroll-visual-bar {
+      align-items: center;
+      display: flex;
+      gap: 8px;
+    }
+    .payroll-dot {
+      background: var(--accent);
+      border-radius: 999px;
+      display: inline-block;
+      height: 10px;
+      width: 10px;
+    }
+    .payroll-visual-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: grid;
+      gap: 7px;
+      padding: 12px;
+    }
+    .payroll-line {
+      background: color-mix(in srgb, var(--text) 14%, transparent);
+      border-radius: 999px;
+      display: block;
+      height: 8px;
+      max-width: 100%;
+    }
+    .payroll-line.short { width: 38%; }
+    .payroll-line.medium { width: 64%; }
+    .payroll-line.long { width: 88%; }
+    .payroll-click-mark {
+      align-items: center;
+      background: #f59e0b;
+      border: 2px solid rgba(255,255,255,.82);
+      border-radius: 999px;
+      color: #111827;
+      display: inline-flex;
+      font-weight: 950;
+      height: 30px;
+      justify-content: center;
+      width: 30px;
+    }
+    .payroll-narration {
+      background: color-mix(in srgb, var(--surface-soft) 88%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--border) 86%, var(--accent) 14%);
+      border-radius: 8px;
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+    }
+    .payroll-narration-head {
+      align-items: center;
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+    }
+    .payroll-narration-title {
+      color: var(--text);
+      font-size: .86rem;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .payroll-play-btn {
+      align-items: center;
+      border-radius: 999px;
+      display: inline-flex;
+      gap: 8px;
+      min-height: 38px;
+      padding: 8px 12px;
+    }
+    .payroll-play-icon {
+      align-items: center;
+      background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+      border-radius: 999px;
+      display: inline-flex;
+      height: 26px;
+      justify-content: center;
+      width: 26px;
+    }
+    .payroll-play-icon img {
+      display: block;
+      height: 14px;
+      width: 14px;
+    }
+    .payroll-narration p {
+      color: var(--text);
+      line-height: 1.45;
+      margin: 0;
+    }
+    .payroll-side-panel {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      position: sticky;
+      top: 16px;
+    }
+    .payroll-side-panel h2 {
+      color: var(--text);
+      font-size: 1rem;
+      margin: 0;
+    }
+    .payroll-side-panel a {
+      color: var(--text);
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .payroll-side-panel a:hover,
+    .payroll-side-panel a:focus-visible {
+      color: var(--accent);
+      outline: none;
+    }
+    .payroll-audio-status {
+      color: var(--muted);
+      font-size: .9rem;
+      font-weight: 750;
+      min-height: 20px;
+    }
+    @media (max-width: 860px) {
+      .payroll-tutorial-shell { padding: 12px; }
+      .payroll-tutorial-grid { grid-template-columns: 1fr; }
+      .payroll-side-panel { position: static; }
+      .payroll-slide-head { grid-template-columns: 1fr; }
+      .payroll-tutorial-actions .btn,
+      .payroll-play-btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body class="empresa-subpage payroll-help-page">
+  <main class="payroll-tutorial-shell">
+    <section class="payroll-tutorial-hero">
+      <h1>Tutorial operativo de nomina</h1>
+      <p>Presentacion guiada para configurar empleados, calcular liquidaciones, revisar pagos y preparar documentos electronicos de nomina Colombia desde Powerful Control System.</p>
+      <div class="payroll-tutorial-actions">
+        <a class="btn secondary" href="/ayuda/ayuda.html#nomina">Volver a ayuda</a>
+        <a class="btn" id="openPayrollModule" href="/administrar_empresa/nomina_sueldos.html">Abrir modulo de nomina</a>
+      </div>
+      <div id="payrollAudioStatus" class="payroll-audio-status" aria-live="polite"></div>
+    </section>
+
+    <div class="payroll-tutorial-grid">
+      <section class="payroll-slides" aria-label="Diapositivas del tutorial de nomina">
+        <article id="paso-1" class="payroll-slide">
+          <div class="payroll-slide-head">
+            <span class="payroll-step-badge">1</span>
+            <div>
+              <h2>Entrar al modulo correcto</h2>
+              <p>Desde Administrar empresa abre Recursos humanos y selecciona Nomina.</p>
+            </div>
+          </div>
+          <div class="payroll-visual" aria-hidden="true">
+            <div class="payroll-visual-bar"><span class="payroll-click-mark">1</span><strong>Recursos humanos</strong></div>
+            <div class="payroll-visual-card"><span class="payroll-line long"></span><span class="payroll-line medium"></span><span class="payroll-line short"></span></div>
+          </div>
+          <div class="payroll-narration">
+            <div class="payroll-narration-head">
+              <span class="payroll-narration-title">Narracion</span>
+              <button class="btn secondary payroll-play-btn" type="button" data-speak-target="narracion-1">
+                <span class="payroll-play-icon" aria-hidden="true"><img src="/img/play.svg" alt=""></span>
+                Reproducir
+              </button>
+            </div>
+            <p id="narracion-1">Primero entra al panel de la empresa. En el menu de Recursos humanos abre Nomina. Aqui se concentra la configuracion laboral, empleados, calculos, pagos y nomina electronica.</p>
+          </div>
+        </article>
+
+        <article id="paso-2" class="payroll-slide">
+          <div class="payroll-slide-head">
+            <span class="payroll-step-badge">2</span>
+            <div>
+              <h2>Configurar parametros legales</h2>
+              <p>Guarda moneda, dias de nomina, porcentajes y reglas base antes de liquidar.</p>
+            </div>
+          </div>
+          <div class="payroll-visual" aria-hidden="true">
+            <div class="payroll-visual-card"><span class="payroll-click-mark">2</span><span class="payroll-line medium"></span><span class="payroll-line long"></span><span class="payroll-line short"></span></div>
+          </div>
+          <div class="payroll-narration">
+            <div class="payroll-narration-head">
+              <span class="payroll-narration-title">Narracion</span>
+              <button class="btn secondary payroll-play-btn" type="button" data-speak-target="narracion-2">
+                <span class="payroll-play-icon" aria-hidden="true"><img src="/img/play.svg" alt=""></span>
+                Reproducir
+              </button>
+            </div>
+            <p id="narracion-2">Revisa la configuracion legal de la empresa. Define dias de nomina, moneda, aportes, recargos y politica de liquidacion. Guarda estos datos antes de crear calculos del periodo.</p>
+          </div>
+        </article>
+
+        <article id="paso-3" class="payroll-slide">
+          <div class="payroll-slide-head">
+            <span class="payroll-step-badge">3</span>
+            <div>
+              <h2>Registrar empleados y sedes</h2>
+              <p>Crea la ficha salarial de cada trabajador con sede, centro de costo y contrato.</p>
+            </div>
+          </div>
+          <div class="payroll-visual" aria-hidden="true">
+            <div class="payroll-visual-card"><span class="payroll-line long"></span><span class="payroll-line long"></span><span class="payroll-click-mark">3</span><span class="payroll-line medium"></span></div>
+          </div>
+          <div class="payroll-narration">
+            <div class="payroll-narration-head">
+              <span class="payroll-narration-title">Narracion</span>
+              <button class="btn secondary payroll-play-btn" type="button" data-speak-target="narracion-3">
+                <span class="payroll-play-icon" aria-hidden="true"><img src="/img/play.svg" alt=""></span>
+                Reproducir
+              </button>
+            </div>
+            <p id="narracion-3">Agrega cada empleado con nombre, documento, cargo, salario, sede y centro de costo. Esta informacion se usa para liquidaciones, reportes y documentos electronicos.</p>
+          </div>
+        </article>
+
+        <article id="paso-4" class="payroll-slide">
+          <div class="payroll-slide-head">
+            <span class="payroll-step-badge">4</span>
+            <div>
+              <h2>Calcular nomina del periodo</h2>
+              <p>Elige fechas, empleado o todos los empleados y ejecuta el calculo.</p>
+            </div>
+          </div>
+          <div class="payroll-visual" aria-hidden="true">
+            <div class="payroll-visual-card"><span class="payroll-line medium"></span><span class="payroll-line medium"></span><span class="payroll-click-mark">4</span><strong>Calcular nomina</strong></div>
+          </div>
+          <div class="payroll-narration">
+            <div class="payroll-narration-head">
+              <span class="payroll-narration-title">Narracion</span>
+              <button class="btn secondary payroll-play-btn" type="button" data-speak-target="narracion-4">
+                <span class="payroll-play-icon" aria-hidden="true"><img src="/img/play.svg" alt=""></span>
+                Reproducir
+              </button>
+            </div>
+            <p id="narracion-4">Selecciona el rango del periodo y calcula la nomina. El sistema cruza asistencia, festivos, recargos, novedades y salario para generar la liquidacion trazable.</p>
+          </div>
+        </article>
+
+        <article id="paso-5" class="payroll-slide">
+          <div class="payroll-slide-head">
+            <span class="payroll-step-badge">5</span>
+            <div>
+              <h2>Revisar pagos y desprendibles</h2>
+              <p>Valida alertas contables, genera pagos y abre desprendibles para cada empleado.</p>
+            </div>
+          </div>
+          <div class="payroll-visual" aria-hidden="true">
+            <div class="payroll-visual-card"><strong>Control contable</strong><span class="payroll-line long"></span><span class="payroll-click-mark">5</span><span class="payroll-line medium"></span></div>
+          </div>
+          <div class="payroll-narration">
+            <div class="payroll-narration-head">
+              <span class="payroll-narration-title">Narracion</span>
+              <button class="btn secondary payroll-play-btn" type="button" data-speak-target="narracion-5">
+                <span class="payroll-play-icon" aria-hidden="true"><img src="/img/play.svg" alt=""></span>
+                Reproducir
+              </button>
+            </div>
+            <p id="narracion-5">Antes de pagar revisa el control contable. Si no hay alertas, genera pagos y consulta desprendibles. Estos documentos ayudan al empleado y a la auditoria interna.</p>
+          </div>
+        </article>
+
+        <article id="paso-6" class="payroll-slide">
+          <div class="payroll-slide-head">
+            <span class="payroll-step-badge">6</span>
+            <div>
+              <h2>Preparar nomina electronica</h2>
+              <p>Consulta o prepara el lote DIAN para revision documental de nomina electronica.</p>
+            </div>
+          </div>
+          <div class="payroll-visual" aria-hidden="true">
+            <div class="payroll-visual-card"><strong>Nomina electronica DIAN</strong><span class="payroll-line long"></span><span class="payroll-click-mark">6</span><span class="payroll-line short"></span></div>
+          </div>
+          <div class="payroll-narration">
+            <div class="payroll-narration-head">
+              <span class="payroll-narration-title">Narracion</span>
+              <button class="btn secondary payroll-play-btn" type="button" data-speak-target="narracion-6">
+                <span class="payroll-play-icon" aria-hidden="true"><img src="/img/play.svg" alt=""></span>
+                Reproducir
+              </button>
+            </div>
+            <p id="narracion-6">Cuando la liquidacion este revisada, prepara el lote de nomina electronica. El envio real depende de la configuracion fiscal, firma, CUNE, numeracion y transporte documental de la empresa.</p>
+          </div>
+        </article>
+      </section>
+
+      <aside class="payroll-side-panel" aria-label="Indice de la presentacion">
+        <h2>Pasos</h2>
+        <a href="#paso-1">1. Entrar al modulo</a>
+        <a href="#paso-2">2. Configurar parametros</a>
+        <a href="#paso-3">3. Registrar empleados</a>
+        <a href="#paso-4">4. Calcular nomina</a>
+        <a href="#paso-5">5. Revisar pagos</a>
+        <a href="#paso-6">6. Nomina electronica</a>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var status = document.getElementById("payrollAudioStatus");
+      var params = new URLSearchParams(window.location.search);
+      var empresaID = params.get("empresa_id") || "";
+      var openPayroll = document.getElementById("openPayrollModule");
+      if (openPayroll && empresaID) {
+        openPayroll.href = "/administrar_empresa/nomina_sueldos.html?empresa_id=" + encodeURIComponent(empresaID);
+      }
+
+      function setStatus(text) {
+        if (status) status.textContent = text || "";
+      }
+
+      function stopSpeech() {
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+        }
+      }
+
+      function speak(text) {
+        stopSpeech();
+        if (!("speechSynthesis" in window) || !window.SpeechSynthesisUtterance) {
+          setStatus("El navegador no permite reproducir narracion por voz en este momento.");
+          return;
+        }
+        var utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "es-CO";
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        utterance.onstart = function () { setStatus("Reproduciendo narracion..."); };
+        utterance.onend = function () { setStatus("Narracion finalizada."); };
+        utterance.onerror = function () { setStatus("No se pudo reproducir la narracion."); };
+        window.speechSynthesis.speak(utterance);
+      }
+
+      document.querySelectorAll("[data-speak-target]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          var target = document.getElementById(button.getAttribute("data-speak-target"));
+          var text = target ? target.textContent : "";
+          if (text.trim()) speak(text.trim());
+        });
+      });
+
+      window.addEventListener("beforeunload", stopSpeech);
+    })();
+  </script>
+</body>
+</html>

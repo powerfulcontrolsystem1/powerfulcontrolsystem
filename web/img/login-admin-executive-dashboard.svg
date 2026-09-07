@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-labelledby="title desc">
+  <title id="title">Ejecutivo revisando estadisticas del sistema</title>
+  <desc id="desc">Ilustracion profesional con fondo transparente de un ejecutivo sentado en su escritorio observando graficas en una pantalla.</desc>
+  <defs>
+    <linearGradient id="desk" x1="80" y1="430" x2="660" y2="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7a4a2b"/>
+      <stop offset="0.55" stop-color="#a3673a"/>
+      <stop offset="1" stop-color="#6b3f25"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="330" y1="135" x2="650" y2="345" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#eef7ff"/>
+      <stop offset="1" stop-color="#c8e6ff"/>
+    </linearGradient>
+    <linearGradient id="suit" x1="175" y1="230" x2="295" y2="424" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f3f66"/>
+      <stop offset="1" stop-color="#10233d"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#softShadow)">
+    <path d="M101 424h532c18 0 33 15 33 33v9H68v-9c0-18 15-33 33-33z" fill="url(#desk)"/>
+    <path d="M82 466h570v28c0 12-10 22-22 22H104c-12 0-22-10-22-22v-28z" fill="#51331f"/>
+    <path d="M125 486h86" stroke="#d6a36a" stroke-width="8" stroke-linecap="round" opacity=".65"/>
+    <path d="M502 486h86" stroke="#d6a36a" stroke-width="8" stroke-linecap="round" opacity=".65"/>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="320" y="92" width="330" height="242" rx="22" fill="#16314f"/>
+    <rect x="341" y="113" width="288" height="184" rx="14" fill="url(#screen)"/>
+    <path d="M470 334h32v60h-32z" fill="#223c5d"/>
+    <path d="M421 394h130c8 0 15 7 15 15v5H406v-5c0-8 7-15 15-15z" fill="#172a42"/>
+    <rect x="365" y="144" width="74" height="18" rx="9" fill="#2f80ed" opacity=".95"/>
+    <rect x="456" y="144" width="48" height="18" rx="9" fill="#15a08e" opacity=".9"/>
+    <rect x="522" y="144" width="74" height="18" rx="9" fill="#f2b84b" opacity=".92"/>
+    <path d="M374 251c26-60 53-27 74-58 18-26 39-18 58 5 21 26 44-3 80-47" fill="none" stroke="#2f80ed" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M374 260h222" stroke="#8aa8c3" stroke-width="5" stroke-linecap="round" opacity=".45"/>
+    <rect x="371" y="185" width="34" height="55" rx="8" fill="#15a08e" opacity=".92"/>
+    <rect x="420" y="210" width="34" height="30" rx="8" fill="#f2b84b" opacity=".92"/>
+    <rect x="469" y="174" width="34" height="66" rx="8" fill="#2f80ed" opacity=".9"/>
+    <circle cx="573" cy="211" r="34" fill="none" stroke="#15a08e" stroke-width="12" stroke-dasharray="118 96" stroke-linecap="round"/>
+    <circle cx="573" cy="211" r="18" fill="#ffffff" opacity=".86"/>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <path d="M188 408c-35 0-65 17-77 44h192c-11-27-41-44-76-44h-39z" fill="#101f36"/>
+    <path d="M148 293c-27 31-39 76-35 134h196c2-60-10-104-37-134-17-19-38-29-62-29-24 0-45 10-62 29z" fill="url(#suit)"/>
+    <path d="M185 277l23 64 25-64c-15-9-32-9-48 0z" fill="#f6f7fb"/>
+    <path d="M204 322l-18 73 22 25 23-25-18-73z" fill="#2f80ed"/>
+    <path d="M171 267c2 35 18 56 38 56s36-21 38-56v-28h-76v28z" fill="#c9825b"/>
+    <path d="M165 232c4-40 26-62 61-58 29 3 47 25 48 61-16-5-29-13-39-25-20 18-43 24-70 22z" fill="#2a1f1b"/>
+    <path d="M176 247c-9-2-18 5-18 16s9 21 19 18" fill="#c9825b"/>
+    <path d="M247 247c9-2 18 5 18 16s-9 21-19 18" fill="#c9825b"/>
+    <path d="M189 291c10 9 29 9 39 0" stroke="#8b4b35" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+    <path d="M147 331c-36 18-58 46-66 87l42 10c9-34 26-55 53-68z" fill="#1a3557"/>
+    <path d="M271 329c33 19 55 49 68 90l-40 13c-11-34-29-58-55-72z" fill="#173050"/>
+    <path d="M78 416c-8 10-5 24 7 30l28 14c12 6 26-1 29-14l3-14-53-25z" fill="#c9825b"/>
+    <path d="M301 424c-5 12 2 25 15 28l31 7c13 3 25-7 25-20v-14l-60-17z" fill="#c9825b"/>
+  </g>
+
+  <g opacity=".96">
+    <rect x="238" y="386" width="134" height="70" rx="12" fill="#1b3556"/>
+    <rect x="253" y="402" width="104" height="38" rx="7" fill="#d8ecff"/>
+    <path d="M265 429l20-18 17 10 22-26 22 21" fill="none" stroke="#2f80ed" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

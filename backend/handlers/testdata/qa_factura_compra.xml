@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FacturaCompraQA>
+  <DocumentoSintetico>true</DocumentoSintetico>
+  <ValidezComercial>false</ValidezComercial>
+  <Proveedor>
+    <Nombre>Proveedor QA Inventario</Nombre>
+    <NIT>900123456-7</NIT>
+  </Proveedor>
+  <Factura>QA-FAC-INVENTARIO-001</Factura>
+  <Fecha>2026-08-25</Fecha>
+  <Moneda>COP</Moneda>
+  <Linea>
+    <Producto>QA Producto Inventario</Producto>
+    <SKU>QA-PROD-FACTURA-001</SKU>
+    <Cantidad>2</Cantidad>
+    <ValorUnitario>1300.00</ValorUnitario>
+    <Subtotal>2600.00</Subtotal>
+    <IVA>494.00</IVA>
+    <Total>3094.00</Total>
+  </Linea>
+</FacturaCompraQA>

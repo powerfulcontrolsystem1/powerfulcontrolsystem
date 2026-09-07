@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Modulo - Menu</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
+</head>
+<body class="admin-empresa-shell empresa-submenu-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <p class="admin-sidebar-kicker" id="moduleKicker">Modulo</p>
+      <h2 id="moduleTitle">Modulo</h2>
+      <p class="admin-sidebar-summary" id="moduleSummary"></p>
+      <ul class="nav" id="moduleSidebarNav"></ul>
+    </aside>
+
+    <main class="admin-content">
+      <iframe
+        name="moduleContentFrame"
+        id="moduleContentFrame"
+        title="Contenido del modulo"
+        class="admin-empresa-frame"
+        data-submenu-frame></iframe>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var modules = {
+        domicilios: {
+          title: "Domicilios",
+          summary: "Central de delivery para pedidos, restaurantes, domiciliarios, menu y tracking en vivo.",
+          defaultUrl: "/administrar_empresa/domicilios.html?tab=resumen&v=20260509-domicilios",
+          items: [
+            ["Resumen", "/img/analytics-color.svg", "/administrar_empresa/domicilios.html?tab=resumen&v=20260509-domicilios"],
+            ["Central de pedidos", "/img/network-color.svg", "/administrar_empresa/domicilios.html?tab=central&v=20260509-domicilios"],
+            ["Restaurantes", "/img/ecommerce.svg", "/administrar_empresa/domicilios.html?tab=restaurantes&v=20260509-domicilios"],
+            ["Domiciliarios", "/img/gps.svg", "/administrar_empresa/domicilios.html?tab=domiciliarios&v=20260509-domicilios"],
+            ["Menu", "/img/tags-color.svg", "/administrar_empresa/domicilios.html?tab=menu&v=20260509-domicilios"],
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/domicilios.html?tab=config&v=20260509-domicilios"]
+          ]
+        },
+        parqueadero: {
+          title: "Parqueadero",
+          summary: "Tickets, salidas, tarifas, QR y recibos.",
+          defaultUrl: "/administrar_empresa/parqueadero.html?panel=operacion",
+          items: [
+            ["Operacion", "/img/vehiculos-flotas-logo.svg", "/administrar_empresa/parqueadero.html?panel=operacion"],
+            ["Salida y cobro", "/img/money.svg", "/administrar_empresa/parqueadero.html?panel=salida"],
+            ["Tarifas y reglas", "/img/settings-color.svg", "/administrar_empresa/parqueadero.html?panel=config"],
+            ["Recibo", "/img/report.svg", "/administrar_empresa/parqueadero.html?panel=recibo"]
+          ]
+        },
+        alquileres: {
+          title: "Alquiler",
+          summary: "Activos, tarifas, contratos, mantenimientos y mapa.",
+          defaultUrl: "/administrar_empresa/alquileres.html?tab=dashboard",
+          items: [
+            ["Dashboard", "/img/analytics-color.svg", "/administrar_empresa/alquileres.html?tab=dashboard"],
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/alquileres.html?tab=config"],
+            ["Activos", "/img/tags-color.svg", "/administrar_empresa/alquileres.html?tab=activos"],
+            ["Tarifas", "/img/money.svg", "/administrar_empresa/alquileres.html?tab=tarifas"],
+            ["Contratos", "/img/report.svg", "/administrar_empresa/alquileres.html?tab=contratos"],
+            ["Mantenimientos", "/img/network-color.svg", "/administrar_empresa/alquileres.html?tab=mantenimientos"],
+            ["Mapa", "/img/gps.svg", "/administrar_empresa/alquileres.html?tab=mapa"]
+          ]
+        },
+        aiu_construccion: {
+          title: "Construccion / AIU",
+          summary: "Contratos de obra, capitulos, costos AIU, facturacion, alertas y auditoria.",
+          defaultUrl: "/administrar_empresa/aiu_construccion.html#aiuContratos",
+          items: [
+            ["Contratos", "/img/company-briefcase-color.svg", "/administrar_empresa/aiu_construccion.html#aiuContratos"],
+            ["Contrato de obra", "/img/report.svg", "/administrar_empresa/aiu_construccion.html#aiuContratoForm"],
+            ["Capitulos y conceptos", "/img/tags-color.svg", "/administrar_empresa/aiu_construccion.html#aiuConceptos"],
+            ["Resumen financiero", "/img/analytics-color.svg", "/administrar_empresa/aiu_construccion.html#aiuResumen"],
+            ["Factura AIU", "/img/money.svg", "/administrar_empresa/aiu_construccion.html#aiuFactura"],
+            ["Facturas recientes", "/img/report.svg", "/administrar_empresa/aiu_construccion.html#aiuFacturas"],
+            ["Alertas", "/img/shield-license-color.svg", "/administrar_empresa/aiu_construccion.html#aiuAlertas"],
+            ["Auditoria", "/img/network-color.svg", "/administrar_empresa/aiu_construccion.html#aiuAuditoria"]
+          ]
+        },
+        turnos: {
+          title: "Turnos de atencion",
+          summary: "Configuracion, catalogo, emision, tickets impresos, pantalla TV y alarmas.",
+          defaultUrl: "/administrar_empresa/turnos_atencion.html?tab=configuracion",
+          items: [
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/turnos_atencion.html?tab=configuracion"],
+            ["Servicios y puestos", "/img/tags-color.svg", "/administrar_empresa/turnos_atencion.html?tab=catalogo"],
+            ["Emision y llamado", "/img/network-color.svg", "/administrar_empresa/turnos_atencion.html?tab=operacion"],
+            ["Seguimiento", "/img/analytics-color.svg", "/administrar_empresa/turnos_atencion.html?tab=seguimiento"],
+            ["Pantalla TV", "/img/analytics-color.svg", "/administrar_empresa/turnos_atencion.html?tab=pantalla"],
+            ["Kiosco publico", "/img/customer.svg", "/turnos_publicos.html"],
+            ["TV publica", "/img/network-color.svg", "/pantalla_turnos.html?sound=1"]
+          ]
+        },
+        crm_unificado: {
+          title: "CRM unificado",
+          summary: "Clientes, leads, seguimientos, cotizaciones, campanas, forecast, metas y embudo comercial.",
+          defaultUrl: "/administrar_empresa/crm_comercial.html?tab=tablero&v=20260512-crm-help",
+          items: [
+            ["Tablero ejecutivo", "/img/analytics-color.svg", "/administrar_empresa/crm_comercial.html?tab=tablero&v=20260512-crm-help"],
+            ["Clientes", "/img/customer.svg", "/administrar_empresa/administrar_clientes.html"],
+            ["Leads", "/img/network-color.svg", "/administrar_empresa/crm_comercial.html?tab=leads&v=20260512-crm-help"],
+            ["Seguimientos", "/img/report.svg", "/administrar_empresa/crm_comercial.html?tab=interacciones&v=20260512-crm-help"],
+            ["Cotizaciones", "/img/money.svg", "/administrar_empresa/crm_comercial.html?tab=cotizaciones&v=20260512-crm-help"],
+            ["Campanas", "/img/tags-color.svg", "/administrar_empresa/crm_comercial.html?tab=campanas&v=20260512-crm-help"],
+            ["Forecast", "/img/analytics-color.svg", "/administrar_empresa/crm_comercial.html?tab=forecast&v=20260512-crm-help"],
+            ["Metas y conversion", "/img/shield-license-color.svg", "/administrar_empresa/crm_comercial.html?tab=metas&v=20260512-crm-help"],
+            ["Embudo documental", "/img/report.svg", "/administrar_empresa/crm_comercial.html?tab=embudo&v=20260512-crm-help"],
+            ["Ayuda", "/img/settings-color.svg", "/administrar_empresa/crm_comercial.html?tab=ayuda&v=20260512-crm-help"]
+          ]
+        },
+        importaciones_costeo: {
+          title: "Importaciones y costeo",
+          summary: "Compras internacionales, embarques, incoterms, TRM, nacionalizacion y costo aterrizado.",
+          defaultUrl: "/administrar_empresa/importaciones_costeo.html?tab=tablero&v=20260509-importaciones-pro",
+          items: [
+            ["Tablero ejecutivo", "/img/analytics-color.svg", "/administrar_empresa/importaciones_costeo.html?tab=tablero&v=20260509-importaciones-pro"],
+            ["Importaciones", "/img/company-briefcase-color.svg", "/administrar_empresa/importaciones_costeo.html?tab=importaciones&v=20260509-importaciones-pro"],
+            ["Items importados", "/img/tags-color.svg", "/administrar_empresa/importaciones_costeo.html?tab=items&v=20260509-importaciones-pro"],
+            ["Costos nacionalizacion", "/img/money.svg", "/administrar_empresa/importaciones_costeo.html?tab=costos&v=20260509-importaciones-pro"],
+            ["Costeo aterrizado", "/img/report.svg", "/administrar_empresa/importaciones_costeo.html?tab=costeo&v=20260509-importaciones-pro"]
+          ]
+        },
+        produccion_mrp: {
+          title: "Produccion / MRP",
+          summary: "Planeacion de recetas BOM, ordenes, consumos, calidad y requerimientos de materiales.",
+          defaultUrl: "/administrar_empresa/produccion_mrp.html?tab=dashboard&v=20260611-mrp-pro",
+          items: [
+            ["Tablero ejecutivo", "/img/analytics-color.svg", "/administrar_empresa/produccion_mrp.html?tab=dashboard&v=20260611-mrp-pro"],
+            ["Recetas / BOM", "/img/tags-color.svg", "/administrar_empresa/produccion_mrp.html?tab=recetas&v=20260611-mrp-pro"],
+            ["Ordenes de produccion", "/img/network-color.svg", "/administrar_empresa/produccion_mrp.html?tab=ordenes&v=20260611-mrp-pro"],
+            ["Consumos", "/img/report.svg", "/administrar_empresa/produccion_mrp.html?tab=consumos&v=20260611-mrp-pro"],
+            ["Calidad", "/img/shield-license-color.svg", "/administrar_empresa/produccion_mrp.html?tab=calidad&v=20260611-mrp-pro"],
+            ["Plan MRP", "/img/analytics-color.svg", "/administrar_empresa/produccion_mrp.html?tab=mrp&v=20260611-mrp-pro"],
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/produccion_mrp.html?tab=config&v=20260611-mrp-pro"],
+            ["Tutorial", "/img/report.svg", "/administrar_empresa/produccion_mrp_tutorial.html?v=20260611-mrp-tutorial"]
+          ]
+        },
+        logistica_wms: {
+          title: "Logistica avanzada / WMS",
+          summary: "Bodegas, ubicaciones, picking, packing, despachos y trazabilidad operativa.",
+          defaultUrl: "/administrar_empresa/logistica_wms.html?tab=dashboard&v=20260509-wms-pro",
+          items: [
+            ["Tablero ejecutivo", "/img/analytics-color.svg", "/administrar_empresa/logistica_wms.html?tab=dashboard&v=20260509-wms-pro"],
+            ["Ubicaciones", "/img/company-briefcase-color.svg", "/administrar_empresa/logistica_wms.html?tab=ubicaciones&v=20260509-wms-pro"],
+            ["Ordenes WMS", "/img/network-color.svg", "/administrar_empresa/logistica_wms.html?tab=ordenes&v=20260509-wms-pro"],
+            ["Picking / Packing", "/img/tags-color.svg", "/administrar_empresa/logistica_wms.html?tab=items&v=20260509-wms-pro"],
+            ["Despachos", "/img/gps.svg", "/administrar_empresa/logistica_wms.html?tab=despachos&v=20260509-wms-pro"],
+            ["Bitacora", "/img/report.svg", "/administrar_empresa/logistica_wms.html?tab=eventos&v=20260509-wms-pro"]
+          ]
+        },
+        control_electrico: {
+          title: "Domotica",
+          summary: "Automatizacion por empresa y estacion con aparatos, controladores locales, agenda y auditoria de comandos.",
+          defaultUrl: "/administrar_empresa/control_electrico.html?pagina=resumen&v=20260530-domotica-paginas",
+          items: [
+            ["Resumen operativo", "/img/analytics-color.svg", "/administrar_empresa/control_electrico.html?pagina=resumen&v=20260530-domotica-paginas"],
+            ["Conexion GPIO", "/img/settings-color.svg", "/administrar_empresa/control_electrico.html?pagina=conexion&v=20260530-domotica-paginas"],
+            ["Controladores", "/img/network-color.svg", "/administrar_empresa/control_electrico.html?pagina=raspberry&v=20260530-domotica-paginas"],
+            ["Sensores Raspberry", "/img/door.svg", "/administrar_empresa/configuracion_sensores_raspberry.html"],
+            ["Tutorial sensores de puertas", "/img/report.svg", "/administrar_empresa/tutorial_sensores_puertas_raspberry.html"],
+            ["Estaciones y aparatos", "/img/shield-license-color.svg", "/administrar_empresa/control_electrico.html?pagina=reles&v=20260530-domotica-paginas"],
+            ["Automatizaciones", "/img/settings-color.svg", "/administrar_empresa/control_electrico.html?pagina=automatizaciones&v=20260530-domotica-paginas"],
+            ["Reportes", "/img/report.svg", "/administrar_empresa/control_electrico.html?pagina=reportes&v=20260530-domotica-paginas"],
+            ["Bitacora de domotica", "/img/audit.svg", "/administrar_empresa/control_electrico.html?pagina=bitacora&v=20260530-domotica-paginas"]
+          ]
+        },
+        chat_tareas: {
+          title: "Chat y tareas",
+          summary: "Conversaciones, usuarios, asignaciones y agenda compartida.",
+          defaultUrl: "/administrar_empresa/chat_tareas_chats.html",
+          items: [
+            ["Chat", "/img/network-color.svg", "/administrar_empresa/chat_tareas_chats.html"],
+            ["Chat usuarios", "/img/customer.svg", "/administrar_empresa/chat_tareas_chat_usuarios.html"],
+            ["Tareas", "/img/report.svg", "/administrar_empresa/chat_tareas_tareas.html"],
+            ["Agenda", "/img/analytics-color.svg", "/administrar_empresa/chat_tareas_agenda.html"]
+          ]
+        },
+        contratos_obligaciones: {
+          title: "Contratos, obligaciones y firma electronica",
+          summary: "Contratos, polizas, renovaciones, hitos, anexos, aprobaciones y trazabilidad juridica.",
+          defaultUrl: "/administrar_empresa/contratos_obligaciones.html#mcAgenda",
+          items: [
+            ["Tablero contractual", "/img/analytics-color.svg", "/administrar_empresa/contratos_obligaciones.html#mcAgenda"],
+            ["Contratos y obligaciones", "/img/company-briefcase-color.svg", "/administrar_empresa/contratos_obligaciones.html#mcTable"],
+            ["Registro contractual", "/img/report.svg", "/administrar_empresa/contratos_obligaciones.html#mcForm"],
+            ["Expediente 360", "/img/network-color.svg", "/administrar_empresa/contratos_obligaciones.html#mcExpediente"],
+            ["Aprobaciones y firma", "/img/shield-license-color.svg", "/administrar_empresa/contratos_obligaciones.html#mcApprovalForm"],
+            ["Anexos y evidencias", "/img/excel.svg", "/administrar_empresa/contratos_obligaciones.html#mcEvidenceForm"],
+            ["Vencimientos y SLA", "/img/settings-color.svg", "/administrar_empresa/contratos_obligaciones.html#mcSLA"],
+            ["Riesgo y auditoria", "/img/audit.svg", "/administrar_empresa/contratos_obligaciones.html#mcRiesgo"]
+          ]
+        },
+        auditoria: {
+          title: "Auditoria",
+          summary: "Eventos, filtros forenses, exportaciones, retencion, purga y detalle tecnico por empresa.",
+          defaultUrl: "/administrar_empresa/auditoria.html#tab-resumen",
+          items: [
+            ["Resumen", "/img/analytics-color.svg", "/administrar_empresa/auditoria.html#tab-resumen"],
+            ["Filtros forenses", "/img/settings-color.svg", "/administrar_empresa/auditoria.html#tab-filtros"],
+            ["Retencion y purga", "/img/shield-license-color.svg", "/administrar_empresa/auditoria.html#tab-retencion"],
+            ["Eventos", "/img/audit.svg", "/administrar_empresa/auditoria.html#tab-eventos"],
+            ["Detalle", "/img/report.svg", "/administrar_empresa/auditoria.html#tab-detalle"]
+          ]
+        },
+        calidad_procesos: {
+          title: "Calidad, procesos y no conformidades",
+          summary: "Procesos, auditorias internas, checklists, hallazgos, acciones correctivas y mejora continua.",
+          defaultUrl: "/administrar_empresa/calidad_procesos.html#mcAgenda",
+          items: [
+            ["Tablero de calidad", "/img/analytics-color.svg", "/administrar_empresa/calidad_procesos.html#mcAgenda"],
+            ["Procesos y registros", "/img/network-color.svg", "/administrar_empresa/calidad_procesos.html#mcTable"],
+            ["No conformidad", "/img/report.svg", "/administrar_empresa/calidad_procesos.html#mcForm"],
+            ["Acciones correctivas", "/img/company-briefcase-color.svg", "/administrar_empresa/calidad_procesos.html#mcTaskForm"],
+            ["Aprobaciones", "/img/shield-license-color.svg", "/administrar_empresa/calidad_procesos.html#mcApprovalForm"],
+            ["Evidencias", "/img/excel.svg", "/administrar_empresa/calidad_procesos.html#mcEvidenceForm"],
+            ["SLA y cumplimiento", "/img/settings-color.svg", "/administrar_empresa/calidad_procesos.html#mcSLA"],
+            ["Riesgo y auditoria", "/img/audit.svg", "/administrar_empresa/calidad_procesos.html#mcRiesgo"]
+          ]
+        },
+        backups: {
+          title: "Backups empresariales",
+          summary: "Exportacion, snapshots, descargas, envio por correo, depuracion, historial y restauracion controlada.",
+          defaultUrl: "/administrar_empresa/backups.html#tab-configuracion",
+          items: [
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/backups.html#tab-configuracion"],
+            ["Crear snapshot", "/img/backup.svg", "/administrar_empresa/backups.html#tab-snapshot"],
+            ["Depuracion", "/img/shield-license-color.svg", "/administrar_empresa/backups.html#tab-depuracion"],
+            ["Historial", "/img/report.svg", "/administrar_empresa/backups.html#tab-historial"],
+            ["Detalle", "/img/analytics-color.svg", "/administrar_empresa/backups.html#tab-detalle"]
+          ]
+        },
+        horarios_trabajadores: {
+          title: "Horarios laborales",
+          summary: "Vision, resumen, programacion, turnos, lista y control laboral por usuario.",
+          defaultUrl: "/administrar_empresa/horarios_trabajadores.html#tab-vision",
+          items: [
+            ["Vision", "/img/analytics-color.svg", "/administrar_empresa/horarios_trabajadores.html#tab-vision"],
+            ["Resumen", "/img/report.svg", "/administrar_empresa/horarios_trabajadores.html#tab-resumen"],
+            ["Programacion", "/img/settings-color.svg", "/administrar_empresa/horarios_trabajadores.html#tab-programacion"],
+            ["Lista", "/img/customer.svg", "/administrar_empresa/horarios_trabajadores.html#tab-lista"]
+          ]
+        },
+        asistencia_empleados: {
+          title: "Control de asistencia de empleados",
+          summary: "Registro, consulta, cierres, reportes, configuracion y trazabilidad de asistencia.",
+          defaultUrl: "/administrar_empresa/asistencia_empleados.html#tab-resumen",
+          items: [
+            ["Resumen", "/img/analytics-color.svg", "/administrar_empresa/asistencia_empleados.html#tab-resumen"],
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/asistencia_empleados.html#tab-configuracion"],
+            ["Cierre", "/img/shield-license-color.svg", "/administrar_empresa/asistencia_empleados.html#tab-cierre"],
+            ["Reportes", "/img/report.svg", "/administrar_empresa/asistencia_empleados.html#tab-reportes"],
+            ["Registro", "/img/network-color.svg", "/administrar_empresa/asistencia_empleados.html#tab-registro"],
+            ["Consulta", "/img/customer.svg", "/administrar_empresa/asistencia_empleados.html#tab-consulta"]
+          ]
+        },
+        carnets: {
+          title: "Carnets empresariales",
+          summary: "Consulta, emision, plantillas, vista previa, QR y bitacora de carnets.",
+          defaultUrl: "/administrar_empresa/carnets.html#tab-resumen",
+          items: [
+            ["Resumen", "/img/analytics-color.svg", "/administrar_empresa/carnets.html#tab-resumen"],
+            ["Consulta", "/img/customer.svg", "/administrar_empresa/carnets.html#tab-consulta"],
+            ["Emision", "/img/shield-license-color.svg", "/administrar_empresa/carnets.html#tab-emision"],
+            ["Plantilla", "/img/settings-color.svg", "/administrar_empresa/carnets.html#tab-plantilla"],
+            ["Vista previa", "/img/report.svg", "/administrar_empresa/carnets.html#tab-preview"],
+            ["Bitacora", "/img/audit.svg", "/administrar_empresa/carnets.html#tab-bitacora"]
+          ]
+        },
+        vehiculos_registro: {
+          title: "Registro de vehiculos",
+          summary: "Configuracion, registro, consulta y reportes de vehiculos empresariales.",
+          defaultUrl: "/administrar_empresa/vehiculos_registro.html#tab-configuracion",
+          items: [
+            ["Configuracion", "/img/settings-color.svg", "/administrar_empresa/vehiculos_registro.html#tab-configuracion"],
+            ["Registro", "/img/network-color.svg", "/administrar_empresa/vehiculos_registro.html#tab-registro"],
+            ["Consulta", "/img/customer.svg", "/administrar_empresa/vehiculos_registro.html#tab-consulta"],
+            ["Reportes", "/img/report.svg", "/administrar_empresa/vehiculos_registro.html#tab-reportes"]
+          ]
+        },
+        hoja_vida_operativa: {
+          title: "Historial de activos",
+          summary: "Hojas de vida, eventos, alertas, servicios y trazabilidad de activos o equipos.",
+          defaultUrl: "/administrar_empresa/hoja_vida_operativa.html#tab-resumen",
+          items: [
+            ["Resumen", "/img/analytics-color.svg", "/administrar_empresa/hoja_vida_operativa.html#tab-resumen"],
+            ["Consulta", "/img/customer.svg", "/administrar_empresa/hoja_vida_operativa.html#tab-consulta"],
+            ["Hojas de vida", "/img/report.svg", "/administrar_empresa/hoja_vida_operativa.html#tab-registro"],
+            ["Eventos", "/img/network-color.svg", "/administrar_empresa/hoja_vida_operativa.html#tab-eventos"],
+            ["Alertas", "/img/shield-license-color.svg", "/administrar_empresa/hoja_vida_operativa.html#tab-alertas"]
+          ]
+        },
+        ubicacion_gps: {
+          title: "Ubicacion GPS - Motel Calipso",
+          summary: "Dispositivos, coordenadas, mapa operativo y seguimiento GPS de activos o personal.",
+          defaultUrl: "/administrar_empresa/ubicacion_gps.html#tab-dispositivos",
+          items: [
+            ["Dispositivos", "/img/gps.svg", "/administrar_empresa/ubicacion_gps.html#tab-dispositivos"],
+            ["Mapa", "/img/analytics-color.svg", "/administrar_empresa/ubicacion_gps.html#tab-mapa"]
+          ]
+        }
+      };
+
+      var plantillasNuevos = {};
+      (window.PCS_NUEVAS_PLANTILLAS || []).forEach(function (item) {
+        plantillasNuevos[item.module] = [
+          item.fullTitle || item.title,
+          item.lead || item.summary || "",
+          item.sections || ["Dashboard", "Configuracion", "Registros", "Seguimiento", "Aprobaciones", "Evidencias"]
+        ];
+      });
+
+      function sectionIntent(label, idx) {
+        var text = String(label || "").toLowerCase();
+        if (/dashboard|tablero|panel|resumen|jornada/.test(text)) return "dashboard";
+        if (/config|sla|calidad|riesgo|cumplimiento|auditoria/.test(text)) return "control";
+        if (/aproba|validaci|cierre|entrega|firma|comision|liquidacion/.test(text)) return "aprobacion";
+        if (/evidencia|document|certificado|reporte|boletin|resultado/.test(text)) return "evidencia";
+        if (/seguimiento|agenda|tracking|check|asistencia|visita|ronda|incidente|novedad/.test(text)) return "seguimiento";
+        if (/responsable|profesional|tecnico|guia|conductor|instructor|guarda/.test(text)) return "responsables";
+        if (idx === 0) return "dashboard";
+        if (idx === 4) return "aprobacion";
+        if (idx === 5) return "evidencia";
+        return "registros";
+      }
+
+      function sectionIcon(intent, idx) {
+        return {
+          dashboard: "/img/analytics-color.svg",
+          control: "/img/settings-color.svg",
+          registros: "/img/report.svg",
+          seguimiento: "/img/network-color.svg",
+          responsables: "/img/customer.svg",
+          aprobacion: "/img/shield-license-color.svg",
+          evidencia: "/img/excel.svg"
+        }[intent] || ["/img/analytics-color.svg", "/img/settings-color.svg", "/img/report.svg", "/img/customer.svg", "/img/shield-license-color.svg", "/img/network-color.svg"][idx % 6];
+      }
+
+      function moduloColombiaUrl(module, title, lead, section, intent) {
+        var view = intent || "dashboard";
+        return "/administrar_empresa/modulo_colombia.html?module=" + encodeURIComponent(module) +
+          "&title=" + encodeURIComponent(title) +
+          "&lead=" + encodeURIComponent(lead) +
+          "&section=" + encodeURIComponent(section || "") +
+          "&intent=" + encodeURIComponent(intent || "") +
+          "&view=" + encodeURIComponent(view);
+      }
+
+      Object.keys(plantillasNuevos).forEach(function (module) {
+        var row = plantillasNuevos[module];
+        var title = row[0];
+        var summary = row[1];
+        var labels = row[2];
+        modules[module] = {
+          title: title,
+          summary: summary,
+          defaultUrl: moduloColombiaUrl(module, title, summary, labels[0] || "Dashboard", "dashboard"),
+          items: labels.map(function (label, idx) {
+            var intent = sectionIntent(label, idx);
+            return [label, sectionIcon(intent, idx), moduloColombiaUrl(module, title, summary, label, intent)];
+          })
+        };
+      });
+
+      function param(name) {
+        try { return (new URLSearchParams(location.search || "")).get(name) || ""; } catch (_) { return ""; }
+      }
+
+      function esc(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function (char) {
+          return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char];
+        });
+      }
+
+      var key = param("module") || param("modulo") || "";
+      var cfg = modules[key] || modules.taxi;
+      document.title = cfg.title + " - Menu";
+      document.getElementById("moduleKicker").textContent = "Modulo";
+      document.getElementById("moduleTitle").textContent = cfg.title;
+      document.getElementById("moduleSummary").textContent = cfg.summary;
+      document.getElementById("moduleSidebarNav").innerHTML = cfg.items.map(function (item) {
+        return '<li><a href="' + esc(item[2]) + '" target="moduleContentFrame" data-submenu-link><img class="icon" src="' + esc(item[1]) + '" alt=""> ' + esc(item[0]) + '</a></li>';
+      }).join("") + '<li class="admin-menu-visibility-item"><button type="button" class="admin-menu-visibility-toggle" aria-controls="moduleSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu"><span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span><span class="admin-menu-visibility-label">Ocultar menu</span></button></li>';
+      document.getElementById("moduleContentFrame").setAttribute("src", cfg.defaultUrl);
+    })();
+  </script>
+  <script src="/js/empresa_submenu_shell.js" data-version="20260509-operaciones-pro"></script>
+  <script src="/menu.js"></script>
+</body>
+</html>

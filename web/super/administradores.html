@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administradores</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page administradores-page">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Administradores</h1>
+        <p class="page-subtitle">Agrega administradores para que puedan administrar tus empresas. Si solo quieres compartir una empresa especifica, usa el icono Compartir en la tarjeta de esa empresa.</p>
+      </div>
+      <button id="addBtn" class="btn add">Invitar administrador</button>
+    </div>
+
+    <form id="form" class="form">
+      <input type="hidden" id="itemId">
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Email</label>
+          <input id="email" class="form-input" required />
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre</label>
+          <input id="name" class="form-input" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Rol</label>
+          <select id="role" class="form-input">
+            <option value="administrador">administrador</option>
+            <option value="super_administrador">super_administrador</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" id="saveBtn" class="btn">Enviar invitación</button>
+        <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div class="form-help" id="msg"></div>
+    </form>
+
+    <div id="list">Cargando...</div>
+  </div>
+
+  <script>
+    let currentAdminScope = { superPanel: false, scopedPrincipal: false };
+
+    function isScopedPrincipalMode(){
+      try{
+        const params = new URLSearchParams(window.location.search || '');
+        return String(params.get('scope') || '').trim().toLowerCase() === 'principal';
+      }catch(_err){
+        return false;
+      }
+    }
+
+    function scopedQuery(){
+      return currentAdminScope.scopedPrincipal ? '?scope=principal' : '';
+    }
+
+    function normalizeRole(value){
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function readCookieValue(name){
+      const escaped = String(name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const match = String(document.cookie || '').match(new RegExp('(?:^|;\\s*)' + escaped + '=([^;]*)'));
+      return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function adminFetch(url, options){
+      const requestOptions = Object.assign({ credentials: 'same-origin' }, options || {});
+      const method = String(requestOptions.method || 'GET').trim().toUpperCase();
+      if(method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS'){
+        const headers = new Headers(requestOptions.headers || {});
+        const token = readCookieValue('pcs_csrf');
+        if(token && !headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
+        requestOptions.headers = headers;
+      }
+      return fetch(url, requestOptions);
+    }
+
+    async function loadCurrentAdminScope(){
+      try{
+        const res = await adminFetch('/me');
+        if(!res.ok) throw new Error('No se pudo leer la sesion');
+        const data = await res.json();
+        const role = normalizeRole((data && (data.role || (data.admin && data.admin.role))) || '');
+        currentAdminScope.superPanel = role === 'super_administrador' || role === 'control_super_administrador';
+        currentAdminScope.scopedPrincipal = isScopedPrincipalMode();
+      }catch(_err){
+        currentAdminScope.superPanel = false;
+        currentAdminScope.scopedPrincipal = isScopedPrincipalMode();
+      }
+      applyAdminScopeUI();
+    }
+
+    function applyAdminScopeUI(){
+      const roleSelect = document.getElementById('role');
+      if(!roleSelect) return;
+      if(currentAdminScope.superPanel && !currentAdminScope.scopedPrincipal) return;
+      Array.from(roleSelect.options).forEach(opt=>{
+        if(opt.value !== 'administrador') opt.remove();
+      });
+      roleSelect.value = 'administrador';
+      roleSelect.disabled = true;
+      const label = roleSelect.closest('.form-col');
+      if(label && !label.querySelector('[data-admin-scope-help]')){
+        const help = document.createElement('div');
+        help.className = 'form-help';
+        help.setAttribute('data-admin-scope-help', '1');
+        help.textContent = 'Los administradores invitados quedan bajo tu cuenta. Primero deben aceptar el correo, registrarse y crear su clave antes de iniciar sesion.';
+        label.appendChild(help);
+      }
+    }
+
+    async function load(){
+      try{
+        const res = await adminFetch('/super/api/administradores' + scopedQuery());
+        if(!res.ok) throw new Error('failed to query administradores');
+        const data = await res.json();
+        const table = document.createElement('table');
+        table.className = 'table table-compact';
+        table.innerHTML = '<thead><tr><th>ID</th><th>Email</th><th>Nombre</th><th>Rol</th><th>Invitación</th><th>Estado cuenta</th><th>Acciones</th></tr></thead>';
+        const tbody = document.createElement('tbody');
+        data.filter(i=>{
+          const role = normalizeRole(i.role);
+          return role === 'administrador' || role === 'super_administrador';
+        }).forEach(i=>{
+          const tr = document.createElement('tr');
+          const confirmado = Number(i.email_confirmado || 0) === 1;
+          const invitationStatus = invitationStatusLabel(i.invitation_status || (confirmado ? 'aceptada' : 'pendiente'));
+          const estadoCuenta = confirmado ? (i.estado || 'activo') : 'Pendiente de registro';
+          tr.innerHTML = `<td>${escapeHTML(i.id)}</td><td>${escapeHTML(i.email)}</td><td>${escapeHTML(i.name||'')}</td><td>${escapeHTML(i.role||'')}</td><td>${escapeHTML(invitationStatus)}</td><td>${escapeHTML(estadoCuenta)}</td><td class="actions"><button data-id="${escapeHTML(i.id)}" class="del btn danger">Eliminar</button></td>`;
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        const list = document.getElementById('list'); list.innerHTML=''; list.appendChild(table);
+
+        document.querySelectorAll('.del').forEach(b=>b.onclick = async ()=>{
+          if(!confirm('Eliminar administrador?')) return;
+          const id = b.getAttribute('data-id');
+          const sep = currentAdminScope.scopedPrincipal ? '&' : '?';
+          await ensureOK(await adminFetch('/super/api/administradores' + scopedQuery() + sep + 'id='+encodeURIComponent(id), { method: 'DELETE' }));
+          load();
+        });
+      }catch(err){ document.getElementById('list').innerText = 'Error cargando administradores: '+(err.message||err); }
+    }
+
+    function escapeHTML(value){
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function invitationStatusLabel(value){
+      const status = String(value || '').trim().toLowerCase();
+      if(status === 'aceptada' || status === 'activo' || status === 'activa') return 'Aceptada';
+      if(status === 'revocada') return 'Revocada';
+      if(status === 'rechazada') return 'Rechazada';
+      if(status === 'expirada') return 'Expirada';
+      return 'Pendiente';
+    }
+
+    async function ensureOK(res){
+      if(res.ok) return res;
+      const raw = await res.text().catch(()=> '');
+      let message = raw;
+      try{
+        const parsed = raw ? JSON.parse(raw) : null;
+        if(parsed && (parsed.error || parsed.message)){
+          message = parsed.error || parsed.message;
+        }
+      }catch(_err){}
+      throw new Error(message || ('HTTP ' + res.status));
+    }
+
+    function resetForm(){
+      document.getElementById('itemId').value='';
+      document.getElementById('email').value='';
+      document.getElementById('email').readOnly=false;
+      document.getElementById('name').value='';
+      document.getElementById('role').value='administrador';
+      document.getElementById('saveBtn').innerText='Enviar invitación';
+      document.getElementById('cancelBtn').style.display='none';
+      document.getElementById('msg').innerText='';
+    }
+
+    document.getElementById('form').onsubmit = async (e)=>{
+      e.preventDefault();
+      const payload = {
+        Email: document.getElementById('email').value.trim(),
+        Name: document.getElementById('name').value.trim(),
+        Role: document.getElementById('role').value
+      };
+      try{
+        if(!payload.Email){ document.getElementById('msg').innerText='Email requerido'; return }
+        const result = await ensureOK(await adminFetch('/super/api/administradores' + scopedQuery(), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
+        const body = await result.json().catch(()=> null);
+        resetForm();
+        document.getElementById('form').style.display = 'none';
+        document.getElementById('addBtn').style.display = '';
+        if(body && body.message){ alert(body.message); }
+        load();
+      }catch(err){ document.getElementById('msg').innerText = err.message }
+    }
+
+    document.getElementById('cancelBtn').onclick = ()=>{ resetForm(); document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display=''; }
+
+    document.getElementById('addBtn').onclick = ()=>{
+      document.getElementById('form').style.display = '';
+      document.getElementById('addBtn').style.display = 'none';
+      resetForm();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // iniciar oculto
+    document.getElementById('form').style.display='none';
+    document.getElementById('addBtn').style.display='';
+    loadCurrentAdminScope().finally(load);
+  </script>
+    <!-- Menú flotante eliminado en páginas del panel /super -->
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

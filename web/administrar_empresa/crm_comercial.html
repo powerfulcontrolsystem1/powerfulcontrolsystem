@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CRM unificado</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <link rel="stylesheet" href="/administrar_empresa/crm_comercial.css?v=20260813-p110-csp">
+</head>
+<body class="crm-page admin-subpage empresa-subpage">
+  <main class="crm-shell">
+    <header class="crm-head">
+      <div>
+        <p class="crm-kicker">Gestion de Relaciones con Clientes</p>
+        <h1>CRM unificado</h1>
+        <p>Un solo modulo para prospectos, seguimiento comercial, cotizaciones, campanas, forecast, metas y embudo de conversion.</p>
+      </div>
+      <div class="crm-head-actions">
+        <button type="button" class="btn secondary" id="crmRefreshBtn">Actualizar</button>
+        <button type="button" class="btn secondary" id="crmSeedBtn">Cargar demo</button>
+        <button type="button" class="btn" id="crmExportBtn">Exportar vista</button>
+      </div>
+    </header>
+
+    <section class="crm-toolbar" aria-label="Filtros de CRM">
+      <label class="form-col crm-search-col">Buscar
+        <input id="crmSearch" class="form-input" type="search" placeholder="Nombre, codigo, correo, telefono o canal">
+      </label>
+      <label class="form-col">Periodo comercial
+        <input id="crmPeriodo" class="form-input" type="month">
+      </label>
+      <label class="form-col">Registros
+        <span class="checkbox-row"><input id="crmIncludeInactive" type="checkbox"> Incluir inactivos</span>
+      </label>
+      <button type="button" class="btn secondary" id="crmSearchBtn">Aplicar filtros</button>
+      <div id="crmMsg" class="form-help crm-msg" role="status"></div>
+    </section>
+
+    <section id="crmKpiGrid" class="crm-kpis" aria-label="Indicadores comerciales"></section>
+
+    <section class="crm-main">
+      <nav id="crmTabs" class="crm-submenu" aria-label="Submenu CRM">
+        <button type="button" class="btn secondary crm-tab-btn is-active" data-tab="tablero">Tablero ejecutivo</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="leads">Leads</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="interacciones">Seguimientos</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="cotizaciones">Cotizaciones</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="campanas">Campanas</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="forecast">Forecast</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="metas">Metas y conversion</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="embudo">Embudo documental</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="ayuda">Ayuda</button>
+      </nav>
+
+      <div class="crm-content">
+        <section id="crmPanelTablero" class="crm-panel">
+          <div class="crm-grid-3">
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Pipeline por etapa</h2></div>
+              <div id="crmPipelineStages" class="crm-mini-list"></div>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Alertas comerciales</h2></div>
+              <div id="crmAlerts" class="crm-mini-list"></div>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Agenda prioritaria</h2></div>
+              <div id="crmAgendaDashboard" class="crm-mini-list"></div>
+            </article>
+          </div>
+          <div class="crm-grid-2">
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Plan de accion comercial</h2></div>
+              <div id="crmActionPlan" class="crm-mini-list"></div>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Rendimiento por responsable</h2></div>
+              <div id="crmResponsablesWrap" class="crm-mini-list"></div>
+            </article>
+          </div>
+          <div class="crm-grid-2">
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Canales de adquisicion</h2></div>
+              <div id="crmCanalesWrap" class="crm-mini-list"></div>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Oportunidades mejor calificadas</h2></div>
+              <div id="crmTopLeadsDashboard" class="crm-table-wrap"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="crmPanelLeads" class="crm-panel is-hidden">
+          <div class="crm-grid-2">
+            <article class="crm-card">
+              <div class="crm-card-header">
+                <h2>Lead comercial</h2>
+                <span id="leadCounterPill" class="crm-pill">0 leads</span>
+              </div>
+              <form id="leadForm" class="crm-form-grid">
+                <input type="hidden" id="leadId">
+                <label>Codigo<input id="leadCodigo" class="form-input" type="text" placeholder="Automatico" disabled></label>
+                <label>Estado actual (usa Acciones)<select id="leadEstado" class="form-input" disabled><option>nuevo</option><option>contactado</option><option>calificado</option><option>propuesta</option><option>negociacion</option><option>ganado</option><option>perdido</option><option>descalificado</option><option>reactivado</option><option>postventa</option><option>cerrado</option></select></label>
+                <label>Prospecto<input id="leadNombre" class="form-input" type="text" required></label>
+                <label>Empresa origen<input id="leadEmpresaOrigen" class="form-input" type="text"></label>
+                <label>Email<input id="leadEmail" class="form-input" type="email"></label>
+                <label>Telefono<input id="leadTelefono" class="form-input" type="text"></label>
+                <label>Canal<input id="leadCanal" class="form-input" type="text" placeholder="web, referidos, redes"></label>
+                <label>Propietario<input id="leadPropietario" class="form-input" type="text"></label>
+                <label>Valor potencial<input id="leadValor" class="form-input" type="number" min="0" step="1000"></label>
+                <label>Probabilidad %<input id="leadProbabilidad" class="form-input" type="number" min="0" max="100" step="1"></label>
+                <label class="full">Proximo contacto<input id="leadProximoContacto" class="form-input" type="datetime-local"></label>
+                <label class="full">Notas<textarea id="leadNotas" class="form-input" rows="3"></textarea></label>
+                <label class="full">Observaciones<textarea id="leadObservaciones" class="form-input" rows="3"></textarea></label>
+                <div class="full crm-inline-actions">
+                  <button id="leadSaveBtn" class="btn" type="submit">Guardar lead</button>
+                  <button id="leadCancelBtn" class="btn secondary" type="button">Cancelar edicion</button>
+                  <button id="leadResetBtn" class="btn secondary" type="reset">Limpiar</button>
+                </div>
+                <div id="leadMsg" class="form-help full"></div>
+              </form>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Leads y oportunidades</h2></div>
+              <div id="leadsTableWrap" class="crm-table-wrap"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="crmPanelInteracciones" class="crm-panel is-hidden">
+          <div class="crm-grid-2">
+            <article class="crm-card">
+              <div class="crm-card-header">
+                <h2>Seguimiento</h2>
+                <span id="interaccionCounterPill" class="crm-pill">0 seguimientos</span>
+              </div>
+              <form id="interaccionForm" class="crm-form-grid">
+                <input type="hidden" id="interaccionId">
+                <label>Codigo<input id="interaccionCodigo" class="form-input" type="text" placeholder="Automatico" disabled></label>
+                <label>Estado actual (usa Acciones)<select id="interaccionEstado" class="form-input" disabled><option>abierta</option><option>en_progreso</option><option>cerrada</option><option>reabierta</option><option>cancelada</option></select></label>
+                <label class="full">Lead asociado<select id="interaccionLeadId" class="form-input"></select></label>
+                <label>Cliente ID<input id="interaccionClienteId" class="form-input" type="number" min="0"></label>
+                <label>Tipo<select id="interaccionTipo" class="form-input"><option>seguimiento</option><option>llamada</option><option>correo</option><option>reunion</option><option>whatsapp</option><option>visita</option></select></label>
+                <label class="full">Fecha<input id="interaccionFecha" class="form-input" type="datetime-local"></label>
+                <label>Responsable<input id="interaccionResponsable" class="form-input" type="text"></label>
+                <label>Resultado<input id="interaccionResultado" class="form-input" type="text"></label>
+                <label class="full">Resumen<textarea id="interaccionResumen" class="form-input" rows="3" required></textarea></label>
+                <label class="full">Proxima accion<textarea id="interaccionProximaAccion" class="form-input" rows="2"></textarea></label>
+                <label class="full">Observaciones<textarea id="interaccionObservaciones" class="form-input" rows="2"></textarea></label>
+                <div class="full crm-inline-actions">
+                  <button id="interaccionSaveBtn" class="btn" type="submit">Guardar seguimiento</button>
+                  <button id="interaccionCancelBtn" class="btn secondary" type="button">Cancelar edicion</button>
+                  <button id="interaccionResetBtn" class="btn secondary" type="reset">Limpiar</button>
+                </div>
+                <div id="interaccionMsg" class="form-help full"></div>
+              </form>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Historial comercial</h2></div>
+              <div id="interaccionesTableWrap" class="crm-table-wrap"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="crmPanelCotizaciones" class="crm-panel is-hidden">
+          <div class="crm-grid-2">
+            <article class="crm-card">
+              <div class="crm-card-header">
+                <h2>Cotizacion</h2>
+                <span id="cotizacionCounterPill" class="crm-pill">0 cotizaciones</span>
+              </div>
+              <form id="cotizacionForm" class="crm-form-grid">
+                <input type="hidden" id="cotizacionId">
+                <label>Codigo<input id="cotizacionCodigo" class="form-input" type="text" placeholder="Automatico"></label>
+                <label>Estado actual (usa Acciones)<select id="cotizacionEstado" class="form-input" disabled><option>borrador</option><option>emitida</option><option>aprobada</option><option>rechazada</option><option>vencida</option><option>convertida</option><option>anulada</option></select></label>
+                <label>Cliente<input id="cotizacionClienteNombre" class="form-input" type="text" required></label>
+                <label>Cliente ID<input id="cotizacionClienteId" class="form-input" type="number" min="0"></label>
+                <label>Fecha<input id="cotizacionFecha" class="form-input" type="date"></label>
+                <label>Vigencia<input id="cotizacionVigencia" class="form-input" type="date"></label>
+                <label>Subtotal<input id="cotizacionSubtotal" class="form-input" type="number" min="0" step="1000"></label>
+                <label>Descuento<input id="cotizacionDescuento" class="form-input" type="number" min="0" step="1000"></label>
+                <label>Impuesto<input id="cotizacionImpuesto" class="form-input" type="number" min="0" step="1000"></label>
+                <label>Total<input id="cotizacionTotal" class="form-input" type="number" min="0" step="1000"></label>
+                <label>Moneda<input id="cotizacionMoneda" class="form-input" type="text" value="COP"></label>
+                <label>Origen<input id="cotizacionOrigen" class="form-input" type="text"></label>
+                <label class="full">Notas<textarea id="cotizacionNotas" class="form-input" rows="3"></textarea></label>
+                <label class="full">Observaciones<textarea id="cotizacionObservaciones" class="form-input" rows="2"></textarea></label>
+                <div class="full crm-inline-actions">
+                  <button id="cotizacionSaveBtn" class="btn" type="submit">Guardar cotizacion</button>
+                  <button id="cotizacionCancelBtn" class="btn secondary" type="button">Cancelar edicion</button>
+                  <button id="cotizacionResetBtn" class="btn secondary" type="reset">Limpiar</button>
+                </div>
+                <div id="cotizacionMsg" class="form-help full"></div>
+              </form>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Cotizaciones comerciales</h2></div>
+              <div id="cotizacionesTableWrap" class="crm-table-wrap"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="crmPanelCampanas" class="crm-panel is-hidden">
+          <div class="crm-grid-2">
+            <article class="crm-card">
+              <div class="crm-card-header">
+                <h2>Campana</h2>
+                <span id="campanaCounterPill" class="crm-pill">0 campanas</span>
+              </div>
+              <form id="campanaForm" class="crm-form-grid">
+                <input type="hidden" id="campanaId">
+                <label>Codigo<input id="campanaCodigo" class="form-input" type="text" placeholder="Automatico" disabled></label>
+                <label>Estado actual (usa Acciones)<select id="campanaEstado" class="form-input" disabled><option>planificada</option><option>activa</option><option>pausada</option><option>finalizada</option><option>archivada</option><option>cancelada</option></select></label>
+                <label class="full">Nombre<input id="campanaNombre" class="form-input" type="text" required></label>
+                <label>Canal<select id="campanaCanal" class="form-input"><option>email</option><option>whatsapp</option><option>redes</option><option>llamadas</option><option>evento</option><option>mixto</option></select></label>
+                <label>Presupuesto<input id="campanaPresupuesto" class="form-input" type="number" min="0" step="1000"></label>
+                <label class="full">Objetivo<textarea id="campanaObjetivo" class="form-input" rows="2"></textarea></label>
+                <label class="full">Audiencia<textarea id="campanaAudiencia" class="form-input" rows="2"></textarea></label>
+                <label>Inicio<input id="campanaFechaInicio" class="form-input" type="date"></label>
+                <label>Fin<input id="campanaFechaFin" class="form-input" type="date"></label>
+                <label class="full">KPI objetivo<input id="campanaKPI" class="form-input" type="text"></label>
+                <label class="full">Resultados<textarea id="campanaResultados" class="form-input" rows="3"></textarea></label>
+                <label class="full">Observaciones<textarea id="campanaObservaciones" class="form-input" rows="2"></textarea></label>
+                <div class="full crm-inline-actions">
+                  <button id="campanaSaveBtn" class="btn" type="submit">Guardar campana</button>
+                  <button id="campanaCancelBtn" class="btn secondary" type="button">Cancelar edicion</button>
+                  <button id="campanaResetBtn" class="btn secondary" type="reset">Limpiar</button>
+                </div>
+                <div id="campanaMsg" class="form-help full"></div>
+              </form>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Campanas y nutricion</h2></div>
+              <div id="campanasTableWrap" class="crm-table-wrap"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="crmPanelForecast" class="crm-panel is-hidden">
+          <div class="crm-grid-3">
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Forecast por etapa</h2></div>
+              <div id="forecastEmbudoWrap" class="crm-mini-list"></div>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Agenda de cierre</h2></div>
+              <div id="forecastAgendaWrap" class="crm-mini-list"></div>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Alertas del forecast</h2></div>
+              <div id="forecastAlertsWrap" class="crm-mini-list"></div>
+            </article>
+          </div>
+          <article class="crm-card">
+            <div class="crm-card-header"><h2>Scoring comercial</h2></div>
+            <div id="forecastScoresWrap" class="crm-table-wrap"></div>
+          </article>
+        </section>
+
+        <section id="crmPanelMetas" class="crm-panel is-hidden">
+          <div class="crm-grid-2">
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Meta comercial</h2></div>
+              <form id="metaForm" class="crm-form-grid">
+                <label>Periodo<input id="metaPeriodo" class="form-input" type="month"></label>
+                <label>Propietario<input id="metaPropietario" class="form-input" type="text" placeholder="Equipo o asesor"></label>
+                <label>Canal<input id="metaCanal" class="form-input" type="text" placeholder="web, referidos, tienda"></label>
+                <label>Meta valor<input id="metaValor" class="form-input" type="number" min="0" step="1000"></label>
+                <label>Meta leads<input id="metaLeads" class="form-input" type="number" min="0" step="1"></label>
+                <label>Meta conversion %<input id="metaConv" class="form-input" type="number" min="0" max="100" step="1"></label>
+                <div class="full crm-inline-actions">
+                  <button id="btnSaveMeta" class="btn" type="submit">Guardar meta</button>
+                </div>
+              </form>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Convertir lead en cotizacion</h2></div>
+              <div class="crm-conversion-box">
+                <label>Lead<select id="leadConvertir" class="form-input"></select></label>
+                <label>Codigo de cotizacion<input id="cotCodigo" class="form-input" type="text" placeholder="Opcional"></label>
+                <button id="btnConvertLead" class="btn" type="button">Generar cotizacion</button>
+              </div>
+            </article>
+          </div>
+          <article class="crm-card">
+            <div class="crm-card-header"><h2>Metas configuradas</h2></div>
+            <div id="metasTableWrap" class="crm-table-wrap"></div>
+          </article>
+        </section>
+
+        <section id="crmPanelEmbudo" class="crm-panel is-hidden">
+          <div class="crm-grid-3">
+            <article class="crm-card">
+              <div class="crm-card-header">
+                <h2>Conversion</h2>
+                <span id="embudoConversionBadge" class="crm-pill">0%</span>
+              </div>
+              <div id="embudoResumen" class="crm-mini-list"></div>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header">
+                <h2>Alertas documentales</h2>
+                <span id="embudoAlertBadge" class="crm-pill">0</span>
+              </div>
+              <div id="embudoAlertas" class="crm-mini-list"></div>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Agenda</h2></div>
+              <div id="crmAgendaWrap" class="crm-mini-list"></div>
+            </article>
+          </div>
+          <article class="crm-card">
+            <div class="crm-card-header"><h2>Trazabilidad cotizacion a venta</h2></div>
+            <div id="embudoTableWrap" class="crm-table-wrap"></div>
+          </article>
+        </section>
+
+        <section id="crmPanelAyuda" class="crm-panel is-hidden">
+          <article class="crm-help-hero">
+            <h2>Que es CRM</h2>
+            <p>CRM significa Gestion de Relaciones con Clientes. Es la forma organizada de registrar prospectos, clientes, conversaciones, oportunidades, cotizaciones, campanas y cierres para que el equipo comercial sepa a quien atender, que sigue y cuanto valor puede convertirse en ventas reales.</p>
+          </article>
+          <div class="crm-help-grid">
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Como funciona este modulo</h2></div>
+              <ul class="crm-help-list">
+                <li><strong>Tablero ejecutivo:</strong> resume pipeline, forecast, alertas, agenda y responsables para priorizar el dia comercial.</li>
+                <li><strong>Leads:</strong> guarda oportunidades nuevas con estado, canal, propietario, valor potencial, probabilidad y proximo contacto.</li>
+                <li><strong>Seguimientos:</strong> registra llamadas, correos, reuniones, visitas o WhatsApp para dejar trazabilidad de cada conversacion.</li>
+                <li><strong>Cotizaciones:</strong> centraliza propuestas comerciales y permite seguir su avance hasta aprobacion, rechazo, vencimiento o conversion.</li>
+              </ul>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Como se debe operar</h2></div>
+              <ul class="crm-help-list">
+                <li>Primero crea o actualiza el lead con datos claros de contacto, canal y responsable.</li>
+                <li>Despues registra cada seguimiento y define siempre la proxima accion con fecha.</li>
+                <li>Cuando exista interes real, genera la cotizacion y mantenla vinculada al lead o cliente.</li>
+                <li>Usa forecast, metas y embudo documental para revisar valor en riesgo, conversion y tareas pendientes.</li>
+              </ul>
+            </article>
+          </div>
+          <article class="crm-card">
+            <div class="crm-card-header"><h2>Regla del sistema</h2></div>
+            <p>Este CRM no reemplaza clientes, ventas ni facturacion: los complementa. Los clientes siguen en el nucleo de clientes, las ventas y pagos siguen en sus modulos centrales, y CRM conserva la historia comercial que explica como una oportunidad llega a cotizacion, venta y postventa.</p>
+          </article>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/crm_comercial.js?v=20260512-crm-help"></script>
+</body>
+</html>

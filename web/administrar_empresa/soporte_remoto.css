@@ -1,0 +1,78 @@
+.support-shell {
+  display: grid;
+  gap: 16px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.support-card {
+  border-radius: 18px;
+}
+
+.support-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.support-download-list {
+  display: grid;
+  gap: 10px;
+}
+
+.support-download-group {
+  padding: 16px;
+  border: 1px solid var(--content-soft-border);
+  border-radius: 16px;
+  background: var(--content-soft-bg);
+}
+
+.support-download-group h2 {
+  margin: 0 0 12px;
+}
+
+.support-download-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--content-soft-border);
+  border-radius: 12px;
+  background: var(--content-soft-bg-2);
+}
+
+.support-download-item strong,
+.support-download-item span {
+  display: block;
+}
+
+.support-download-item span {
+  color: var(--muted);
+  font-size: .88rem;
+}
+
+.support-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+}
+
+.support-note {
+  margin: 0;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .support-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .support-download-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Impresora">
+  <defs>
+    <linearGradient id="pcs-print-body" x1="10" x2="54" y1="18" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="pcs-print-paper" x1="20" x2="44" y1="6" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#dbeafe"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#pcs-print-paper)" d="M18 7h28v18H18z"/>
+  <path fill="#1e293b" d="M16 21h32a8 8 0 0 1 8 8v16a5 5 0 0 1-5 5H13a5 5 0 0 1-5-5V29a8 8 0 0 1 8-8z"/>
+  <path fill="url(#pcs-print-body)" d="M14 29a2 2 0 0 1 2-2h32a2 2 0 0 1 2 2v13H14z"/>
+  <path fill="#f8fafc" d="M19 36h26v21H19z"/>
+  <path fill="#93c5fd" d="M23 42h18v3H23zm0 7h13v3H23z"/>
+  <circle cx="48" cy="33" r="3" fill="#facc15"/>
+</svg>

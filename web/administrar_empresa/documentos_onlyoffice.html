@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Documentos OnlyOffice</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .oo-shell{width:min(1280px,calc(100% - 24px));margin:0 auto;padding:18px 0 22px}
+    .oo-workspace{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:start}
+    .oo-panel{position:sticky;top:12px;display:grid;gap:12px}
+    .oo-doc-types{display:grid;gap:8px}
+    .oo-type{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;width:100%;min-height:58px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);text-align:left;cursor:pointer;font:inherit;font-weight:900}
+    .oo-type:hover,.oo-type.is-active{border-color:color-mix(in srgb,var(--accent) 48%,var(--border));background:color-mix(in srgb,var(--accent) 12%,var(--surface));box-shadow:0 12px 26px color-mix(in srgb,#020617 14%,transparent)}
+    .oo-type span{display:block;color:var(--muted);font-size:.78rem;font-weight:800;margin-top:2px}
+    .oo-icon{width:34px;height:34px;display:inline-block}
+    .oo-editor-card{min-height:calc(100vh - 150px);display:grid;grid-template-rows:auto minmax(420px,1fr)}
+    .oo-editor-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:10px}
+    .oo-current{min-width:0;display:flex;align-items:center;gap:10px;font-weight:900}
+    .oo-current small{display:block;color:var(--muted);font-weight:800}
+    .oo-editor-frame{width:100%;height:100%;min-height:62vh;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);overflow:hidden}
+    .oo-empty{height:100%;min-height:62vh;display:grid;place-items:center;text-align:center;color:var(--muted);padding:18px}
+    .oo-history{display:grid;gap:8px;max-height:260px;overflow:auto}
+    .oo-history-item{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--surface-soft)}
+    .oo-history-item strong{display:block;font-size:.9rem;word-break:break-word}
+    .oo-history-item small{color:var(--muted);font-weight:800}
+    @media(max-width:960px){.oo-workspace{grid-template-columns:1fr}.oo-panel{position:relative;top:auto}.oo-editor-card{min-height:70vh}.oo-editor-frame,.oo-empty{min-height:58vh}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <div class="oo-shell">
+    <div class="empresa-section-header">
+      <div>
+        <h1 class="empresa-section-title">Documentos OnlyOffice</h1>
+        <p class="form-help">Crea, edita y guarda documentos de oficina en el dispositivo donde estas trabajando.</p>
+      </div>
+      <div class="empresa-inline-actions">
+        <button id="downloadBtnTop" class="btn" type="button" disabled>Guardar en este dispositivo</button>
+        <button id="newBtnTop" class="btn secondary" type="button">Nuevo documento</button>
+      </div>
+    </div>
+
+    <div id="msg" class="form-help"></div>
+
+    <div class="oo-workspace mt-12">
+      <aside class="oo-panel">
+        <section class="card empresa-section">
+          <h2 class="m-0">Crear documento</h2>
+          <div class="form-row mt-10">
+            <div class="form-col">
+              <label class="form-label" for="docName">Nombre</label>
+              <input id="docName" class="form-input" type="text" placeholder="Documento de trabajo">
+            </div>
+          </div>
+          <div class="oo-doc-types mt-10" role="group" aria-label="Tipo de documento">
+            <button class="oo-type is-active" type="button" data-type="word" data-ext="docx">
+              <span class="oo-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="#185abd"/><path d="M8 8h2l1 5 1-5h2l1 5 1-5h2l-2 8h-2l-1-4-1 4H12L10 8z" fill="#fff"/></svg></span>
+              <strong>Documento Word<span>.docx</span></strong>
+            </button>
+            <button class="oo-type" type="button" data-type="excel" data-ext="xlsx">
+              <span class="oo-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="#107c41"/><path d="M9 8h2l1.3 2.3L13.6 8H16l-2.4 4 2.6 4H13.6l-1.4-2.4L10.8 16H8.4l2.6-4L9 8z" fill="#fff"/></svg></span>
+              <strong>Hoja Excel<span>.xlsx</span></strong>
+            </button>
+            <button class="oo-type" type="button" data-type="powerpoint" data-ext="pptx">
+              <span class="oo-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="#d24726"/><path d="M10 8h3.2a2.4 2.4 0 0 1 0 4.8H12v3.2h-2V8zm2 1.7v1.6h1.2c.5 0 .8-.4.8-.8s-.3-.8-.8-.8H12z" fill="#fff"/></svg></span>
+              <strong>Presentacion<span>.pptx</span></strong>
+            </button>
+          </div>
+          <div class="form-actions mt-12">
+            <button id="createBtn" class="btn" type="button">Crear y abrir editor</button>
+          </div>
+        </section>
+
+        <section class="card empresa-section">
+          <h2 class="m-0">Recientes de esta sesion</h2>
+          <div id="historyList" class="oo-history mt-10">
+            <div class="form-help">Sin documentos creados en esta sesion.</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="card empresa-section oo-editor-card">
+        <div class="oo-editor-toolbar">
+          <div id="currentDoc" class="oo-current">
+            <span class="oo-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="#64748b"/><path d="M8 8h8v2H8zm0 4h8v2H8zm0 4h5v2H8z" fill="#fff"/></svg></span>
+            <div>
+              Selecciona un tipo y crea un documento
+              <small>El editor se carga aqui mismo.</small>
+            </div>
+          </div>
+          <div class="empresa-inline-actions">
+            <button id="downloadBtn" class="btn" type="button" disabled>Guardar en este dispositivo</button>
+            <button id="closeBtn" class="btn secondary" type="button" disabled>Cerrar</button>
+          </div>
+        </div>
+        <div id="editorFrame" class="oo-editor-frame">
+          <div class="oo-empty">Editor listo para iniciar.</div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      function q(name){ try{ return new URLSearchParams(location.search).get(name); }catch(_){ return null; } }
+      function n(v){ var x=Number(String(v||'').trim()); return Number.isFinite(x)&&x>0?Math.trunc(x):0; }
+      function txt(v){ return String(v==null?'':v).trim(); }
+      function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+      function setMsg(m,e){ var el=document.getElementById('msg'); el.textContent=m||''; el.style.color=e?'var(--danger)':''; }
+      function baseName(name){ return txt(name).replace(/[\\\/:*?"<>|]/g,'_').replace(/\s+/g,' ').trim(); }
+      function typeLabel(type){ return type === 'excel' ? 'Hoja Excel' : (type === 'powerpoint' ? 'Presentacion' : 'Documento Word'); }
+      function typeExt(type){ return type === 'excel' ? 'xlsx' : (type === 'powerpoint' ? 'pptx' : 'docx'); }
+      function icon(type){
+        if(type === 'excel') return '<svg class="oo-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="#107c41"/><path d="M9 8h2l1.3 2.3L13.6 8H16l-2.4 4 2.6 4H13.6l-1.4-2.4L10.8 16H8.4l2.6-4L9 8z" fill="#fff"/></svg>';
+        if(type === 'powerpoint') return '<svg class="oo-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="#d24726"/><path d="M10 8h3.2a2.4 2.4 0 0 1 0 4.8H12v3.2h-2V8zm2 1.7v1.6h1.2c.5 0 .8-.4.8-.8s-.3-.8-.8-.8H12z" fill="#fff"/></svg>';
+        return '<svg class="oo-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="#185abd"/><path d="M8 8h2l1 5 1-5h2l1 5 1-5h2l-2 8h-2l-1-4-1 4H12L10 8z" fill="#fff"/></svg>';
+      }
+
+      var empresaId = n(q('empresa_id')||q('id'));
+      if(!empresaId){ try{ if(parent && parent.__resolveEmpresaIdContext) empresaId=n(parent.__resolveEmpresaIdContext()); }catch(_){} }
+      var state = { type:'word', file:'', fileType:'word', editor:null, history:[] };
+
+      function buildURL(action){
+        var u = new URL('/api/empresa/documentos', location.origin);
+        u.searchParams.set('empresa_id', String(empresaId));
+        if(action) u.searchParams.set('action', action);
+        return u;
+      }
+
+      async function apiJSON(url, opts){
+        var res = await fetch(url, Object.assign({credentials:'same-origin'}, opts||{}));
+        var raw = await res.text();
+        var data = {};
+        try{ data = raw ? JSON.parse(raw) : {}; }catch(_){ data = {error:raw}; }
+        if(!res.ok || data.ok === false) throw new Error(data.error || raw || ('HTTP ' + res.status));
+        return data;
+      }
+
+      function selectedName(){
+        var ext = typeExt(state.type);
+        var raw = baseName(document.getElementById('docName').value);
+        if(!raw) raw = typeLabel(state.type).replace(/\s+/g,'_');
+        if(raw.toLowerCase().slice(-(ext.length+1)) !== '.' + ext) raw += '.' + ext;
+        return raw;
+      }
+
+      function setSelectedType(type){
+        state.type = type || 'word';
+        document.querySelectorAll('.oo-type').forEach(function(btn){
+          btn.classList.toggle('is-active', btn.getAttribute('data-type') === state.type);
+        });
+      }
+
+      function setCurrentDoc(file,type){
+        var current = document.getElementById('currentDoc');
+        if(!file){
+          current.innerHTML = '<span class="oo-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="#64748b"/><path d="M8 8h8v2H8zm0 4h8v2H8zm0 4h5v2H8z" fill="#fff"/></svg></span><div>Selecciona un tipo y crea un documento<small>El editor se carga aqui mismo.</small></div>';
+          return;
+        }
+        current.innerHTML = icon(type) + '<div>' + esc(file) + '<small>' + esc(typeLabel(type)) + '</small></div>';
+      }
+
+      function setDownloadEnabled(enabled){
+        document.getElementById('downloadBtn').disabled = !enabled;
+        document.getElementById('downloadBtnTop').disabled = !enabled;
+        document.getElementById('closeBtn').disabled = !enabled;
+      }
+
+      function setEditorError(message){
+        var frame = document.getElementById('editorFrame');
+        frame.innerHTML = '<div class="oo-empty"><div><strong>No se pudo abrir el editor.</strong><br><span>'+esc(message || 'Revisa la configuracion de OnlyOffice Document Server.')+'</span></div></div>';
+      }
+
+      function renderHistory(){
+        var host = document.getElementById('historyList');
+        if(!state.history.length){
+          host.innerHTML = '<div class="form-help">Sin documentos creados en esta sesion.</div>';
+          return;
+        }
+        host.innerHTML = state.history.map(function(item,idx){
+          return '<div class="oo-history-item"><div><strong>'+esc(item.file)+'</strong><small>'+esc(typeLabel(item.type))+'</small></div><button class="btn secondary small" type="button" data-idx="'+idx+'">Abrir</button></div>';
+        }).join('');
+        host.querySelectorAll('[data-idx]').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var item = state.history[Number(btn.getAttribute('data-idx'))];
+            if(item) openDoc(item.file,item.type).catch(function(err){ setEditorError(err.message||String(err)); setMsg(err.message||String(err), true); });
+          });
+        });
+      }
+
+      function ensureOnlyOfficeScript(dsUrl){
+        return new Promise(function(resolve,reject){
+          var id='onlyoffice-api-script';
+          if(window.DocsAPI && typeof window.DocsAPI.DocEditor === 'function') return resolve();
+          if(document.getElementById(id)){
+            if(window.DocsAPI && typeof window.DocsAPI.DocEditor === 'function') return resolve();
+            document.getElementById(id).remove();
+          }
+          var cleanUrl = String(dsUrl||'').replace(/\/+$/,'');
+          if(!cleanUrl) return reject(new Error('OnlyOffice Document Server no esta configurado.'));
+          var s=document.createElement('script');
+          s.id=id;
+          s.src=cleanUrl + '/web-apps/apps/api/documents/api.js';
+          s.onload=function(){
+            if(window.DocsAPI && typeof window.DocsAPI.DocEditor === 'function') return resolve();
+            reject(new Error('OnlyOffice respondio, pero no cargo DocsAPI.DocEditor. Revisa la URL publica del Document Server.'));
+          };
+          s.onerror=function(){ reject(new Error('No se pudo cargar OnlyOffice Document Server desde '+s.src+'. Revisa que la URL sea publica para el navegador.')); };
+          document.head.appendChild(s);
+        });
+      }
+
+      async function createAndOpen(){
+        if(!empresaId) throw new Error('Falta empresa_id.');
+        var payload = { tipo: state.type, nombre: selectedName(), local_session: true };
+        setMsg('Creando documento...', false);
+        var data = await apiJSON(buildURL('create_edit_local').toString(), {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(payload)
+        });
+        var file = txt(data.name);
+        if(!file) throw new Error('No se recibio el archivo creado.');
+        var type = state.type;
+        state.history = state.history.filter(function(item){ return item.file !== file; });
+        state.history.unshift({file:file,type:type});
+        state.history = state.history.slice(0,8);
+        renderHistory();
+        await openDoc(file,type);
+      }
+
+      async function openDoc(file,type){
+        file = txt(file);
+        if(!file) return;
+        setMsg('Abriendo editor...', false);
+        var cfgResp = await apiJSON('/api/empresa/documentos?empresa_id='+encodeURIComponent(empresaId)+'&action=editor_config&mode=edit&file='+encodeURIComponent(file));
+        var dsUrl = txt(cfgResp.ds_url);
+        var cfg = cfgResp.onlyofficeCfg || null;
+        if(cfgResp && cfgResp.ok === false) throw new Error(cfgResp.error || 'OnlyOffice no esta configurado.');
+        if(!dsUrl || !cfg) throw new Error('OnlyOffice no esta configurado.');
+        await ensureOnlyOfficeScript(dsUrl);
+        if(!window.DocsAPI || typeof window.DocsAPI.DocEditor !== 'function') throw new Error('No se cargo el editor OnlyOffice en el navegador.');
+        var frame = document.getElementById('editorFrame');
+        frame.innerHTML = '<div id="onlyoffice-editor" style="width:100%;height:100%;min-height:62vh;"></div>';
+        state.file = file;
+        state.fileType = type || state.type;
+        setCurrentDoc(file,state.fileType);
+        setDownloadEnabled(true);
+        if(state.editor && typeof state.editor.destroyEditor === 'function'){
+          try{ state.editor.destroyEditor(); }catch(_){}
+        }
+        state.editor = new window.DocsAPI.DocEditor('onlyoffice-editor', cfg);
+        setMsg('Editor listo.', false);
+      }
+
+      async function downloadCurrent(){
+        if(!state.file) return;
+        setMsg('Preparando descarga...', false);
+        await new Promise(function(resolve){ setTimeout(resolve, 900); });
+        var u = buildURL('download');
+        u.searchParams.set('file', state.file);
+        u.searchParams.set('delete', '1');
+        var res = await fetch(u.toString(), {credentials:'same-origin'});
+        if(!res.ok){
+          var raw = await res.text().catch(function(){ return ''; });
+          throw new Error(raw || ('HTTP ' + res.status));
+        }
+        var blob = await res.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = state.file;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setMsg('Documento guardado en este dispositivo.', false);
+        setDownloadEnabled(false);
+      }
+
+      function closeCurrent(){
+        if(state.editor && typeof state.editor.destroyEditor === 'function'){
+          try{ state.editor.destroyEditor(); }catch(_){}
+        }
+        state.editor = null;
+        state.file = '';
+        document.getElementById('editorFrame').innerHTML = '<div class="oo-empty">Editor listo para iniciar.</div>';
+        setCurrentDoc('', 'word');
+        setDownloadEnabled(false);
+      }
+
+      document.querySelectorAll('.oo-type').forEach(function(btn){
+        btn.addEventListener('click', function(){ setSelectedType(btn.getAttribute('data-type')); });
+      });
+      document.getElementById('createBtn').addEventListener('click', function(){ createAndOpen().catch(function(err){ setEditorError(err.message||String(err)); setMsg(err.message||String(err), true); }); });
+      document.getElementById('newBtnTop').addEventListener('click', function(){ createAndOpen().catch(function(err){ setEditorError(err.message||String(err)); setMsg(err.message||String(err), true); }); });
+      document.getElementById('downloadBtn').addEventListener('click', function(){ downloadCurrent().catch(function(err){ setMsg(err.message||String(err), true); }); });
+      document.getElementById('downloadBtnTop').addEventListener('click', function(){ downloadCurrent().catch(function(err){ setMsg(err.message||String(err), true); }); });
+      document.getElementById('closeBtn').addEventListener('click', closeCurrent);
+
+      if(!empresaId){
+        setMsg('Falta empresa_id en la URL.', true);
+        document.getElementById('createBtn').disabled = true;
+        document.getElementById('newBtnTop').disabled = true;
+      }
+      renderHistory();
+    })();
+  </script>
+</body>
+</html>

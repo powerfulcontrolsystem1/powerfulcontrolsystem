@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nextcloud - Configuracion</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/super/configuracion/nextcloud.css?v=20260813-p110-csp">
+</head>
+<body class="super-page">
+  <main class="nextcloud-config">
+    <h1>Nextcloud empresarial</h1>
+    <p>Configuracion global del servicio y cuota inicial por empresa.</p>
+    <form id="nextcloudConfigForm" class="nextcloud-form">
+      <label class="wide"><span><input id="nextcloudEnabled" type="checkbox"> Activar servicio para empresas</span></label>
+      <label class="wide">URL HTTPS<input id="nextcloudBaseURL" class="form-input" type="url" autocomplete="url" placeholder="https://nube.dominio.com"></label>
+      <label>Usuario administrador<input id="nextcloudAdminUser" class="form-input" type="text" autocomplete="username"></label>
+      <label>Cuota inicial (MB)<input id="nextcloudQuota" class="form-input" type="number" min="1" max="1048576" value="1024"></label>
+      <label class="wide">Contraseña o token de aplicación<input id="nextcloudAdminSecret" class="form-input" type="password" autocomplete="new-password" placeholder="Dejar vacio para conservar el actual"></label>
+    </form>
+    <div class="nextcloud-actions">
+      <button id="nextcloudSave" class="btn primary" type="button">Guardar configuracion</button>
+      <button id="nextcloudTest" class="btn secondary" type="button">Probar conexion</button>
+    </div>
+    <div id="nextcloudMessage" class="nextcloud-message" role="status"></div>
+    <section class="nextcloud-account" aria-labelledby="nextcloudAccountTitle">
+      <h2 id="nextcloudAccountTitle">Cuenta personal del super administrador</h2>
+      <p>Créala aquí para acceder a la nube desde el celular o computador. Su cuota es independiente de la cuota fija de las empresas.</p>
+      <form class="nextcloud-form">
+        <label>Usuario<input id="nextcloudAccountUser" class="form-input" type="text" autocomplete="username" placeholder="mi_usuario"></label>
+        <label>Nombre visible<input id="nextcloudAccountName" class="form-input" type="text" autocomplete="name" placeholder="Nombre del usuario"></label>
+        <label>Cuota de esta cuenta (MB)<input id="nextcloudAccountQuota" class="form-input" type="number" min="1" max="1048576" value="5120"></label>
+      </form>
+      <div class="nextcloud-actions"><button id="nextcloudCreateAccount" class="btn primary" type="button">Crear cuenta personal</button><a id="nextcloudOpenService" class="btn secondary" href="#" target="_blank" rel="noopener noreferrer">Abrir Nextcloud</a></div>
+      <section id="nextcloudAccountCredential" class="nextcloud-credential" aria-live="polite"><strong>Guarda esta contraseña: solo se muestra ahora.</strong><code id="nextcloudAccountPassword"></code><button id="nextcloudCopyAccountPassword" class="btn secondary" type="button">Copiar contraseña</button></section>
+    </section>
+  </main>
+  <script src="/js/nextcloud_super.js?v=20260721-personal-account"></script>
+  <script src="/js/super_page_tools.js?v=20260707"></script>
+</body>
+</html>

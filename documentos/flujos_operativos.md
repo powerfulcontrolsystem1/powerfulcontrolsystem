@@ -1,0 +1,1681 @@
+# Flujos operativos
+
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+
+## Configuracion fiscal internacional (2026-09-05)
+
+Elegir un pais distinto de la empresa no debe copiar su identidad, resolucion
+o ambiente productivo. EC/PA permiten preparar datos, pero no emitir mediante
+el transporte generico. Un adaptador nuevo exige fuente, numeracion propia,
+firma y acuse oficial antes de habilitarlo. El detalle y las pruebas pendientes
+estan en `documentos/auditoria_facturacion_seguridad_20260905.md`.
+
+Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
+mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
+afecte dinero, documentos, licencias o seguridad.
+
+## Reenvio manual DIAN de una cola terminal
+
+1. El usuario autorizado pulsa `Reenviar DIAN` sobre el documento de la
+   empresa activa; esa accion explicita es la unica que puede reabrir una cola
+   `fallido_terminal`. El worker y la emision automatica la mantienen cerrada.
+2. El backend toma el bloqueo advisory del mismo `empresa_id`, tipo y codigo de
+   documento antes de revisar o modificar la cola, evitando envios concurrentes.
+3. Si el documento, la cola o el historial ya conservan TrackId, CUFE/CUDE o
+   codigo de validacion, el reenvio se bloquea y se debe consultar el acuse para
+   no duplicar un documento fiscal.
+4. Sin evidencia fiscal, PCS reinicia el lote de intentos y registra en
+   observaciones la reactivacion, los intentos agotados y el error anterior.
+5. El envio vuelve a pasar por el adaptador DIAN normal. Toda respuesta se
+   conserva en el historial; si DIAN no entrega TrackId, se usa una referencia
+   interna de auditoria que no se puede reconsultar como `GetStatusZip`.
+6. Antes de firmar, cada familia UBL usa su `ProfileID` oficial completo y cada
+   linea informa `StandardItemIdentification`. Si no existe UNSPSC, GTIN o
+   partida arancelaria configurada, PCS usa el codigo comercial ya persistido
+   con el estandar `999`; nunca inventa una clasificacion externa.
+7. Si una respuesta rechazada dejo un XML firmado con un formato anterior, el
+   reenvio manual puede regenerarlo desde la misma fuente fiscal inmutable. El
+   XML anterior permanece vigente hasta que el nuevo supere el preflight; el
+   worker no puede ejecutar esta migracion ni alterar la fuente comercial.
+
+## Cliente movil POS v1
+
+1. La app Android/iPhone obtiene una sesion de dispositivo y usa Bearer en
+   `/api/v1/`; nunca reutiliza rutas web legacy como contrato nuevo.
+2. Consulta catalogo, clientes, carritos e items con pagina limitada, filtros y
+   campos permitidos. El `empresa_id` se valida por la sesion y rol efectivo.
+3. Para crear/editar carrito o items, cobrar, emitir desde venta o enviar una
+   notificacion, genera una `Idempotency-Key` nueva por operacion logica y la
+   conserva hasta recibir respuesta definitiva. Un reintento recibe el mismo
+   resultado exitoso sin duplicar efectos fiscales o de caja.
+4. Sin red, la app usa `ventas/offline/sync` con `sync_key`, cajero y caja
+   abierta; el backend conserva la cola y sus validaciones POS actuales.
+
+
+## Roles personalizados por empresa
+
+1. Abrir `Administrar empresa > Administrar usuarios`.
+2. En `Roles personalizados de esta empresa`, escribir el nombre del rol,
+   descripcion y elegir un `Rol base` global.
+3. Guardar. PCS crea el rol en `roles_de_usuario` con `empresa_id` de la
+   empresa activa, `origen=empresa` y `rol_base_id` del rol global elegido.
+4. El rol aparece inmediatamente en el selector de usuarios con la etiqueta
+   `(personalizado)` y se puede asignar desde `Editar rol de usuario` o desde
+   el formulario de creacion/edicion.
+5. Para desactivar un rol propio, usar `Desactivar` en la misma tarjeta. El rol
+   no desaparece del historial, pero deja de estar disponible para nuevas
+   asignaciones activas.
+6. La autorizacion efectiva usa el rol base global. Esto evita que un nombre
+   libre sin matriz conocida abra permisos por accidente y mantiene el alcance
+   por `empresa_id`.
+7. Un rol personalizado de otra empresa no puede asignarse ni resolverse en la
+   empresa actual; el backend lo rechaza aunque se manipule la URL o el payload.
+
+## Configuracion dedicada del rol cajero
+
+1. Abrir `Administrar empresa > Configuracion > Ventas y cobro > Rol cajero`.
+2. Revisar el resumen: rol base, usuarios cajeros, pago mixto y control por
+   estaciones.
+3. En `Perfil del rol`, crear o actualizar el nombre/descripcion visible del
+   cajero. PCS conserva el rol global `cajero` y guarda un rol personalizado
+   de la empresa cuando se requiere modificar el perfil.
+4. En `Cobro y caja`, activar o desactivar medios de pago, propinas,
+   comisiones, ingresos manuales y egresos manuales. El backend guarda la regla
+   en `empresa_configuracion_operativa_roles` para `rol=cajero`.
+5. En `Carrito POS`, `Botones visibles` y `Medios de pago POS`, ajustar lo que
+   ve el cajero en venta directa y estaciones. La pagina reutiliza
+   `estaciones_config.carrito_ui_global`, por lo que no duplica la configuracion
+   completa del carrito.
+6. En `Estaciones y caja fisica`, activar el control por estaciones cuando cada
+   cajero debe operar solo estaciones asignadas. Las asignaciones finas por
+   usuario siguen en `Administrar usuarios`.
+7. Guardar por seccion o usar `Guardar configuracion del cajero` para guardar
+   operativa, carrito/estaciones y perfil. Todas las llamadas llevan
+   `empresa_id`; no se debe editar el rol global ni mezclar empresas.
+
+## Modo POS tactil por empresa
+
+1. Abrir `Administrar empresa > Configuracion > Configuracion carrito`.
+2. Activar `Modo POS tactil para carrito, estaciones y corte de caja`.
+3. El valor se guarda por empresa en
+   `empresa_estacion_prefs.estaciones_config.carrito_ui_global.modo_pantalla_tactil`
+   usando `/api/empresa/estacion_prefs`.
+4. Al abrir `Venta directa` o un carrito por estacion, el carrito aplica
+   `pos-touch-mode`/`cart-touch-mode`: botones, campos, descuentos, taxi,
+   pagos mixtos, cliente y acciones quedan con objetivos tactiles grandes.
+5. El catalogo por botones recibe `touch=1` desde el carrito y aplica la misma
+   ergonomia para agregar productos con el dedo.
+6. `Estaciones` lee la misma configuracion global y agranda tarjetas, especiales
+   como Caja/Notas/YouTube y acciones operativas sin cambiar el flujo normal.
+7. `Corte de caja` lee la preferencia al cargar y agranda los botones de
+   generar, reporte, cierre e impresion; si la preferencia no carga, queda en
+   modo normal.
+8. La opcion no crea tablas nuevas, no cambia permisos ni mezcla empresas; cada
+   pantalla sigue filtrando por su `empresa_id` y sus endpoints existentes.
+
+## Atajos POS por empresa
+
+1. Abrir `Administrar empresa > Configuracion > Configuracion carrito`.
+2. En `Atajos de teclado POS`, activar o desactivar la captura de teclado y
+   asignar cada accion a F1-F12, ESC, ENTER, CTRL+B, CTRL+D, CTRL+P o ALT+F4.
+3. PCS guarda el mapa en
+   `empresa_estacion_prefs.estaciones_config.carrito_ui_global.atajos_pos`
+   usando `/api/empresa/estacion_prefs`, siempre filtrado por `empresa_id`.
+4. En `Venta directa` o carritos por estacion, el listener del carrito ejecuta
+   acciones existentes: ayuda, buscar producto/cliente, descuento, cantidad,
+   precio, suspender/recuperar, inventario, cobrar, cajon, imprimir, cancelar,
+   agregar producto y salir.
+5. ENTER no interfiere con formularios generales; solo agrega producto cuando el
+   foco esta en el lector/cantidad del escaner o no se esta escribiendo en otro
+   campo. Las acciones finales siguen pasando por permisos y validaciones del
+   backend.
+
+## Creditos y cartera por empresa
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > Centro financiero y
+   contable`.
+2. Usar la tarjeta `Creditos y cartera` o el enlace lateral del centro
+   financiero.
+3. En `Riesgo y limites`, abrir o ajustar el cupo del cliente; el limite queda
+   por `empresa_id` y cliente.
+4. En `Nuevo credito`, crear el credito con cliente, monto, plazo y condiciones
+   aprobadas.
+5. En `Abonos y operaciones`, registrar abonos, reversos o refinanciaciones
+   permitidas.
+6. En `Cartera`, `Morosidad` y `Estado de cuenta`, consultar saldos, cuotas,
+   vencimientos y movimientos.
+7. El carrito usa el mismo modulo cuando el medio de pago es `Credito cliente`:
+   valida que el cliente tenga cupo activo y crea la cartera ligada a la venta,
+   sin sumar ese valor como efectivo de caja.
+8. Cuando el saldo y todas las cuotas queden en cero, usar `Cartera > Paz y
+   salvo`; el backend vuelve a validar la deuda, genera el PDF y registra la
+   expedicion en auditoria.
+9. Para cobranza automatica, abrir `Gestion de cobranza`, guardar canales,
+   anticipacion, frecuencia, hora y plantilla. La opcion inicia apagada; usar
+   `Probar sin enviar` antes de activarla. Correo y WhatsApp dependen tambien de
+   la configuracion global del proveedor.
+10. El tutorial queda como ultima opcion del submenu y enlaza cada paso con la
+    vista operativa correspondiente.
+
+## Menu visible por empresa
+
+1. Abrir `Administrar empresa > Configuracion > Menu visible`.
+2. Marcar los modulos que deben mostrarse y desmarcar los que se quieren ocultar
+   del menu para todos los usuarios de esa empresa.
+3. PCS guarda la preferencia en
+   `empresa_estacion_prefs.menu_visual_config` con `estacion_id=0` y lista
+   `hidden_links`, siempre por `empresa_id`.
+4. Al cargar `Administrar empresa`, primero se aplican permisos, licencia y rol;
+   luego se aplica este filtro visual. Por eso un modulo oculto no aparece en el
+   menu, pero sus endpoints siguen protegidos por backend.
+5. `Panel`, `Configuracion`, `Menu visible` y `Volver a empresas` no se pueden
+   ocultar para evitar que el administrador pierda la ruta de recuperacion.
+
+## Nomina y nomina electronica DIAN
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > Nomina`.
+2. Usar el submenu interno para configurar parametros legales, crear empleados
+   de nomina, registrar festivos y revisar liquidaciones.
+   El boton `Agente internet` muestra una tabla actual vs propuesto con fuente y
+   vigencia; cada parametro se actualiza por separado y exige confirmacion.
+3. En `Liquidaciones`, elegir periodo, calcular nomina y conciliar asistencia
+   antes de continuar.
+4. En `Pagos y PILA`, validar control contable, consultar provisiones, generar
+   pagos y generar PILA cuando aplique.
+5. En `Nomina electronica DIAN`, elegir un mes calendario cerrado. PCS agrupa
+   todas las liquidaciones pagadas del trabajador en un solo candidato mensual.
+6. Completar el perfil fiscal DIAN del trabajador y la configuracion separada
+   de la familia `nomina_electronica`. La numeracion interna de nomina no usa la
+   resolucion ni el rango de factura de venta.
+7. Ejecutar `Preflight` desde la fila mensual. Reconstruye la fuente en servidor
+   y valida liquidaciones, pagos, partes, totales, ambiente y configuracion; no
+   reserva consecutivo, no firma y no transmite.
+8. Un periodo abierto, liquidaciones solapadas/cruzadas, pago ambiguo, perfil
+   incompleto o concepto horario sin intervalos reales mantiene `Emitir`
+   bloqueado. PCS no completa datos fiscales por suposicion.
+9. La emision solo se ofrece con la familia activa en produccion y exige la
+   frase exacta `EMITIR NOMINA ELECTRONICA DIAN`, ademas de aprobacion efectiva
+   tanto en Facturacion como en Nomina.
+10. El servidor reserva de forma atomica un documento por trabajador/mes,
+    sella fuente y configuracion, genera `NominaIndividual`, CUNE SHA-384 y
+    firma XAdES, valida el XML y transmite con `SendNominaSync`.
+11. XML firmado y acuse quedan privados por empresa. El worker reintenta el XML
+    ya autorizado; el procesamiento manual general omite nomina y el reenvio
+    individual exige `REENVIAR NOMINA ELECTRONICA DIAN`.
+12. Habilitacion automatica por `SendTestSetAsync`, nota de ajuste y entrega/PDF
+    dedicado de nomina siguen cerrados. No usar el correo o PDF de factura para
+    esta familia; consultar `nomina_colombia_avanzada.md`.
+
+## Snapshot completo VPS desde super administrador
+
+1. Abrir `Super Administrador > Plataforma > Docker VPS`.
+2. En `Snapshot completo VPS`, activar snapshots y definir retención local,
+   intervalo automático o una hora diaria, el alcance (completo o solo bases
+   PostgreSQL) y si se incluyen imágenes Docker.
+3. Para nube, configurar previamente `rclone` en la VPS y guardar solo la ruta
+   remota en PCS, por ejemplo `gdrive:PCS/backups` o `mega:PCS/backups`.
+4. Usar `Crear y descargar snapshot` para generar un `.tar.gz` restaurable en
+   `backup/vps_snapshots` y descargarlo desde el historial.
+5. Usar `Crear y subir a nube` cuando el remoto `rclone` ya este probado; PCS no
+   guarda tokens OAuth ni claves de Google Drive, Mega, OneDrive o S3.
+6. Si `Ejecutar automatico` queda activo, el worker horario verifica el ultimo
+   respaldo y crea uno nuevo cuando se cumpla el intervalo configurado.
+7. La limpieza local/remota solo elimina archivos con patron
+   `pcs-vps-snapshot-*.tar.gz` mayores a los dias de retencion configurados.
+8. El paquete incluye proyecto portable, `pg_dumpall` cuando este disponible,
+   volumenes Docker PCS, `MANIFEST.json` y `RESTAURAR_VPS.md`; no incluye
+   `.env.platform` ni secretos por defecto.
+
+## Administrar disco VPS
+
+1. Abrir `Super administrador > Plataforma > Administrar disco VPS`.
+2. Revisar el uso total y las cuatro categorías recuperables. La pantalla no
+   lista bases, archivos empresariales, certificados, código, respaldos ni
+   volúmenes Docker conectados.
+3. Seleccionar una o más categorías y escribir exactamente `LIBERAR ESPACIO`.
+4. La API super auditada firma la solicitud hacia el sidecar interno. El
+   navegador nunca recibe acceso al socket Docker, rutas del host o comandos.
+5. El sidecar solo puede eliminar contenedores detenidos por más de 24 horas,
+   imágenes no usadas por contenedores con más de 7 días, caché BuildKit vencida
+   y volúmenes Docker anónimos sin referencias.
+6. Al finalizar, revisar los bytes recuperados y el espacio disponible. Si una
+   categoría no tiene candidatos, la operación no altera recursos activos.
+
+## Transferir cuenta entre mesas, habitaciones o estaciones
+
+1. Abrir `Administrar empresa > Configuracion > Configuracion carrito`.
+2. Activar `Visualizar boton Transferir cuenta`; por defecto queda apagado para
+   no exponer el flujo a empresas que no lo usan.
+3. Abrir una cuenta activa desde `Estaciones`, agregar productos/servicios,
+   abonos o tarifa segun aplique.
+4. En el carrito, usar `Transferir cuenta`, elegir el destino y registrar un
+   motivo operativo.
+5. PCS valida en backend que el origen este abierto/no pagado, que el destino
+   sea diferente y este disponible, y que ambos pertenezcan al mismo
+   `empresa_id`.
+6. En motel/hotel, si el origen tiene tarifa por minutos o diaria, el destino
+   debe tener una tarifa activa equivalente; si no la tiene, la transferencia se
+   rechaza para evitar cobros incompatibles.
+7. Al aprobarse, se mueven items, abonos, cliente, descuentos, caja y estado de
+   sesion al destino; el origen queda cerrado/en cero y el usuario es llevado al
+   carrito destino.
+8. No se duplica inventario, no se crea una venta nueva y los roles restringidos
+   de tablero de estaciones siguen sin poder ejecutar la transferencia.
+
+## Impresoras por empresa y agente local
+
+1. Abrir `Administrar empresa > Configuracion > Configuracion de impresora`.
+2. Registrar impresoras activas por empresa con codigo, nombre, tipo de conexion,
+   direccion o cola, area operativa, formato POS/carta y predeterminada.
+3. Asignar impresora por funcionalidad (`ticket_cobro`, `factura_caja`,
+   `orden_servicio`, `cocina`, `barra`, `reporte_caja`) o por producto/categoria.
+4. En `Impresora por computador`, PCS detecta el equipo con
+   `localStorage.pcs_dispositivo_id` y permite asociar ese computador/caja a una
+   impresora por funcionalidad o como regla general del equipo.
+5. Cuando una venta, factura, comanda o cierre necesite imprimir, el backend
+   resuelve por producto/receta/categoria, luego por computador detectado,
+   luego por funcionalidad y finalmente por impresora predeterminada.
+6. `/api/empresa/impresoras/resolver` acepta `dispositivo_id` o `agente_id`;
+   al encolar trabajos, `cola_trabajo` usa el `agente_id` del computador para
+   apuntar automaticamente a la impresora asociada cuando no se envio una
+   impresora directa.
+7. El agente local de cada caja consulta
+   `/api/empresa/impresoras/agente?action=tomar` con `empresa_id`, `agente_id` y
+   `estacion_id`; solo recibe trabajos pendientes de su empresa, agente o
+   estación. PostgreSQL reclama el lote en una sola operación con
+   `FOR UPDATE SKIP LOCKED`, por lo que varios agentes pueden trabajar sin tomar
+   la misma fila.
+8. Tras imprimir en la impresora fisica del equipo, el agente marca el trabajo
+   como `impreso` o `error` en `/api/empresa/impresoras/agente?action=estado`;
+   solo el `agente_id` propietario puede cerrarlo y repetir el mismo cierre es
+   idempotente.
+9. El administrador puede ver la cola reciente y reintentar trabajos fallidos
+   desde la pagina de configuracion. Reintentar pone el trabajo en `pendiente` y
+   reinicia intentos para que vuelva a ser elegible.
+10. La ruta de agente usa permisos de ventas y no permite editar impresoras,
+   reglas ni predeterminadas; esas acciones siguen bajo permisos de seguridad.
+11. Crear un trabajo desde web conserva una `Idempotency-Key` hasta obtener una
+   respuesta definitiva. Antes de producción se debe definir por flujo si la
+   salida se hará mediante agente local o mediante el diálogo de impresión del
+   navegador; activar ambos sobre el mismo comprobante puede duplicar papel.
+
+## Factura electronica desde una venta existente
+
+1. Abrir `Administrar empresa > Ventas` y ubicar un comprobante de pago emitido.
+2. La misma bandeja lista ventas internas y facturas electronicas, mostrando
+   `Solo venta`, `Venta con factura electronica` o `Factura electronica` para
+   evitar consultar paginas separadas.
+3. Usar `Hacer factura electronica` sobre una fila `Solo venta`.
+4. Seleccionar un cliente existente de la empresa o crear cliente rapido con
+   tipo/documento, nombre y correo si no existe.
+5. PCS asocia el cliente al comprobante origen por `empresa_id` antes de generar
+   la factura electronica.
+6. La venta origen conserva valor, pagos, inventario y total; solo se crea el
+   documento fiscal derivado.
+7. La fecha y hora fiscal de la factura electronica se generan al preparar el
+   documento legal, por lo que pueden diferir de la fecha/hora de la venta.
+8. Si se activa el check de correo, la factura se envia al correo del cliente
+   cuando no haya sido enviada ya por la configuracion automatica.
+9. Los campos de la representacion impresa se configuran por empresa en
+   `Configuracion > Impresoras y caja > Documento de venta e impresion`.
+   `Total en letras` es opcional. Si el documento es factura electronica, nota,
+   soporte, nomina o equivalente electronico, PCS conserva impresos los campos
+   legales obligatorios aunque el check este apagado; esos checks solo pueden
+   ocultar campos en ventas/comprobantes sin factura electronica.
+
+## Modulo NIIF
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > NIIF` o el acceso
+   `NIIF` dentro del Centro financiero y Suite contador.
+2. La pagina conserva `empresa_id` y consulta
+   `/api/empresa/contabilidad_colombia?action=dashboard&empresa_id={id}` cuando
+   el usuario tiene permisos contables/financieros suficientes.
+3. El modulo no guarda datos en servidor: las marcas de diagnostico, politicas
+   y cierre se conservan localmente por navegador y empresa para no crear
+   mutaciones sin endpoint dedicado.
+4. El tablero muestra base NIIF, periodo, diferencia debito/credito y avance de
+   adopcion calculado por estandares, politicas y checklist.
+5. Medicion permite calcular deterioro, depreciacion, valor razonable neto y
+   conciliacion contable-fiscal de apoyo gerencial.
+6. Notas genera un borrador exportable JSON/TXT; no reemplaza estados
+   financieros oficiales ni revision del contador.
+
+## Bolsa empresarial
+
+1. Abrir `Administrar empresa > Analisis y control > Bolsa`.
+2. La pagina conserva `empresa_id` del panel y consulta
+   `/api/empresa/bolsa?empresa_id={id}` con zona horaria e idioma del navegador.
+3. El backend valida sesion, empresa y permiso `bolsa:R` mediante
+   `WithEmpresaBolsaPermissions`.
+4. El pais se detecta desde la configuracion empresarial/facturacion; si no hay
+   dato usable, se usa Colombia como fallback operativo.
+5. El handler consulta indicadores internacionales y locales desde el servidor,
+   calcula precio, variacion y porcentaje, y cachea por 60 segundos.
+6. La pantalla muestra resumen, tablas y errores por indicador; no guarda datos,
+   no emite ordenes y no constituye recomendacion de inversion.
+
+## Suite contador
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > Suite contador` o
+   desde el Centro financiero y contable. En el Centro financiero, `Suite
+   contador` es la unica entrada contable tipo hub; Portal contador y la suite
+   contable Colombia se abren desde dentro de esta pagina para evitar duplicados.
+2. La pagina conserva `empresa_id` y consulta
+   `/api/empresa/permisos_contexto?empresa_id={id}` para pintar cada modulo como
+   disponible o bloqueado.
+3. El hub no crea endpoints, tablas ni documentos; solo coordina modulos reales:
+   Portal contador, PUC/NIIF, suite contable avanzada, impuestos, DIAN,
+   declaraciones, certificados, cierres, activos, nomina, bancos, reportes,
+   y, solo si la empresa lo habilita, compras IA y Renta IA.
+4. Al abrir un modulo, el enlace reenvia `empresa_id`; la operacion final queda
+   protegida por el wrapper y permiso propio de ese modulo.
+5. El rol `contador` puede ver la suite y accesos contables clave, pero no recibe
+   permisos de escritura, aprobacion, pagos, inventario ni emision DIAN por este
+   cambio.
+
+## Motor contable automatico
+
+1. Los modulos operativos emiten eventos en `empresa_eventos_contables` con
+   `empresa_id`, modulo, evento, documento, periodo, monto y `payload_json`.
+2. El procesador de asientos toma pendientes por empresa desde
+   `/api/empresa/finanzas/asientos_contables?action=procesar_asientos` o desde
+   el worker automatico.
+3. Cada evento se transforma en `empresa_asientos_contables` con debitos y
+   creditos en `lineas_json`, totales y hash de idempotencia.
+4. Si el evento no genera minimo dos lineas reales, o si la diferencia
+   debito/credito no queda en cero, PCS no guarda el asiento y registra el error
+   saneado en el evento para revision contable.
+5. Cobertura actual del motor: ventas/facturas/notas, recibos de caja, compras,
+   documento soporte, pagos/egresos, abonos, CxC/CxP, anticipos, inventario,
+   costo de venta, nomina, nomina electronica, activos fijos, depreciacion y
+   deterioro.
+6. Las cuentas salen de la configuracion financiera de la empresa o de cuentas
+   PUC base de respaldo; el payload puede enviar cuentas especificas por modulo
+   cuando el origen tenga parametrizacion mas fina.
+7. Pruebas: procesar un evento de factura con IVA/retencion, confirmar que
+   debito y credito cuadran; procesar evento sin base contable y confirmar que
+   queda fallido sin asiento.
+
+## Renta IA en finanzas
+
+1. Habilitar primero la pagina `linkRentaIA` en permisos finos de la empresa;
+   por defecto no se muestra en ninguna empresa.
+2. Abrir `Administrar empresa > Finanzas y cumplimiento > Renta IA` dentro del
+   centro financiero.
+3. La pagina conserva `empresa_id`, define periodo y permite ajustar tarifa,
+   sobretasa, ingresos no constitutivos, rentas exentas, deducciones,
+   descuentos, retenciones y anticipo.
+4. El frontend llama `/api/empresa/finanzas/renta_ia?action=renta_ia` con
+   `credentials: same-origin`.
+5. El backend valida sesion, empresa, licencia y permiso `finanzas:R` mediante
+   `WithEmpresaFinanzasPermissions`.
+6. El calculo consolida datos reales filtrados por `empresa_id`: ventas
+   cerradas, ingresos/egresos financieros, compras de inventario y nomina
+   liquidada.
+7. Para reducir doble conteo, si hay POS e ingresos financieros simultaneos se
+   usa el mayor y se muestra alerta; lo mismo para egresos financieros frente a
+   compras + nomina.
+8. Si el usuario pide `Analizar con IA`, GPT-5.4 mini recibe solo el JSON del
+   calculo, registra uso IA diario por empresa y devuelve diagnostico
+   orientativo.
+9. El resultado es estimacion gerencial; no reemplaza formulario oficial,
+   declaracion tributaria ni revision del contador.
+
+## Centro IA empresarial
+
+0. En contexto empresarial, el icono circular flotante del asistente IA se
+   mantiene activo para todas las empresas; no depende de permisos del Centro IA
+   ni de `localStorage` antiguo. Robot/secretaria no se muestran.
+1. Confirmar que el rol/licencia tenga permiso `reportes:R`; el Centro IA ya no
+   se oculta por defecto, pero no concede permisos de escritura ni aprobacion.
+2. Abrir `Administrar empresa > Canales digitales y colaboracion > Centro IA
+   empresarial` o el acceso rapido `IA empresarial` del Centro financiero.
+3. La pagina conserva `empresa_id`, periodo desde/hasta y consulta
+   `/api/empresa/ia_empresarial?empresa_id={id}` con `credentials:
+   same-origin`.
+4. El backend valida sesion, empresa, licencia y permiso `reportes:R` mediante
+   `WithEmpresaReportesPermissions`.
+5. El snapshot se calcula solo con datos reales filtrados por `empresa_id`:
+   ventas cerradas, ingresos, egresos, clientes, productos, servicios, bajo
+   stock y diferencia ventas versus ingresos financieros.
+6. Las funciones IA disponibles son diagnostico ERP, borrador de
+   factura/cotizacion, cobranza/pagos, inventario/productos, conciliacion
+   bancaria, compras/gastos y cumplimiento DIAN.
+7. La IA no emite documentos, no registra pagos, no crea clientes, no cambia
+   inventario y no activa DIAN; devuelve borradores revisables, riesgos, datos
+   faltantes y siguiente accion sugerida.
+8. Cada ejecucion IA usa el modelo mini configurado, registra consumo diario por
+   empresa, permite elegir agente (`general`, `ventas`, `inventario`, `compras`,
+   `nomina`, `impuestos` o `agente_internet`) y descuenta cuota diaria de
+   agente cuando no se usa el agente general.
+9. El selector de agente solo cambia contexto, limites y recomendaciones; no
+   concede permisos adicionales ni ejecuta mutaciones.
+10. Los botones que ejecutan funciones IA deben mostrar el icono GPT y badge
+   `IA` mediante `web/js/ai_button_icons.js`.
+
+## Chat IA flotante operativo
+
+1. El icono circular flotante esta activo por empresa y abre el chat normal con
+   voz conservada; no usa robot ni secretaria.
+2. En VPS/Docker, `OPENAI_API_KEY` debe existir en `deploy/.env.platform` remoto
+   para que Compose la entregue al backend; `rs/sync_to_vps` la sincroniza sin
+   imprimir el secreto cuando existe en los archivos locales ignorados.
+3. El boton `Stop` del toolbar corta audio, aborta la respuesta activa cuando el
+   navegador soporta `AbortController` y evita que respuestas tardias se pinten
+   despues de cancelar.
+4. Toda accion operativa generada por IA debe salir como `PCS_ACTION`, mostrarse
+   al usuario y ejecutarse solo despues de confirmar.
+5. El frontend solo permite `OPEN`, `POST` y `PUT` sobre endpoints cerrados; no
+   permite `DELETE` ni rutas genericas.
+6. Para `cajero`, las acciones permitidas son pedir/agregar productos a una
+   estacion, mesa, habitacion o venta directa mediante
+   `/api/empresa/ia_pedidos_estacion/ejecutar`, y activar/desactivar la emisora
+   mediante `/api/empresa/ia_radio/activar`.
+7. Productos manuales usan `/api/empresa/productos` y dependen de permisos de
+   inventario; nomina usa `/api/empresa/nomina` y depende de permisos de nomina;
+   tarifas de motel/hotel/tiempo usan los endpoints de tarifas bajo permisos de
+   ventas.
+8. El backend vuelve a validar sesion, `empresa_id`, licencia, pagina y permisos
+   efectivos en cada ruta; la IA no concede permisos ni ejecuta SQL libre.
+9. Para `super_administrador`, `administrador_total` y `admin_empresa`, el backend
+   puede entregar contexto real de lectura de la base de datos de la empresa
+   activa y respuestas directas como conteo de usuarios. Esa lectura siempre usa
+   consultas controladas, omite secretos y filtra por `empresa_id`; cualquier
+   cambio de datos debe ejecutarse por una funcion PCS existente con permisos y
+   confirmacion, no por SQL libre del modelo.
+10. `/api/empresa/chat_con_inteligencia_artificial/modelos` devuelve tambien el
+   catalogo de agentes disponibles; consulta normal, adjuntos y streaming aceptan
+   `agent_id` y registran auditoria `agente=...`.
+11. Agentes no generales consumen `empresa_agentes_uso_diario.consultas_ligeras`
+   ademas del limite normal de modelo/proveedor. Si se supera la cuota, el
+   backend responde `empresa_agent_limit_reached` sin llamar al proveedor.
+12. `Pedidos con IA` usa por defecto el agente `ventas`, muestra selector de
+   agente/modelo y solo agrega items al carrito mediante
+   `/api/empresa/ia_pedidos_estacion/ejecutar`, filtrando productos,
+   estaciones y carritos por `empresa_id`.
+
+## Auditoria integral de modulos
+
+1. Abrir `Administrar empresa > Reportes > Centro de reportes`.
+2. Seleccionar el area `Operacion y auditoria` y abrir el reporte
+   `Auditoria de modulos`.
+3. El frontend consulta `/api/empresa/reportes?dataset=operativo_modulos_resumen`
+   conservando `empresa_id`.
+4. El backend valida sesion, licencia y permiso `reportes:R` mediante
+   `WithEmpresaReportesPermissions`.
+5. El dataset recorre el inventario de modulos nuevos y existentes, verifica si
+   la tabla existe, si tiene `empresa_id`, totales, activos, anulados, rango de
+   fechas y ultimo registro.
+6. Los hubs o calculos sin tabla propia, como Suite contador, Renta IA y Bolsa,
+   se reportan como `tabla=sin_tabla` para dejar evidencia sin crear datos
+   ficticios.
+7. En `Administrar empresa > Auditoria`, el filtro `Modulo` incluye DIAN,
+   Bolsa, Renta IA, Suite contador, Centro IA, compras IA, OnlyOffice,
+   contabilidad, nomina, Bre-B QR, buzon, tareas, chat empresarial,
+   impresoras, menu visible, atajos POS, productos import/export,
+   bodegas/traslados, verticales y analisis/control para revisar eventos
+   reales y exportar CSV/JSON.
+
+## Camaras y DVR
+
+1. Abrir `Administrar empresa > Analisis y control > Camaras`.
+2. Registrar nombre, ubicacion, DVR/NVR, host, canal, fabricante, tecnologia
+   origen y tipo de visor.
+3. Si la fuente es RTSP u ONVIF, configurar un gateway HLS, WebRTC o MJPEG para
+   que el navegador pueda mostrar video en tiempo real.
+4. Asociar opcionalmente la camara a una estacion y marcar `Mostrar en
+   estaciones`.
+5. Guardar; el backend valida `empresa_id`, URL segura y registra en
+   `empresa_camaras`.
+6. En `Configuracion de estaciones`, activar `Mostrar Camaras` y elegir si
+   cargan antes o despues de las estaciones.
+7. Para convertir una estacion en visor, elegir `Tipo = Camara` y seleccionar
+   `camara_id`.
+8. En `Estaciones`, la tarjeta de camara abre el visor/modulo sin entrar al
+   carrito; estaciones normales conservan su flujo operativo.
+9. Pruebas negativas: intentar editar una camara de otra empresa debe devolver
+   404/403; URL `javascript:` o `data:` no debe guardarse.
+
+## Registro administrador
+
+1. Usuario abre `web/login.html` y entra a registro de administrador.
+2. Frontend envia datos al handler de autenticacion administrativa.
+3. Backend crea usuario, prepara confirmacion segun configuracion y nunca expone
+   clave ni token en consola o documentacion.
+4. Si `Alertas sistema` tiene activo el check de registro, se envia aviso al
+   correo configurado y se registra evento en `super_alertas_eventos`.
+5. Pruebas: registro en PC y celular, login posterior, OAuth Google si aplica.
+
+## Crear empresa
+
+1. Administrador entra a `web/seleccionar_empresa.html`.
+2. Presiona agregar empresa, elige tipo y completa datos.
+3. Backend crea empresa en `pcs_empresas`, aplica preconfiguracion por tipo,
+   permisos y modulos.
+4. Ademas aplica la preconfiguracion Colombia `CO-2026-06`: impuestos base,
+   configuracion legal de nomina, conceptos de nomina Colombia y marcador
+   `preconfiguracion_colombia_fiscal_nomina` por `empresa_id`.
+5. La preconfiguracion crea o reactiva una bodega base llamada `Bodega 1` por
+   `empresa_id`, sin productos, existencias, movimientos ni stock simulado.
+6. La preconfiguracion no crea empleados, ventas, liquidaciones ni documentos
+   electronicos; solo deja parametros y ubicacion base reales para operacion
+   posterior.
+7. La creacion debe ser idempotente: doble clic, reintento o solicitud
+   concurrente con el mismo administrador, tipo, nombre y NIT debe devolver la
+   empresa ya creada sin insertar otra ni repetir avisos.
+8. El backend prepara la carpeta empresarial
+   `web/uploads/empresas/empresa_{id}_{slug}/` con subcarpeta `imagenes` y la
+   carpeta privada `facturacion_electronica/firma_electronica`.
+9. Si esta activo el aviso de empresa nueva, se notifica al super administrador
+   solo cuando realmente se inserta una empresa nueva.
+10. Pruebas: empresa creada, aparece en selector, entra a panel, conserva
+   `empresa_id` correcto y lista `Bodega 1` como bodega activa.
+11. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
+   deben crear empresas duplicadas.
+
+## Ayuda contextual en formularios
+
+1. En `Administrar empresa > Productos > Nuevo producto`, cada campo del
+   formulario muestra un boton `?` junto a su etiqueta.
+2. Al presionarlo se abre una ventana pequena con texto operativo normal que
+   explica que dato debe ir en el campo.
+3. En `Administrar empresa > Facturacion electronica`, el mismo patron cubre
+   firma DIAN, configuracion DIAN Colombia, configuracion por pais y
+   configuracion avanzada de facturacion/impresion.
+4. Los textos de DIAN no deben incluir PIN, claves, tokens, certificados ni
+   datos privados reales; solo explican el tipo de dato y el cuidado operativo.
+5. La ayuda es frontend, no sustituye validaciones backend ni permisos por
+   `empresa_id`.
+
+## Importar y exportar productos
+
+1. En `Administrar empresa > Inventario (Productos) > Productos`, la parte alta
+   de la seccion muestra la tarjeta `Exportar productos` y `Importar lista`.
+2. La exportacion llama `GET /api/empresa/productos?action=exportar` con el
+   `empresa_id` validado y conserva filtros visibles por busqueda/categoria.
+3. Formatos soportados: CSV para Excel, JSON para integraciones y HTML
+   imprimible en tamano carta o POS 80 mm.
+4. La plantilla CSV se descarga desde
+   `GET /api/empresa/productos?action=plantilla_importacion`.
+5. La importacion sube un CSV multipart a
+   `POST /api/empresa/productos?action=importar`; el backend valida permisos,
+   campos obligatorios configurados, duplicados, categoria, bodega y stock
+   inicial por `empresa_id`.
+6. Si la fila trae stock inicial sin bodega, se usa la primera bodega activa de
+   la empresa; si no existe bodega activa, la fila queda rechazada.
+7. El resultado informa productos creados, omitidos y errores por fila para que
+   el administrador corrija la lista sin repetir datos ya existentes.
+
+## Logos de empresa y factura
+
+1. El logo corporativo se configura en `Configuracion > Identidad visual` y se
+   usa en panel, reportes y documentos generales.
+2. El logo de factura se configura en la seccion de documento de venta o en
+   facturacion electronica y puede ser diferente al corporativo.
+3. Los uploads usan `/api/empresa/configuracion_avanzada/logo` con
+   `tipo_logo=empresa` o `tipo_logo=factura`.
+4. Los archivos quedan dentro de la carpeta de la empresa:
+   `web/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/empresa/` o
+   `web/uploads/empresas/empresa_{id}_{slug}/imagenes/logos/factura/`.
+5. Si no hay logo de factura dedicado, la impresion de factura puede usar el
+   logo corporativo como respaldo. Esta configuracion no cambia XML DIAN,
+   numeracion, CUFE/CUDE ni reglas fiscales.
+
+## Ordenar empresas en el selector
+
+1. Administrador entra a `web/seleccionar_empresa.html`.
+2. La pantalla carga solo empresas visibles para esa cuenta: propias,
+   delegadas o compartidas.
+3. El usuario mantiene presionada una tarjeta en PC, o el asa de mover en
+   celular, y la arrastra dentro del grupo de empresas con licencia activa o
+   sin licencia activa.
+4. El frontend guarda el orden de IDs visibles en
+   `/api/user/configuracion` como preferencia del usuario autenticado y mantiene
+   respaldo local del navegador si la red falla.
+5. Al recargar, las empresas nuevas o no ordenadas se agregan despues de las ya
+   guardadas, conservando el orden alfabetico base.
+6. La tarjeta informativa de orden y el boton visible de restablecer fueron
+   retirados de la pantalla; el arrastre conserva su soporte interno.
+7. Seguridad: el orden no concede acceso a empresas; solo reordena tarjetas que
+   `/super/api/empresas` ya autorizo para la sesion actual.
+8. Pruebas: mover tarjetas en activas e inactivas, recargar y confirmar
+   persistencia.
+
+## Eliminar empresa
+
+1. Solo el administrador propietario puede iniciar la eliminacion total desde el
+   selector de empresas o desde `editar_empresa.html`.
+2. Antes del borrado debe validar impacto, escribir el nombre exacto de la
+   empresa, escribir `ELIMINAR` y aceptar el riesgo irreversible.
+3. Justo antes de enviar el DELETE, el frontend pregunta si desea descargar toda
+   la informacion de la empresa. Si acepta, abre
+   `descargar_informacion_de_la_empresa.html` en una nueva pestana y luego
+   continua; si cancela, continua sin descarga.
+4. El endpoint destructivo recibe `descarga_ofrecida` para auditoria y mantiene
+   las validaciones backend de propietario, confirmacion y aislamiento por
+   empresa.
+5. El backend elimina en transaccion los registros con `empresa_id` en la base
+   operativa y en la base super, incluyendo licencias, pagos, invitaciones,
+   accesos compartidos y datos de modulo cuando existan esas columnas.
+6. Ademas limpia `usuario_configuracion.selector_empresas_orden_json` de todos
+   los usuarios para quitar la empresa del orden personalizado del selector,
+   invalida caches de licencia, resolucion de empresa y accesos compartidos, y
+   borra carpetas empresariales asociadas, incluidos documentos OnlyOffice,
+   temporales de callback, uploads, privados y backups.
+7. Antes del cascade se eliminan las cuentas remotas de Nextcloud y Mailu,
+   incluyendo sus archivos; luego se eliminan las filas locales de cuentas,
+   usuarios y configuraciones.
+8. Pruebas: no permitir borrado sin validaciones, ofrecer descarga previa,
+   eliminar solo la empresa indicada y volver al selector sin filtrar datos de
+   otra empresa; confirmar con otro administrador invitado o delegado que la
+   empresa eliminada ya no aparece.
+
+## Administradores delegados
+
+1. El administrador principal entra a `seleccionar_empresa.html` y abre
+   `Administradores`; ese enlace usa `scope=principal`, por lo que la lista solo
+   muestra administradores invitados por la cuenta autenticada.
+2. Invita administradores con rol forzado `administrador`; el backend guarda
+   `administradores.usuario_creador` con el correo del principal y envia correo
+   con enlace de invitacion.
+3. Si el correo no existe o no esta confirmado, el invitado abre el enlace, acepta la invitacion, completa datos y crea su
+   contrasena; sin token vigente no puede completar el registro.
+4. Si el correo ya pertenece a un administrador confirmado, no se crea otra cuenta: se activa `admin_principal_delegaciones` y se envia solo un aviso por correo.
+5. Al iniciar sesion, el delegado ve sus empresas propias y las empresas creadas por los principales que le compartieron portafolio como
+   administracion delegada y entra con permisos empresariales efectivos.
+6. El delegado no puede compartir esas empresas ni administrar otros
+   administradores; el propietario sigue siendo el principal.
+7. El super administrador si puede compartir, reenviar o revocar accesos de una
+   empresa aunque no sea su propietario, por gobierno global del sistema; esta
+   excepcion se valida en backend por rol super.
+8. Eliminar desde el listado revoca la delegacion si la cuenta ya era de otro administrador; no borra su cuenta.
+9. Pruebas: principal invita delegado, correo/enlace funciona, delegado ve
+   empresas del principal, no ve empresas de otro principal y no puede compartir
+   por URL ni boton; super administrador comparte una empresa ajena y queda
+   auditado.
+
+## Super administradores por invitacion
+
+1. El super administrador entra al panel super y abre `Administradores` sin
+   `scope=principal`.
+2. Invita un correo con rol `super_administrador`.
+3. Backend crea una cuenta pendiente, genera token y envia correo; no queda
+   acceso activo hasta que el invitado complete registro con ese token.
+4. Al aceptar, la cuenta conserva rol `super_administrador` y el login redirige
+   al modulo de super administrador.
+5. Pruebas: invitar super, intentar registro sin token, aceptar con token, login
+   y entrada al panel super.
+
+## Licencia gratis 15 dias
+
+1. El catalogo base de licencias es global para todos los tipos de empresa:
+   prueba gratis 15 dias, prueba pagada de 1 dia por COP 1000, planes mensuales
+   COP 60000, COP 110000 y COP 200000, y planes anuales COP 600000,
+   COP 1100000 y COP 2200000.
+   Las licencias base antiguas por tipo y addons de catalogo se eliminan del
+   catalogo sin empresa asignada.
+   Cada licencia global tiene un check de visibilidad en Super administrador >
+   Licencias; al desactivarse deja de aparecer en el checkout para empresas.
+   La licencia limita documentos/ventas emitidas, no numero de cajas. Una venta,
+   factura electronica u otro documento electronico cuenta como un documento; si
+   la venta ya genero factura electronica no se duplica el consumo.
+   El super administrador configura cuantas compras adelantadas de la misma
+   licencia se permiten; el valor por defecto es 2.
+2. Desde el checkout de licencia se obtiene resumen publico.
+3. Si el total es cero o prueba permitida, `POST /licencias/activar_sin_pago`
+   activa la licencia.
+4. El backend valida que esa empresa no haya usado antes la licencia gratis,
+   mirando historial completo de activaciones y licencias gratis antiguas,
+   aunque la licencia anterior ya este vencida o inactiva.
+5. La activacion debe ser idempotente si el primer intento ya dejo la licencia
+   vigente.
+6. Al quedar activa, el sistema puede enviar un correo de bienvenida al
+   administrador/cliente comprador con el mensaje `licencia_activation_payment`,
+   configurable en `web/super/formato_para_emviar_email.html`.
+   La licencia de software ya no se adjunta por correo; solo se descarga desde
+   Administrar empresa > Licencia > Licencia del sistema usando la plantilla
+   `licencia_software_pdf`.
+   Si el pago comercial queda aprobado con valor mayor a cero, y la regla esta
+   activa en Super administrador > Licencias, ademas se emite automaticamente una
+   factura electronica desde la empresa interna `Powerful Control System`
+   (tambien reconoce el nombre existente `Powerful Control Systen`) y el PDF
+   resumen de esa factura se adjunta al mismo correo de bienvenida. El documento se guarda en `empresa_facturacion_documentos` de la
+   empresa emisora y el pago queda marcado con
+   `licencia_factura_electronica_emitida` en `pagos_epayco` o `pagos_wompi`
+   para idempotencia.
+   La empresa emisora interna se resuelve por
+   `configuraciones.licencias.facturacion_empresa_sistema_id`. La licencia
+   tecnica heredada `PCS_SYSTEM_INTERNAL_PERPETUAL` se desactiva si existe, de
+   modo que la empresa interna debe comprar, renovar o adquirir una licencia
+   comercial vigente como cualquier otra empresa. Las activaciones con total
+   pagado cero por prueba o descuento total pueden enviar bienvenida si esta
+   activa, pero no emiten factura electronica en el flujo final.
+7. La empresa puede descargar el mismo documento desde Administrar empresa >
+   Licencia > Licencia del sistema; el endpoint
+   `/api/empresa/licencia_sistema/pdf` debe quedar protegido por permisos de
+   empresa y aislamiento `empresa_id`.
+8. Una licencia de prueba de 15 dias con valor cero no se renueva desde el
+   historial; si el administrador necesita continuar, debe escoger una licencia
+   comercial desde el cambio de plan.
+9. En licencias pagadas, `pagar_licencia.html` consulta
+   `/api/public/licencias/payment_methods`; Epayco y Wompi deben aparecer si
+   estan configurados, salvo que el super administrador los apague de forma
+   explicita con `epayco.enabled=0` o `wompi.enabled=0`.
+10. Si una licencia comercial se paga antes del vencimiento actual, la nueva
+   vigencia se agenda desde la fecha fin acumulada mas lejana de la empresa.
+   Ejemplo: si vence el 10 de junio y paga 30 dias el 1 de junio, la licencia
+   pagada inicia el 10 de junio y vence el 10 de julio; un segundo pago
+   anticipado inicia desde el 10 de julio. Los webhooks/consultas repetidos de
+   la misma referencia quedan idempotentes con `licencia_activation_status`.
+11. Los codigos de descuento para licencias se crean desde Super administrador >
+   Comercial y licencias > Codigos descuento. El formato tecnico es
+   `CODIGO=10%`, `CODIGO=50000` o `CODIGO=gratis`; el checkout los calcula en
+   `/api/public/licencias/checkout_summary` y los conserva al pagar por Epayco,
+   Wompi o activacion sin pago. Cada codigo queda limitado a un uso por empresa
+   mediante `pagos_epayco`, `pagos_wompi` y `licencias_activaciones_gratis`.
+12. Los asesores de venta se configuran desde Super administrador > Comercial y
+   licencias > Asesor en ventas. Cada asesor puede tener porcentaje del primer
+   ano, porcentaje anual desde el segundo ano y meses de renovacion propios; el
+   backend calcula si el pago corresponde a `primer_anio`, `renovacion_anual` o
+   queda fuera del plazo antes de registrar la comision.
+13. Pruebas: activar una vez, reintentar sin duplicar mientras sigue vigente,
+   bloquear segundo uso real despues del vencimiento y comprobar que el
+   historial muestra otras licencias cuando la prueba no es renovable, ademas
+   de validar que el correo capturado o enviado no incluya PDF de licencia y,
+   cuando el pago sea mayor a cero y la configuracion lo permita, incluya el PDF
+   de factura electronica en el mismo mensaje; confirmar tambien que descuento total o valor cero no genera factura
+   electronica. La descarga empresarial debe devolver `application/pdf`; para
+   pago, seleccionar Epayco y Wompi, aceptar terminos y comprobar que cada
+   proveedor pasa a verificacion con referencia propia. Para renovaciones comerciales, simular
+   pago anticipado con licencia vigente y validar que `fecha_inicio` queda en el
+   vencimiento anterior, que `fecha_fin` suma la duracion comprada y que repetir
+   la misma referencia no vuelve a extender.
+14. El panel de super administrador lee `/super/api/licencias/ventas_resumen`
+   para mostrar el dinero aprobado y la cantidad de ventas de licencias de los
+   ultimos meses. Ese resumen no activa licencias ni emite documentos; solo
+   consolida pagos aprobados ya registrados en `pagos_epayco` y `pagos_wompi`
+   con referencia a `licencias`.
+
+## Facturacion electronica - lectura de ventas y facturas
+
+1. El carrito puede registrar primero una venta/comprobante `CP-*` y, si la
+   facturacion electronica aplica por configuracion o eleccion del usuario,
+   generar una factura electronica relacionada `FV-*`.
+2. La bandeja `Facturas electronicas` debe mostrar en la columna Tipo
+   `Factura electronica` cuando detecta que una venta `CP-*` tiene su factura
+   `FV-*` asociada, para no confundir una venta facturada con una venta sola.
+3. En Colombia, la configuracion operativa de PCS usa la modalidad DIAN
+   `Software propio`; el tutorial no debe sugerir proveedor tecnologico ni
+   solucion gratuita como modalidad de PCS.
+4. El Formulario 001 RUT y el Formulario 1876 de numeracion tienen controles
+   separados. Cada empresa carga su propio RUT desde la tarjeta Colombia; el
+   backend usa el `empresa_id` autenticado, valida PDF real y devuelve NIT/DV,
+   nombre legal, ubicacion DANE y responsabilidades para revision.
+5. `Aplicar datos revisados` solo llena los formularios visibles. Los cambios
+   se persisten al guardar DIAN Colombia y Configuracion avanzada; el PDF del
+   RUT no se almacena y la carga no firma, emite ni transmite documentos.
+
+## Configurar empresa
+
+1. El menu `Configuracion` abre paginas independientes por seccion.
+2. Cada pagina carga datos por `empresa_id`, guarda solo su seccion y conserva el
+   resto de configuracion.
+3. Las preferencias flexibles de estaciones/carrito usan
+   `empresa_estacion_prefs.estaciones_config`.
+4. La configuracion del carrito permite activar pitido y vibracion de botones por
+   separado para PC y celular desde `carrito_ui_global`.
+5. La configuracion de impresora permite activar `Mostrar deducido del impuesto
+   en la impresion`; el carrito usa `base_gravable` y `valor_impuesto` ya
+   calculados para mostrar base e impuesto en el papel, sin cambiar el XML ni la
+   validacion legal DIAN de la factura electronica.
+6. La misma pagina permite definir por checks los campos imprimibles del recibo
+   operativo de venta (`impresion_recibo_items_json`) y de reportes de corte o
+   cierre de turno (`impresion_corte_items_json`). Esta configuracion no aplica
+   a factura electronica, porque sus campos legales quedan definidos por la
+   normativa DIAN y el XML/documento electronico vigente.
+7. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio
+   e imprimir una venta con impuesto para confirmar el bloque.
+
+## Venta por peso con bascula
+
+1. Abrir `Administrar empresa > Ventas > Carrito y venta directa` con
+   `empresa_id`.
+2. El navegador debe ser Chrome o Edge en HTTPS/local y la bascula debe exponer
+   un puerto serial/USB compatible con Web Serial.
+3. En Configuracion carrito, activar la tarjeta independiente `Bascula
+   electronica`. Por defecto esta apagada para todas las empresas.
+4. En el carrito, seleccionar baudios y unidad leida (`kg`, `g` o `lb`),
+   presionar `Conectar bascula` y aceptar el permiso del navegador.
+5. Si el plato o recipiente ya esta sobre la bascula, usar `Tara local`; PCS
+   descuenta ese peso en pantalla sin enviar comandos al equipo.
+6. El producto debe estar configurado con unidad de peso (`kg`, `g`, `lb`, `oz`
+   o alias). Si esta en `unidad`, el sistema bloquea aplicar peso para evitar
+   ventas decimales incorrectas.
+7. Escanear o digitar el SKU/codigo de barras. Si `aplicar peso` esta activo y
+   hay lectura mayor a cero, PCS manda la cantidad real al item del carrito.
+8. El backend acepta cantidades decimales solo para unidades de peso; en
+   unidades normales sigue exigiendo cantidades naturales positivas.
+9. Pruebas: producto `kg` con lectura real, producto `unidad` con lectura activa
+   debe bloquearse, desconectar/reconectar la bascula, validar que otro
+   `empresa_id` no accede al carrito ni a items ajenos mediante los endpoints
+   existentes.
+
+## Firma electronica DIAN
+
+1. La empresa configura primero los datos base de facturacion electronica
+   Colombia.
+2. Al cargar la firma, el endpoint multipart valida `empresa_id`, configuracion
+   DIAN existente, archivo no vacio, tamano maximo 10 MB y contenido con llave
+   privada RSA.
+3. El backend guarda la llave privada y el certificado publico extraido en
+   `web/uploads/empresas/empresa_{id}_{slug}/facturacion_electronica/firma_electronica/`.
+   Para P12/PFX con multiples bolsas o cadenas de certificados, el backend
+   convierte internamente a PEM con la dependencia existente antes de extraer la
+   llave RSA; para P12/PFX modernos no soportados por Go, el contenedor backend
+   usa OpenSSL con la clave en una variable de entorno temporal del proceso.
+4. Las rutas guardadas en la configuracion DIAN son referencias internas `file:`
+   a archivos con permiso `0600`; no deben convertirse en enlaces publicos.
+5. El backend extrae del X.509 la fecha real de vencimiento y la guarda en
+   `certificado_vencimiento` / `certificado_vencimiento_en`.
+6. La clave del P12/PFX se usa solo para decodificar el archivo; no se guarda ni
+   se muestra en claro. La pantalla muestra un resumen seguro de ultima carga:
+   fecha/hora, archivo, formato, titular, serial y estado de clave.
+7. La accion
+   `/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado`
+   muestra estado, dias restantes y ventana de alerta. Si el certificado esta
+   vencido o a 30 dias de vencer, envia correo al administrador de la empresa
+   como maximo una vez cada 24 horas.
+8. Despues de cargar firma, el siguiente paso operativo es
+   `action=validar_credenciales` y luego `action=pruebas_dian`.
+9. La pagina `Facturacion electronica > Pasar test DIAN` muestra estado de
+   ambiente, rango, TestSetId y credenciales; desde alli se guarda el objetivo
+   del set que aparece en el portal DIAN para la factura electronica. Las notas
+   debito y credito no se incluyen mientras sus adaptadores esten bloqueados.
+   La barra
+   `Avance de validacion DIAN` muestra un porcentaje operativo 0-100% por
+   hitos, pero no reemplaza el acuse final de DIAN.
+10. `Ejecutar set automatico` usa los valores guardados para generar el lote
+   de factura electronica. Los controles de nota debito y nota credito deben
+   permanecer indisponibles hasta disponer de fuente de ajuste y adaptadores
+   DIAN propios. El resultado de factura permite ver si fue recibido, aceptado,
+   rechazado o queda pendiente.
+   No existe preset numerico: cada empresa debe guardar el objetivo exacto que
+   muestre su portal DIAN. Sin objetivo persistido, el envio automatico queda bloqueado.
+11. El resultado visual debe mostrar resumen por estado, aceptados por tipo,
+   mensaje de recepcion y si el minimo configurado ya se cumple. No se debe
+   declarar produccion local hasta tener acuse suficiente de DIAN/proveedor.
+12. Para endpoint oficial SOAP/WCF DIAN no se exige `token_emisor_ref`; ese
+   token solo aplica a proveedor/API con bearer token. En habilitacion real si
+   es obligatorio `test_set_id`, porque DIAN lo usa para `SendTestSetAsync`.
+13. El sobre SOAP oficial vigente para DIAN firma el header `wsa:To`, referencia
+   el `BinarySecurityToken` con `wsse:Reference URI="#X509-..."` e incluye
+   `InclusiveNamespaces`. Esta forma es la que debe conservarse para evitar
+   errores de seguridad del transporte WCF.
+14. Las pruebas DIAN automaticas no aceptan simulacion: deben enviar al ambiente
+   de habilitacion, recibir `ZipKey` cuando aplique y consultar `GetStatusZip`
+   hasta un acuse final. Solo una ejecucion real con acuse aceptado puede
+   cambiar la empresa a habilitada/produccion local.
+15. La pagina `Facturacion electronica > Tutorial DIAN` resume el flujo
+   operativo para conectar DIAN: datos del portal, configuracion Colombia,
+   carga de firma, set completo, acuse final y activacion local
+   de produccion. Debe mantenerse sin secretos reales.
+16. Estado operativo actual: el set real configurado por empresa debe quedar
+   como envio real con HTTP 200, TrackId/ZipKey y respuesta inicial `Batch en
+   proceso de validacion`. Ese estado todavia no equivale a aceptacion final.
+17. Los TrackId pendientes se consultan desde `pcs-worker` sin regenerar el XML;
+   el modulo persiste XML firmado, acuse y PDF fuera de `web/`, con SHA-256 y
+   aislamiento por empresa. El correo fiscal de produccion espera aceptacion DIAN.
+18. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
+   archivo no se guarda en `/uploads/dian`, y confirmar que otro `empresa_id` no
+   puede consultar ni modificar la configuracion. Luego usar `Verificar
+   vencimiento` en la pantalla para confirmar que se ve fecha, dias restantes y
+   estado de alerta. En `Centro de habilitacion DIAN`, guardar objetivo, validar
+   credenciales, ejecutar al menos un envio manual de factura de prueba y correr
+   el set automatico real; despues consultar `GetStatusZip` hasta cierre real
+   del acuse.
+19. Para pruebas reales de produccion de Powerful Control System, usar siempre
+   `https://powerfulcontrolsystem.com` con `empresa_id=12`; no iniciar por
+   localhost si el usuario pide comprobar DIAN real. El flujo debe crear o
+   reutilizar una venta controlada, emitir/reintentar la factura electronica,
+   guardar la respuesta saneada de DIAN y validar visualmente carrito/factura
+   solo despues de confirmar que la API llego al servicio.
+20. Si DIAN devuelve `FAB05c`, el rango de numeracion no corresponde al
+   `SoftwareID` enviado. Antes de tocar firma o transporte, verificar en el
+   portal DIAN que la resolucion/prefijo/rango este asociado al software que
+   PCS tiene configurado para esa empresa. Si devuelve `FAD06`, revisar CUFE
+   con numero legal, fecha/hora Colombia `-05:00`, totales/impuestos y llave
+   tecnica/PIN segun ambiente. No documentar ni imprimir valores secretos.
+
+## Login usuarios operativos
+
+1. El administrador de una empresa crea el usuario desde `Administrar usuarios`;
+   el sistema envia invitacion por correo y guarda token temporal en `users`.
+   Este alta operativa usa permisos `seguridad:C/U/D` y auditoria por
+   `empresa_id`; no debe pedir `aprobado_por` ni `codigo_aprobacion`. Esos
+   campos se reservan para cambios de roles o matriz fina de permisos.
+   Si el correo no se puede entregar, el usuario queda pendiente y la pantalla
+   debe permitir reintentar o reenviar confirmacion sin crear duplicados.
+   Si se intenta crear otra vez el mismo correo en la misma empresa, el endpoint
+   responde `409` con `usuario_existente` sin exponer tokens; la interfaz debe
+   recargar con `include_inactive=1`, resaltar el usuario y dejar disponible
+   `Reenviar confirmacion`.
+   El mismo correo puede existir como administrador del panel principal y como
+   usuario operativo, porque son credenciales y pantallas distintas; en `users`
+   la unicidad vigente es por `lower(email), empresa_id`.
+2. El usuario abre `login_usuario.html` desde la invitacion para completar
+   registro o iniciar con Google. Sin invitacion o usuario empresarial confirmado
+   no hay alta publica. En este primer ingreso, un usuario pendiente puede tener
+   `estado=inactivo`; si el token es valido, el sistema permite crear la
+   contrasena, confirma el correo y cambia el estado a `activo`. Un usuario ya
+   confirmado e inactivo sigue bloqueado hasta que el administrador lo active.
+   Los errores del primer ingreso muestran mensaje especifico, detalle y
+   `request_id` cuando el backend los marca como publicos seguros; los errores
+   internos no marcados siguen protegidos para no exponer SQL, rutas, claves o
+   datos sensibles.
+3. `Iniciar sesion con Google` usa `/auth/google/usuario/login`, conserva
+   `empresa_id` y token de invitacion en cookies tecnicas de corta vida y vuelve
+   por `/auth/google/callback`.
+4. El callback solo abre sesion si Google confirma el correo y este coincide con
+   una invitacion vigente o con un usuario de empresa ya confirmado. Si falta
+   contrato vigente, vuelve al formulario para aceptarlo.
+5. La sesion redirige siempre a `administrar_empresa.html?id={empresa_id}`; el
+   panel carga rol, permisos y estaciones asignadas de esa empresa.
+6. Para `cajero`, PCS ya no muestra seleccion manual de caja en el login.
+   El navegador crea un `pcs_dispositivo_id` local por computador y usa la caja
+   asociada a ese equipo en la empresa, por ejemplo `CAJA-1`. La asociacion se
+   registra desde Configuracion > Impresoras y caja > Impresora por computador
+   y se guarda por `empresa_id`/navegador. Si la caja sigue activa, PCS entra
+   automaticamente y propaga `caja_codigo`, `caja_nombre` y `caja_descripcion`
+   a estaciones, carrito y corte de caja. Si hay varias cajas y el computador
+   aun no esta asociado, el login no abre selector manual: deja marcada la
+   sesion como pendiente de asignacion para que un administrador configure ese
+   equipo.
+7. Para `cajero`, el menu queda limitado a `Venta directa`, `Estaciones`,
+   `Corte de Caja` y `Buscar ventas y facturas`. El carrito debe cargar
+   completo: catalogo de productos, servicios, recetas, clientes, descuentos,
+   propinas/comisiones y valores por medio de pago. La busqueda de ventas y
+   facturas permite reimprimir, consultar y reenviar documentos del POS sin
+   mostrar paginas administrativas de Productos o Clientes; internamente el
+   rol conserva acceso documental a facturas electronicas para que la consulta,
+   vista previa y reenvio no fallen por permisos.
+8. Pruebas: Google sin invitacion debe rechazar, Google con invitacion debe
+   consumir token y entrar, correo ambiguo exige enlace de empresa, tema claro u
+   oscuro se conserva, el boton `Instalar app` permanece visible y el cajero
+   no ve selector manual de caja: debe entrar con caja detectada por computador
+   o quedar pendiente de asociacion si el equipo no esta registrado.
+
+## Abrir, usar y cerrar caja
+
+1. El usuario entra a caja desde `Corte de Caja` o desde la estacion Caja.
+2. La empresa puede configurar varias cajas fisicas en
+   `estaciones_config.cajas_config`, cada una con codigo, nombre, descripcion y
+   estado activo. La estacion Caja muestra esos nombres, por ejemplo
+   `CAJA-1 - FRUTERA`.
+3. El login operativo de cajeros usa la caja asignada al computador; la
+   asignacion se administra desde Configuracion > Impresoras y caja, sin pedir
+   al cajero que elija caja al iniciar sesion.
+4. Al hacer clic en una caja configurada, `corte_de_caja.html` recibe
+   `caja_codigo`, `caja_nombre` y descripcion para abrir el corte de esa caja.
+5. La caja puede abrirse manual o automaticamente segun flujo vigente.
+6. Cada usuario/caja mantiene turno, pagos, ingresos, egresos y reporte
+   independiente.
+   Para el rol `cajero`, registrar ingresos o egresos manuales es opcional por
+   empresa y rol: el administrador debe activarlo en Configuracion de impresora
+   y caja > Configuracion operativa de cobro > Override por rol. El check no
+   modifica los cobros normales del carrito.
+7. `Corte automatico` calcula desde apertura hasta el momento actual sin pedir
+   fechas.
+7. `Cerrar turno e imprimir reporte` imprime y luego cierra sesion.
+8. Pruebas: abrir caja con dos usuarios, registrar movimientos, cerrar una caja
+
+## Configuracion inicial interactiva con IA
+
+1. Cuando Super administrador crea una empresa con tipo/preconfiguracion, el
+   selector marca `pcs_config_assistant_pending_{empresa_id}` en el navegador.
+2. Al primer ingreso a `Panel de empresa`, PCS consulta
+   `/api/empresa/configuracion_guiada` y muestra un asistente interactivo si la
+   empresa aun no tiene resumen aplicado o si quedo pendiente desde creacion.
+3. El asistente pregunta datos base comunes y preguntas por negocio: mesas,
+   zonas y cocina para restaurante/bar; habitaciones, categorias, tarifa base,
+   persona adicional, check-in/check-out para hotel/motel; servicios, agenda y
+   precio base para negocios de servicios.
+4. Al aplicar, backend actualiza configuracion operativa, avanzada, estaciones
+   y guarda `configuracion_guiada_interactiva` y
+   `configuracion_guiada_resumen` por `empresa_id`.
+5. El agente `agente_configuracion_de_empresa` del chat ayuda a continuar con
+   productos, categorias, tarifas, impresoras, caja y parametros. Puede abrir
+   paginas o pulsar controles visibles mediante `UI_CLICK`, siempre con
+   confirmacion humana y selector permitido; no ejecuta cambios destructivos.
+
+## Captura IA de documentos operativos
+
+1. Ingresos, Egresos y Compras tienen boton de analisis IA junto al adjunto.
+2. El archivo se radica en `/api/empresa/soportes_compras_ia` con `empresa_id`;
+   luego `extraer_ia` usa GPT-5.5 y descuenta una consulta avanzada diaria del
+   limite de agentes de la empresa. Un advisory lock PostgreSQL por soporte
+   impide que doble clic, reintento paralelo u otra réplica llamen dos veces al
+   proveedor o descuenten dos veces la cuota.
+3. La IA precarga campos del formulario (tercero/proveedor, numero, fecha,
+   subtotal, IVA, retenciones, total, moneda y observaciones), pero el usuario
+   revisa y guarda manualmente. Datos incompletos, baja confianza o totales
+   inconsistentes fuerzan revisión humana.
+4. Aprobar, rechazar y contabilizar muestran confirmación explícita. El backend
+   serializa la transición, trata la repetición idéntica como idempotente,
+   bloquea revivir rechazados/duplicados y exige proveedor activo de la misma
+   empresa, documento y total positivo antes de aprobar.
+5. Contabilizar crea una sola CxP y nunca un pago. Los errores del proveedor IA
+   se degradan con respuesta pública segura; los detalles quedan únicamente en
+   el log interno.
+6. Productos agrega acceso "Cargar carta/precios con IA", que abre el chat con
+   `agente_configuracion_de_empresa` para adjuntar carta/lista, extraer tabla y
+   confirmar antes de registrar productos.
+   sin afectar la otra.
+
+## Venta directa
+
+1. `Venta directa` abre `carrito_de_compras.html` en modo venta directa.
+2. Debe usar el mismo carrito unificado de estaciones, con configuracion global
+   del carrito.
+3. El cajero agrega productos/servicios/recetas, cliente opcional u obligatorio,
+   abonos y pagos mixtos.
+   La fila superior del lector separa `Codigo de barras o SKU` y `Busqueda por
+   nombre`: el cajero puede escanear/digitar codigo, o escribir el nombre del
+   producto en el campo de la derecha y agregarlo desde la misma seccion. El
+   buscador de catalogo avanzado conserva codigo, SKU, codigo de barras o
+   nombre del producto, y conserva codigo del servicio/receta. Las coincidencias
+   exactas por codigo/SKU deben aparecer primero. El formulario rapido de
+   clientes permite registrar persona natural
+   o empresa con NIT/DV, regimen IVA, responsabilidad tributaria, correo,
+   telefono y direccion fiscal para facturacion electronica.
+   Las cantidades de items se pueden cambiar desde la tabla del carrito. Deben
+   ser numeros naturales positivos (`1, 2, 3...`) salvo unidades de peso
+   (`kg/g/lb/oz`), donde se permiten decimales positivos. El backend recalcula
+   totales y reservas de inventario en cada `PUT`.
+   `Devolver producto` pide confirmacion integrada de dos pasos, elimina la
+   linea del carrito con `DELETE`, libera el inventario reservado y recalcula la
+   cuenta; las notas credito o devoluciones fiscales deben manejarse por el
+   flujo documental correspondiente.
+   Si la empresa detectada es Colombia o el carrito usa `COP`, precios y pagos
+   del carrito se capturan, muestran y sincronizan como pesos enteros positivos,
+   sin centavos ni sufijo `.00`.
+4. La venta directa usa el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` y
+   puede abrirse en pantalla completa desde una tarjeta compacta en el encabezado
+   del cliente; el icono dentro de esa tarjeta cambia a `Salir` y vuelve a la
+   vista normal.
+5. Visualmente debe conservar el modo plano del carrito: tarjetas sin sombras ni
+   apariencia 3D, pero con el fondo estructural mas oscuro que las tarjetas para
+   diferenciar zonas en cualquier apariencia.
+6. La vista enfocada del carrito debe mantener visibles, en este orden, las
+   tarjetas base: cliente, productos agregados, detalle del pago y acciones del
+   carrito. Las preferencias antiguas no deben ocultar esa estructura minima.
+7. Si el carrito ya fue seleccionado y una sincronizacion secundaria falla, la
+   pantalla no debe desmontarse; debe conservar la venta visible y mostrar una
+   advertencia operativa.
+8. En la apertura, la estructura visual aparece antes de los datos. Las lecturas
+   independientes de configuracion, permisos, clientes, descuentos, cajas y
+   carrito se ejecutan en paralelo; la sesion `/me` se comparte y no se repite
+   el listado del carrito canonico si su ciclo de vida no cambio. La lectura de
+   `estacion_prefs` se comparte con las etiquetas globales de estaciones. El
+   render de clientes, cajas, reglas y carritos se agrupa al final de esa fase;
+   resumen e items solo vuelven a pintarse cuando llegan items y abonos del
+   carrito seleccionado. El boton de pago permanece bloqueado hasta terminar
+   carritos, items, abonos y reglas de cobro, y sigue bloqueado si no existe al
+   menos un producto, servicio o total cobrable. La primera lectura de venta directa
+   no debe filtrar todavía por el código canónico calculado: primero reconoce el
+   carrito empresarial existente, incluido el formato legado, y solo las
+   recargas posteriores pueden acotar por código.
+9. Pruebas: entrar con rol `cajero` por `login_usuario`, crear/asignar cliente
+   natural y empresa, agregar item por nombre y por codigo, cambiar cantidad,
+   devolver producto, pagar, imprimir, validar inventario y caja, abrir/salir
+   de pantalla completa y revisar contraste fondo/tarjetas.
+
+## Estaciones y carrito
+
+1. La pagina de estaciones carga configuracion y carritos por `empresa_id`.
+2. Al activar una estacion cambia estado y otros usuarios deben ver el cambio.
+3. Si el check de primer clic esta activo, el primer clic solo activa; el segundo
+   entra al carrito.
+4. El carrito de estacion comparte UI y reglas con venta directa.
+5. La apariencia del carrito de estacion tambien depende de `carrito-flat-page`:
+   fondo mas oscuro que tarjetas, sin sombras, con botones de accion visibles
+   como botones.
+6. Si en Configuracion > Impresora esta activo el deducido de impuesto, la
+   impresion del recibo o factura muestra base gravable e impuesto deducido por
+   los impuestos del carrito.
+7. Pruebas: dos sesiones/usuarios, estado compartido, abrir carrito correcto,
+   contraste visual y ausencia de relieves.
+
+## Pagar e imprimir
+
+1. El usuario presiona pagar en el carrito.
+2. Backend valida caja, items, totales, abonos, cliente obligatorio si aplica,
+   descuentos, inventario y permisos.
+3. El inventario de productos y recetas ya debe estar reservado/descontado desde
+   que se agrego el item al carrito. Esto permite multiples cajas simultaneas
+   sin sobrevender stock.
+4. El backend cierra el carrito con una transicion atomica: solo una solicitud
+   puede cambiarlo de abierto a pagado. Reintentos, doble clic o concurrencia
+   reciben respuesta idempotente y no duplican caja, documento, metricas ni
+   movimientos de inventario.
+5. En la misma transaccion del cierre se registra una venta inmutable en
+   `empresa_ventas_estacion_metricas`, con codigo unico por sesion del carrito,
+   caja/turno, componente en efectivo y snapshot de items. El outbox
+   `commerce.sale-paid` usa esa identidad; dos pagos sucesivos del mismo carrito
+   reutilizable no se absorben entre si. Corte de caja debe leer esa fuente
+   historica por `empresa_id`, `cierre_caja_id` y `caja_codigo`, nunca inferir la
+   venta desde el estado actual del carrito que se reabre para el siguiente
+   cliente. El esquema pertenece a la migracion de empresa
+   `20260826-002-cart-sale-history-v1`; despues se genera el documento de venta.
+6. En venta directa o estaciones, despues del pago exitoso PCS reabre la cuenta
+   operativa con `reset_items=1` y la pantalla debe quedar sin items, abonos ni
+   cliente para el siguiente cliente, sin recarga manual.
+7. La impresion debe salir en blanco y negro como papel real, POS 80mm por
+   defecto, sin tema claro/oscuro. El recibo operativo debe respetar los checks
+   por empresa de fecha, cajero, cliente, metodo, impresora, copias, carrito,
+   codigo y empresa.
+8. Si hay QR DIAN activo y documento con CUFE/CUDE/codigo, se imprime al final.
+9. Venta a credito: si el medio es `credito_cliente` o un tramo mixto de
+   credito, el carrito exige cliente registrado con cupo activo; consulta
+   `empresa_creditos_clientes_limites`, valida disponible, cierra la venta y
+   crea `empresa_creditos` ligado a `carritos_compras.id` en `venta_origen_id`.
+   El valor a credito no incrementa efectivo de caja, pero queda visible en
+   recibo/factura y en cartera.
+10. Pruebas: efectivo, debito, credito, credito cliente, otro, pago mixto,
+   vuelto, abono, descuento, dos cajeros simultaneos y doble solicitud de pago
+   sobre el mismo carrito.
+
+## Facturacion electronica
+
+1. El submenu de facturacion permanece visible, pero las paginas internas se
+   muestran segun pais detectado y licencia.
+2. Colombia usa configuracion DIAN, firma, resolucion, documentos electronicos,
+   tutorial operativo, pruebas y cola documental.
+3. Panama y Ecuador tienen paginas propias con configuracion de DGI/SRI.
+4. Credenciales, firma, NIT/RUC y trazabilidad son por empresa.
+5. En Colombia el envio real de habilitacion puede quedar primero como `Batch en
+   proceso de validacion`; el sistema debe tratarlo como pendiente hasta que
+   `GetStatusZip` entregue acuse final.
+6. Pruebas: guardar configuracion por pais, validar checklist, generar documento,
+   abrir `Tutorial DIAN`, enviar correo si aplica, revisar cola/reintentos y
+   reconciliar estados DIAN finales por TrackId.
+
+## Modo offline
+
+Refuerzo candidato 2026-09-06: cola con bloqueo Web Locks por empresa,
+persistencia obligatoria antes del comprobante provisional y mezcla contra
+estado actual al terminar cada sincronizacion para no borrar capturas de otra
+pestana. Errores de cuota/JSON no se silencian. No borrar datos del navegador
+para resolver pendientes. Backend exige sync_key original y operador/caja;
+maximo 100 ventas y 2 MiB por lote. No es facturacion de contingencia legal
+DIAN ni certifica aceptacion fiscal. Ver auditoria multicaja/offline 20260906.
+
+Al cerrar un pago, la decision comprobante/factura y el avance de frecuencia se
+resuelven bajo el mismo bloqueo transaccional por empresa y quedan congelados en
+`commerce.sale-paid`. El worker recupera primero contabilidad y despues el
+documento exacto. Un reintento no cobra otra vez, no recalcula frecuencia y no
+reenvia correo si el comprobante ya existe.
+
+La contingencia fiscal Colombia exige un incidente real y evidencia. Para falla
+del facturador se requiere antes una autorizacion vigente de papel/talonario; la
+expedicion registrada debe coincidir con una venta pagada y su fuente fiscal
+inmutable. Al recuperar servicio se fija control operativo de 48 horas y no se
+puede cerrar con pendientes. Mientras no exista generador/validador DIAN tipo 03,
+la transcripcion permanece bloqueada y debe resolverse fuera de este candidato.
+
+1. La empresa activa modo offline y marca de documento offline si corresponde.
+2. Cada cajero debe haber iniciado sesion y tener una caja abierta/cargada antes
+   de perder internet. La venta offline queda ligada a `empresa_id`, usuario,
+   codigo de caja, estacion/carrito y `sync_key` unico.
+3. Si se pierde internet en caja/carrito con offline activo, aparece aviso
+   persistente y se permite vender e imprimir provisionalmente solo para la caja
+   abierta de ese cajero.
+4. Si se pierde internet en modulo sin soporte offline, el aviso debe pedir
+   esperar reconexion.
+5. Al volver internet, se muestra aviso, se registra auditoria y se sincroniza la
+   cola por `/api/empresa/offline_ventas`. El backend rechaza ventas de otro
+   cajero o sin caja explicita y trata reintentos sobre carritos ya pagados como
+   idempotentes para no duplicar caja, inventario ni documentos.
+6. Pruebas: cortar red, vender, imprimir, restaurar red, sincronizar una sola
+   vez, y repetir con dos cajeros/cajas para validar colas separadas.
+
+## Energia solar
+
+1. La empresa entra por Administrar empresa > Energia solar si la licencia y el
+   rol permiten `energia_solar`.
+2. Las preconfiguraciones incluyen el modulo apagado por defecto; al activarlo,
+   la empresa registra proveedor, modelo, instalacion, bateria, BMS y correo de
+   alertas.
+3. El tecnico solar solo consulta dashboard, lecturas, eventos y alertas.
+4. Administrador o supervisor configura sistemas, alertas y lecturas manuales o
+   recibidas desde gateway/API.
+5. Las lecturas disparan eventos por umbral o estado y pueden enviar correo si
+   el sistema lo tiene activo.
+6. Pruebas: crear sistema Victron/SMA/SolarEdge/gateway, registrar lectura con
+   SOC bajo, validar evento/correo, intentar leer con `tecnico_solar` y guardar
+   con `tecnico_solar` esperando bloqueo.
+
+## Reportes de turno
+
+1. `Ver reporte de mi turno` calcula el turno del usuario autenticado y caja
+   actual.
+2. El reporte muestra datos empresa, fecha/hora, usuario, consecutivo, detalle de
+   ventas ordenado por fecha/hora y resumenes configurables.
+3. Debe incluir ventas, descuentos, ingresos, egresos, productos, servicios,
+   medios de pago y efectivo esperado segun checks.
+4. Los checks de `Configuracion > Impresora` para corte/cierre controlan campos
+   del encabezado y columnas del detalle impreso en `corte_de_caja.html` y en
+   `reportes_turnos.html`.
+5. Vista e impresion deben adaptarse a POS 80mm y carta; POS 80mm es default.
+6. Pruebas: turno con ventas, descuento, tarjeta, ingreso, egreso, anulacion,
+   exportar/imprimir, ocultar cajero o fecha desde la configuracion y confirmar
+   que no aparece en el reporte impreso.
+
+## Cajeros simultaneos y estaciones asignadas
+
+1. El administrador crea los usuarios de la empresa en
+   `Administrar usuarios`.
+2. En la seccion `Acceso a estaciones por cajero` activa el control y elige el
+   usuario cajero.
+3. Marca por check las estaciones que ese usuario puede ver y operar. Si el
+   check `Ver estacion Caja y corte de turno` queda apagado, la tarjeta Caja no
+   se muestra para ese usuario.
+4. El tablero de estaciones filtra la vista por usuario autenticado. Los
+   endpoints de carritos e items validan la misma regla en backend, por lo que
+   editar URL, cache o consola no permite operar estaciones no asignadas.
+5. La estacion Caja, los totales de caja, caja abierta y reporte de turno se
+   mantienen independientes por `usuario_creador`; varios cajeros pueden operar
+   la misma empresa al mismo tiempo con reportes separados.
+6. Pruebas: dos usuarios cajeros en la misma empresa, estaciones diferentes,
+   estados visibles compartidos, bloqueo 403 al intentar abrir/agregar/pagar una
+   estacion no asignada y corte de turno independiente.
+
+## Rol portero
+
+1. El rol `portero` se crea como rol base de cada tipo de empresa.
+2. En el menu empresarial solo debe quedar visible `Estaciones`.
+3. En `Estaciones`, el portero puede ver el estado de las estaciones y activar
+   una estacion disponible, pero no debe abrir carrito, Caja, corte, items,
+   venta directa, pagos, abonos ni configuracion.
+4. Backend mantiene la restriccion aunque el usuario intente llamar la API:
+   `carritos_compra` permite al portero solo `GET` de estado y `PUT
+   action=activar_estacion`; `carritos_compra/items` queda bloqueado.
+5. Pruebas: usuario operativo con rol `portero`, entrar por `login_usuario`,
+   confirmar menu con solo Estaciones, activar una estacion, intentar abrir
+   carrito/items/pagar por URL o consola y recibir 403.
+
+## Rol Servicio de limpieza
+
+1. El rol `servicio_limpieza` se crea como rol base de cada tipo de empresa.
+2. En el menu empresarial solo debe quedar visible `Estaciones`.
+3. En `Estaciones`, el usuario puede ver el estado de cada estacion. Si la
+   estacion esta marcada como sucia, al hacer clic reporta aseo terminado y el
+   sistema cambia la estacion a limpia/disponible.
+4. Si la estacion no esta sucia, el clic solo muestra un aviso; no abre carrito,
+   no activa estacion, no entra a Caja ni ejecuta ventas.
+5. Backend mantiene la restriccion aunque el usuario intente llamar la API:
+   `carritos_compra` permite solo `GET` del tablero, `carritos_compra/items`
+   queda bloqueado y el cambio sucia->limpia pasa por
+   `/api/empresa/estacion_aseo?action=finalizar`.
+6. Pruebas: usuario operativo con rol `servicio_limpieza`, entrar por
+   `login_usuario`, confirmar menu con solo Estaciones, marcar una estacion
+   sucia como limpia, intentar activar estacion limpia, abrir carrito/items/caja
+   por URL o consola y recibir bloqueo.
+
+## Roles empresariales comunes
+
+1. Las empresas cuentan con roles base para asignar usuarios sin crear permisos
+   desde cero: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`,
+   `responsable_bodega`, `recursos_humanos`, `tecnico_solar`, `cajero`, `portero`,
+   `servicio_limpieza`, `contador`, `empresario`, `compras`, `inventario`,
+   `contabilidad` y `auditor`.
+2. `tecnico_solar` solo consulta el estado de energia solar: dashboard,
+   lecturas, eventos y alertas. No puede modificar sistemas ni configuracion.
+3. `jefe_bodega` administra inventario y bodegas: existencias, traslados,
+   categorias, recetas y codigos; no puede operar ventas, caja ni eliminar
+   inventario.
+4. `responsable_bodega` administra la bodega asignada con inventario,
+   existencias y traslados; no opera ventas, caja, configuracion ni elimina
+   inventario.
+5. `recursos_humanos` gestiona horarios, asistencia y nomina operativa; no abre
+   ventas, caja ni configuracion general.
+6. Pruebas: crear usuarios con esos roles, iniciar por `login_usuario`, validar
+   menu visible y probar llamadas directas a endpoints fuera del alcance con
+   respuesta 403.
+
+## Rol contador
+
+1. El rol `contador` se crea como rol base de cada tipo de empresa.
+2. En el menu empresarial solo debe quedar visible `Centro financiero y
+   contable` e `Impuestos`.
+3. Dentro del centro financiero, los accesos rapidos y el submenu deben ocultar
+   contabilidad avanzada, creditos, caja, cobranza, tesoreria, portal contador y
+   demas paginas no permitidas.
+4. Backend conserva el control efectivo: `contador` solo tiene `R` en
+   `finanzas` y `facturacion` para consultar finanzas e impuestos. Cualquier
+   `POST`, `PUT`, `PATCH`, `DELETE` o accion de aprobacion debe devolver 403.
+5. Pruebas: usuario operativo con rol `contador`, entrar por `login_usuario`,
+   confirmar menu limitado, abrir finanzas e impuestos, intentar guardar un
+   impuesto o crear movimiento financiero y recibir 403.
+
+## Rol empresario
+
+1. El rol `empresario` se crea como rol base de cada tipo de empresa.
+2. En el menu empresarial solo debe quedar visible `Reportes ejecutivos`.
+3. Dentro del centro de reportes, el usuario debe abrir la vista ejecutiva de
+   resultados y no debe ver reportes de turnos/caja.
+4. Backend conserva el control efectivo: `empresario` solo tiene `R` en
+   `reportes`. Cualquier intento de operar ventas, caja, inventario, finanzas,
+   usuarios, configuracion o acciones `C/U/D/A` debe devolver 403.
+5. Pruebas: usuario operativo con rol `empresario`, entrar por `login_usuario`,
+   confirmar menu limitado, abrir centro de reportes, exportar o previsualizar
+   un reporte permitido e intentar abrir turnos/caja/ventas por URL recibiendo
+   bloqueo.
+
+## Alertas super administrador
+
+1. `web/super/alertas_sistema.html` concentra alertas y notificaciones.
+2. Las opciones de correo para registros y empresas nuevas se guardan en
+   `super_alertas_config`.
+3. Los envios quedan auditados en `super_alertas_eventos`.
+4. Un fallo SMTP no debe bloquear el flujo de negocio que disparo la alerta.
+5. Pruebas: guardar checks, enviar prueba, crear admin/empresa y revisar evento.
+
+## Email corporativo Mailu
+
+1. El super administrador configura `web/super/email_corporativo.html`.
+2. Si `auto_create` esta activo, cada empresa nueva recibe un correo unico basado
+   en su nombre y dominio configurado.
+3. Si el modulo global esta desactivado, el correo queda generado pero pendiente.
+4. Si `mailu_api` esta activo, se crea o actualiza el buzon por la API REST
+   interna autenticada de Mailu; el backend no ejecuta Docker ni monta su socket.
+5. La creacion de empresa no debe fallar por errores del servidor de correo.
+6. En el panel empresarial se muestra la tarjeta de webmail solo si el modulo esta
+   activo y la empresa tiene cuenta.
+7. La tarjeta detecta la apariencia activa y envia `theme=light|dark` para usar
+   `PCSLight@custom` o `PCSDark@custom` en SnappyMail.
+8. En `Configuracion > Email corporativo`, la empresa puede desactivar la
+   apertura automatica del buzon; por defecto queda activa.
+9. Desde la misma pagina se puede cambiar la contrasena interna del buzon. El
+   backend cifra la clave, no la devuelve al navegador y actualiza Mailu si
+   el provisionamiento automatico Mailu esta disponible.
+10. Si aparecen estados de error, usar `Probar Mailu` en super administrador para
+   validar la API interna, el token y la salud de Mailu antes de reintentar
+   provision.
+11. Desde super administrador, `Provisionar ventas/soporte` crea o actualiza los
+   buzones `ventas@powerfulcontrolsystem.com` y
+   `soporte@powerfulcontrolsystem.com` como remitentes del sistema.
+12. Los correos de compra/activacion de licencias salen por
+   `ventas@powerfulcontrolsystem.com`; alertas, invitaciones, recuperaciones,
+   agente DIAN y pruebas salen por `soporte@powerfulcontrolsystem.com`.
+13. `Probar envio` valida envio real por Mailu al destinatario indicado. No usa
+    SMTP Gmail.
+14. `Logo para correos` guarda `email_corporativo.logo_url`; por defecto usa
+    `/img/Logo pcs 1.png` y se inserta como cabecera visual en los correos HTML
+    enviados por el motor corporativo.
+15. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
+    duplicada de nombre similar, comprobar sufijo unico, abrir webmail, desactivar
+    autoapertura, cambiar clave sin exponerla, provisionar ventas/soporte y
+   enviar correo de prueba verificando que el logo configurado se vea.
+
+## Nomina multi-sede y documentos DIAN Colombia
+
+1. Al abrir nomina, la configuracion de empresa debe traer salario minimo
+   mensual y auxilio de transporte legal desde `empresa_nomina_configuracion`;
+   las empresas nuevas/existentes de preproduccion reciben esos valores por
+   preconfiguracion Colombia.
+2. La tarjeta `Parametros legales` consulta la version aplicada y disponible.
+   Si hay version pendiente, el administrador puede aplicar manualmente o dejar
+   activa la autoactualizacion para el worker diario.
+3. La aplicacion legal actualiza parametros reales de impuestos/nomina y guarda
+   version en `empresa_parametros_legales_aplicados`; no crea empleados,
+   liquidaciones ni documentos.
+4. La ficha de nomina del empleado guarda `sede_codigo`, `sede_nombre` y
+   `centro_costo`; estos valores se copian a cada liquidacion para conservar la
+   trazabilidad historica aunque luego cambie la ficha.
+5. Al crear empleado nuevo, el formulario sugiere salario minimo y auxilio
+   legal, pero el usuario puede ajustar segun contrato real.
+6. La liquidacion se genera desde asistencia, novedades aprobadas, recargos,
+   comisiones, provisiones y deducciones; el dashboard resume empleados,
+   liquidaciones, pagos, costo empresa y sedes activas.
+7. Para Colombia, la seccion avanzada consulta conceptos, novedades, PILA y el
+   resumen de documentos electronicos de nomina.
+8. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` consolida
+   por trabajador y mes calendario todas las liquidaciones activas con pagos
+   reales, y devuelve bloqueos/preflight sin efectos fiscales.
+9. `POST /api/empresa/nomina?action=preparar_nomina_electronica` conserva la
+   revision compatible. `GET action=nomina_electronica_preflight` valida la
+   fuente mensual completa; solo
+   `POST /api/empresa/facturacion_electronica?action=emitir_nomina_electronica`
+   puede reservar, sellar, firmar y usar `SendNominaSync`, con doble permiso y
+   confirmacion fuerte.
+10. La pagina `web/administrar_empresa/nomina_tutorial.html` debe abrirse desde
+   el boton `Tutorial` de nomina y conservar `empresa_id`; explica el orden
+   recomendado: parametros legales, configuracion, empleados, novedades,
+   liquidacion, pagos/PILA, preparacion del lote DIAN y revision de acuses.
+11. Pruebas de nomina ordinaria: verificar empleados en varias sedes,
+   liquidaciones, PILA, pagos y desprendibles. Para DIAN no usar semillas ni
+   fabricar pagos/configuracion: validar perfil, candidato mensual, preflight y
+   dialogo sin confirmar una emision real salvo autorizacion fiscal especifica.
+12. `NominaIndividualDeAjuste`, habilitacion automatica y distribucion grafica
+   dedicada permanecen bloqueadas y deben presentarse como limites visibles.
+
+## Carrito: medios de pago y pagos combinados
+
+1. La empresa habilita/deshabilita medios desde
+   `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`.
+2. Los flags se guardan en `estaciones_config.carrito_ui_global` para efectivo,
+   tarjeta credito, tarjeta debito, transferencia Bre-B, Nequi y otra
+   transferencia. `permitir_pago_mixto` gobierna el pago combinado.
+3. El carrito muestra los mismos medios en abonos, selector principal, pago
+   mixto y tarjeta `Detalle del pago`.
+4. Si el cajero escribe valores en mas de un medio, el frontend arma
+   `metodo_pago=mixto` y envia `pagos_mixtos` al endpoint de pago.
+5. Backend normaliza los metodos y exige referencia minima de 4 caracteres para
+   tarjetas y transferencias. Tambien valida que el metodo este habilitado por
+   configuracion empresarial y por rol operativo.
+6. Bre-B se registra como `transferencia_bre_b`. La confirmacion automatica real
+   requiere webhook/API bancaria o proveedor de conciliacion que notifique la
+   referencia recibida; mientras no exista esa integracion, el cajero debe
+   verificar y registrar la referencia manualmente.
+
+## Pagos Bre-B QR en Finanzas
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > Pagos Bre-B QR`.
+2. Activar `Mostrar pago por QR en carrito` y `Habilitar medio Transferencia
+   Bre-B`; ambos valores se guardan por `empresa_id` dentro de
+   `empresa_estacion_prefs.estaciones_config.carrito_ui_global`.
+3. Registrar una o varias cuentas receptoras con proveedor, tipo de llave,
+   llave/cuenta, caja asignada y, cuando el participante lo entregue, el payload
+   estatico oficial exacto. PCS rechaza plantillas, sustituciones y payloads con
+   saltos de linea porque pueden invalidar la estructura EMV o su CRC.
+4. Para varias cajas simultaneas, usar una cuenta por caja o una referencia unica
+   visible por venta. Un QR dinamico debe generarse mediante la API oficial del
+   participante; el cajero debe validar en el banco monto y referencia antes de
+   cerrar la venta mientras no exista ese conector.
+5. La pantalla lista ventas cerradas con `transferencia_bre_b`, abonos Bre-B y
+   registros bancarios manuales de `empresa_finanzas_bancos_movimientos`.
+6. `Registrar pago recibido` crea un movimiento bancario de ingreso con origen
+   `breb_qr_manual`, hash idempotente y estado de conciliacion siempre pendiente;
+   no crea venta, no confirma fondos y no reemplaza el cierre del carrito.
+7. La UI y la API rechazan activar conciliacion automatica mientras no exista un
+   webhook/API firmado y homologado del banco o proveedor. Hasta entonces PCS
+   conserva trazabilidad y conciliacion manual sin simular confirmaciones.
+
+## Rappi por empresa
+
+1. La empresa debe estar afiliada/onboarded en Rappi y contar con `client_id`,
+   `client_secret`, dominios API y tiendas asociadas por Rappi.
+2. Abrir `Administrar empresa > Canales digitales y colaboracion > Rappi`.
+3. Activar el modulo, registrar `client_id`, `country_domain`, `new_domain`,
+   `store_integration_id` o `rappi_store_id` si aplica, y guardar las claves solo
+   como referencias (`env:...` o referencia secreta equivalente), nunca como
+   texto visible en documentacion.
+4. Usar `Probar API` o `Tiendas` para validar OAuth y que Rappi devuelva tiendas
+   asociadas al `clientId`.
+5. Configurar en Rappi el webhook publico
+   `/api/public/rappi/webhook?empresa_id={empresa_id}` y, si se usa secreto,
+   guardar `webhook_secret_ref`; PCS valida `Rappi-Signature` con HMAC-SHA256.
+6. `Ordenes nuevas` consulta `GET orders`; Rappi puede moverlas de `READY` a
+   `SENT` al leerlas, por lo que esta accion debe usarse operativamente.
+7. `Ordenes SENT` permite recuperar ordenes recientes dentro de la ventana de
+   Rappi. Desde la tabla se puede tomar, rechazar o marcar lista la orden.
+8. PCS registra cada orden en `empresa_rappi_ordenes` con `empresa_id`, estado,
+   tienda, total, payload saneado y origen (`api_ready`, `api_sent`, `webhook` o
+   accion manual).
+9. La conversion automatica a venta/caja interna queda condicionada al mapeo real
+   de SKUs/productos, caja, impuestos, cliente y reglas de facturacion de cada
+   empresa; no se simulan ventas ni pagos internos sin ese mapeo.
+10. Pruebas minimas: guardar configuracion, probar credenciales validas/invalidas,
+    consultar tiendas, recibir webhook firmado y rechazado por firma invalida,
+    traer ordenes y verificar que otra empresa no vea la bitacora.
+
+## Buzon de usuario, tareas y almacenamiento empresarial
+
+1. El panel de `Administrar empresa` carga `/api/empresa/buzon?action=resumen` con el `empresa_id` activo y muestra campana, contador de no leidos, ultimos mensajes, chat y estado de almacenamiento.
+2. El menu flotante global replica el contador de no leidos en su boton principal. Al abrirlo, la campana `Notificaciones` aparece como primera accion y despliega dentro del mismo menu el resumen del buzon; al hacer clic en una notificacion la marca como leida y navega a la pagina relacionada.
+3. Un usuario puede enviar `Mensaje` o `Asignar tarea` a otro usuario registrado de la misma empresa. Las tareas quedan como mensajes tipo `tarea` con prioridad, fecha limite opcional y estado `pendiente`.
+4. Si el mensaje incluye foto, archivo o audio grabado desde microfono, el backend guarda el binario en la carpeta de la empresa y registra metadata en `empresa_buzon_adjuntos`.
+5. El destinatario finaliza una tarea desde su propio buzon; debe escribir descripcion de cierre y puede adjuntar evidencia. El backend valida que el mensaje pertenezca a su buzon antes de adjuntar o cerrar.
+6. En traslados de bodega, el endpoint de inventario crea una notificacion de buzon para el responsable de la bodega destino o usuarios de inventario/administracion.
+7. Super administrador controla la cuota global por empresa desde Configuracion avanzada > Almacenamiento: limite MB, porcentaje de alerta, maximo por archivo, bloqueo al superar cuota y limpieza de archivos antiguos del buzon.
+### Facturacion electronica Colombia despues de la reparacion PCS
+
+1. En DIAN se solicita la autorizacion de numeracion y luego se asocia el rango
+   al software en `https://catalogo-vpfe.dian.gov.co/User/Login`.
+2. En PCS se carga o digita la resolucion, prefijo, rango, vigencia y datos de
+   empresa desde `Facturacion electronica`.
+3. En `Centro de habilitacion DIAN` se pulsa `Consultar clave tecnica DIAN` para
+   ejecutar `GetNumberingRange` y guardar la clave tecnica del rango.
+4. Se valida configuracion, firma digital, certificado, software ID/PIN, NIT/DV,
+   ambiente, prefijo, rango, emisor, cliente y sus codigos DANE antes de emitir.
+5. Solo la factura comercial se genera con UBL 2.1 desde una
+   `fuente_fiscal_json` inmutable del carrito pagado, con `DianExtensions`,
+   `SoftwareSecurityCode`, CUFE, QR, parties, impuestos, totales y lineas
+   reales. El backend bloquea XML incompleto en preflight.
+6. El envio oficial usa DIAN SOAP/WCF con WS-Security y firma RSA-SHA256 desde
+   el despachador interno; las acciones directas de firma/envio estan cerradas.
+   No modificar canonicacion/firma sin prueba real DIAN.
+7. Un acuse aceptado deja `estado_envio=aceptado`. `Regla 90` por documento ya
+   procesado queda como pendiente de consulta del acuse original; no equivale por
+   si sola a aceptacion.
+   Cuando el documento local estaba `pendiente_emision`, la aceptación con
+   CUFE/CUDE oficial completa de forma idempotente la transición a `emitida`.
+   Una reejecución sobre la cola ya aceptada solo repara esa sincronización local
+   y nunca vuelve a transmitir el XML.
+   Una respuesta sincronica `SendBillSync` sin `TrackId` usa solamente la
+   referencia interna `sync:<documento>` para persistir historial. Esa referencia
+   no es un TrackId DIAN y nunca se consulta con `GetStatusZip`.
+8. Un rechazo deja la factura en cola/reintentos y crea alerta en el buzon del
+   administrador. El reintento reutiliza el XML solo si la fuente fiscal
+   inmutable del mismo documento sigue disponible y valida.
+9. Los registros `1PCS2` y `1PCS3` son evidencia historica de portal; no
+   certifican la configuracion ni el candidato actual. El consecutivo vigente
+   debe leerse de la configuracion y portal actuales, nunca inferirse de ellos.
+10. `Aprobado con notificacion` cuenta como documento aprobado solo cuando el
+    acuse/portal pertenece al XML y folio actual; la notificacion se conserva
+    como observacion y se corrigen datos maestros si aplica.
+11. Antes de reenviar un mismo prefijo/folio, consultar historial DIAN, cola de
+    reintentos, CUFE/TrackId o portal para evitar duplicados y `Regla 90`.
+12. Al pagar, la respuesta y la interfaz deben mostrar por separado el
+    comprobante comercial y la factura electronica. Una advertencia/rechazo DIAN
+    no se oculta detras del mensaje de pago exitoso.
+
+### Anulacion total mediante nota credito DIAN
+
+1. Seleccionar una factura electronica emitida y confirmar que su integracion
+   fiscal esta aceptada y conserva CUFE oficial, XML firmado y fuente fiscal.
+2. Ejecutar `anular_factura_nota_credito` con motivo de al menos 10 caracteres.
+   No se admiten lineas, impuestos ni referencia fiscal libres del navegador.
+3. PCS reserva un consecutivo interno de nota, deriva una fuente fiscal separada
+   con las lineas de la factura y referencia su numero legal, CUFE y fecha fiscal.
+4. El `CreditNote` usa código de correccion 2 para anulacion total, CUDE propio y
+   se firma/envia por el despachador DIAN. Un fallo queda en cola sin anular la
+   factura original.
+5. Solo cuando el acuse DIAN de la nota es aceptado, PCS cambia la factura a
+   `anulada`. Reintentos y reconciliacion aplican la misma regla idempotente.
+6. Nota credito parcial/libre y nota debito permanecen bloqueadas hasta tener una
+   fuente de ajuste estructurada proveniente de una operacion empresarial real.
+7. La bandeja habilita la anulacion solo si la factura conserva CUFE oficial y
+   `fuente_fiscal_disponible=true`. Un documento historico sin snapshot queda en
+   consulta; no se reconstruyen lineas, impuestos o cliente por suposicion.
+8. `reconciliar_aceptados_local` repara exclusivamente los datos locales de una
+   cola ya aceptada/reconciliada. Omite el resto antes de cualquier despacho, no
+   vuelve a transmitir el XML ni aumenta intentos o fechas de envio. La accion
+   general `reconciliar_estados` conserva el flujo operativo de pendientes y no
+   debe usarse para un cierre limitado a acuses aceptados.
+
+### Errores DIAN que el usuario puede resolver
+
+1. `FAB05c`: asociar el prefijo/rango al Software ID correcto en portal DIAN y
+   revisar prefijo/resolucion/rango en PCS.
+2. `FAD06`: consultar clave tecnica con `GetNumberingRange`; revisar CUFE,
+   numero legal, fecha/hora, NIT, cliente, impuestos y totales.
+3. `FAD05`: la numeracion/resolucion no esta autorizada o el consecutivo esta
+   fuera de rango.
+4. `FAD10`: revisar Software ID, PIN tecnico y calculo de SoftwareSecurityCode.
+5. `FAK61`: corregir datos del cliente o estructura Party: tipo de persona,
+   documento, municipio, direccion, regimen y responsabilidades.
+6. `ZE02`: revisar certificado digital, llave privada, clave, vigencia y NIT.
+7. `RUT01`: si el resultado DIAN es `Aprobado con notificacion`, el documento
+   queda aprobado; revisar NIT/DV/razon social y datos del adquiriente como
+   correccion posterior.
+8. Firma o resolucion vencida: renovar, cargar en PCS, asociar en DIAN y volver a
+   probar.
+
+### Factura electrónica comercial Colombia con fuente real (2026-08-24)
+
+1. Completar emisor y cliente con documento, responsabilidad tributaria,
+   dirección, departamento/municipio y códigos DANE coherentes.
+2. Confirmar que cada línea del carrito tenga descripción, unidad convertible a
+   código DIAN, código de impuesto y porcentaje explícitos; no se inventa el
+   tratamiento de una línea al 0 %.
+3. Al pagar, PCS persiste primero el comprobante y su `fuente_fiscal_json`
+   inmutable antes de reutilizar o limpiar el carrito.
+4. La factura carga la fuente por `empresa_id` y documento, concilia líneas,
+   impuestos y total, reserva el folio, genera UBL, firma, guarda XML y solo
+   entonces transmite por el flujo canónico.
+5. Una respuesta de transporte sin acuse concluyente queda pendiente; solo el
+   acuse oficial permite marcar aceptada y enviar XML/PDF al cliente.
+6. Nota crédito/débito, soporte, nómina, equivalentes, contingencia y RADIAN
+   permanecen bloqueados mientras no tengan fuente y adaptador específicos.
+## Domotica: provisionar Raspberry desde su navegador
+
+1. El administrador abre PCS en la Raspberry, entra a Domotica y registra el
+   controlador dentro de su empresa.
+2. `Generar instalador` exige permiso efectivo de administracion, rota un token
+   de un solo uso y descarga un shell con `no-store`.
+3. El usuario ejecuta `sudo sh` una vez. El servicio systemd enrola el ID unico
+   y realiza long polling HTTPS saliente al VPS.
+4. Encender/apagar desde una estacion crea un comando durable; la Raspberry
+   opera el GPIO y confirma. Solo el ACK actualiza estado, lectura y bitacora.
+5. Un cambio estable en GPIO de entrada publica Raspberry/pin autenticados; el
+   servidor evalua exclusivamente reglas de la misma empresa/controlador.
+6. El super administrador consulta transferencia por empresa y Raspberry sin
+   acceder a tokens. Regenerar instalador revoca el acceso operativo anterior.
+7. En Configuracion de estaciones, el administrador activa o desactiva el check
+   del boton `⚡ Domotica`. Desde cada tarjeta de estacion el boton abre una
+   vista filtrada de equipos, sensores, estados y controladores, sin activar el
+   carrito ni cambiar el estado comercial de la estacion.
+8. Cada Raspberry usa un instalador exclusivo. Si pierde LAN, Internet, DNS o
+   el VPS, el agente reintenta con backoff y systemd lo reinicia sin limite; al
+   reconectar consume los comandos durables pendientes del dispositivo.
+9. La empresa puede activar la alerta de desconexión, registrar un correo y una
+   gracia. El worker compara `last_seen`, deduplica por heartbeat y publica
+   buzón/campanita, correo y evento si la placa no regresa dentro del plazo.
+10. Super Administrador consolida RX+TX mensual por empresa. Al llegar al umbral
+    muestra advertencia y, si la política lo ordena, bloquea las operaciones del
+    túnel al alcanzar la cuota sin impedir un nuevo enrolamiento de recuperación.
+11. Una entrada GPIO autenticada puede encender/apagar el aparato destino,
+    iniciar su temporizador o respetar su agenda; todo ON reserva la cola única
+    de la empresa.
+### Preflight fiscal antes de pagar una factura Colombia
+
+- Si el pago solicita factura electrónica (manual o automática), el backend
+  reconstruye en memoria la misma fuente fiscal a partir del carrito, cliente y
+  emisor reales antes de cerrar la venta.
+- Datos maestros incompletos, códigos DANE inválidos, líneas sin código/unidad o
+  totales/impuestos no conciliados responden `409` sin pagar, reservar consecutivo,
+  firmar ni transmitir.
+- Descuentos y devoluciones globales no distribuidos se rechazan para factura;
+  deben aplicarse por línea o usarse únicamente con comprobante de pago.
+- Una fuente con bloqueantes nunca se persiste como artefacto inmutable.

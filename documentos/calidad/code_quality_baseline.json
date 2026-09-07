@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "max": {
+    "functions_over_100_lines": 450,
+    "functions_over_200_lines": 124,
+    "largest_function_lines": 2052,
+    "exact_duplicate_body_groups": 0,
+    "db_calls_without_context": 533,
+    "explicit_ignored_results": 762
+  }
+}

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mi horario</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .mi-horario-page{min-height:100vh;background:var(--bg);color:var(--text);padding:18px}
+    .mi-horario-shell{display:flex;flex-direction:column;gap:16px;max-width:1180px;margin:0 auto}
+    .mi-horario-head,.mi-horario-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:18px;color:var(--text)}
+    .mi-horario-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .mi-horario-head h1{margin:0 0 8px;font-size:1.7rem;color:var(--text)}
+    .mi-horario-head p,.mi-horario-card p{margin:0;color:var(--muted);line-height:1.55}
+    .mi-horario-actions{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+    .mi-horario-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .mi-horario-kpi{background:var(--surface-soft);border:1px solid var(--border);border-radius:8px;padding:14px}
+    .mi-horario-kpi span{display:block;color:var(--muted);font-size:.85rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .mi-horario-kpi strong{display:block;margin-top:6px;font-size:1.5rem;color:var(--text)}
+    .mi-horario-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+    .mi-horario-turno{border:1px solid var(--border);border-left:6px solid var(--accent);border-radius:8px;background:var(--surface-soft);padding:14px;display:flex;flex-direction:column;gap:8px}
+    .mi-horario-turno header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .mi-horario-turno h3{margin:0;color:var(--text);font-size:1.05rem}
+    .mi-horario-turno time{font-weight:900;color:var(--accent)}
+    .mi-horario-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-size:.92rem}
+    .mi-horario-chip{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:700}
+    .mi-horario-empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:8px;background:var(--surface-soft)}
+    @media(max-width:760px){.mi-horario-page{padding:12px}.mi-horario-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.mi-horario-head{display:block}.mi-horario-actions{margin-top:14px}}
+  </style>
+</head>
+<body class="mi-horario-page">
+  <main class="mi-horario-shell">
+    <section class="mi-horario-head">
+      <div>
+        <h1>Mi horario laboral</h1>
+        <p id="usuarioResumen">Consulta tus turnos publicados por la empresa.</p>
+      </div>
+      <div class="mi-horario-actions">
+        <label class="form-label" for="desde">Desde
+          <input id="desde" type="date" class="form-input">
+        </label>
+        <label class="form-label" for="hasta">Hasta
+          <input id="hasta" type="date" class="form-input">
+        </label>
+        <button id="btnActualizar" type="button" class="btn secondary">Actualizar</button>
+      </div>
+    </section>
+
+    <section class="mi-horario-kpis" data-pcs-submenu-section="resumen" aria-label="Resumen de horario">
+      <div class="mi-horario-kpi"><span>Turnos</span><strong id="kpiTurnos">0</strong></div>
+      <div class="mi-horario-kpi"><span>Hoy</span><strong id="kpiHoy">0</strong></div>
+      <div class="mi-horario-kpi"><span>Proximos</span><strong id="kpiProximos">0</strong></div>
+      <div class="mi-horario-kpi"><span>Horas</span><strong id="kpiHoras">0</strong></div>
+    </section>
+
+    <section class="mi-horario-card" data-pcs-submenu-section="turnos">
+      <div class="page-header">
+        <div>
+          <h2 style="margin:0;">Turnos publicados</h2>
+          <p class="form-help" style="margin:6px 0 0;">Solo aparecen horarios ya publicados por la empresa.</p>
+        </div>
+      </div>
+      <div id="mensaje" class="form-help" style="margin:0 0 12px;"></div>
+      <div id="listaHorarios" class="mi-horario-list"></div>
+    </section>
+  </main>
+  <script src="/js/mi_horario.js"></script>
+  <script src="/js/personas_activos_submenu.js"></script>
+</body>
+</html>

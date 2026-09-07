@@ -1,0 +1,20 @@
+---
+description: Orquestacion de agentes del proyecto en Cursor
+alwaysApply: true
+---
+
+# Orquestacion (Cursor)
+
+- Coordinador por defecto: `pcs-agente-go`.
+- Usar `pcs-protocolo-por-modulo` para clasificar módulo y frentes.
+- Aplicar las reglas heredadas de `copilot-instructions.md` (dependencias, DIAN, PostgreSQL en VPS y trazabilidad) mediante las reglas `.cursor/rules/pcs-*.mdc`.
+- Activar skills especialistas cuando aplique:
+  - `pcs-agente-backend-db` para backend/DB/seguridad/permisos
+  - `pcs-agente-frontend-ux` para HTML/CSS/JS/UX
+  - `pcs-agente-qa-operacion` para pruebas/runtime/deploy/túneles/evidencia end-to-end
+
+## Fuentes canónicas
+
+- `.github/agents/protocolo_delegacion.md`
+- `.github/agents/plantilla_trabajo_por_modulo.md`
+

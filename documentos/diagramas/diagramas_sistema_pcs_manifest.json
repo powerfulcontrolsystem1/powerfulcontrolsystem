@@ -1,0 +1,111 @@
+{
+  "actualizacion": "2026-07-07",
+  "uso": "super administrador y Codex",
+  "diagramas": [
+    {
+      "id": "modulos",
+      "title": "Diagrama de modulos del sistema",
+      "path": "/super/diagramas/modulos.html",
+      "summary": "Agrupa las areas principales del POS multiempresa para ubicar cambios, permisos y documentacion por modulo.",
+      "source": "flowchart TB\n  PCS[\"PCS POS multiempresa\"]\n  PCS --> Empresas[\"Empresas y usuarios\"]\n  PCS --> Inventario[\"Inventario: productos, bodegas, kardex\"]\n  PCS --> Ventas[\"Ventas POS: carritos, caja, pagos\"]\n  PCS --> DIAN[\"Facturacion electronica DIAN / pais fiscal\"]\n  PCS --> Finanzas[\"Finanzas, contabilidad, nomina e impuestos\"]\n  Ventas --> Operacion[\"Restaurante, bar, motel, estaciones\"]\n  Ventas --> Reportes[\"Reportes y auditoria\"]\n  Empresas --> Config[\"Configuracion, permisos, impresoras, menu\"]\n  DIAN --> Canales[\"Correo, portal, WhatsApp y notificaciones\"]\n  Finanzas --> Agentes[\"Agentes automaticos y mantenimiento\"]"
+    },
+    {
+      "id": "erd",
+      "title": "Diagrama de base de datos / ERD",
+      "path": "/super/diagramas/base_de_datos_erd.html",
+      "summary": "Resume las tablas principales y relaciones por dominio. El detalle fisico completo sigue en documentos/estructura_bd.md.",
+      "source": "erDiagram\n  EMPRESAS ||--o{ USERS : empresa_id\n  ROLES_DE_USUARIO ||--o{ USERS : rol_usuario_id\n  EMPRESAS ||--o{ PRODUCTOS : empresa_id\n  PRODUCTOS ||--o{ INVENTARIO_MOVIMIENTOS : producto_id\n  EMPRESAS ||--o{ BODEGAS : empresa_id\n  BODEGAS ||--o{ INVENTARIO_MOVIMIENTOS : bodega_id\n  EMPRESAS ||--o{ CLIENTES : empresa_id\n  CLIENTES ||--o{ CARRITOS_COMPRAS : cliente_id\n  CARRITOS_COMPRAS ||--o{ CARRITO_COMPRA_ITEMS : carrito_id\n  CARRITOS_COMPRAS ||--o{ EMPRESA_FINANZAS_MOVIMIENTOS : documento_ref\n  CARRITOS_COMPRAS ||--o{ EMPRESA_FACTURACION_DOCUMENTOS : documento_origen\n  EMPRESAS ||--o{ PROVEEDORES : empresa_id\n  PROVEEDORES ||--o{ EMPRESA_COMPRAS_DOCUMENTOS : proveedor_id\n  EMPRESA_FACTURACION_DOCUMENTOS ||--o{ FACTURACION_ELECTRONICA_REINTENTOS : documento_codigo\n  EMPRESAS ||--o{ LICENCIAS : empresa_id"
+    },
+    {
+      "id": "multiempresa",
+      "title": "Diagrama multiempresa / multi-tenant",
+      "path": "/super/diagramas/multiempresa.html",
+      "summary": "Muestra como cada tabla operativa debe filtrar por empresa_id y como el super administrador gobierna configuraciones globales.",
+      "source": "flowchart TB\n  DB[(PostgreSQL / pcs_empresas)]\n  DB --> E1[\"empresa_id = 1\"]\n  DB --> E2[\"empresa_id = 2\"]\n  DB --> EN[\"empresa_id = N\"]\n  E1 --> D1[\"productos, ventas, clientes, facturas, usuarios\"]\n  E2 --> D2[\"productos, ventas, clientes, facturas, usuarios\"]\n  EN --> DN[\"productos, ventas, clientes, facturas, usuarios\"]\n  Super[(pcs_superadministrador)]\n  Super --> DB\n  classDef rule fill:#fff7ed,stroke:#f97316,color:#1f2937\n  class D1,D2,DN rule"
+    },
+    {
+      "id": "arquitectura",
+      "title": "Diagrama general de arquitectura",
+      "path": "/super/diagramas/arquitectura.html",
+      "summary": "Conecta navegador, frontend estatico, API Go, PostgreSQL, servicios externos y despliegue Docker/VPS.",
+      "source": "flowchart LR\n  Usuario[\"Cliente web / POS\"] --> Frontend[\"Frontend HTML/CSS/JS\"]\n  Frontend --> API[\"API en Go\"]\n  API --> DB[(PostgreSQL)]\n  API --> DIAN[\"DIAN\"]\n  API --> Pagos[\"Pasarelas de pago\"]\n  API --> Correo[\"SMTP / Mailu\"]\n  API --> WhatsApp[\"WhatsApp\"]\n  API --> Impresoras[\"Impresoras POS\"]\n  VPS[\"VPS Docker + Nginx\"] --> Frontend\n  VPS --> API\n  VPS --> DB"
+    },
+    {
+      "id": "ventas-pos",
+      "title": "Diagrama de flujo de ventas POS",
+      "path": "/super/diagramas/ventas_pos.html",
+      "summary": "Describe el flujo operativo desde seleccion de empresa hasta inventario, caja, impresion y factura electronica si aplica.",
+      "source": "flowchart LR\n  Empresa[\"Seleccionar empresa\"] --> Productos[\"Seleccionar productos\"]\n  Productos --> Carrito[\"Agregar al carrito\"]\n  Carrito --> Descuento[\"Aplicar descuento o promocion\"]\n  Descuento --> Pago[\"Seleccionar medio de pago\"]\n  Pago --> Venta[\"Registrar venta\"]\n  Venta --> Inventario[\"Actualizar inventario\"]\n  Venta --> Caja[\"Caja / imprimir recibo\"]\n  Venta --> FE[\"Generar factura electronica si aplica\"]\n  FE --> DIAN[\"Enviar a DIAN\"]"
+    },
+    {
+      "id": "dian",
+      "title": "Diagrama de flujo de facturacion electronica DIAN",
+      "path": "/super/diagramas/facturacion_dian.html",
+      "summary": "Ordena la emision DIAN Colombia: validacion, UBL, firma, envio, acuse, CUFE/PDF y correo al cliente.",
+      "source": "flowchart LR\n  Crear[\"Crear factura\"] --> Cliente[\"Validar datos del cliente\"]\n  Cliente --> UBL[\"Generar XML UBL 2.1 con CUFE/CUDE\"]\n  UBL --> Firma[\"Firmar digitalmente XAdES\"]\n  Firma --> Enviar[\"Enviar a DIAN\"]\n  Enviar --> Respuesta[\"Recibir respuesta\"]\n  Respuesta --> Guardar[\"Guardar CUFE / TrackId / estado\"]\n  Guardar --> PDF[\"Generar PDF o representacion\"]\n  PDF --> Correo[\"Enviar al cliente\"]\n  Respuesta --> Reintentos[\"Cola de reintentos si falla\"]"
+    },
+    {
+      "id": "inventario",
+      "title": "Diagrama de flujo de inventario",
+      "path": "/super/diagramas/inventario.html",
+      "summary": "Relaciona entradas, salidas, traslados, kardex y reportes de existencias por empresa y bodega.",
+      "source": "flowchart LR\n  Compra[\"Compra / Entrada\"] --> Aumenta[\"Aumenta inventario\"]\n  Aumenta --> Venta[\"Venta / Salida\"]\n  Venta --> Disminuye[\"Disminuye inventario\"]\n  Disminuye --> Traslado[\"Traslado entre bodegas\"]\n  Aumenta --> Kardex[\"Movimiento en Kardex\"]\n  Disminuye --> Kardex\n  Traslado --> Kardex\n  Kardex --> Reporte[\"Reporte de existencias\"]"
+    },
+    {
+      "id": "roles-permisos",
+      "title": "Diagrama de usuarios, roles y permisos",
+      "path": "/super/diagramas/roles_permisos.html",
+      "summary": "Ubica roles super y empresariales. La autorizacion final vive en backend, wrappers y matriz por modulo.",
+      "source": "flowchart TB\n  Super[\"Superadmin del sistema\"] --> E1[\"Empresa 1\"]\n  Super --> E2[\"Empresa 2\"]\n  E1 --> Admin1[\"Administrador\"]\n  E1 --> Cajero1[\"Cajero\"]\n  E1 --> Contador1[\"Contador\"]\n  E2 --> Admin2[\"Administrador\"]\n  E2 --> Bodeguero2[\"Bodeguero\"]\n  E2 --> Vendedor2[\"Vendedor\"]\n  Admin1 --> Permisos[\"Permisos C/R/U/D/A por modulo\"]\n  Cajero1 --> Permisos\n  Contador1 --> Permisos\n  Bodeguero2 --> Permisos"
+    },
+    {
+      "id": "api-endpoints",
+      "title": "Diagrama de API / endpoints",
+      "path": "/super/diagramas/api_endpoints.html",
+      "summary": "Organiza las rutas por familias para ubicar handlers, wrappers de permisos y validaciones de empresa_id.",
+      "source": "flowchart TB\n  API[\"API Go\"]\n  API --> Auth[\"Auth API: login, account, sesiones\"]\n  API --> Empresa[\"Empresa API: /api/empresa/*\"]\n  API --> Inventario[\"Inventario API: productos, bodegas, kardex\"]\n  API --> Ventas[\"Ventas API: carritos, pagos, clientes\"]\n  API --> DIAN[\"DIAN API: facturacion electronica\"]\n  API --> Reportes[\"Reportes API: ventas, caja, auditoria\"]\n  API --> Config[\"Configuracion API: roles, permisos, impresoras\"]\n  API --> Super[\"Super API: licencias, VPS, portal, alertas\"]"
+    },
+    {
+      "id": "despliegue",
+      "title": "Diagrama de despliegue / infraestructura",
+      "path": "/super/diagramas/despliegue.html",
+      "summary": "Muestra dominio, proxy, Docker, base de datos, correo, backups y flujo GitHub hacia VPS.",
+      "source": "flowchart LR\n  Usuario --> Dominio[\"Dominio web HTTPS\"]\n  Dominio --> Nginx[\"Nginx / proxy\"]\n  Nginx --> VPS[\"Servidor VPS\"]\n  VPS --> Docker[\"Docker compose\"]\n  Docker --> App[\"App Go\"]\n  Docker --> PostgreSQL[(PostgreSQL)]\n  Docker --> Mailu[\"Mailu / correo\"]\n  GitHub[\"GitHub / rs.ps1\"] --> VPS\n  VPS --> Backups[\"Backups locales y nube\"]"
+    },
+    {
+      "id": "seguridad",
+      "title": "Diagrama de seguridad",
+      "path": "/super/diagramas/seguridad.html",
+      "summary": "Resume autenticacion, sesiones, roles, aislamiento por empresa, auditoria, HTTPS y proteccion de secretos.",
+      "source": "flowchart LR\n  Login --> Sesion[\"JWT / sesiones\"]\n  Sesion --> Roles[\"Roles y permisos\"]\n  Roles --> Empresa[\"Validacion por empresa_id\"]\n  Empresa --> Datos[(PostgreSQL)]\n  HTTPS[\"HTTPS / firewall / SSH\"] --> Sesion\n  Secretos[\"Secretos DIAN, SMTP, tokens\"] --> Roles\n  Empresa --> Auditoria[\"Auditoria y logs\"]\n  Datos --> Backups[\"Backups sin secretos\"]"
+    },
+    {
+      "id": "auditoria-logs",
+      "title": "Diagrama de auditoria y logs",
+      "path": "/super/diagramas/auditoria_logs.html",
+      "summary": "Estandariza quien hizo que, en que empresa, modulo, fecha, IP y con que resultado.",
+      "source": "flowchart LR\n  Accion[\"Usuario realiza accion\"] --> Permiso[\"Sistema valida permiso\"]\n  Permiso --> Operacion[\"Ejecuta operacion\"]\n  Operacion --> Log[\"Guarda log\"]\n  Log --> Campos[\"usuario, empresa, accion, fecha, IP, modulo, dato anterior, dato nuevo\"]\n  Log --> Reporte[\"Consulta o exportacion de auditoria\"]"
+    },
+    {
+      "id": "reportes",
+      "title": "Diagrama de reportes",
+      "path": "/super/diagramas/reportes.html",
+      "summary": "Mapa los reportes principales que consumen ventas, compras, inventario, caja, fiscalidad y utilidad.",
+      "source": "flowchart TB\n  Reportes --> Ventas\n  Reportes --> Compras\n  Reportes --> Inventario\n  Reportes --> Caja\n  Reportes --> Clientes\n  Reportes --> Impuestos\n  Reportes --> FE[\"Facturacion electronica\"]\n  Reportes --> Contabilidad\n  Reportes --> Utilidad[\"Utilidad / ganancias\"]\n  Reportes --> Productos[\"Productos mas vendidos\"]"
+    },
+    {
+      "id": "integraciones",
+      "title": "Diagrama de integraciones externas",
+      "path": "/super/diagramas/integraciones.html",
+      "summary": "Lista dependencias externas y equipos que el sistema puede usar sin mezclar secretos con documentacion.",
+      "source": "flowchart TB\n  PCS[\"Sistema POS\"] --> DIAN\n  PCS --> Pagos[\"Pasarela de pagos\"]\n  PCS --> WhatsApp[\"WhatsApp Business\"]\n  PCS --> SMTP[\"Correo SMTP / Mailu\"]\n  PCS --> Impresoras[\"Impresoras POS\"]\n  PCS --> Cajon[\"Cajon monedero\"]\n  PCS --> Datafono\n  PCS --> QR[\"Codigo QR\"]\n  PCS --> GitHub\n  PCS --> Backups[\"Servidor de backups\"]\n  PCS --> IA[\"Proveedor IA controlado\"]"
+    },
+    {
+      "id": "agentes",
+      "title": "Diagrama de agentes automaticos",
+      "path": "/super/diagramas/agentes_automaticos.html",
+      "summary": "Ubica agentes internos de soporte, monitoreo y programacion asistida. Codex usa estos diagramas como referencia del repo, no como permiso para ejecutar acciones externas.",
+      "source": "flowchart TB\n  Agentes[\"Agentes del sistema\"]\n  Agentes --> DIAN[\"Agente DIAN: cambios normativos\"]\n  Agentes --> Servidor[\"Agente servidor: VPS, disco, servicios\"]\n  Agentes --> Soporte[\"Agente soporte: clientes\"]\n  Agentes --> Ventas[\"Agente ventas: interesados\"]\n  Agentes --> Programador[\"Agente programador: sugerencias para Codex\"]\n  Agentes --> Secretaria[\"Agente secretaria: notificaciones\"]"
+    }
+  ]
+}

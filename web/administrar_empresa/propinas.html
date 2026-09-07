@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Módulo de propinas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="empresa-module-header" style="margin-bottom:18px;">
+      <div>
+        <span class="empresa-module-kicker">Caja y conciliación</span>
+        <h2 style="margin:6px 0 8px;">Propinas con trazabilidad</h2>
+        <p class="page-header-lead" style="margin:0;">
+          Configura distribución, tratamiento fiscal y ajustes auditados para mantener control transparente entre operación y cierres de caja.
+        </p>
+      </div>
+      <div class="empresa-module-overview">
+        <div class="empresa-module-kpi">
+          <strong>Distribución</strong>
+          <span>Por usuario o universal</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Fiscal</strong>
+          <span>Tratamiento e impuesto</span>
+        </div>
+        <div class="empresa-module-kpi">
+          <strong>Conciliación</strong>
+          <span>Reporte por cierre de caja</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="page-header">
+      <h1>Módulo de propinas</h1>
+    </div>
+    <p id="empresaContextoPropinas" class="form-help" style="margin:0 0 8px 0;"></p>
+    <p class="form-help" style="margin:0 0 12px 0;">
+      Configura reglas de propinas y tratamiento fiscal, registra ajustes manuales auditados y revisa la conciliación por cierre de caja.
+    </p>
+
+    <div class="form" >
+      <div class="page-header" style="margin-bottom:8px;">
+        <h2 style="margin:0;font-size:1rem;">Configuración de propinas</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label">Estado</label>
+          <label class="form-help" style="display:flex;gap:8px;align-items:center;">
+            <input id="cfgHabilitar" type="checkbox"> Habilitar propina en facturas
+          </label>
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="cfgPorcentaje">Porcentaje de propina (%)</label>
+          <input id="cfgPorcentaje" class="form-input" type="number" min="0" max="100" step="0.01" value="10">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="cfgModo">Modo de distribución</label>
+          <select id="cfgModo" class="form-input">
+            <option value="por_usuario">Por usuario</option>
+            <option value="universal">Universal (repartida en usuarios activos)</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:280px;">
+          <label class="form-label">Aplicación por defecto</label>
+          <label class="form-help" style="display:flex;gap:8px;align-items:center;">
+            <input id="cfgAplicarAuto" type="checkbox" checked> Aplicar automáticamente al cobrar
+          </label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="cfgPaisFiscal">País fiscal</label>
+          <input id="cfgPaisFiscal" class="form-input" type="text" maxlength="32" placeholder="co">
+        </div>
+        <div class="form-col" style="max-width:240px;">
+          <label class="form-label" for="cfgRegimenFiscal">Régimen fiscal</label>
+          <input id="cfgRegimenFiscal" class="form-input" type="text" maxlength="64" placeholder="general">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="cfgTratamientoFiscal">Tratamiento fiscal</label>
+          <select id="cfgTratamientoFiscal" class="form-input">
+            <option value="no_gravada">No gravada</option>
+            <option value="gravada">Gravada</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:240px;">
+          <label class="form-label" for="cfgPctImpuestoPropina">Impuesto sobre propina (%)</label>
+          <input id="cfgPctImpuestoPropina" class="form-input" type="number" min="0" max="100" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="cfgObservaciones">Observaciones</label>
+          <textarea id="cfgObservaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnGuardarCfg" type="button" class="btn">Guardar configuración</button>
+        <button id="btnActivarCfg" type="button" class="btn secondary">Activar</button>
+        <button id="btnDesactivarCfg" type="button" class="btn secondary">Desactivar</button>
+      </div>
+      <div id="cfgMsg" class="form-help"></div>
+    </div>
+
+    <div class="form" >
+      <div class="page-header" style="margin-bottom:8px;">
+        <h2 style="margin:0;font-size:1rem;">Reporte de propinas</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="fDesde">Desde</label>
+          <input id="fDesde" class="form-input" type="date">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="fHasta">Hasta</label>
+          <input id="fHasta" class="form-input" type="date">
+        </div>
+        <div class="form-col" style="max-width:280px;">
+          <label class="form-label" for="fUsuario">Usuario</label>
+          <input id="fUsuario" class="form-input" placeholder="email o nombre">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="fModo">Modo</label>
+          <select id="fModo" class="form-input">
+            <option value="">Todos</option>
+            <option value="por_usuario">Por usuario</option>
+            <option value="universal">Universal</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="fOrigen">Origen</label>
+          <select id="fOrigen" class="form-input">
+            <option value="">Todos</option>
+            <option value="venta">Venta</option>
+            <option value="ajuste_manual">Ajuste manual</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:200px;">
+          <label class="form-label" for="fCierreCaja">Cierre de caja</label>
+          <input id="fCierreCaja" class="form-input" type="number" min="0" step="1" placeholder="ID cierre">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label">Filtro de ajustes</label>
+          <label class="form-help" style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+            <input id="fSoloAjustes" type="checkbox"> Solo ajustes manuales
+          </label>
+        </div>
+        <div class="form-col" style="max-width:180px;">
+          <label class="form-label" for="fLimit">Máx. filas</label>
+          <input id="fLimit" class="form-input" type="number" min="10" max="2000" step="10" value="200">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnRefrescarReporte" type="button" class="btn">Actualizar reporte</button>
+      </div>
+      <div id="reporteMsg" class="form-help"></div>
+
+      <div id="resumenBox" class="form-help" ></div>
+
+      <div >
+        <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Acumulado por usuario</h3>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Activo</th>
+                <th>Propina por usuario</th>
+                <th>Propina universal</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="tablaUsuariosBody">
+              <tr><td colspan="5" class="text-empty" style="text-align:center;">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div >
+        <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Movimientos de propinas</h3>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Carrito</th>
+                <th>Referencia venta</th>
+                <th>Origen</th>
+                <th>Ajuste manual</th>
+                <th>Cierre caja</th>
+                <th>Modo</th>
+                <th>Usuario origen</th>
+                <th>Usuario asignado</th>
+                <th>Base cobro</th>
+                <th>%</th>
+                <th>Impuesto</th>
+                <th>Monto propina</th>
+                <th>Total c/impuesto</th>
+              </tr>
+            </thead>
+            <tbody id="tablaMovimientosBody">
+              <tr><td colspan="14" class="text-empty" style="text-align:center;">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="form" >
+      <div class="page-header" style="margin-bottom:8px;">
+        <h2 style="margin:0;font-size:1rem;">Ajuste manual de propinas</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:180px;">
+          <label class="form-label" for="ajCarritoId">Carrito ID (opcional)</label>
+          <input id="ajCarritoId" class="form-input" type="number" min="0" step="1">
+        </div>
+        <div class="form-col" style="max-width:180px;">
+          <label class="form-label" for="ajCierreCajaId">Cierre caja ID</label>
+          <input id="ajCierreCajaId" class="form-input" type="number" min="0" step="1" placeholder="Opcional">
+        </div>
+        <div class="form-col" style="max-width:240px;">
+          <label class="form-label" for="ajUsuario">Usuario asignado</label>
+          <input id="ajUsuario" class="form-input" type="text" maxlength="180" placeholder="usuario@empresa.com" list="usuariosEmpresaList">
+          <datalist id="usuariosEmpresaList"></datalist>
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ajModo">Modo de distribución</label>
+          <select id="ajModo" class="form-input">
+            <option value="por_usuario">Por usuario</option>
+            <option value="universal">Universal</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ajMonto">Monto ajuste (+/-)</label>
+          <input id="ajMonto" class="form-input" type="number" step="0.01" placeholder="Ej: 2500 o -1200">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="ajTratamientoFiscal">Tratamiento fiscal (opcional)</label>
+          <select id="ajTratamientoFiscal" class="form-input">
+            <option value="">Usar configuración</option>
+            <option value="no_gravada">No gravada</option>
+            <option value="gravada">Gravada</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:240px;">
+          <label class="form-label" for="ajPctImpuesto">Impuesto ajuste (%)</label>
+          <input id="ajPctImpuesto" class="form-input" type="number" min="0" max="100" step="0.01" placeholder="Opcional">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="ajReferencia">Referencia ajuste</label>
+          <input id="ajReferencia" class="form-input" type="text" maxlength="160" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:320px;">
+          <label class="form-label" for="ajVentaRef">Referencia venta (opcional)</label>
+          <input id="ajVentaRef" class="form-input" type="text" maxlength="160">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ajMotivo">Motivo</label>
+          <textarea id="ajMotivo" class="form-textarea" placeholder="Motivo obligatorio del ajuste manual"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnRegistrarAjuste" type="button" class="btn">Registrar ajuste manual</button>
+      </div>
+      <div id="ajusteMsg" class="form-help"></div>
+    </div>
+
+    <div class="form" >
+      <div class="page-header" style="margin-bottom:8px;">
+        <h2 style="margin:0;font-size:1rem;">Conciliacion de propinas por cierre</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ccCierreCajaId">ID cierre de caja</label>
+          <input id="ccCierreCajaId" class="form-input" type="number" min="1" step="1" placeholder="Obligatorio">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnConciliarCierre" type="button" class="btn secondary">Ejecutar conciliacion</button>
+      </div>
+      <div id="conciliacionMsg" class="form-help"></div>
+      <pre id="conciliacionResumen" class="form-help" style="white-space:pre-wrap;margin-top:6px;"></pre>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      function getQueryParam(name) {
+        var params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      function normalize(v) {
+        return String(v || '').trim();
+      }
+
+      function escapeHtml(raw) {
+        return String(raw || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function money(v) {
+        var n = Number(v || 0);
+        return n.toFixed(2);
+      }
+
+      function setMessage(id, text, isError) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = isError ? 'error' : 'form-help';
+      }
+
+      function ensureOk(res) {
+        if (res.ok) return res;
+        return res.text().then(function (t) {
+          throw new Error(t || ('HTTP ' + res.status));
+        });
+      }
+
+      var empresaID = Number(getQueryParam('empresa_id') || 0);
+      var usuariosEmpresa = [];
+      if (!empresaID) {
+        setMessage('cfgMsg', 'empresa_id es obligatorio en la URL', true);
+        setMessage('reporteMsg', 'empresa_id es obligatorio en la URL', true);
+        return;
+      }
+
+      try {
+        localStorage.setItem('active_empresa_id', String(empresaID));
+      } catch (_) {}
+
+      var empresaContextEl = document.getElementById('empresaContextoPropinas');
+      if (empresaContextEl) {
+        empresaContextEl.textContent = 'Contexto activo: empresa_id=' + String(empresaID);
+      }
+
+      function getCfgPayload() {
+        return {
+          empresa_id: empresaID,
+          habilitar_propina: Boolean(document.getElementById('cfgHabilitar').checked),
+          porcentaje_propina: Math.max(0, Math.min(100, Number(document.getElementById('cfgPorcentaje').value || 0))),
+          modo_distribucion: normalize(document.getElementById('cfgModo').value) || 'por_usuario',
+          aplicar_automaticamente: Boolean(document.getElementById('cfgAplicarAuto').checked),
+          pais_fiscal: normalize(document.getElementById('cfgPaisFiscal').value),
+          regimen_fiscal: normalize(document.getElementById('cfgRegimenFiscal').value),
+          tratamiento_fiscal: normalize(document.getElementById('cfgTratamientoFiscal').value) || 'no_gravada',
+          porcentaje_impuesto_propina: Math.max(0, Math.min(100, Number(document.getElementById('cfgPctImpuestoPropina').value || 0))),
+          observaciones: normalize(document.getElementById('cfgObservaciones').value)
+        };
+      }
+
+      function applyCfg(cfg) {
+        cfg = cfg || {};
+        document.getElementById('cfgHabilitar').checked = Boolean(cfg.habilitar_propina);
+        document.getElementById('cfgPorcentaje').value = Number(cfg.porcentaje_propina || 10);
+        document.getElementById('cfgModo').value = normalize(cfg.modo_distribucion) || 'por_usuario';
+        document.getElementById('cfgAplicarAuto').checked = cfg.aplicar_automaticamente !== false;
+        document.getElementById('cfgPaisFiscal').value = normalize(cfg.pais_fiscal);
+        document.getElementById('cfgRegimenFiscal').value = normalize(cfg.regimen_fiscal);
+        document.getElementById('cfgTratamientoFiscal').value = normalize(cfg.tratamiento_fiscal) || 'no_gravada';
+        document.getElementById('cfgPctImpuestoPropina').value = Number(cfg.porcentaje_impuesto_propina || 0);
+        document.getElementById('cfgObservaciones').value = normalize(cfg.observaciones);
+      }
+
+      function fetchConfig() {
+        return fetch('/api/empresa/propinas?empresa_id=' + encodeURIComponent(empresaID) + '&action=config')
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (cfg) {
+            applyCfg(cfg);
+            return cfg;
+          });
+      }
+
+      function saveConfig(action) {
+        var url = '/api/empresa/propinas?empresa_id=' + encodeURIComponent(empresaID);
+        if (action) {
+          url += '&action=' + encodeURIComponent(action);
+        }
+        return fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(getCfgPayload())
+        })
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (resp) {
+            var cfg = resp && resp.configuracion ? resp.configuracion : null;
+            if (cfg) applyCfg(cfg);
+            setMessage('cfgMsg', 'Configuración de propinas guardada correctamente.', false);
+          })
+          .catch(function (err) {
+            setMessage('cfgMsg', err.message || 'No se pudo guardar la configuracion.', true);
+          });
+      }
+
+      function buildReportUrl() {
+        var url = new URL('/api/empresa/propinas', window.location.origin);
+        url.searchParams.set('empresa_id', String(empresaID));
+        url.searchParams.set('action', 'reporte');
+
+        var desde = normalize(document.getElementById('fDesde').value);
+        var hasta = normalize(document.getElementById('fHasta').value);
+        var usuario = normalize(document.getElementById('fUsuario').value);
+        var modo = normalize(document.getElementById('fModo').value);
+        var origen = normalize(document.getElementById('fOrigen').value);
+        var cierreCaja = Number(document.getElementById('fCierreCaja').value || 0);
+        var soloAjustes = Boolean(document.getElementById('fSoloAjustes').checked);
+        var limit = Math.max(10, Math.min(2000, Number(document.getElementById('fLimit').value || 200)));
+
+        if (desde) url.searchParams.set('desde', desde);
+        if (hasta) url.searchParams.set('hasta', hasta);
+        if (usuario) url.searchParams.set('usuario', usuario);
+        if (modo) url.searchParams.set('modo', modo);
+        if (origen) url.searchParams.set('origen', origen);
+        if (cierreCaja > 0) url.searchParams.set('cierre_caja_id', String(Math.floor(cierreCaja)));
+        if (soloAjustes) url.searchParams.set('solo_ajustes', '1');
+        url.searchParams.set('limit', String(limit));
+
+        return url.pathname + '?' + url.searchParams.toString();
+      }
+
+      function renderResumen(report) {
+        var resumen = report && report.resumen ? report.resumen : {};
+        var cfg = report && report.configuracion ? report.configuracion : {};
+        var estado = cfg.habilitar_propina ? 'Habilitada' : 'Deshabilitada';
+        var modo = normalize(cfg.modo_distribucion) || 'por_usuario';
+        var porcentaje = Number(cfg.porcentaje_propina || 0).toFixed(2);
+
+        var txt = 'Estado: ' + estado +
+          ' | Porcentaje: ' + porcentaje + '% | Modo: ' + modo +
+          ' | Movimientos: ' + Number(resumen.cantidad_movimientos || 0) +
+          ' | Base cobro: ' + money(resumen.total_base_cobro) +
+          ' | Propinas total: ' + money(resumen.total_propinas) +
+          ' | Ajustes manuales: ' + money(resumen.total_ajustes_manuales) +
+          ' | Impuesto propina: ' + money(resumen.total_impuesto_propina) +
+          ' | Total c/impuesto: ' + money(resumen.total_propinas_con_impuesto) +
+          ' | Propina por usuario: ' + money(resumen.total_propinas_por_usuario) +
+          ' | Propina universal: ' + money(resumen.total_propinas_universal) +
+          ' | Usuarios activos: ' + Number(resumen.usuarios_activos || 0) +
+          ' | Cuota universal por usuario: ' + money(resumen.cuota_universal_por_usuario);
+
+        document.getElementById('resumenBox').textContent = txt;
+      }
+
+      function renderUsuarios(report) {
+        var rows = report && Array.isArray(report.usuarios) ? report.usuarios : [];
+        var body = document.getElementById('tablaUsuariosBody');
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="5" class="text-empty" style="text-align:center;">Sin datos para el periodo seleccionado</td></tr>';
+          return;
+        }
+
+        body.innerHTML = rows.map(function (item) {
+          var usuario = item.usuario_etiqueta || item.usuario_clave || '-';
+          if (item.usuario_id) usuario += ' #' + String(item.usuario_id);
+          return '<tr>' +
+            '<td>' + escapeHtml(usuario) + '</td>' +
+            '<td>' + (item.es_usuario_activo ? 'si' : 'no') + '</td>' +
+            '<td>' + money(item.propina_por_usuario) + '</td>' +
+            '<td>' + money(item.propina_universal) + '</td>' +
+            '<td>' + money(item.propina_total) + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      function renderMovimientos(report) {
+        var rows = report && Array.isArray(report.movimientos) ? report.movimientos : [];
+        var body = document.getElementById('tablaMovimientosBody');
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="14" class="text-empty" style="text-align:center;">Sin movimientos en el periodo seleccionado</td></tr>';
+          return;
+        }
+
+        body.innerHTML = rows.map(function (item) {
+          var origen = normalize(item.origen_movimiento) || 'venta';
+          return '<tr>' +
+            '<td>' + escapeHtml(item.fecha_movimiento || item.fecha_creacion || '-') + '</td>' +
+            '<td>' + escapeHtml(item.carrito_id || '-') + '</td>' +
+            '<td>' + escapeHtml(item.venta_referencia || '-') + '</td>' +
+            '<td>' + escapeHtml(origen) + '</td>' +
+            '<td>' + (item.es_ajuste_manual ? 'si' : 'no') + '</td>' +
+            '<td>' + escapeHtml(item.cierre_caja_id || '-') + '</td>' +
+            '<td>' + escapeHtml(item.modo_distribucion || '-') + '</td>' +
+            '<td>' + escapeHtml(formatUsuarioMovimiento(item.usuario_origen, item.usuario_origen_id)) + '</td>' +
+            '<td>' + escapeHtml(formatUsuarioMovimiento(item.usuario_asignado, item.usuario_asignado_id)) + '</td>' +
+            '<td>' + money(item.base_cobro) + '</td>' +
+            '<td>' + money(item.porcentaje_propina) + '</td>' +
+            '<td>' + money(item.fiscal_monto_impuesto) + '</td>' +
+            '<td>' + money(item.monto_propina) + '</td>' +
+            '<td>' + money(item.fiscal_total_propina) + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      function formatUsuarioMovimiento(nombre, id) {
+        var label = normalize(nombre) || '-';
+        if (id) label += ' #' + String(id);
+        return label;
+      }
+
+      function usuarioIDPorEntrada(value) {
+        var v = normalize(value).toLowerCase();
+        if (!v) return 0;
+        for (var i = 0; i < usuariosEmpresa.length; i++) {
+          var u = usuariosEmpresa[i] || {};
+          var id = parseOptionalInt(u.id);
+          var email = normalize(u.email).toLowerCase();
+          var nombre = normalize(u.nombre || u.name).toLowerCase();
+          var label = normalize(u.nombre || u.name || u.email);
+          var option = normalize(label + (u.email ? ' (' + u.email + ')' : '')).toLowerCase();
+          if (v === String(id) || v === email || v === nombre || v === option) return id;
+        }
+        return 0;
+      }
+
+      function loadUsuariosEmpresa() {
+        return fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(empresaID))
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (rows) {
+            usuariosEmpresa = Array.isArray(rows) ? rows : [];
+            var list = document.getElementById('usuariosEmpresaList');
+            if (!list) return;
+            list.innerHTML = usuariosEmpresa.map(function (u) {
+              var label = normalize(u.nombre || u.name || u.email);
+              var email = normalize(u.email);
+              var value = label + (email && email !== label ? ' (' + email + ')' : '');
+              return '<option value="' + escapeHtml(value) + '"></option>';
+            }).join('');
+          })
+          .catch(function () {
+            usuariosEmpresa = [];
+          });
+      }
+
+      function parseOptionalInt(value) {
+        var n = Number(value || 0);
+        if (!isFinite(n)) return 0;
+        n = Math.floor(n);
+        return n > 0 ? n : 0;
+      }
+
+      function parseOptionalDecimal(value) {
+        var n = Number(value || 0);
+        if (!isFinite(n)) return 0;
+        return n;
+      }
+
+      function buildAjustePayload() {
+        return {
+          empresa_id: empresaID,
+          carrito_id: parseOptionalInt(document.getElementById('ajCarritoId').value),
+          cierre_caja_id: parseOptionalInt(document.getElementById('ajCierreCajaId').value),
+          venta_referencia: normalize(document.getElementById('ajVentaRef').value),
+          usuario_asignado: normalize(document.getElementById('ajUsuario').value),
+          usuario_asignado_id: usuarioIDPorEntrada(document.getElementById('ajUsuario').value),
+          modo_distribucion: normalize(document.getElementById('ajModo').value) || 'por_usuario',
+          monto_ajuste: parseOptionalDecimal(document.getElementById('ajMonto').value),
+          motivo: normalize(document.getElementById('ajMotivo').value),
+          referencia_ajuste: normalize(document.getElementById('ajReferencia').value),
+          fiscal_tratamiento: normalize(document.getElementById('ajTratamientoFiscal').value),
+          fiscal_porcentaje_impuesto: parseOptionalDecimal(document.getElementById('ajPctImpuesto').value)
+        };
+      }
+
+      function registrarAjusteManual() {
+        var payload = buildAjustePayload();
+        if (!payload.motivo) {
+          setMessage('ajusteMsg', 'El motivo del ajuste es obligatorio.', true);
+          return Promise.resolve();
+        }
+        if (!payload.monto_ajuste) {
+          setMessage('ajusteMsg', 'El monto de ajuste debe ser diferente de cero.', true);
+          return Promise.resolve();
+        }
+        return fetch('/api/empresa/propinas?empresa_id=' + encodeURIComponent(empresaID) + '&action=ajuste_manual', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (resp) {
+            setMessage('ajusteMsg', 'Ajuste manual registrado (id=' + String(resp && resp.id ? resp.id : '-') + ').', false);
+            if (payload.cierre_caja_id > 0) {
+              document.getElementById('ccCierreCajaId').value = String(payload.cierre_caja_id);
+            }
+            return loadReport();
+          })
+          .catch(function (err) {
+            setMessage('ajusteMsg', err.message || 'No se pudo registrar el ajuste manual.', true);
+          });
+      }
+
+      function conciliarCierre() {
+        var cierreID = parseOptionalInt(document.getElementById('ccCierreCajaId').value);
+        if (!cierreID) {
+          setMessage('conciliacionMsg', 'Debe indicar un cierre de caja valido.', true);
+          return Promise.resolve();
+        }
+        var url = '/api/empresa/propinas?empresa_id=' + encodeURIComponent(empresaID) +
+          '&action=conciliacion_cierre&cierre_caja_id=' + encodeURIComponent(String(cierreID));
+        return fetch(url)
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            setMessage('conciliacionMsg', 'Conciliacion ejecutada correctamente para cierre ' + String(cierreID) + '.', false);
+            document.getElementById('conciliacionResumen').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('fCierreCaja').value = String(cierreID);
+            return loadReport();
+          })
+          .catch(function (err) {
+            setMessage('conciliacionMsg', err.message || 'No se pudo conciliar el cierre de caja.', true);
+          });
+      }
+
+      function loadReport() {
+        return fetch(buildReportUrl())
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (report) {
+            renderResumen(report);
+            renderUsuarios(report);
+            renderMovimientos(report);
+            setMessage('reporteMsg', '', false);
+          })
+          .catch(function (err) {
+            setMessage('reporteMsg', err.message || 'No se pudo cargar el reporte de propinas.', true);
+          });
+      }
+
+      document.getElementById('btnGuardarCfg').addEventListener('click', function () {
+        saveConfig('');
+      });
+      document.getElementById('btnActivarCfg').addEventListener('click', function () {
+        document.getElementById('cfgHabilitar').checked = true;
+        saveConfig('activar');
+      });
+      document.getElementById('btnDesactivarCfg').addEventListener('click', function () {
+        document.getElementById('cfgHabilitar').checked = false;
+        saveConfig('desactivar');
+      });
+      document.getElementById('btnRefrescarReporte').addEventListener('click', loadReport);
+      document.getElementById('btnRegistrarAjuste').addEventListener('click', registrarAjusteManual);
+      document.getElementById('btnConciliarCierre').addEventListener('click', conciliarCierre);
+
+      Promise.all([loadUsuariosEmpresa(), fetchConfig()])
+        .then(loadReport)
+        .catch(function (err) {
+          setMessage('cfgMsg', err.message || 'No se pudo cargar la configuracion de propinas.', true);
+        });
+    })();
+  </script>
+</body>
+</html>
+

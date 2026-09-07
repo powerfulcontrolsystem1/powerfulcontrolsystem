@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Compras</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-module-header">
+      <div>
+        <h1>Compras</h1>
+        <p id="empresaInfo">Empresa: cargando...</p>
+      </div>
+      <div class="empresa-module-kpis">
+        <div class="kpi-box">
+          <span class="kpi-label">Documentos</span>
+          <strong id="kpiDocumentos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Borrador</span>
+          <strong id="kpiBorrador">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Pend. aprobacion</span>
+          <strong id="kpiPendienteAprobacion">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Emitidas</span>
+          <strong id="kpiEmitidas">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Recepcionadas</span>
+          <strong id="kpiRecepcionadas">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Contabilizadas</span>
+          <strong id="kpiContabilizadas">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Nuevo documento</h2>
+        <a id="btnGestionarProveedores" class="btn secondary" href="/administrar_empresa/administrar_productos.html?view=proveedores">Gestionar proveedores</a>
+      </div>
+
+      <form id="docForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="proveedorSelect">Proveedor</label>
+            <select id="proveedorSelect" class="form-input" required>
+              <option value="">Seleccione proveedor</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="accionCreate">Acción inicial</label>
+            <select id="accionCreate" class="form-input">
+              <option value="crear">Guardar como borrador</option>
+              <option value="solicitar_aprobacion">Enviar a aprobacion</option>
+              <option value="emitir_orden">Emitir orden de compra</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="documentoCodigo">Código documento</label>
+            <input id="documentoCodigo" class="form-input" placeholder="OC-2026-0001">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="montoTotal">Monto total</label>
+            <input id="montoTotal" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="moneda">Moneda</label>
+            <input id="moneda" class="form-input" value="COP" maxlength="5">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="periodoContable">Periodo contable</label>
+            <input id="periodoContable" class="form-input" placeholder="YYYY-MM">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="empresa-config-check" for="requiereAprobacion">
+              <input id="requiereAprobacion" type="checkbox">
+              <span>Requiere aprobacion multinivel</span>
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="nivelesAprobacion">Niveles de aprobacion</label>
+            <input id="nivelesAprobacion" class="form-input" type="number" min="1" max="10" value="2">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorDocRef">Documento proveedor</label>
+            <input id="proveedorDocRef" class="form-input" placeholder="NIT / Documento">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="facturaDocRef">Factura proveedor</label>
+            <input id="facturaDocRef" class="form-input" placeholder="FAC-2026-0001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="entradaDocRef">Documento entrada</label>
+            <input id="entradaDocRef" class="form-input" placeholder="ENT-2026-0001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="comprobanteArchivo">Adjuntar comprobante</label>
+            <input id="comprobanteArchivo" class="form-input" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,.xml">
+            <div class="form-help">Puedes tomar una foto o subir PNG/JPEG/WebP, PDF o XML; el backend verifica tipo y contenido antes de guardarlo.</div>
+            <button id="btnAnalizarCompraIA" class="btn secondary ai-action-btn" type="button"><img src="/img/pcs_ia_logo.svg" alt="" aria-hidden="true">Carga automática de factura de compra</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="observaciones">Observaciones</label>
+            <textarea id="observaciones" class="form-textarea" placeholder="Notas de negociación, condiciones de entrega, prioridad..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar documento</button>
+          <button id="btnLimpiarForm" class="btn secondary" type="button">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Documentos</h2>
+        <div class="empresa-inline-actions">
+          <select id="filtroEstado" class="form-input">
+            <option value="">Todos los estados</option>
+            <option value="borrador">Borrador</option>
+            <option value="pendiente_aprobacion">Pendiente aprobacion</option>
+            <option value="emitida">Emitida</option>
+            <option value="recepcion_parcial">Recepcion parcial</option>
+            <option value="recepcionada">Recepcionada</option>
+            <option value="contabilizada">Contabilizada</option>
+            <option value="rechazada">Rechazada</option>
+          </select>
+          <input id="filtroBusqueda" class="form-input" placeholder="Buscar por código u observaciones">
+          <label class="empresa-config-check" for="filtroInactivos">
+            <input id="filtroInactivos" type="checkbox">
+            <span>Incluir inactivos</span>
+          </label>
+          <button id="btnFiltrar" class="btn secondary" type="button">Filtrar</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="docsTable">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Proveedor</th>
+              <th>Estado documento</th>
+              <th>Monto</th>
+              <th>Periodo</th>
+              <th>Comprobante</th>
+              <th>Estado</th>
+              <th>Actualización</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+  (function () {
+    function getQueryParam(name) {
+      var params = new URLSearchParams(window.location.search || "");
+      return params.get(name);
+    }
+
+    function formatMoney(value, moneda) {
+      var amount = Number(value || 0);
+      return new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: (moneda || "COP").toUpperCase(),
+        maximumFractionDigits: 2
+      }).format(amount);
+    }
+
+    function escapeHtml(raw) {
+      return String(raw || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function toPeriodoActual() {
+      var now = new Date();
+      var month = String(now.getMonth() + 1).padStart(2, "0");
+      return now.getFullYear() + "-" + month;
+    }
+
+    var empresaID = Number(getQueryParam("empresa_id") || getQueryParam("id") || 0);
+    var empresaInfo = document.getElementById("empresaInfo");
+    var messageBox = document.getElementById("messageBox");
+    var proveedorSelect = document.getElementById("proveedorSelect");
+    var periodoContableInput = document.getElementById("periodoContable");
+
+    var kpiDocumentos = document.getElementById("kpiDocumentos");
+    var kpiBorrador = document.getElementById("kpiBorrador");
+    var kpiPendienteAprobacion = document.getElementById("kpiPendienteAprobacion");
+    var kpiEmitidas = document.getElementById("kpiEmitidas");
+    var kpiRecepcionadas = document.getElementById("kpiRecepcionadas");
+    var kpiContabilizadas = document.getElementById("kpiContabilizadas");
+
+    var docsTableBody = document.querySelector("#docsTable tbody");
+    var filtroEstado = document.getElementById("filtroEstado");
+    var filtroBusqueda = document.getElementById("filtroBusqueda");
+    var filtroInactivos = document.getElementById("filtroInactivos");
+    var compraComprobanteUploadInput = document.getElementById("comprobanteArchivo");
+    var btnAnalizarCompraIA = document.getElementById("btnAnalizarCompraIA");
+
+    var state = {
+      proveedores: [],
+	  documentos: [],
+	  pendingUploadDocumento: null
+    };
+
+    function showMessage(text, type) {
+      messageBox.textContent = text || "";
+      messageBox.classList.remove("value-negative", "value-positive");
+      if (type === "error") {
+        messageBox.classList.add("value-negative");
+        return;
+      }
+      if (type === "ok") {
+        messageBox.classList.add("value-positive");
+        return;
+      }
+    }
+
+    function publicError(status, raw) {
+      var text = String(raw || "").trim();
+      if (text && text.charAt(0) === "{") {
+        try {
+          var data = JSON.parse(text);
+          if (data && typeof data.error === "string") {
+            text = data.error.trim();
+          }
+        } catch (_err) {}
+      }
+      if (!text || text.indexOf("<") !== -1 || text.length > 240) {
+        if (status === 401) return "La sesión expiró. Inicia sesión nuevamente.";
+        if (status === 403) return "No tienes permiso para operar compras en esta empresa.";
+        if (status === 404) return "La información de compras todavía no está disponible.";
+        if (status === 409) return "La operación ya fue procesada o entra en conflicto con el estado actual.";
+        return "No se pudo completar la operación de compras.";
+      }
+      return text;
+    }
+
+    async function apiRequest(path, options) {
+      var resp = await fetch(path, Object.assign({ credentials: "same-origin" }, options || {}));
+      if (!resp.ok) {
+        var errorText = await resp.text();
+        throw new Error(publicError(resp.status, errorText));
+      }
+      if (resp.status === 204) {
+        return null;
+      }
+      return resp.json();
+    }
+
+    function proveedorNombreByID(id) {
+      for (var i = 0; i < state.proveedores.length; i += 1) {
+        if (Number(state.proveedores[i].id) === Number(id)) {
+          return state.proveedores[i].nombre || ("Proveedor #" + id);
+        }
+      }
+      return "Proveedor #" + id;
+    }
+
+    function proveedorByID(id) {
+      for (var i = 0; i < state.proveedores.length; i += 1) {
+        if (Number(state.proveedores[i].id) === Number(id)) {
+          return state.proveedores[i];
+        }
+      }
+      return null;
+    }
+
+    function estadoBadge(estadoDocumento) {
+      var estado = String(estadoDocumento || "").toLowerCase();
+      if (estado === "pendiente_aprobacion") return '<span class="badge high">pendiente_aprobacion</span>';
+      if (estado === "emitida") return '<span class="badge mid">emitida</span>';
+      if (estado === "recepcion_parcial") return '<span class="badge mid">recepcion_parcial</span>';
+      if (estado === "recepcionada") return '<span class="badge low">recepcionada</span>';
+      if (estado === "contabilizada") return '<span class="badge low">contabilizada</span>';
+      if (estado === "rechazada") return '<span class="badge high">rechazada</span>';
+      return '<span class="badge high">' + escapeHtml(estado || "borrador") + "</span>";
+    }
+
+    function comprobanteDocumentoCell(doc) {
+      var url = String(doc.comprobante_url || '').trim();
+      if (!url) {
+        return '<span>Sin adjunto</span>';
+      }
+      var nombre = String(doc.comprobante_nombre_archivo || '').trim() || 'Ver comprobante';
+      return '<a class="btn secondary" href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(nombre) + '</a>';
+    }
+
+    async function uploadDocumentoComprobante(documentoCodigo, tipoDocumento, file) {
+      if (!file) {
+        return null;
+      }
+      var formData = new FormData();
+      formData.append('empresa_id', String(empresaID));
+      formData.append('documento_codigo', String(documentoCodigo || '').trim());
+      formData.append('tipo_documento', String(tipoDocumento || 'orden_compra').trim());
+      formData.append('archivo', file, file.name || 'comprobante');
+      return apiRequest('/api/empresa/compras/documentos/comprobante', {
+        method: 'POST',
+        body: formData
+      });
+    }
+
+    function normalizeText(value) {
+      return String(value || '').trim();
+    }
+
+    function periodoFromDate(value) {
+      var raw = normalizeText(value);
+      if (/^\d{4}-\d{2}/.test(raw)) return raw.slice(0, 7);
+      return toPeriodoActual();
+    }
+
+    function findProveedorByExtraction(soporte) {
+      var nit = normalizeText(soporte && soporte.proveedor_nit).toLowerCase();
+      var nombre = normalizeText(soporte && soporte.proveedor_nombre).toLowerCase();
+      for (var i = 0; i < state.proveedores.length; i += 1) {
+        var item = state.proveedores[i] || {};
+        var itemDoc = normalizeText(item.documento || item.nit || item.identificacion).toLowerCase();
+        var itemName = normalizeText(item.nombre || item.razon_social).toLowerCase();
+        if (nit && itemDoc && itemDoc === nit) return item;
+        if (nombre && itemName && itemName.indexOf(nombre) >= 0) return item;
+      }
+      return null;
+    }
+
+    function soporteCompraTieneExtraccion(soporte) {
+      if (!soporte) return false;
+      return !!(
+        normalizeText(soporte.documento_numero) ||
+        normalizeText(soporte.proveedor_nit) ||
+        normalizeText(soporte.extraccion_json) ||
+        normalizeText(soporte.respuesta_ia) ||
+        Number(soporte.total || soporte.subtotal || 0) > 0
+      );
+    }
+
+    async function resolverSoporteCompraDuplicado(soporte) {
+      var actual = soporte || {};
+      if (normalizeText(actual.estado_soporte).toLowerCase() !== 'duplicado') {
+        return { soporte: actual, reutilizado: false };
+      }
+
+      var listado = await apiRequest('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaID)) + '&action=soportes&registro=activo');
+      var soportes = listado && Array.isArray(listado.soportes) ? listado.soportes : [];
+      var porID = {};
+      soportes.forEach(function (item) {
+        if (item && Number(item.id || 0) > 0) porID[Number(item.id)] = item;
+      });
+
+      var visitados = {};
+      for (var salto = 0; salto < 20 && normalizeText(actual.estado_soporte).toLowerCase() === 'duplicado'; salto += 1) {
+        var originalID = Number(actual.duplicado_soporte_id || 0);
+        if (!originalID || visitados[originalID] || !porID[originalID]) {
+          throw new Error('La factura ya fue radicada, pero su soporte original no esta disponible para reutilizar la extraccion.');
+        }
+        visitados[originalID] = true;
+        actual = porID[originalID];
+      }
+
+      if (normalizeText(actual.estado_soporte).toLowerCase() === 'duplicado') {
+        throw new Error('No se pudo resolver de forma segura la cadena de soportes duplicados.');
+      }
+      return { soporte: actual, reutilizado: true };
+    }
+
+    function openAIChatWithCompra(file, summary) {
+      var payload = {
+        file: file,
+        title: summary || 'Captura inteligente de compra',
+        prompt: 'Analiza esta compra o factura de proveedor. Resume proveedor, fecha, numero, impuestos, total y dime si la foto/documento se ve claro o si debo tomarla de nuevo antes de guardar.',
+        autoSend: false
+      };
+      try {
+        if (window.parent && typeof window.parent.__pcsAIChatAnalyzeFile === 'function') {
+          return window.parent.__pcsAIChatAnalyzeFile(payload);
+        }
+      } catch (_) {}
+      try {
+        if (typeof window.__pcsAIChatAnalyzeFile === 'function') {
+          return window.__pcsAIChatAnalyzeFile(payload);
+        }
+      } catch (_) {}
+      return false;
+    }
+
+    async function analizarCompraIA() {
+      if (!empresaID) {
+        showMessage('empresa_id es obligatorio para analizar con IA.', 'error');
+        return;
+      }
+      var file = compraComprobanteUploadInput && compraComprobanteUploadInput.files && compraComprobanteUploadInput.files[0] ? compraComprobanteUploadInput.files[0] : null;
+      if (!file) {
+        showMessage('Selecciona primero una imagen o PDF del comprobante.', 'error');
+        return;
+      }
+      openAIChatWithCompra(file, 'Archivo cargado para revisar la compra');
+      var original = btnAnalizarCompraIA ? btnAnalizarCompraIA.textContent : '';
+      if (btnAnalizarCompraIA) {
+        btnAnalizarCompraIA.disabled = true;
+        btnAnalizarCompraIA.textContent = 'Analizando...';
+      }
+      showMessage('Radicando soporte y extrayendo datos con GPT-5.5...');
+      try {
+        var formData = new FormData();
+        formData.append('empresa_id', String(empresaID));
+        formData.append('archivo', file, file.name || 'comprobante');
+        var radicado = await apiRequest('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaID)) + '&action=radicar', {
+          method: 'POST',
+          body: formData
+        });
+        var soporteRadicado = radicado && radicado.soporte ? radicado.soporte : {};
+        var soporteId = soporteRadicado && soporteRadicado.id ? soporteRadicado.id : 0;
+        if (!soporteId) throw new Error('No se pudo radicar el soporte para IA.');
+        var resuelto = await resolverSoporteCompraDuplicado(soporteRadicado);
+        var soporte = resuelto.soporte || {};
+        var estadoSoporte = normalizeText(soporte.estado_soporte).toLowerCase();
+        if (!resuelto.reutilizado || !soporteCompraTieneExtraccion(soporte)) {
+          if (['radicado', 'extraido', 'en_revision'].indexOf(estadoSoporte) < 0) {
+            throw new Error('El soporte encontrado no permite extraer ni reutilizar datos de la factura.');
+          }
+          var extraido = await apiRequest('/api/empresa/soportes_compras_ia?empresa_id=' + encodeURIComponent(String(empresaID)) + '&action=extraer_ia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ soporte_id: Number(soporte.id || soporteId) })
+          });
+          soporte = extraido && extraido.soporte ? extraido.soporte : {};
+        }
+        if (!soporteCompraTieneExtraccion(soporte)) {
+          throw new Error('La extraccion IA no devolvio datos verificables para preparar la compra.');
+        }
+        var proveedor = findProveedorByExtraction(soporte);
+        if (proveedor && proveedor.id) {
+          proveedorSelect.value = String(proveedor.id);
+        }
+        document.getElementById('proveedorDocRef').value = normalizeText(soporte.proveedor_nit);
+        document.getElementById('facturaDocRef').value = normalizeText(soporte.documento_numero);
+        document.getElementById('montoTotal').value = String(Number(soporte.total || soporte.subtotal || 0).toFixed(2));
+        document.getElementById('moneda').value = normalizeText(soporte.moneda || 'COP').toUpperCase();
+        document.getElementById('periodoContable').value = periodoFromDate(soporte.fecha_documento);
+        var notes = [];
+        if (!proveedor && normalizeText(soporte.proveedor_nombre)) {
+          notes.push('Proveedor sugerido por IA: ' + normalizeText(soporte.proveedor_nombre) + ' ' + normalizeText(soporte.proveedor_nit));
+        }
+        if (soporte.codigo) notes.push('Soporte IA: ' + normalizeText(soporte.codigo));
+        if (soporte.observaciones) notes.push(normalizeText(soporte.observaciones));
+        document.getElementById('observaciones').value = notes.join('\n');
+        openAIChatWithCompra(file, 'Datos extraidos desde IA. Revisa la compra antes de guardar');
+        showMessage((resuelto.reutilizado ? 'Factura reconocida: se reutilizo de forma segura una extraccion IA existente. ' : 'Datos cargados desde IA. ') + 'Revisa proveedor, monto y periodo antes de guardar. El chat IA quedo abierto con el archivo para validar novedades.', 'ok');
+      } catch (err) {
+        showMessage(err.message || 'No se pudo analizar la compra con IA.', 'error');
+      } finally {
+        if (btnAnalizarCompraIA) {
+          btnAnalizarCompraIA.disabled = false;
+          btnAnalizarCompraIA.textContent = original || 'Carga automática de factura de compra';
+        }
+      }
+    }
+
+    function accionesDocumento(doc) {
+      var acciones = [];
+      var estadoDoc = String(doc.estado_documento || "").toLowerCase();
+      var estado = String(doc.estado || "activo").toLowerCase();
+      var codigo = escapeHtml(doc.documento_codigo || "");
+      var tipo = escapeHtml(doc.tipo_documento || "orden_compra");
+
+      if (estado === "activo") {
+        if (estadoDoc === "borrador" || estadoDoc === "pendiente_emision" || estadoDoc === "rechazada") {
+          acciones.push('<button type="button" class="btn secondary" data-action="solicitar_aprobacion" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Solicitar aprob.</button>');
+          acciones.push('<button type="button" class="btn secondary" data-action="emitir_orden" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Emitir</button>');
+        }
+        if (estadoDoc === "pendiente_aprobacion") {
+          acciones.push('<button type="button" class="btn secondary" data-action="aprobar_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Aprobar nivel</button>');
+          acciones.push('<button type="button" class="btn secondary" data-action="rechazar_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Rechazar</button>');
+        }
+        if (estadoDoc === "emitida" || estadoDoc === "recepcion_parcial") {
+          acciones.push('<button type="button" class="btn secondary" data-action="recepcionar_parcial_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Recep. parcial</button>');
+          acciones.push('<button type="button" class="btn secondary" data-action="recepcionar_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Recepcionar</button>');
+          acciones.push('<button type="button" class="btn secondary" data-action="validar_documentos" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Validar docs</button>');
+        }
+        if (estadoDoc === "recepcionada") {
+          acciones.push('<button type="button" class="btn secondary" data-action="contabilizar_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Contabilizar</button>');
+          acciones.push('<button type="button" class="btn secondary" data-action="validar_documentos" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Validar docs</button>');
+        }
+        acciones.push('<button type="button" class="btn secondary" data-action="adjuntar_comprobante" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Adjuntar soporte</button>');
+        acciones.push('<button type="button" class="btn secondary" data-action="desactivar" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Desactivar</button>');
+      } else {
+        acciones.push('<button type="button" class="btn secondary" data-action="activar" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Activar</button>');
+      }
+
+      return acciones.join(" ");
+    }
+
+    function renderKPIs() {
+      var borrador = 0;
+      var pendientesAprobacion = 0;
+      var emitidas = 0;
+      var recepcionadas = 0;
+      var contabilizadas = 0;
+
+      state.documentos.forEach(function (doc) {
+        var estado = String(doc.estado_documento || "").toLowerCase();
+        if (estado === "pendiente_aprobacion") pendientesAprobacion += 1;
+        else if (estado === "emitida") emitidas += 1;
+        else if (estado === "recepcionada" || estado === "recepcion_parcial") recepcionadas += 1;
+        else if (estado === "contabilizada") contabilizadas += 1;
+        else borrador += 1;
+      });
+
+      kpiDocumentos.textContent = String(state.documentos.length);
+      kpiBorrador.textContent = String(borrador);
+      kpiPendienteAprobacion.textContent = String(pendientesAprobacion);
+      kpiEmitidas.textContent = String(emitidas);
+      kpiRecepcionadas.textContent = String(recepcionadas);
+      kpiContabilizadas.textContent = String(contabilizadas);
+    }
+
+    function renderDocumentos() {
+      if (!state.documentos.length) {
+		docsTableBody.innerHTML = '<tr><td colspan="9">No hay documentos de compras para los filtros seleccionados.</td></tr>';
+        renderKPIs();
+        return;
+      }
+
+      var rows = state.documentos.map(function (doc) {
+        return '<tr>' +
+          '<td>' + escapeHtml(doc.documento_codigo || "") + '</td>' +
+          '<td>' + escapeHtml(proveedorNombreByID(doc.proveedor_id)) + '</td>' +
+          '<td>' + estadoBadge(doc.estado_documento) + '</td>' +
+          '<td>' + escapeHtml(formatMoney(doc.monto_total, doc.moneda || "COP")) + '</td>' +
+          '<td>' + escapeHtml(doc.periodo_contable || "") + '</td>' +
+          '<td>' + comprobanteDocumentoCell(doc) + '</td>' +
+          '<td>' + escapeHtml(doc.estado || "activo") + '</td>' +
+          '<td>' + escapeHtml(doc.fecha_actualizacion || doc.fecha_creacion || "") + '</td>' +
+          '<td>' + accionesDocumento(doc) + '</td>' +
+          '</tr>';
+      });
+
+      docsTableBody.innerHTML = rows.join("");
+      renderKPIs();
+    }
+
+    async function loadProveedores() {
+      var data = await apiRequest('/api/empresa/proveedores?empresa_id=' + encodeURIComponent(String(empresaID)) + '&include_inactive=1');
+      state.proveedores = Array.isArray(data) ? data : [];
+
+      var options = ['<option value="">Seleccione proveedor</option>'];
+      state.proveedores.forEach(function (p) {
+        if (String(p.estado || "activo").toLowerCase() !== "activo") {
+          return;
+        }
+        options.push('<option value="' + escapeHtml(String(p.id)) + '">' + escapeHtml((p.nombre || "Proveedor") + ' (' + (p.codigo || ('ID-' + p.id)) + ')') + '</option>');
+      });
+      proveedorSelect.innerHTML = options.join("");
+    }
+
+    async function loadDocumentos() {
+      var query = new URLSearchParams();
+      query.set('empresa_id', String(empresaID));
+      query.set('include_inactive', filtroInactivos.checked ? '1' : '0');
+      var estadoDocumento = String(filtroEstado.value || '').trim();
+      if (estadoDocumento) {
+        query.set('estado_documento', estadoDocumento);
+      }
+      var q = String(filtroBusqueda.value || '').trim();
+      if (q) {
+        query.set('q', q);
+      }
+
+      var data = await apiRequest('/api/empresa/compras/documentos?' + query.toString());
+      state.documentos = Array.isArray(data) ? data : [];
+      renderDocumentos();
+    }
+
+    async function ejecutarAccion(codigoDocumento, tipoDocumento, accion) {
+      var documento = null;
+      for (var i = 0; i < state.documentos.length; i += 1) {
+        if (String(state.documentos[i].documento_codigo || "").toUpperCase() === String(codigoDocumento || "").toUpperCase()) {
+          documento = state.documentos[i];
+          break;
+        }
+      }
+
+      var payload = {
+        empresa_id: empresaID,
+        documento_codigo: codigoDocumento,
+        tipo_documento: tipoDocumento || 'orden_compra'
+      };
+
+      if (accion === 'adjuntar_comprobante') {
+        state.pendingUploadDocumento = {
+          documento_codigo: codigoDocumento,
+          tipo_documento: tipoDocumento || 'orden_compra'
+        };
+        compraComprobanteUploadInput.click();
+        return;
+      }
+
+      if (accion === 'desactivar' || accion === 'activar') {
+        payload.accion = 'activar';
+        payload.activo = accion === 'activar';
+      } else if (accion === 'solicitar_aprobacion') {
+        var nivelesRaw = window.prompt('Niveles de aprobacion requeridos (1-10):', '2');
+        if (nivelesRaw === null) {
+          return;
+        }
+        var niveles = Number(nivelesRaw || 0);
+        if (!Number.isFinite(niveles) || niveles < 1 || niveles > 10) {
+          throw new Error('Niveles de aprobacion invalidos.');
+        }
+        payload.accion = 'solicitar_aprobacion';
+        payload.requiere_aprobacion = true;
+        payload.niveles_aprobacion_requeridos = Math.floor(niveles);
+    } else if (accion === 'validar_documentos') {
+      var proveedorDefault = String((documento && documento.proveedor_documento_ref) || '').trim();
+      var facturaDefault = String((documento && documento.factura_documento_ref) || '').trim();
+      var entradaDefault = String((documento && documento.entrada_documento_ref) || '').trim();
+      var proveedorDoc = window.prompt('Documento del proveedor:', proveedorDefault);
+      if (proveedorDoc === null) {
+        return;
+      }
+      var facturaDoc = window.prompt('Factura de proveedor:', facturaDefault);
+      if (facturaDoc === null) {
+        return;
+      }
+      var entradaDoc = window.prompt('Documento de entrada de mercancia:', entradaDefault);
+      if (entradaDoc === null) {
+        return;
+      }
+      payload.accion = 'validar_documentos';
+      payload.proveedor_documento_ref = String(proveedorDoc || '').trim();
+      payload.factura_documento_ref = String(facturaDoc || '').trim();
+      payload.entrada_documento_ref = String(entradaDoc || '').trim();
+    } else if (accion === 'recepcionar_parcial_compra' || accion === 'recepcionar_compra') {
+      var ejemplo = '[{"producto_id":101,"cantidad_ordenada":10,"cantidad_recibida":8,"costo_unitario":5000,"diferencia_motivo":"faltante proveedor"}]';
+      var detalleDefault = String((documento && documento.recepcion_detalle_json) || '').trim();
+      if (!detalleDefault) {
+        detalleDefault = ejemplo;
+      }
+      var detalleRaw = window.prompt('Recepcion por item (JSON):', detalleDefault);
+      if (detalleRaw === null) {
+        return;
+      }
+      var recepcionItems = [];
+      try {
+        recepcionItems = JSON.parse(detalleRaw);
+      } catch (error) {
+        throw new Error('JSON invalido para recepcion por item.');
+      }
+      if (!Array.isArray(recepcionItems) || !recepcionItems.length) {
+        throw new Error('Debe incluir al menos un item en recepcion_items.');
+      }
+      payload.accion = accion;
+      payload.recepcion_items = recepcionItems;
+      } else {
+        payload.accion = accion;
+      }
+
+      var targetAction = String(payload.accion || '').trim();
+      await apiRequest('/api/empresa/compras/documentos?action=' + encodeURIComponent(targetAction), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      showMessage('Documento ' + codigoDocumento + ' actualizado con acción: ' + accion + '.', 'ok');
+      await loadDocumentos();
+    }
+
+    async function submitFormulario(event) {
+      event.preventDefault();
+      showMessage('');
+
+      var proveedorID = Number(proveedorSelect.value || 0);
+      if (!proveedorID) {
+        showMessage('Debe seleccionar un proveedor activo.', 'error');
+        return;
+      }
+
+      var payload = {
+        empresa_id: empresaID,
+        proveedor_id: proveedorID,
+        documento_codigo: String(document.getElementById('documentoCodigo').value || '').trim(),
+        accion: String(document.getElementById('accionCreate').value || 'crear').trim(),
+        monto_total: Number(document.getElementById('montoTotal').value || 0),
+        moneda: String(document.getElementById('moneda').value || 'COP').trim().toUpperCase(),
+        periodo_contable: String(document.getElementById('periodoContable').value || '').trim(),
+        requiere_aprobacion: !!document.getElementById('requiereAprobacion').checked,
+        niveles_aprobacion_requeridos: Math.floor(Number(document.getElementById('nivelesAprobacion').value || 1)),
+        proveedor_documento_ref: String(document.getElementById('proveedorDocRef').value || '').trim(),
+        factura_documento_ref: String(document.getElementById('facturaDocRef').value || '').trim(),
+        entrada_documento_ref: String(document.getElementById('entradaDocRef').value || '').trim(),
+        observaciones: String(document.getElementById('observaciones').value || '').trim()
+      };
+
+      if (!Number.isFinite(payload.niveles_aprobacion_requeridos) || payload.niveles_aprobacion_requeridos < 1) {
+        payload.niveles_aprobacion_requeridos = 1;
+      }
+      if (payload.niveles_aprobacion_requeridos > 10) {
+        payload.niveles_aprobacion_requeridos = 10;
+      }
+
+      var targetAction = String(payload.accion || '').trim();
+      var resp = await apiRequest('/api/empresa/compras/documentos?action=' + encodeURIComponent(targetAction), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      var resultado = (resp && resp.resultado) || {};
+      var documentoCodigo = String(resultado.documento_codigo || payload.documento_codigo || '').trim();
+      if (compraComprobanteUploadInput.files && compraComprobanteUploadInput.files[0] && documentoCodigo) {
+        try {
+          await uploadDocumentoComprobante(documentoCodigo, resultado.tipo_documento || 'orden_compra', compraComprobanteUploadInput.files[0]);
+        } catch (err) {
+          throw new Error('Documento guardado, pero no se pudo adjuntar el comprobante: ' + (err.message || 'error desconocido'));
+        }
+      }
+      showMessage('Documento guardado: ' + (documentoCodigo || 'sin codigo') + '.', 'ok');
+      document.getElementById('documentoCodigo').value = '';
+      document.getElementById('observaciones').value = '';
+      compraComprobanteUploadInput.value = '';
+      await loadDocumentos();
+    }
+
+    async function init() {
+      if (!empresaID) {
+        showMessage('empresa_id es obligatorio en la URL.', 'error');
+        return;
+      }
+
+      empresaInfo.textContent = 'Empresa ID: ' + String(empresaID);
+      periodoContableInput.value = toPeriodoActual();
+      var proveedoresLink = document.getElementById('btnGestionarProveedores');
+      if (proveedoresLink) {
+        proveedoresLink.href = '/administrar_empresa/administrar_productos.html?view=proveedores&empresa_id=' + encodeURIComponent(String(empresaID));
+      }
+
+      try {
+        await loadProveedores();
+        await loadDocumentos();
+      } catch (err) {
+        showMessage(err.message || 'No se pudo cargar módulo de compras.', 'error');
+      }
+    }
+
+    document.getElementById('docForm').addEventListener('submit', function (event) {
+      submitFormulario(event).catch(function (err) {
+        showMessage(err.message || 'No se pudo guardar documento.', 'error');
+      });
+    });
+
+    document.getElementById('btnLimpiarForm').addEventListener('click', function () {
+      document.getElementById('documentoCodigo').value = '';
+      document.getElementById('montoTotal').value = '0';
+      document.getElementById('moneda').value = 'COP';
+      document.getElementById('periodoContable').value = toPeriodoActual();
+      document.getElementById('requiereAprobacion').checked = false;
+      document.getElementById('nivelesAprobacion').value = '2';
+      document.getElementById('proveedorDocRef').value = '';
+      document.getElementById('facturaDocRef').value = '';
+      document.getElementById('entradaDocRef').value = '';
+      document.getElementById('observaciones').value = '';
+      document.getElementById('accionCreate').value = 'crear';
+      compraComprobanteUploadInput.value = '';
+      state.pendingUploadDocumento = null;
+      showMessage('Formulario limpio.');
+    });
+
+    if (btnAnalizarCompraIA) {
+      btnAnalizarCompraIA.addEventListener('click', function () {
+        analizarCompraIA().catch(function (err) {
+          showMessage(err.message || 'No se pudo analizar la compra con IA.', 'error');
+        });
+      });
+    }
+
+    proveedorSelect.addEventListener('change', function () {
+      var proveedor = proveedorByID(proveedorSelect.value);
+      var proveedorDocRef = document.getElementById('proveedorDocRef');
+      if (proveedor && proveedorDocRef && !String(proveedorDocRef.value || '').trim()) {
+        proveedorDocRef.value = proveedor.documento || '';
+      }
+    });
+
+    document.getElementById('btnFiltrar').addEventListener('click', function () {
+      loadDocumentos().catch(function (err) {
+        showMessage(err.message || 'No se pudo filtrar documentos.', 'error');
+      });
+    });
+
+    docsTableBody.addEventListener('click', function (event) {
+      var target = event.target;
+      if (!target || target.tagName !== 'BUTTON') {
+        return;
+      }
+      var accion = String(target.getAttribute('data-action') || '').trim();
+      var codigo = String(target.getAttribute('data-codigo') || '').trim();
+      var tipo = String(target.getAttribute('data-tipo') || 'orden_compra').trim();
+      if (!accion || !codigo) {
+        return;
+      }
+      ejecutarAccion(codigo, tipo, accion).catch(function (err) {
+        showMessage(err.message || 'No se pudo ejecutar acción del documento.', 'error');
+      });
+    });
+
+    compraComprobanteUploadInput.addEventListener('change', function () {
+      var pending = state.pendingUploadDocumento;
+      var file = compraComprobanteUploadInput.files && compraComprobanteUploadInput.files[0];
+      if (!pending || !file) {
+        return;
+      }
+      uploadDocumentoComprobante(pending.documento_codigo, pending.tipo_documento, file)
+        .then(function () {
+          state.pendingUploadDocumento = null;
+          compraComprobanteUploadInput.value = '';
+          showMessage('Comprobante adjuntado correctamente.', 'ok');
+          return loadDocumentos();
+        })
+        .catch(function (err) {
+          state.pendingUploadDocumento = null;
+          compraComprobanteUploadInput.value = '';
+          showMessage(err.message || 'No se pudo adjuntar el comprobante.', 'error');
+        });
+    });
+
+    init();
+  })();
+  </script>
+</body>
+</html>

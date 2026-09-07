@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title>PCS IA</title>
+  <defs>
+    <linearGradient id="swirlLightA" x1="12" y1="110" x2="112" y2="14" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0891b2"/>
+      <stop offset=".48" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#9333ea"/>
+    </linearGradient>
+    <linearGradient id="swirlLightB" x1="24" y1="118" x2="112" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0e7490"/>
+      <stop offset=".55" stop-color="#16a34a"/>
+      <stop offset="1" stop-color="#65a30d"/>
+    </linearGradient>
+    <linearGradient id="coreLight" x1="34" y1="34" x2="94" y2="98" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e0f2fe"/>
+      <stop offset="1" stop-color="#bfdbfe"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M27 84C14 60 25 30 57 22c18-5 37-1 52 11-24-1-45 6-63 20" stroke="url(#swirlLightA)" stroke-width="15"/>
+    <path d="M101 44c20 19 20 51 1 72 0-25-7-47-22-66" stroke="#7c3aed" stroke-width="15"/>
+    <path d="M94 99c-22 19-59 17-78-6 25 5 48 1 68-13" stroke="url(#swirlLightB)" stroke-width="15"/>
+  </g>
+  <path d="M64 31 94 49v35l-30 17-30-17V49z" fill="url(#coreLight)" stroke="#1d4ed8" stroke-width="3"/>
+  <text x="64" y="77" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="900" letter-spacing="0" fill="#0f172a">IA</text>
+</svg>

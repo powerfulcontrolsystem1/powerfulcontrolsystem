@@ -1,0 +1,77 @@
+name: powerful-control-system-staging
+
+services:
+  # El init-container hereda nombre/volumen de la plataforma si no se declara
+  # aquí. Staging nunca debe tocar uploads de la plataforma ni colisionar con su
+  # contenedor terminado de permisos.
+  upload-permissions:
+    container_name: pcs-staging-upload-permissions
+    volumes:
+      - pcs_staging_web_uploads:/app/web/uploads
+
+  migrate:
+    container_name: pcs-staging-migrate
+    environment:
+      PCS_ENV: staging
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
+      PCS_VPS_SECURITY_TMP_DIR: ${PCS_VPS_SECURITY_TMP_DIR:-/app/backend/logs/vps_security/tmp}
+    volumes:
+      - pcs_staging_private_storage:/app/private_storage
+
+  worker:
+    container_name: pcs-staging-worker
+    environment:
+      PCS_ENV: staging
+      PCS_WORKER_ID: pcs-worker-staging
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
+    # El worker procesa adjuntos y backups diferidos: debe ver los mismos
+    # recursos de staging que el backend, no los nombres heredados del Compose
+    # de plataforma.
+    volumes:
+      - pcs_staging_backend_logs:/app/backend/logs
+      - pcs_staging_web_uploads:/app/web/uploads
+      - pcs_staging_private_storage:/app/private_storage
+      - pcs_staging_backups:/app/backup
+
+  postgres:
+    container_name: pcs-staging-postgres
+    volumes:
+      - pcs_staging_postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+
+  backend:
+    container_name: pcs-staging-backend
+    environment:
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://staging.powerfulcontrolsystem.com}
+      GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-https://staging.powerfulcontrolsystem.com/auth/google/callback}
+      RECAPTCHA_DEV_BYPASS: ${RECAPTCHA_DEV_BYPASS:-1}
+      PCS_ENVIRONMENT: staging
+      PCS_ENV: staging
+      PCS_RUNTIME_SCHEMA_BOOTSTRAP: "0"
+    volumes:
+      - pcs_staging_backend_logs:/app/backend/logs
+      - pcs_staging_web_uploads:/app/web/uploads
+      - pcs_staging_backups:/app/backup
+      - pcs_staging_private_storage:/app/private_storage
+      - /usr/bin/trivy:/usr/local/bin/trivy:ro
+
+  frontend:
+    container_name: pcs-staging-frontend
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8082}:8080"
+    volumes:
+      - pcs_staging_web_uploads:/usr/share/nginx/html/uploads:ro
+      - pcs_staging_downloads:/usr/share/nginx/html/descargas:ro
+
+volumes:
+  pcs_staging_postgres_data:
+  pcs_staging_backend_logs:
+  pcs_staging_web_uploads:
+  pcs_staging_backups:
+  pcs_staging_downloads:
+  pcs_staging_private_storage:
+
+networks:
+  pcs_internal:
+    name: pcs_staging_internal
+    driver: bridge

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar disco VPS</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="/administrar_disco_vps.css">
+</head>
+<body>
+  <main>
+    <section class="panel head">
+      <div><h1>Administrar disco VPS</h1><p class="muted">Solo muestra recursos Docker verificadamente recuperables. Nunca ofrece bases de datos, volúmenes conectados, archivos de empresas, certificados, configuración, código ni respaldos.</p></div>
+      <button id="refreshBtn" type="button">Actualizar</button>
+    </section>
+
+    <section class="metrics" aria-label="Uso del disco">
+      <div class="metric"><span>Capacidad</span><strong id="totalValue">—</strong></div>
+      <div class="metric"><span>En uso</span><strong id="usedValue">—</strong></div>
+      <div class="metric"><span>Disponible</span><strong id="freeValue">—</strong></div>
+    </section>
+
+    <section class="panel">
+      <h2>Elementos seguros para eliminar</h2>
+      <p class="muted">La estimación de Docker puede variar hasta que termina la limpieza. Los volúmenes anónimos no se muestran por nombre y se eliminan solo si ningún contenedor los referencia.</p>
+      <div id="candidates" class="candidates"></div>
+      <div id="emptyState" class="notice hidden">No hay recursos recuperables dentro de las categorías seguras.</div>
+    </section>
+
+    <section class="panel">
+      <div class="notice warn"><strong>Confirmación requerida.</strong> La operación no puede borrar datos activos, pero elimina cachés e imágenes no usadas. Escriba <code>LIBERAR ESPACIO</code> para habilitarla.</div>
+      <div class="confirm"><label for="confirmation">Confirmación</label><input id="confirmation" autocomplete="off" spellcheck="false" placeholder="LIBERAR ESPACIO"></div>
+      <div class="controls disk-controls-spaced"><button id="selectAllBtn" type="button">Seleccionar todos</button><button id="cleanupBtn" class="primary" type="button" disabled>Liberar espacio seleccionado</button></div>
+      <p id="status" class="disk-status-spaced" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script src="/js/administrar_disco_vps.js" defer></script>
+</body>
+</html>

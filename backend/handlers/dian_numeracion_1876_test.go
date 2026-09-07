@@ -1,0 +1,175 @@
+package handlers
+
+import "testing"
+
+func TestParseDIANNumeracion1876Text(t *testing.T) {
+	text := `
+4. Numero de formulario
+18764111203411
+      8 4 4 5 6 7 7 9 1 CAYON GUARNIZO IVAN FRANCISCO
+Impuestos y Aduanas de Santa Marta 1 9
+SUBDIRECCION DE FACTURA ELECTRONICA Y SOLUCI
+2 0 2 6 -0 6 -1 6 /0 1 :5 6 :5 4
+Rangos de numeracion para autorizar, habilitar o inhabilitar
+FACTURA ELECTRONICA DE VENTA 4
+PCS
+1
+1,000,000
+AUTORIZACION  1
+24
+`
+	fields, warnings := parseDIANNumeracion1876Text(text)
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v", warnings)
+	}
+	assertField := func(key string, want interface{}) {
+		t.Helper()
+		if got := fields[key]; got != want {
+			t.Fatalf("%s = %#v, want %#v; fields=%#v", key, got, want, fields)
+		}
+	}
+	assertField("numero_formulario", "18764111203411")
+	assertField("resolucion_numero", "18764111203411")
+	assertField("nit", "84456779")
+	assertField("dv", "1")
+	assertField("razon_social", "CAYON GUARNIZO IVAN FRANCISCO")
+	assertField("prefijo", "PCS")
+	assertField("rango_desde", int64(1))
+	assertField("rango_hasta", int64(1000000))
+	assertField("resolucion_fecha_desde", "2026-06-16")
+	assertField("resolucion_fecha_hasta", "2028-06-16")
+	assertField("tipo_ambiente", "produccion")
+}
+
+func TestParseDIANNumeracion1876TextKeepsNumericPrefix(t *testing.T) {
+	text := `
+4. Numero de formulario
+18764111318575
+      8 4 4 5 6 7 7 9 1 CAYON GUARNIZO IVAN FRANCISCO
+2 0 2 6 -0 6 -1 7 /0 1 :5 1 :1 1
+Rangos de numeracion para autorizar, habilitar o inhabilitar
+29. Establecimiento
+33. Hasta el numero 34. Tipo solicitud Cod.30. Modalidad Cod.
+31. Prefijo 32. Desde el numero
+38. Vigencia
+FACTURA ELECTRONICA DE VENTA 4
+
+
+
+1PCS
+1
+
+
+
+100,000
+
+
+
+AUTORIZACION  1
+
+
+
+24
+`
+	fields, warnings := parseDIANNumeracion1876Text(text)
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v", warnings)
+	}
+	if got := fields["prefijo"]; got != "1PCS" {
+		t.Fatalf("prefijo = %#v, want 1PCS; fields=%#v", got, fields)
+	}
+	if got := fields["numero_formulario"]; got != "18764111318575" {
+		t.Fatalf("numero_formulario = %#v, want 18764111318575", got)
+	}
+	if got := fields["rango_hasta"]; got != int64(100000) {
+		t.Fatalf("rango_hasta = %#v, want 100000", got)
+	}
+	if got := fields["vigencia_meses"]; got != int64(24) {
+		t.Fatalf("vigencia_meses = %#v, want 24; fields=%#v", got, fields)
+	}
+}
+
+func TestDIAN1876NormalizeDoesNotJoinTableColumns(t *testing.T) {
+	text := "FACTURA ELECTRONICA DE VENTA 4          1PCS 1 100,000 AUTORIZACION 1 24"
+	fields, warnings := parseDIANNumeracion1876Text(text)
+	if len(warnings) != 2 {
+		t.Fatalf("warnings = %v", warnings)
+	}
+	if got := fields["prefijo"]; got != "1PCS" {
+		t.Fatalf("prefijo = %#v, want 1PCS; fields=%#v", got, fields)
+	}
+}
+
+func TestDIAN1876NormalizeDoesNotJoinThousandRangeWithVigencia(t *testing.T) {
+	text := "FACTURA ELECTRONICA DE VENTA 4          1PCS 1 100,000 24 AUTORIZACION 1 24"
+	fields, _ := parseDIANNumeracion1876Text(text)
+	if got := fields["rango_hasta"]; got != int64(100000) {
+		t.Fatalf("rango_hasta = %#v, want 100000; fields=%#v", got, fields)
+	}
+}
+
+func TestParseDIANNumeracion1876TextJoinsSplitVigenciaAfterThousands(t *testing.T) {
+	text := "FACTURA ELECTRONICA DE VENTA 4 1PCS 1 100,000 AUTORIZACION 1 2 4"
+	fields, _ := parseDIANNumeracion1876Text(text)
+	if got := fields["vigencia_meses"]; got != int64(24) {
+		t.Fatalf("vigencia_meses = %#v, want 24; fields=%#v", got, fields)
+	}
+	if got := fields["resolucion_fecha_hasta"]; got != nil {
+		t.Fatalf("resolucion_fecha_hasta = %#v, want nil without fecha formalizacion", got)
+	}
+}
+
+func TestParseDIANNumeracion1876TextJoinsSplitVigenciaWithNoisyToken(t *testing.T) {
+	text := "FACTURA ELECTRONICA DE VENTA 4 1PCS 1 100,000 AUTORIZACION 1 2 4\u00a0"
+	fields, _ := parseDIANNumeracion1876Text(text)
+	if got := fields["vigencia_meses"]; got != int64(24) {
+		t.Fatalf("vigencia_meses = %#v, want 24; fields=%#v", got, fields)
+	}
+}
+
+func TestParseDIANNumeracion1876TextFromRealPCSLayout(t *testing.T) {
+	text := `
+18764111318575
+      8 4 4 5 6 7 7 9 1 CAYON GUARNIZO IVAN FRANCISCO
+2026-06-17 / 01:46:03 PM
+29. Establecimiento
+33. Hasta el numero 34. Tipo solicitud Cod.30. Modalidad Cod.
+31. Prefijo 32. Desde el numero
+38. Vigencia
+1
+29. Establecimiento
+33. Hasta el numero 34. Tipo solicitud Cod.30. Modalidad Cod.
+31. Prefijo 32. Desde el numero
+38. Vigencia
+2
+10
+11
+18764111318575
+      8 4 4 5 6 7 7 9 1 CAYON GUARNIZO IVAN FRANCISCO
+2 2
+CAYON GUARNIZO IVAN FRANCISCO CL 28   5   116 BRR LOS ANGELES
+FACTURA ELECTRONICA DE VENTA 4
+
+1PCS
+1
+
+100,000
+
+AUTORIZACION  1
+
+24
+`
+	fields, warnings := parseDIANNumeracion1876Text(text)
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v; fields=%#v", warnings, fields)
+	}
+	if got := fields["prefijo"]; got != "1PCS" {
+		t.Fatalf("prefijo = %#v, want 1PCS; fields=%#v", got, fields)
+	}
+	if got := fields["vigencia_meses"]; got != int64(24) {
+		t.Fatalf("vigencia_meses = %#v, want 24; fields=%#v", got, fields)
+	}
+	if got := fields["resolucion_fecha_hasta"]; got != "2028-06-17" {
+		t.Fatalf("resolucion_fecha_hasta = %#v, want 2028-06-17; fields=%#v", got, fields)
+	}
+}

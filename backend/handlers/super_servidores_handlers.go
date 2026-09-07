@@ -1,0 +1,791 @@
+package handlers
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"net"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
+)
+
+type ServicioEstado struct {
+	ID          string            `json:"id"`
+	Nombre      string            `json:"nombre"`
+	Estado      string            `json:"estado"`
+	Detalle     string            `json:"detalle"`
+	Habilitado  bool              `json:"habilitado,omitempty"`
+	Componentes map[string]string `json:"componentes,omitempty"`
+	Prueba      *ServicioPrueba   `json:"prueba,omitempty"`
+}
+
+type ServicioPrueba struct {
+	OK        bool              `json:"ok"`
+	Resumen   string            `json:"resumen"`
+	Revisado  string            `json:"revisado"`
+	Puertos   map[string]string `json:"puertos,omitempty"`
+	Servicios map[string]string `json:"servicios,omitempty"`
+}
+
+type rustDeskRemoteConfig struct {
+	Host     string
+	User     string
+	KeyPath  string
+	Port     int
+	ExecPath string
+	UsePlink bool
+}
+
+var rustDeskHBBSCandidates = []string{"rustdesk-hbbs", "hbbs"}
+var rustDeskHBBRCandidates = []string{"rustdesk-hbbr", "hbbr"}
+
+type rustDeskPanelConfig struct {
+	Enabled bool   `json:"enabled"`
+	Host    string `json:"host"`
+	User    string `json:"user"`
+	KeyPath string `json:"key_path"`
+}
+
+func loadRustDeskPanelConfig(dbSuper *sql.DB) rustDeskPanelConfig {
+	cfg := rustDeskPanelConfig{}
+	if dbSuper == nil {
+		return cfg
+	}
+	enabled, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_enabled")
+	switch strings.ToLower(strings.TrimSpace(enabled)) {
+	case "1", "true", "on", "activo", "enabled":
+		cfg.Enabled = true
+	}
+	host, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_host")
+	user, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_user")
+	keyPath, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.vps_ssh_key_path")
+	cfg.Host = strings.TrimSpace(host)
+	cfg.User = strings.TrimSpace(user)
+	cfg.KeyPath = strings.TrimSpace(keyPath)
+	return cfg
+}
+
+func isRustDeskServiceEnabled(dbSuper *sql.DB) bool {
+	value, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "rustdesk.service_enabled")
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "on", "activo", "enabled":
+		return true
+	default:
+		return false
+	}
+}
+
+func buildRustDeskServiceState(dbSuper *sql.DB, includeProbe bool) ServicioEstado {
+	hbbsStatus, _ := dockerServiceStatus("pcs-rustdesk-hbbs")
+	hbbrStatus, _ := dockerServiceStatus("pcs-rustdesk-hbbr")
+	overall := rustDeskOverallStatus(hbbsStatus, hbbrStatus)
+	detalle := "Servidor ID/Relay para soporte remoto administrado por Docker."
+	if overall == "unavailable" && shouldUseRustDeskRemoteExec(dbSuper) {
+		hbbsStatus = checkSystemctlStatus(dbSuper, resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates))
+		hbbrStatus = checkSystemctlStatus(dbSuper, resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates))
+		overall = rustDeskOverallStatus(hbbsStatus, hbbrStatus)
+		detalle = "Servidor ID/Relay para soporte remoto gestionado por SSH de compatibilidad."
+	}
+	serviceEnabled := isRustDeskServiceEnabled(dbSuper)
+	if overall == "unavailable" && !serviceEnabled {
+		overall = "disabled"
+		detalle = "Soporte remoto deshabilitado. Activalo para iniciar los contenedores RustDesk del VPS."
+	}
+
+	state := ServicioEstado{
+		ID:         "rustdesk",
+		Nombre:     "RustDesk (Soporte Remoto)",
+		Estado:     overall,
+		Detalle:    detalle,
+		Habilitado: serviceEnabled,
+		Componentes: map[string]string{
+			"rustdesk-hbbs": hbbsStatus,
+			"rustdesk-hbbr": hbbrStatus,
+		},
+	}
+	if includeProbe {
+		probe := probeRustDeskService(dbSuper)
+		state.Prueba = &probe
+	}
+	return state
+}
+
+func rustDeskOverallStatus(hbbsStatus, hbbrStatus string) string {
+	switch {
+	case hbbsStatus == "active" && hbbrStatus == "active":
+		return "active"
+	case hbbsStatus == "error" || hbbrStatus == "error":
+		return "error"
+	case hbbsStatus == "active" || hbbrStatus == "active" || hbbsStatus == "degraded" || hbbrStatus == "degraded":
+		return "degraded"
+	case hbbsStatus == "inactive" || hbbrStatus == "inactive":
+		return "inactive"
+	default:
+		return "unavailable"
+	}
+}
+
+func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
+		servicios := []ServicioEstado{
+			buildRustDeskServiceState(dbSuper, false),
+			buildOnlyOfficeServiceState(dbSuper),
+			buildPCSBackendServiceState(dbSuper),
+			buildNginxServiceState(dbSuper),
+			buildPostgresServiceState(dbSuper),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "servicios": servicios})
+	}
+}
+
+func readLinuxProcessRSSKBByGrep(expr string) (int64, error) {
+	if runtime.GOOS == "windows" {
+		return 0, fmt.Errorf("unavailable on windows")
+	}
+	pattern, err := regexp.Compile(expr)
+	if err != nil {
+		return 0, err
+	}
+	cmd := exec.Command("ps", "-eo", "rss=,args=")
+	out, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+	var total int64
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || !pattern.MatchString(line) {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		value, parseErr := strconv.ParseInt(fields[0], 10, 64)
+		if parseErr == nil && value > 0 {
+			total += value
+		}
+	}
+	return total, nil
+}
+
+func buildOnlyOfficeServiceState(dbSuper *sql.DB) ServicioEstado {
+	enabled := isOnlyOfficeEnabled(dbSuper)
+	state := ServicioEstado{
+		ID:         "onlyoffice",
+		Nombre:     "OnlyOffice Document Server",
+		Estado:     "inactive",
+		Detalle:    "Editor de documentos (Docker) para el módulo Documentos.",
+		Habilitado: enabled,
+		Componentes: map[string]string{
+			"docker": "unknown",
+		},
+	}
+	if runtime.GOOS == "windows" {
+		state.Estado = "unavailable"
+		state.Detalle = "Backend en Windows: no se puede inspeccionar el contenedor OnlyOffice localmente."
+		return state
+	}
+	// Check docker container running
+	out, _ := exec.Command("bash", "-lc", "docker ps --format '{{.Names}}' 2>/dev/null | grep -x 'pcs-onlyoffice-documentserver' || true").Output()
+	if strings.TrimSpace(string(out)) != "" {
+		state.Estado = "active"
+		state.Componentes["docker"] = "active"
+		rss, _ := readLinuxProcessRSSKBByGrep("onlyoffice|documentserver|ds\\/run-document-server")
+		if rss > 0 {
+			state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
+		}
+		return state
+	}
+	state.Componentes["docker"] = "inactive"
+	return state
+}
+
+func buildPCSBackendServiceState(dbSuper *sql.DB) ServicioEstado {
+	systemdStatus := checkSystemctlStatus(dbSuper, "powerfulcontrolsystem.service")
+	dockerStatus, dockerContainer := dockerServiceStatus("pcs-backend")
+	state := ServicioEstado{
+		ID:         "pcs_backend",
+		Nombre:     "Backend PCS (Docker)",
+		Estado:     "unknown",
+		Detalle:    "Servicio principal del backend en Docker.",
+		Habilitado: true,
+		Componentes: map[string]string{
+			"powerfulcontrolsystem.service": systemdStatus,
+			"docker":                        dockerStatus,
+		},
+	}
+	if dockerContainer != "" {
+		state.Componentes["docker_container"] = dockerContainer
+	}
+	if dockerStatus == "active" || systemdStatus == "active" {
+		state.Estado = "active"
+	} else {
+		state.Estado = preferServiceStatus(dockerStatus, systemdStatus)
+	}
+	if runtime.GOOS != "windows" {
+		rss, _ := readLinuxProcessRSSKBByGrep("server_linux_amd64|pos-backend|powerfulcontrolsystem")
+		if rss > 0 {
+			state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
+		}
+	}
+	return state
+}
+
+func buildNginxServiceState(dbSuper *sql.DB) ServicioEstado {
+	systemdStatus := checkSystemctlStatus(dbSuper, "nginx")
+	dockerStatus, dockerContainer := dockerServiceStatus("pcs-edge", "pcs-frontend")
+	state := ServicioEstado{
+		ID:         "nginx",
+		Nombre:     "Nginx (Docker)",
+		Estado:     "unknown",
+		Detalle:    "Proxy HTTPS y rutas públicas operado por Docker.",
+		Habilitado: true,
+		Componentes: map[string]string{
+			"nginx":  systemdStatus,
+			"docker": dockerStatus,
+		},
+	}
+	if dockerContainer != "" {
+		state.Componentes["docker_container"] = dockerContainer
+	}
+	if dockerStatus == "active" || systemdStatus == "active" {
+		state.Estado = "active"
+	} else {
+		state.Estado = preferServiceStatus(dockerStatus, systemdStatus)
+	}
+	if runtime.GOOS != "windows" {
+		rss, _ := readLinuxProcessRSSKBByGrep("nginx: master|nginx: worker")
+		if rss > 0 {
+			state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
+		}
+	}
+	return state
+}
+
+func buildPostgresServiceState(dbSuper *sql.DB) ServicioEstado {
+	dockerStatus, dockerContainer := dockerServiceStatus("pcs-postgres")
+	state := ServicioEstado{
+		ID:          "postgres",
+		Nombre:      "PostgreSQL",
+		Estado:      "unknown",
+		Detalle:     "Base de datos del sistema (VPS).",
+		Habilitado:  true,
+		Componentes: map[string]string{},
+	}
+	pgStatus := checkSystemctlStatus(dbSuper, "postgresql")
+	state.Componentes["postgresql"] = pgStatus
+	state.Componentes["docker"] = dockerStatus
+	if dockerContainer != "" {
+		state.Componentes["docker_container"] = dockerContainer
+	}
+	if dockerStatus == "active" || pgStatus == "active" {
+		state.Estado = "active"
+	} else {
+		state.Estado = preferServiceStatus(dockerStatus, pgStatus)
+	}
+	rss, _ := readLinuxProcessRSSKBByGrep("postgres:|postgresql")
+	if rss > 0 {
+		state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
+	}
+	return state
+}
+
+func dockerServiceStatus(containers ...string) (string, string) {
+	if runtime.GOOS == "windows" || len(containers) == 0 {
+		return "unavailable", ""
+	}
+	bestStatus := "unavailable"
+	bestContainer := ""
+	for _, container := range containers {
+		container = strings.TrimSpace(container)
+		if container == "" {
+			continue
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		// #nosec G204 -- Docker is fixed and container comes from the closed service inventory above.
+		out, err := exec.CommandContext(ctx, "docker", "inspect", "-f", "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}", container).Output()
+		cancel()
+		status := "unavailable"
+		if err == nil {
+			status = dockerInspectStatus(string(out))
+		}
+		if serviceStatusRank(status) > serviceStatusRank(bestStatus) {
+			bestStatus = status
+			bestContainer = container
+		}
+		if status == "active" {
+			return status, container
+		}
+	}
+	return bestStatus, bestContainer
+}
+
+func dockerInspectStatus(raw string) string {
+	parts := strings.Split(strings.TrimSpace(raw), "|")
+	state, health := "", ""
+	if len(parts) > 0 {
+		state = strings.ToLower(strings.TrimSpace(parts[0]))
+	}
+	if len(parts) > 1 {
+		health = strings.ToLower(strings.TrimSpace(parts[1]))
+	}
+	if health == "unhealthy" || state == "dead" {
+		return "error"
+	}
+	if state == "running" && (health == "" || health == "healthy") {
+		return "active"
+	}
+	if state == "running" || state == "restarting" || state == "created" || health == "starting" {
+		return "degraded"
+	}
+	if state == "exited" || state == "paused" {
+		return "inactive"
+	}
+	return "unavailable"
+}
+
+func preferServiceStatus(statuses ...string) string {
+	best := "unavailable"
+	for _, status := range statuses {
+		if serviceStatusRank(status) > serviceStatusRank(best) {
+			best = status
+		}
+	}
+	return best
+}
+
+func serviceStatusRank(status string) int {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "active":
+		return 5
+	case "degraded", "activating":
+		return 4
+	case "unavailable", "unknown":
+		return 3
+	case "inactive", "deactivating":
+		return 2
+	case "error", "failed":
+		return 1
+	default:
+		return 0
+	}
+}
+
+func SuperServidoresToggleHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
+		var payload struct {
+			ID     string `json:"id"`
+			Accion string `json:"accion"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		if payload.ID == "rustdesk" {
+			action := strings.ToLower(strings.TrimSpace(payload.Accion))
+			if action == "enable" || action == "disable" {
+				if err := setRustDeskPanelEnabled(dbSuper, action == "enable"); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			if action == "start" || action == "stop" || action == "restart" {
+				managedByDocker, dockerErr := runRustDeskDockerAction(action)
+				if dockerErr != nil {
+					http.Error(w, dockerErr.Error(), http.StatusInternalServerError)
+					return
+				}
+				if !managedByDocker {
+					if runtime.GOOS == "windows" && !shouldUseRustDeskRemoteExec(dbSuper) {
+						http.Error(w, "Control local no disponible en Windows. Activa 'Control por SSH' y configura la conexión al VPS.", http.StatusBadRequest)
+						return
+					}
+					err1 := runSystemctl(dbSuper, action, resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates))
+					err2 := runSystemctl(dbSuper, action, resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates))
+					if err1 != nil {
+						http.Error(w, err1.Error(), http.StatusInternalServerError)
+						return
+					}
+					if err2 != nil {
+						http.Error(w, err2.Error(), http.StatusInternalServerError)
+						return
+					}
+				}
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "servicio": buildRustDeskServiceState(dbSuper, false)})
+	}
+}
+
+func SuperServidoresProbeHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
+		service := strings.TrimSpace(r.URL.Query().Get("id"))
+		if service == "" {
+			service = "rustdesk"
+		}
+		if service != "rustdesk" {
+			http.Error(w, "servicio no soportado", http.StatusBadRequest)
+			return
+		}
+		state := buildRustDeskServiceState(dbSuper, true)
+		w.Header().Set("Content-Type", "application/json")
+		encodeJSONResponse(w, map[string]interface{}{"ok": true, "servicio": state})
+	}
+}
+
+func runRustDeskDockerAction(action string) (bool, error) {
+	hbbsStatus, _ := dockerServiceStatus("pcs-rustdesk-hbbs")
+	hbbrStatus, _ := dockerServiceStatus("pcs-rustdesk-hbbr")
+	if hbbsStatus == "unavailable" && hbbrStatus == "unavailable" {
+		return false, nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	switch action {
+	case "start", "stop", "restart":
+	default:
+		return true, fmt.Errorf("accion Docker RustDesk no soportada")
+	}
+	out, err := exec.CommandContext(ctx, "docker", action, "pcs-rustdesk-hbbs", "pcs-rustdesk-hbbr").CombinedOutput()
+	if err != nil {
+		return true, fmt.Errorf("no se pudo %s RustDesk en Docker: %s", action, strings.TrimSpace(string(out)))
+	}
+	return true, nil
+}
+
+func checkSystemctlStatus(dbSuper *sql.DB, service string) string {
+	if strings.TrimSpace(service) == "" {
+		return "missing"
+	}
+	if shouldUseRustDeskRemoteExec(dbSuper) {
+		out, err := runRustDeskRemoteShell(dbSuper, fmt.Sprintf("systemctl is-active %s 2>/dev/null || true", shellEscapeForPOSIX(service)))
+		if err != nil && strings.TrimSpace(out) == "" {
+			return "error"
+		}
+		res := strings.TrimSpace(firstNonEmptyLine(out))
+		switch res {
+		case "active":
+			return "active"
+		case "inactive", "failed", "activating", "deactivating":
+			return res
+		case "":
+			return "error"
+		default:
+			return "error"
+		}
+	}
+	if runtime.GOOS == "windows" {
+		return "inactive"
+	}
+	cmd := exec.Command("systemctl", "is-active", service)
+	out, err := cmd.Output()
+	if err != nil {
+		return "error"
+	}
+	res := strings.TrimSpace(string(out))
+	if res == "active" {
+		return "active"
+	}
+	return "inactive"
+}
+
+func runSystemctl(dbSuper *sql.DB, accion string, service string) error {
+	if strings.TrimSpace(service) == "" {
+		return fmt.Errorf("no se encontro ninguna unidad systemd compatible con RustDesk en el VPS")
+	}
+	if shouldUseRustDeskRemoteExec(dbSuper) {
+		_, err := runRustDeskRemoteShell(dbSuper, fmt.Sprintf("sudo -n systemctl %s %s", shellEscapeForPOSIX(accion), shellEscapeForPOSIX(service)))
+		return err
+	}
+	if runtime.GOOS == "windows" {
+		return fmt.Errorf("control local de RustDesk no disponible en Windows sin configuracion SSH al VPS")
+	}
+	cmd := exec.Command("sudo", "systemctl", accion, service)
+	err := cmd.Run()
+	return err
+}
+
+func probeRustDeskService(dbSuper *sql.DB) ServicioPrueba {
+	dockerHBBS, _ := dockerServiceStatus("pcs-rustdesk-hbbs")
+	dockerHBBR, _ := dockerServiceStatus("pcs-rustdesk-hbbr")
+	if dockerHBBS != "unavailable" || dockerHBBR != "unavailable" {
+		probe := ServicioPrueba{
+			OK:       dockerHBBS == "active" && dockerHBBR == "active",
+			Revisado: time.Now().In(time.Local).Format("2006-01-02 15:04:05"),
+			Puertos: map[string]string{
+				"21115": "publicado", "21116": "publicado", "21117": "publicado", "21118": "publicado", "21119": "publicado",
+			},
+			Servicios: map[string]string{"rustdesk-hbbs": dockerHBBS, "rustdesk-hbbr": dockerHBBR},
+		}
+		if probe.OK {
+			probe.Resumen = "RustDesk Docker responde: hbbs y hbbr activos con puertos publicados."
+		} else {
+			probe.Resumen = fmt.Sprintf("RustDesk Docker con alertas: hbbs=%s, hbbr=%s.", dockerHBBS, dockerHBBR)
+		}
+		return probe
+	}
+	probe := ServicioPrueba{
+		OK:       false,
+		Resumen:  "Comprobacion no disponible en este entorno.",
+		Revisado: time.Now().In(time.Local).Format("2006-01-02 15:04:05"),
+		Puertos:  map[string]string{},
+		Servicios: map[string]string{
+			"rustdesk-hbbs": checkSystemctlStatus(dbSuper, resolveRustDeskServiceName(dbSuper, rustDeskHBBSCandidates)),
+			"rustdesk-hbbr": checkSystemctlStatus(dbSuper, resolveRustDeskServiceName(dbSuper, rustDeskHBBRCandidates)),
+		},
+	}
+	if runtime.GOOS == "windows" {
+		if !shouldUseRustDeskRemoteExec(dbSuper) {
+			probe.Resumen = "Entorno local Windows: configura DB_VPS_SSH_HOST/USER/KEY_PATH para ejecutar la prueba real en el VPS Linux."
+			return probe
+		}
+	}
+
+	ports := []int{21114, 21115, 21116, 21117, 21118, 21119}
+	openPorts := 0
+	if shouldUseRustDeskRemoteExec(dbSuper) {
+		ssOutput, err := runRustDeskRemoteShell(dbSuper, "ss -ltn 2>/dev/null || true")
+		if err != nil && strings.TrimSpace(ssOutput) == "" {
+			probe.Resumen = "No se pudo ejecutar la prueba remota de RustDesk en el VPS."
+			return probe
+		}
+		for _, port := range ports {
+			portText := fmt.Sprintf(":%d", port)
+			if strings.Contains(ssOutput, portText) {
+				probe.Puertos[fmt.Sprintf("%d", port)] = "abierto"
+				openPorts++
+				continue
+			}
+			probe.Puertos[fmt.Sprintf("%d", port)] = "cerrado"
+		}
+	} else {
+		for _, port := range ports {
+			address := fmt.Sprintf("127.0.0.1:%d", port)
+			conn, err := net.DialTimeout("tcp", address, 700*time.Millisecond)
+			if err != nil {
+				probe.Puertos[fmt.Sprintf("%d", port)] = "cerrado"
+				continue
+			}
+			_ = conn.Close()
+			probe.Puertos[fmt.Sprintf("%d", port)] = "abierto"
+			openPorts++
+		}
+	}
+	if probe.Servicios["rustdesk-hbbs"] == "active" && probe.Servicios["rustdesk-hbbr"] == "active" && openPorts > 0 {
+		probe.OK = true
+		if shouldUseRustDeskRemoteExec(dbSuper) {
+			probe.Resumen = fmt.Sprintf("RustDesk responde en el VPS: hbbs/hbbr activos y %d puerto(s) abiertos.", openPorts)
+		} else {
+			probe.Resumen = fmt.Sprintf("RustDesk responde: hbbs/hbbr activos y %d puerto(s) locales abiertos.", openPorts)
+		}
+		return probe
+	}
+	if shouldUseRustDeskRemoteExec(dbSuper) {
+		probe.Resumen = fmt.Sprintf("RustDesk en el VPS con alertas: hbbs=%s, hbbr=%s, puertos abiertos=%d.", probe.Servicios["rustdesk-hbbs"], probe.Servicios["rustdesk-hbbr"], openPorts)
+	} else {
+		probe.Resumen = fmt.Sprintf("RustDesk con alertas: hbbs=%s, hbbr=%s, puertos abiertos=%d.", probe.Servicios["rustdesk-hbbs"], probe.Servicios["rustdesk-hbbr"], openPorts)
+	}
+	return probe
+}
+
+func resolveRustDeskServiceName(dbSuper *sql.DB, candidates []string) string {
+	for _, candidate := range candidates {
+		if rustDeskServiceExists(dbSuper, candidate) {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func rustDeskServiceExists(dbSuper *sql.DB, service string) bool {
+	if strings.TrimSpace(service) == "" {
+		return false
+	}
+	command := fmt.Sprintf("systemctl cat %s >/dev/null 2>&1", shellEscapeForPOSIX(service))
+	if shouldUseRustDeskRemoteExec(dbSuper) {
+		_, err := runRustDeskRemoteShell(dbSuper, command)
+		return err == nil
+	}
+	if runtime.GOOS == "windows" {
+		return false
+	}
+	cmd := exec.Command("systemctl", "cat", service)
+	return cmd.Run() == nil
+}
+
+func shouldUseRustDeskRemoteExec(dbSuper *sql.DB) bool {
+	panelCfg := loadRustDeskPanelConfig(dbSuper)
+	if panelCfg.Enabled && panelCfg.Host != "" && panelCfg.User != "" {
+		return true
+	}
+	return strings.TrimSpace(os.Getenv("DB_VPS_SSH_HOST")) != "" && strings.TrimSpace(os.Getenv("DB_VPS_SSH_USER")) != ""
+}
+
+func runRustDeskRemoteShell(dbSuper *sql.DB, script string) (string, error) {
+	cfg, err := resolveRustDeskRemoteConfig(dbSuper)
+	if err != nil {
+		return "", err
+	}
+	target := fmt.Sprintf("%s@%s", cfg.User, cfg.Host)
+	var cmd *exec.Cmd
+	if cfg.UsePlink {
+		// #nosec G204 -- ExecPath is normalized to the plink executable by resolveRustDeskRemoteConfig.
+		cmd = exec.Command(cfg.ExecPath, "-batch", "-P", strconv.Itoa(cfg.Port), "-i", cfg.KeyPath, target, "sh", "-lc", script)
+	} else {
+		// #nosec G204 -- ExecPath is normalized to the ssh executable by resolveRustDeskRemoteConfig.
+		cmd = exec.Command(cfg.ExecPath, "-o", "BatchMode=yes", "-p", strconv.Itoa(cfg.Port), "-i", cfg.KeyPath, target, "sh", "-lc", script)
+	}
+	out, runErr := cmd.CombinedOutput()
+	output := strings.TrimSpace(string(out))
+	if runErr != nil {
+		if output != "" {
+			return output, fmt.Errorf("ssh/plink rustdesk command failed: %w: %s", runErr, output)
+		}
+		return "", fmt.Errorf("ssh/plink rustdesk command failed: %w", runErr)
+	}
+	return output, nil
+}
+
+func resolveRustDeskRemoteConfig(dbSuper *sql.DB) (rustDeskRemoteConfig, error) {
+	panelCfg := loadRustDeskPanelConfig(dbSuper)
+	host := strings.TrimSpace(panelCfg.Host)
+	user := strings.TrimSpace(panelCfg.User)
+	keyPath := strings.TrimSpace(panelCfg.KeyPath)
+	port := 49222
+	if host == "" {
+		host = strings.TrimSpace(os.Getenv("DB_VPS_SSH_HOST"))
+	}
+	if user == "" {
+		user = strings.TrimSpace(os.Getenv("DB_VPS_SSH_USER"))
+	}
+	if keyPath == "" {
+		keyPath = strings.TrimSpace(os.Getenv("DB_VPS_SSH_KEY_PATH"))
+	}
+	if rawPort := strings.TrimSpace(os.Getenv("DB_VPS_SSH_PORT")); rawPort != "" {
+		if parsed, parseErr := strconv.Atoi(rawPort); parseErr == nil && parsed > 0 && parsed <= 65535 {
+			port = parsed
+		}
+	}
+	if host == "" || user == "" {
+		return rustDeskRemoteConfig{}, fmt.Errorf("faltan DB_VPS_SSH_HOST o DB_VPS_SSH_USER para gestionar RustDesk en el VPS")
+	}
+	if keyPath == "" {
+		keyPath = filepath.Join("..", "clave privada ssh.ppk")
+	}
+	resolvedKeyPath := keyPath
+	if !filepath.IsAbs(resolvedKeyPath) {
+		if absPath, err := filepath.Abs(resolvedKeyPath); err == nil {
+			resolvedKeyPath = absPath
+		}
+	}
+	if _, err := os.Stat(resolvedKeyPath); err != nil {
+		return rustDeskRemoteConfig{}, fmt.Errorf("no se encontro la llave SSH de RustDesk: %s", resolvedKeyPath)
+	}
+	usePlink := strings.EqualFold(filepath.Ext(resolvedKeyPath), ".ppk")
+	execPath := ""
+	if usePlink {
+		execPath = resolvePlinkPath()
+		if execPath == "" {
+			return rustDeskRemoteConfig{}, fmt.Errorf("no se encontro plink.exe para usar la llave SSH .ppk")
+		}
+	} else {
+		execPath = resolveSSHPath()
+		if execPath == "" {
+			return rustDeskRemoteConfig{}, fmt.Errorf("no se encontro ssh.exe para ejecutar comandos remotos de RustDesk")
+		}
+	}
+	return rustDeskRemoteConfig{
+		Host:     host,
+		User:     user,
+		KeyPath:  resolvedKeyPath,
+		Port:     port,
+		ExecPath: execPath,
+		UsePlink: usePlink,
+	}, nil
+}
+
+func setRustDeskPanelEnabled(dbSuper *sql.DB, enabled bool) error {
+	if dbSuper == nil {
+		return fmt.Errorf("configuracion no disponible (dbSuper nil)")
+	}
+	val := "0"
+	if enabled {
+		val = "1"
+	}
+	return dbpkg.SetConfigValue(dbSuper, "rustdesk.service_enabled", val, false)
+}
+
+func resolvePlinkPath() string {
+	if path, err := exec.LookPath("plink.exe"); err == nil {
+		return path
+	}
+	candidates := []string{
+		`D:\Program Files\PuTTY\plink.exe`,
+		`C:\Program Files\PuTTY\plink.exe`,
+		`C:\Program Files (x86)\PuTTY\plink.exe`,
+	}
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func resolveSSHPath() string {
+	if path, err := exec.LookPath("ssh.exe"); err == nil {
+		return path
+	}
+	candidates := []string{
+		`C:\Windows\System32\OpenSSH\ssh.exe`,
+		`C:\Program Files\Git\usr\bin\ssh.exe`,
+	}
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func shellEscapeForPOSIX(value string) string {
+	if value == "" {
+		return "''"
+	}
+	return "'" + strings.ReplaceAll(value, "'", `'"'"'`) + "'"
+}
+
+func firstNonEmptyLine(raw string) string {
+	for _, line := range strings.Split(strings.ReplaceAll(raw, "\r\n", "\n"), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
