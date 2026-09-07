@@ -54,6 +54,9 @@ outputs/
 output/
 reports/
 test_runs/
+# Datos operativos persistentes. Docker los conserva en volumen privado; nunca
+# deben entrar al snapshot de codigo ni a una rama de agente.
+web/uploads/
 node_modules/
 coverage/
 .coverage/
