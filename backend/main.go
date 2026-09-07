@@ -1188,32 +1188,22 @@ func main() {
 				log.Fatalf("failed to protect existing session tokens: %v", err)
 			}
 			startupTrace("after_migrate_session_tokens_to_hashes")
-			totpMigrationDryRun := strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")
-			migratedTOTP, err := dbpkg.MigrateAdministradorTOTPSecrets(dbSuper, totpMigrationDryRun)
-			if err != nil {
-				log.Fatalf("failed to protect existing TOTP secrets: %v", err)
-			}
-			if totpMigrationDryRun {
-				log.Printf("INFO: TOTP secret migration dry-run found %d legacy secret(s)", migratedTOTP)
-			} else if migratedTOTP > 0 {
-				log.Printf("INFO: encrypted %d legacy TOTP secret(s)", migratedTOTP)
-			}
-			startupTrace("after_migrate_totp_secrets")
-			migratedResetTokens, err := dbpkg.MigrateAdministradorPasswordResetTokens(dbSuper, totpMigrationDryRun)
+			authTokenMigrationDryRun := strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_AUTH_TOKEN_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_AUTH_TOKEN_MIGRATION_DRY_RUN")), "true")
+			migratedResetTokens, err := dbpkg.MigrateAdministradorPasswordResetTokens(dbSuper, authTokenMigrationDryRun)
 			if err != nil {
 				log.Fatalf("failed to protect existing password reset tokens: %v", err)
 			}
-			if totpMigrationDryRun {
+			if authTokenMigrationDryRun {
 				log.Printf("INFO: password reset token migration dry-run found %d legacy token(s)", migratedResetTokens)
 			} else if migratedResetTokens > 0 {
 				log.Printf("INFO: protected %d legacy password reset token(s)", migratedResetTokens)
 			}
 			startupTrace("after_migrate_password_reset_tokens")
-			migratedConfirmTokens, err := dbpkg.MigrateAdministradorEmailConfirmTokens(dbSuper, totpMigrationDryRun)
+			migratedConfirmTokens, err := dbpkg.MigrateAdministradorEmailConfirmTokens(dbSuper, authTokenMigrationDryRun)
 			if err != nil {
 				log.Fatalf("failed to protect existing email confirmation tokens: %v", err)
 			}
-			if totpMigrationDryRun {
+			if authTokenMigrationDryRun {
 				log.Printf("INFO: email confirmation token migration dry-run found %d legacy token(s)", migratedConfirmTokens)
 			} else if migratedConfirmTokens > 0 {
 				log.Printf("INFO: protected %d legacy email confirmation token(s)", migratedConfirmTokens)
@@ -1353,7 +1343,7 @@ func main() {
 		if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
 		}
-		if _, err := dbpkg.MigrateEmpresaUsuarioTemporaryTokens(dbEmpresas, strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_TOTP_MIGRATION_DRY_RUN")), "true")); err != nil {
+		if _, err := dbpkg.MigrateEmpresaUsuarioTemporaryTokens(dbEmpresas, strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_AUTH_TOKEN_MIGRATION_DRY_RUN")), "1") || strings.EqualFold(strings.TrimSpace(os.Getenv("PCS_AUTH_TOKEN_MIGRATION_DRY_RUN")), "true")); err != nil {
 			log.Fatalf("failed to protect enterprise user temporary tokens: %v", err)
 		}
 		if err := dbpkg.EnsureEmpresaBuzonSchema(dbEmpresas); err != nil {
@@ -1840,8 +1830,6 @@ func main() {
 	// Endpoints adicionales para flujo de autenticación de administradores (registro, login, confirmación, recuperación)
 	http.HandleFunc("/super/api/administradores/register", handlers.AdminRegisterHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/login", handlers.AdminLoginHandler(dbSuper))
-	http.HandleFunc("/super/api/administradores/2fa", handlers.AdminTwoFactorHandler(dbSuper))
-	http.HandleFunc("/super/api/config/admin_2fa", handlers.WithSuperAuditoria(dbSuper, "super_config_admin_2fa", handlers.AdminTwoFactorGlobalConfigHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/admin_page_urls", handlers.WithSuperAuditoria(dbSuper, "super_config_admin_page_urls", handlers.AdminPageURLsGlobalConfigHandler(dbSuper)))
 	http.HandleFunc("/auth/confirmar_admin", handlers.ConfirmarAdminHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/solicitar_recuperacion", handlers.AdminRequestPasswordRecoveryHandler(dbSuper))

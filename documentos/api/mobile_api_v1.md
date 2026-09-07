@@ -47,7 +47,7 @@ Contrato OpenAPI: `documentos/api/openapi.mobile.v1.yaml`.
 
 - La aplicacion movil puede usar `Authorization: Bearer <sesion_movl>` en las
   rutas v1. El middleware de autenticacion valida la misma sesion hash que usa
-  PCS y las revocaciones por contrasena, rol, segundo factor o desactivacion se
+  PCS y las revocaciones por contrasena, rol o desactivacion se
   aplican de inmediato.
 - La creacion del token de dispositivo exige una sesion web autenticada y el
   token se genera con 32 bytes aleatorios. El cliente debe protegerlo en el

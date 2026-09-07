@@ -51,7 +51,7 @@ Este runbook relaciona controles con scripts, auditorías y workflows. Su instal
 
 - Auditor base: `tools/security_audit.mjs`.
 - Refuerzo operativo: recaptcha, cookies seguras, sesiones revocables, rate limit y rutas publicas controladas.
-- El código exige TOTP confirmado para acceso super; verificar enrolamiento real y recuperación antes de exponer paneles críticos.
+- El acceso super se valida con sesión, rol persistido, contraseña u OAuth, reCAPTCHA, límites de intentos y revocación. El 2FA administrativo fue retirado; una futura validación opcional por WhatsApp requiere un contrato y pruebas independientes antes de activarse.
 
 ## 7. Observabilidad de negocio
 

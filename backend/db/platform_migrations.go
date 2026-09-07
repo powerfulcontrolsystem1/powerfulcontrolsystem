@@ -325,6 +325,12 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Body:        queueCapacitySuperSchemaFingerprint,
 				Apply:       applyQueueCapacitySuperSchemaTx,
 			},
+			{
+				Version:     "20260907-001-retire-admin-2fa-v1",
+				Description: "remove administrator TOTP login policy and clear second-factor material",
+				Body:        admin2FARetirementFingerprint,
+				Apply:       applyAdmin2FARetirementTx,
+			},
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown platform migration target %q", target)

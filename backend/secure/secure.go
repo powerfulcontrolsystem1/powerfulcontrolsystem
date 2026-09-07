@@ -15,11 +15,6 @@ import (
 const encryptionFormatVersion = "v1"
 const defaultEncryptionKeyID = "active"
 
-// TOTPEncryptionPurpose separates authenticator secrets from the generic
-// configuration encryption domain. A derived key plus authenticated purpose
-// prevents a ciphertext from one domain being accepted by another.
-const TOTPEncryptionPurpose = "totp"
-
 // getEncKeyFromEnv requires exactly 32 random bytes in canonical Base64. Older
 // permissive behavior (padding/truncation) could silently weaken encryption.
 func getEncKeyFromEnv() ([]byte, error) {

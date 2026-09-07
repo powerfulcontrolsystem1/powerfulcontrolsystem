@@ -68,7 +68,7 @@
     },
     "documentos/estado_actual.md": {
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-06"
+      "reviewed": "2026-09-07"
     },
     "documentos/gobernanza_tecnica/README.md": {
       "owner": "Coordinación técnica",
@@ -252,7 +252,7 @@
     },
     "documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md": {
       "owner": "Ingeniería backend y QA",
-      "reviewed": "2026-09-05"
+      "reviewed": "2026-09-07"
     },
     "documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md": {
       "owner": "Ingeniería backend y QA",

@@ -7,7 +7,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 ## Resumen
 
 - Funciones inventariadas: 142.
-- Huella del catalogo legado: `b327dcba705f35df6d432082d7c6474e1b3d443536fda266e9f06c693650582e` (117 pasos).
+- Huella del catalogo legado: `d8de78d03b65f037b9b3028ad1ef36c85d6cae09b1d99985b2a798a2e5070a4a` (117 pasos).
 - DDL / indice / funcion: 113.
 - DDL catalogado de plataforma: 4.
 - compatibilidad PostgreSQL: 2.
@@ -60,10 +60,10 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaCreditosSchema` | [backend/db/creditos.go:622](../../backend/db/creditos.go#L622) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCRMVentasAvanzadasSchema` | [backend/db/crm_ventas_avanzadas.go:122](../../backend/db/crm_ventas_avanzadas.go#L122) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDatafonosSchema` | [backend/db/datafonos.go:110](../../backend/db/datafonos.go#L110) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureAdministradoresAuthSchema` | [backend/db/db.go:146](../../backend/db/db.go#L146) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsurePaymentGatewaySchema` | [backend/db/db.go:197](../../backend/db/db.go#L197) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsureLicenciasSchema` | [backend/db/db.go:273](../../backend/db/db.go#L273) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsureUserEmpresa` | [backend/db/db.go:414](../../backend/db/db.go#L414) | regla auxiliar o verificacion | empresas o por confirmar |
+| `EnsureAdministradoresAuthSchema` | [backend/db/db.go:145](../../backend/db/db.go#L145) | DDL / indice / funcion | superadministrador o por confirmar |
+| `EnsurePaymentGatewaySchema` | [backend/db/db.go:179](../../backend/db/db.go#L179) | DDL / indice / funcion | superadministrador o por confirmar |
+| `EnsureLicenciasSchema` | [backend/db/db.go:255](../../backend/db/db.go#L255) | DDL / indice / funcion | superadministrador o por confirmar |
+| `EnsureUserEmpresa` | [backend/db/db.go:396](../../backend/db/db.go#L396) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaDeclaracionesTributariasSchema` | [backend/db/declaraciones_tributarias.go:104](../../backend/db/declaraciones_tributarias.go#L104) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDocumentosTransaccionalesSchema` | [backend/db/documentos_transaccionales.go:120](../../backend/db/documentos_transaccionales.go#L120) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaDomiciliosSchema` | [backend/db/domicilios.go:209](../../backend/db/domicilios.go#L209) | DDL / indice / funcion | empresas o por confirmar |

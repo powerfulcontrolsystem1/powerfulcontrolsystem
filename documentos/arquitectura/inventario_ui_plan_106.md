@@ -4,11 +4,11 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 
 ## Alcance
 
-- Páginas HTML: **302**
-- Controles detectados: **5832**
-- Acciones a cubrir en E2E: **2877**
-- Entradas y selectores: **2955**
-- Controles con marcador dinámico: **842**
+- Páginas HTML: **305**
+- Controles detectados: **6056**
+- Acciones a cubrir en E2E: **2954**
+- Entradas y selectores: **3102**
+- Controles con marcador dinámico: **860**
 - Estado: inventario estático previo; la cobertura funcional, visual, por permisos y de IA se registra en el runner E2E y la matriz P106.
 
 ## Controles por página
@@ -43,7 +43,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 16 | button/button | accion | adminNotificationBell | &#128276; 0 | no |
 | 17 | button/button | accion | adminNotificationRefresh | Actualizar | no |
 | 18 | button/button | accion | adminFavoriteBtn | &#9733; | no |
-| 19 | button/button | accion | openAIDrawer | Asistente IA | sí |
+| 19 | button/button | accion | openAIDrawer | Agente PCS | sí |
 | 20 | button/button | accion | openRadioDrawer | Música latina | no |
 | 21 | input/checkbox | accion | radioFloatingEnabled | radioFloatingEnabled | no |
 | 22 | button/button | accion | closeRadioDrawer | &times; | no |
@@ -58,7 +58,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 31 | button/button | accion | radioMiniClose | &times; | no |
 | 32 | button/button | accion | radioMiniPlayPause | Pausar | no |
 | 33 | input/range | entrada | radioMiniVolume | 0.7 | no |
-| 34 | button/button | accion | aiChatMinibarExpand | Abrir asistente IA | no |
+| 34 | button/button | accion | aiChatMinibarExpand | Abrir Agente PCS | no |
 | 35 | button/button | accion | aiChatHintToggle | Ver ejemplos | no |
 | 36 | button/button | accion | aiChatConfigBtn | Configurar chat flotante | no |
 | 37 | button/button | accion | aiChatMinimize | Minimizar chat | no |
@@ -129,7 +129,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 48 | textarea/- | entrada | eventoDetalle | eventoDetalle | no |
 | 49 | button/submit | accion | - | Registrar evento | no |
 
-### `web/administrar_empresa/administrar_clientes.html` (29)
+### `web/administrar_empresa/administrar_clientes.html` (31)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -149,26 +149,28 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 14 | input/- | entrada | direccion | direccion | no |
 | 15 | input/- | entrada | pais | CO | no |
 | 16 | input/- | entrada | departamento | departamento | no |
-| 17 | input/- | entrada | municipio | municipio | no |
-| 18 | input/- | entrada | codigo_postal | codigo_postal | no |
-| 19 | textarea/- | entrada | observaciones | observaciones | no |
-| 20 | button/submit | accion | saveBtn | Guardar | no |
-| 21 | button/button | accion | cancelBtn | Cancelar | no |
-| 22 | input/- | entrada | buscar | buscar | no |
-| 23 | button/button | accion | buscarBtn | Buscar | no |
-| 24 | select/- | entrada | segmentExportFormat | Excel (XLS) PDF CSV JSON TXT | no |
-| 25 | button/button | accion | segmentExportBtn | Exportar segmentos | no |
-| 26 | button/- | accion | ' + item.id + ' | Perfil | sí |
-| 27 | button/- | accion | ' + item.id + ' | Editar | sí |
-| 28 | button/- | accion | ' + item.id + ' | Eliminar | sí |
-| 29 | button/- | accion | ' + item.id + ' | ' + toggleLabel + ' | sí |
+| 17 | input/- | entrada | departamento_codigo_dane | departamento_codigo_dane | no |
+| 18 | input/- | entrada | municipio | municipio | no |
+| 19 | input/- | entrada | municipio_codigo_dane | municipio_codigo_dane | no |
+| 20 | input/- | entrada | codigo_postal | codigo_postal | no |
+| 21 | textarea/- | entrada | observaciones | observaciones | no |
+| 22 | button/submit | accion | saveBtn | Guardar | no |
+| 23 | button/button | accion | cancelBtn | Cancelar | no |
+| 24 | input/- | entrada | buscar | buscar | no |
+| 25 | button/button | accion | buscarBtn | Buscar | no |
+| 26 | select/- | entrada | segmentExportFormat | Excel (XLS) PDF CSV JSON TXT | no |
+| 27 | button/button | accion | segmentExportBtn | Exportar segmentos | no |
+| 28 | button/- | accion | ' + item.id + ' | Perfil | sí |
+| 29 | button/- | accion | ' + item.id + ' | Editar | sí |
+| 30 | button/- | accion | ' + item.id + ' | Eliminar | sí |
+| 31 | button/- | accion | ' + item.id + ' | ' + toggleLabel + ' | sí |
 
 ### `web/administrar_empresa/administrar_productos.html` (162)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | a/- | accion | productoLinkProduccionMRP | Abrir Produccion / MRP | no |
-| 2 | button/button | accion | btnNuevaBodega | Nueva | sí |
+| 2 | button/button | accion | btnNuevaBodega | Nueva | no |
 | 3 | input/hidden | entrada | bodegaId | bodegaId | no |
 | 4 | input/- | entrada | bodegaCodigo | bodegaCodigo | no |
 | 5 | input/- | entrada | bodegaNombre | bodegaNombre | no |
@@ -176,7 +178,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 7 | input/- | entrada | bodegaResponsable | bodegaResponsable | no |
 | 8 | textarea/- | entrada | bodegaObservaciones | bodegaObservaciones | no |
 | 9 | button/submit | accion | - | Guardar bodega | no |
-| 10 | button/button | accion | btnNuevoProveedor | Nuevo | sí |
+| 10 | button/button | accion | btnNuevoProveedor | Nuevo | no |
 | 11 | input/hidden | entrada | proveedorId | proveedorId | no |
 | 12 | input/- | entrada | proveedorNombre | proveedorNombre | no |
 | 13 | input/- | entrada | proveedorContacto | proveedorContacto | no |
@@ -191,7 +193,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 22 | button/submit | accion | - | Guardar proveedor | no |
 | 23 | input/- | entrada | filtroCategoriasProducto | filtroCategoriasProducto | no |
 | 24 | button/button | accion | btnBuscarCategoriasProducto | Buscar | no |
-| 25 | button/button | accion | btnNuevaCategoriaProducto | Nueva | sí |
+| 25 | button/button | accion | btnNuevaCategoriaProducto | Nueva | no |
 | 26 | button/button | accion | btnCerrarCategoriaProductoForm | Cerrar formulario | no |
 | 27 | input/hidden | entrada | categoriaProductoId | categoriaProductoId | no |
 | 28 | input/- | entrada | categoriaProductoCodigo | categoriaProductoCodigo | no |
@@ -204,7 +206,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 35 | select/- | entrada | filtroCategoriaProducto | Todas las categorías | no |
 | 36 | input/- | entrada | filtroProductos | filtroProductos | no |
 | 37 | button/button | accion | btnBuscarProductos | Buscar | no |
-| 38 | button/button | accion | btnNuevoProducto | Nuevo producto | sí |
+| 38 | button/button | accion | btnNuevoProducto | Nuevo producto | no |
 | 39 | button/button | accion | btnCrearBodegaDesdeProductos | Crear bodega | no |
 | 40 | select/- | entrada | productoExportFormato | CSV / Excel JSON Imprimible HTML | no |
 | 41 | select/- | entrada | productoExportTamano | Carta POS 80 mm | no |
@@ -241,7 +243,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 72 | textarea/- | entrada | productoDescripcion | productoDescripcion | no |
 | 73 | textarea/- | entrada | productoObservaciones | productoObservaciones | no |
 | 74 | button/submit | accion | - | Guardar producto | no |
-| 75 | button/button | accion | btnNuevoServicio | Nuevo | sí |
+| 75 | button/button | accion | btnNuevoServicio | Nuevo | no |
 | 76 | input/hidden | entrada | servicioId | servicioId | no |
 | 77 | input/- | entrada | servicioNombre | servicioNombre | no |
 | 78 | input/- | entrada | servicioCodigo | servicioCodigo | no |
@@ -587,35 +589,37 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 42 | button/button | accion | ' + id + ' | ' + nextLabel + ' | sí |
 | 43 | button/button | accion | ' + id + ' | Eliminar | sí |
 
-### `web/administrar_empresa/auditoria.html` (25)
+### `web/administrar_empresa/auditoria.html` (27)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | btnBuscar | Buscar | no |
 | 2 | button/button | accion | btnLimpiar | Limpiar | no |
-| 3 | button/button | accion | btnExportCSV | Exportar CSV | no |
-| 4 | button/button | accion | btnExportJSON | Exportar JSON | no |
-| 5 | select/- | entrada | fModulo | Todos Ventas Carritos / cierres Venta publica Compras Compras avanzadas Ordenes de compra Proveedores Soportes compras I | no |
-| 6 | select/- | entrada | fMetodoHttp | Todos GET POST PUT PATCH DELETE | no |
-| 7 | input/- | entrada | fAcción | fAcción | no |
-| 8 | select/- | entrada | fResultado | Todos OK Error | no |
-| 9 | input/- | entrada | fUsuario | fUsuario | no |
-| 10 | input/- | entrada | fRequestId | fRequestId | no |
-| 11 | input/- | entrada | fRecurso | fRecurso | no |
-| 12 | input/- | entrada | fEndpoint | fEndpoint | no |
-| 13 | input/- | entrada | fSearch | fSearch | no |
-| 14 | input/date | entrada | fDesde | fDesde | no |
-| 15 | input/date | entrada | fHasta | fHasta | no |
-| 16 | input/number | entrada | fLimit | 200 | no |
-| 17 | input/number | entrada | fCodigoHttp | fCodigoHttp | no |
-| 18 | input/number | entrada | fRecursoId | fRecursoId | no |
-| 19 | input/checkbox | accion | fIncluirInactivos | fIncluirInactivos | no |
-| 20 | input/number | entrada | retencionDias | 180 | no |
-| 21 | button/button | accion | btnPurgar | Aplicar retencion | no |
-| 22 | button/button | accion | btnPrevPage | Anterior | no |
-| 23 | button/button | accion | btnNextPage | Siguiente | no |
-| 24 | button/button | accion | btnCerrarDetalle | Cerrar | no |
-| 25 | button/button | accion | - | Ver | sí |
+| 3 | button/button | accion | btnExportCSV | Exportar vista CSV | no |
+| 4 | button/button | accion | btnExportJSON | Exportar vista JSON | no |
+| 5 | button/button | accion | btnExportForenseCSV | Forense CSV | no |
+| 6 | button/button | accion | btnExportForenseJSON | Forense JSON | no |
+| 7 | select/- | entrada | fModulo | Todos Ventas Carritos / cierres Venta publica Compras Compras avanzadas Ordenes de compra Proveedores Soportes compras I | no |
+| 8 | select/- | entrada | fMetodoHttp | Todos GET POST PUT PATCH DELETE | no |
+| 9 | input/- | entrada | fAcción | fAcción | no |
+| 10 | select/- | entrada | fResultado | Todos OK Error | no |
+| 11 | input/- | entrada | fUsuario | fUsuario | no |
+| 12 | input/- | entrada | fRequestId | fRequestId | no |
+| 13 | input/- | entrada | fRecurso | fRecurso | no |
+| 14 | input/- | entrada | fEndpoint | fEndpoint | no |
+| 15 | input/- | entrada | fSearch | fSearch | no |
+| 16 | input/date | entrada | fDesde | fDesde | no |
+| 17 | input/date | entrada | fHasta | fHasta | no |
+| 18 | input/number | entrada | fLimit | 200 | no |
+| 19 | input/number | entrada | fCodigoHttp | fCodigoHttp | no |
+| 20 | input/number | entrada | fRecursoId | fRecursoId | no |
+| 21 | input/checkbox | accion | fIncluirInactivos | fIncluirInactivos | no |
+| 22 | input/number | entrada | retencionDias | 180 | no |
+| 23 | button/button | accion | btnPurgar | Aplicar retencion | no |
+| 24 | button/button | accion | btnPrevPage | Anterior | no |
+| 25 | button/button | accion | btnNextPage | Siguiente | no |
+| 26 | button/button | accion | btnCerrarDetalle | Cerrar | no |
+| 27 | button/button | accion | - | Ver | sí |
 
 ### `web/administrar_empresa/backups.html` (42)
 
@@ -663,23 +667,6 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 40 | button/button | accion | ' + id + ' | Email | sí |
 | 41 | button/button | accion | ' + id + ' | Restaurar | sí |
 | 42 | button/button | accion | ' + id + ' | ' + toggleLabel + ' | sí |
-
-### `web/administrar_empresa/bodega.html` (12)
-
-| # | Tipo | Clase | ID | Etiqueta | Dinámico |
-| ---: | --- | --- | --- | --- | --- |
-| 1 | button/button | accion | btnNuevaBodega | Nueva | no |
-| 2 | input/hidden | entrada | bodegaId | bodegaId | no |
-| 3 | input/- | entrada | bodegaCodigo | bodegaCodigo | no |
-| 4 | input/- | entrada | bodegaNombre | bodegaNombre | no |
-| 5 | input/- | entrada | bodegaUbicacion | bodegaUbicacion | no |
-| 6 | input/- | entrada | bodegaResponsable | bodegaResponsable | no |
-| 7 | textarea/- | entrada | bodegaObservaciones | bodegaObservaciones | no |
-| 8 | button/submit | accion | - | Guardar bodega | no |
-| 9 | button/button | accion | btnCancelarBodega | Cancelar | no |
-| 10 | button/button | accion | ' + Number(b.id) + ' | Editar | sí |
-| 11 | button/button | accion | ' + Number(b.id) + ' | ' + activar + ' | sí |
-| 12 | button/button | accion | ' + Number(b.id) + ' | Eliminar | sí |
 
 ### `web/administrar_empresa/bolsa.html` (1)
 
@@ -797,7 +784,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 21 | button/button | accion | ' + escapeHtml(rele.id \|\| 0) + ' | Programar | sí |
 | 22 | button/button | accion | ' + escapeHtml(rele.id \|\| 0) + ' | ' + timerText(rele.id) + ' | sí |
 
-### `web/administrar_empresa/carrito_de_compras.html` (159)
+### `web/administrar_empresa/carrito_de_compras.html` (161)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -851,115 +838,117 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 48 | input/- | entrada | quickClienteDireccion | quickClienteDireccion | no |
 | 49 | input/- | entrada | quickClientePais | CO | no |
 | 50 | input/- | entrada | quickClienteDepartamento | quickClienteDepartamento | no |
-| 51 | input/- | entrada | quickClienteMunicipio | quickClienteMunicipio | no |
-| 52 | input/- | entrada | quickClienteCodigoPostal | quickClienteCodigoPostal | no |
-| 53 | input/- | entrada | quickClienteObservaciones | quickClienteObservaciones | no |
-| 54 | input/checkbox | accion | quickClienteAbrirCupoCredito | quickClienteAbrirCupoCredito | no |
-| 55 | input/number | entrada | quickClienteCupoCredito | 0 | no |
-| 56 | input/number | entrada | quickClienteMaxCreditosActivos | 3 | no |
-| 57 | button/button | accion | quickClienteGuardarBtn | Guardar cliente | no |
-| 58 | button/button | accion | quickClienteEditarExistenteBtn | Editar cliente existente | no |
-| 59 | select/- | entrada | carritoActionSelect | Selecciona una acción Historial de productos ☑ Descuentos ☑ Cambiar tarifa ☐ Transferir cuenta ☐ Domótica ☑ Cancelar car | no |
-| 60 | button/button | accion | carritoBtnControlElectrico | ⚡ Domótica | no |
-| 61 | button/button | accion | carritoBtnDescuentos | Descuentos | no |
-| 62 | button/button | accion | carritoBtnCambiarTarifa | Cambiar tarifa | no |
-| 63 | button/button | accion | carritoBtnTransferirCuenta | Transferir cuenta | no |
-| 64 | button/button | accion | carritoBtnCancelarCarrito | Cancelar carrito | no |
-| 65 | input/checkbox | accion | carritoAlerta10Enable | carritoAlerta10Enable | no |
-| 66 | button/button | accion | carritoBtnClientes | Clientes | no |
-| 67 | button/button | accion | carritoBtnAbonos | Abonos | no |
-| 68 | button/button | accion | carritoBtnPagoQR | QR de pago | no |
-| 69 | button/button | accion | carritoBtnVehiculo | Vehículo | no |
-| 70 | select/- | entrada | carritoTarifaModo | Automática Motel por tiempo Hotel por día | no |
-| 71 | select/- | entrada | carritoTarifaSelect | Selecciona una tarifa | no |
-| 72 | button/button | accion | carritoTarifaAplicarBtn | Aplicar tarifa | no |
-| 73 | select/- | entrada | carritoTransferDestinoSelect | Selecciona destino | no |
-| 74 | input/- | entrada | carritoTransferMotivo | carritoTransferMotivo | no |
-| 75 | button/button | accion | carritoTransferAplicarBtn | Transferir | no |
-| 76 | button/button | accion | carritoTransferCerrarBtn | Cerrar | no |
-| 77 | input/number | entrada | carritoAbonoMonto | 0 | no |
-| 78 | select/- | entrada | carritoAbonoMetodo | Efectivo Tarjeta crédito Tarjeta débito Transferencia Bre-B Nequi Otra transferencia | no |
-| 79 | input/text | entrada | carritoAbonoReferencia | carritoAbonoReferencia | no |
-| 80 | button/button | accion | carritoAbonoRegistrarBtn | Registrar abono | no |
-| 81 | button/button | accion | - | Cerrar | sí |
-| 82 | button/button | accion | domoticaDeviceOffBtn | Apagar | no |
-| 83 | button/button | accion | domoticaDeviceOnBtn | Encender | no |
-| 84 | button/button | accion | domoticaDeviceSaveScheduleBtn | Guardar programacion | no |
-| 85 | button/button | accion | - | Cancelar | sí |
-| 86 | button/button | accion | - | Venta sola | sí |
-| 87 | button/button | accion | - | Venta con factura electronica | sí |
-| 88 | input/checkbox | accion | toggleStationCheckoutAdvanced | toggleStationCheckoutAdvanced | no |
-| 89 | input/checkbox | accion | toggleStationWorkerCommission | toggleStationWorkerCommission | no |
-| 90 | select/- | entrada | discountType | Sin descuento Porcentaje Código Valor fijo | no |
-| 91 | input/number | entrada | discountValue | 0 | no |
-| 92 | input/- | entrada | discountCode | discountCode | no |
-| 93 | select/- | entrada | paymentMethod | Efectivo Tarjeta crédito Tarjeta débito Transferencia Bre-B Nequi Otra transferencia Crédito cliente Pago mixto Código d | no |
-| 94 | select/- | entrada | activeCashRegister | Cargando cajas... | no |
-| 95 | input/- | entrada | paymentReference | paymentReference | no |
-| 96 | input/number | entrada | devolucionMonto | 0 | no |
-| 97 | input/checkbox | accion | applyTipCheckbox | applyTipCheckbox | no |
-| 98 | select/- | entrada | mixedMethod1 | Efectivo Tarjeta crédito Tarjeta débito Transferencia Bre-B Nequi Otra transferencia Crédito cliente | no |
-| 99 | input/number | entrada | mixedAmount1 | 0 | no |
-| 100 | input/- | entrada | mixedReference1 | mixedReference1 | no |
-| 101 | select/- | entrada | mixedMethod2 | Tarjeta débito Tarjeta crédito Transferencia Bre-B Nequi Otra transferencia Efectivo Crédito cliente | no |
-| 102 | input/number | entrada | mixedAmount2 | 0 | no |
-| 103 | input/- | entrada | mixedReference2 | mixedReference2 | no |
-| 104 | select/- | entrada | mixedMethod3 | Tarjeta crédito Tarjeta débito Transferencia Bre-B Nequi Otra transferencia Efectivo Crédito cliente | no |
-| 105 | input/number | entrada | mixedAmount3 | 0 | no |
-| 106 | input/- | entrada | mixedReference3 | mixedReference3 | no |
-| 107 | button/button | accion | btnActivarSesionCarrito | Activar carrito | no |
-| 108 | input/text | entrada | stationPayDisplayEfectivo | stationPayDisplayEfectivo | sí |
-| 109 | input/text | entrada | stationPayDisplayCredito | stationPayDisplayCredito | sí |
-| 110 | input/text | entrada | stationPayDisplayDebito | stationPayDisplayDebito | sí |
-| 111 | input/text | entrada | stationPayDisplayBreb | stationPayDisplayBreb | sí |
-| 112 | input/text | entrada | stationPayDisplayNequi | stationPayDisplayNequi | sí |
-| 113 | input/text | entrada | stationPayDisplayTransferenciaOtro | stationPayDisplayTransferenciaOtro | sí |
-| 114 | input/text | entrada | stationPayDisplayCreditoCliente | stationPayDisplayCreditoCliente | sí |
-| 115 | input/text | entrada | stationCashReceivedDisplay | stationCashReceivedDisplay | no |
-| 116 | input/checkbox | accion | paymentQrEnabledCheck | paymentQrEnabledCheck | no |
-| 117 | button/button | accion | paymentQrGenerateBtn | Generar QR | no |
-| 118 | button/button | accion | paymentQrUseBtn | Usar como pago | no |
-| 119 | select/- | entrada | paymentQrAccountSelect | paymentQrAccountSelect | no |
-| 120 | input/- | entrada | commissionWorker | commissionWorker | no |
-| 121 | button/button | accion | btnVipCodigo | Generar codigo para cliente vip | no |
-| 122 | input/hidden | entrada | itemId | itemId | no |
-| 123 | input/- | entrada | itemBuscarCatalogo | itemBuscarCatalogo | no |
-| 124 | button/button | accion | buscarCatalogoBtn | Buscar catálogo | no |
-| 125 | select/- | entrada | itemBusquedaResultados | itemBusquedaResultados | no |
-| 126 | button/button | accion | aplicarCatalogoBtn | Aplicar selección | no |
-| 127 | button/button | accion | limpiarCatalogoBtn | Quitar referencia | no |
-| 128 | select/- | entrada | itemTipo | Producto Receta Servicio Otro | no |
-| 129 | input/number | entrada | itemReferenciaID | itemReferenciaID | no |
-| 130 | input/- | entrada | itemCodigo | itemCodigo | no |
-| 131 | input/- | entrada | itemDescripcion | itemDescripcion | no |
-| 132 | input/- | entrada | itemUnidad | unidad | no |
-| 133 | input/number | entrada | itemCantidad | 1 | no |
-| 134 | input/number | entrada | itemPrecio | 0 | no |
-| 135 | input/number | entrada | itemDescuentoPct | 0 | no |
-| 136 | input/number | entrada | itemImpuestoPct | 0 | no |
-| 137 | input/- | entrada | itemImpuestoCodigo | IVA | no |
-| 138 | textarea/- | entrada | itemObservaciones | itemObservaciones | no |
-| 139 | button/submit | accion | saveItemBtn | Guardar item | no |
-| 140 | button/button | accion | cancelItemBtn | Cancelar | no |
-| 141 | button/button | accion | btnPagarCarrito | Pagar y cerrar carrito | sí |
-| 142 | button/button | accion | retryInitialLoadBtn | Reintentar carga | no |
-| 143 | button/button | accion | backToStationsBtn | Regresar a ' + escapeHtml(stationTerm(false)) + ' | no |
-| 144 | button/- | accion | ' + item.id + ' | Abrir | sí |
-| 145 | button/- | accion | ' + item.id + ' | Buscar productos | sí |
-| 146 | button/- | accion | ' + item.id + ' | Editar | sí |
-| 147 | button/- | accion | ' + item.id + ' | Eliminar | sí |
-| 148 | button/- | accion | ' + item.id + ' | ' + toggleEstadoLabel + ' | sí |
-| 149 | button/- | accion | ' + item.id + ' | ' + toggleOperacionLabel + ' | sí |
-| 150 | button/button | accion | ' + escapeHtml(rele.id \|\| 0) + ' | ' + ' ' + escapeHtml(controlElectricoIcon(rele.tipo_carga)) + ' ' + escapeHtml(domoticaDeviceLabel(rele)) + ' ' + ' ' +  | sí |
-| 151 | input/checkbox | accion | domoticaScheduleEnabled | domoticaScheduleEnabled | no |
-| 152 | input/time | entrada | domoticaScheduleOn | ' + escapeHtml(normalize(rele.hora_encendido)) + ' | no |
-| 153 | input/time | entrada | domoticaScheduleOff | ' + escapeHtml(normalize(rele.hora_apagado)) + ' | no |
-| 154 | select/- | entrada | domoticaScheduleDays | ' + ' Todos ' + ' Lunes a viernes ' + ' Sabado y domingo ' + ' | no |
-| 155 | input/- | entrada | domoticaScheduleTimezone | ' + escapeHtml(normalize(rele.programacion_timezone) \|\| 'America/Bogota') + ' | no |
-| 156 | button/button | accion | ' + Number(item.id \|\| 0) + ' | - | sí |
-| 157 | input/number | entrada | ' + Number(item.id \|\| 0) + ' | ' + qtyValue + ' | sí |
-| 158 | button/button | accion | ' + Number(item.id \|\| 0) + ' | + | sí |
-| 159 | button/- | accion | ' + item.id + ' | Devolver | sí |
+| 51 | input/- | entrada | quickClienteDepartamentoDANE | quickClienteDepartamentoDANE | no |
+| 52 | input/- | entrada | quickClienteMunicipio | quickClienteMunicipio | no |
+| 53 | input/- | entrada | quickClienteMunicipioDANE | quickClienteMunicipioDANE | no |
+| 54 | input/- | entrada | quickClienteCodigoPostal | quickClienteCodigoPostal | no |
+| 55 | input/- | entrada | quickClienteObservaciones | quickClienteObservaciones | no |
+| 56 | input/checkbox | accion | quickClienteAbrirCupoCredito | quickClienteAbrirCupoCredito | no |
+| 57 | input/number | entrada | quickClienteCupoCredito | 0 | no |
+| 58 | input/number | entrada | quickClienteMaxCreditosActivos | 3 | no |
+| 59 | button/button | accion | quickClienteGuardarBtn | Guardar cliente | no |
+| 60 | button/button | accion | quickClienteEditarExistenteBtn | Editar cliente existente | no |
+| 61 | select/- | entrada | carritoActionSelect | Selecciona una acción Historial de productos ☑ Descuentos ☑ Cambiar tarifa ☐ Transferir cuenta ☐ Domótica ☑ Cancelar car | no |
+| 62 | button/button | accion | carritoBtnControlElectrico | ⚡ Domótica | no |
+| 63 | button/button | accion | carritoBtnDescuentos | Descuentos | no |
+| 64 | button/button | accion | carritoBtnCambiarTarifa | Cambiar tarifa | no |
+| 65 | button/button | accion | carritoBtnTransferirCuenta | Transferir cuenta | no |
+| 66 | button/button | accion | carritoBtnCancelarCarrito | Cancelar carrito | no |
+| 67 | input/checkbox | accion | carritoAlerta10Enable | carritoAlerta10Enable | no |
+| 68 | button/button | accion | carritoBtnClientes | Clientes | no |
+| 69 | button/button | accion | carritoBtnAbonos | Abonos | no |
+| 70 | button/button | accion | carritoBtnPagoQR | QR de pago | no |
+| 71 | button/button | accion | carritoBtnVehiculo | Vehículo | no |
+| 72 | select/- | entrada | carritoTarifaModo | Automática Motel por tiempo Hotel por día | no |
+| 73 | select/- | entrada | carritoTarifaSelect | Selecciona una tarifa | no |
+| 74 | button/button | accion | carritoTarifaAplicarBtn | Aplicar tarifa | no |
+| 75 | select/- | entrada | carritoTransferDestinoSelect | Selecciona destino | no |
+| 76 | input/- | entrada | carritoTransferMotivo | carritoTransferMotivo | no |
+| 77 | button/button | accion | carritoTransferAplicarBtn | Transferir | no |
+| 78 | button/button | accion | carritoTransferCerrarBtn | Cerrar | no |
+| 79 | input/number | entrada | carritoAbonoMonto | 0 | no |
+| 80 | select/- | entrada | carritoAbonoMetodo | Efectivo Tarjeta crédito Tarjeta débito Transferencia Bre-B Nequi Otra transferencia | no |
+| 81 | input/text | entrada | carritoAbonoReferencia | carritoAbonoReferencia | no |
+| 82 | button/button | accion | carritoAbonoRegistrarBtn | Registrar abono | no |
+| 83 | button/button | accion | - | Cerrar | sí |
+| 84 | button/button | accion | domoticaDeviceOffBtn | Apagar | no |
+| 85 | button/button | accion | domoticaDeviceOnBtn | Encender | no |
+| 86 | button/button | accion | domoticaDeviceSaveScheduleBtn | Guardar programacion | no |
+| 87 | button/button | accion | - | Cancelar | sí |
+| 88 | button/button | accion | - | Venta sola | sí |
+| 89 | button/button | accion | - | Venta con factura electronica | sí |
+| 90 | input/checkbox | accion | toggleStationCheckoutAdvanced | toggleStationCheckoutAdvanced | no |
+| 91 | input/checkbox | accion | toggleStationWorkerCommission | toggleStationWorkerCommission | no |
+| 92 | select/- | entrada | discountType | Sin descuento Porcentaje Código Valor fijo | no |
+| 93 | input/number | entrada | discountValue | 0 | no |
+| 94 | input/- | entrada | discountCode | discountCode | no |
+| 95 | select/- | entrada | paymentMethod | Efectivo Tarjeta crédito Tarjeta débito Transferencia Bre-B Nequi Otra transferencia Crédito cliente Pago mixto Código d | no |
+| 96 | select/- | entrada | activeCashRegister | Cargando cajas... | no |
+| 97 | input/- | entrada | paymentReference | paymentReference | no |
+| 98 | input/number | entrada | devolucionMonto | 0 | no |
+| 99 | input/checkbox | accion | applyTipCheckbox | applyTipCheckbox | no |
+| 100 | select/- | entrada | mixedMethod1 | Efectivo Tarjeta crédito Tarjeta débito Transferencia Bre-B Nequi Otra transferencia Crédito cliente | no |
+| 101 | input/number | entrada | mixedAmount1 | 0 | no |
+| 102 | input/- | entrada | mixedReference1 | mixedReference1 | no |
+| 103 | select/- | entrada | mixedMethod2 | Tarjeta débito Tarjeta crédito Transferencia Bre-B Nequi Otra transferencia Efectivo Crédito cliente | no |
+| 104 | input/number | entrada | mixedAmount2 | 0 | no |
+| 105 | input/- | entrada | mixedReference2 | mixedReference2 | no |
+| 106 | select/- | entrada | mixedMethod3 | Tarjeta crédito Tarjeta débito Transferencia Bre-B Nequi Otra transferencia Efectivo Crédito cliente | no |
+| 107 | input/number | entrada | mixedAmount3 | 0 | no |
+| 108 | input/- | entrada | mixedReference3 | mixedReference3 | no |
+| 109 | button/button | accion | btnActivarSesionCarrito | Activar carrito | no |
+| 110 | input/text | entrada | stationPayDisplayEfectivo | stationPayDisplayEfectivo | sí |
+| 111 | input/text | entrada | stationPayDisplayCredito | stationPayDisplayCredito | sí |
+| 112 | input/text | entrada | stationPayDisplayDebito | stationPayDisplayDebito | sí |
+| 113 | input/text | entrada | stationPayDisplayBreb | stationPayDisplayBreb | sí |
+| 114 | input/text | entrada | stationPayDisplayNequi | stationPayDisplayNequi | sí |
+| 115 | input/text | entrada | stationPayDisplayTransferenciaOtro | stationPayDisplayTransferenciaOtro | sí |
+| 116 | input/text | entrada | stationPayDisplayCreditoCliente | stationPayDisplayCreditoCliente | sí |
+| 117 | input/text | entrada | stationCashReceivedDisplay | stationCashReceivedDisplay | no |
+| 118 | input/checkbox | accion | paymentQrEnabledCheck | paymentQrEnabledCheck | no |
+| 119 | button/button | accion | paymentQrGenerateBtn | Generar QR | no |
+| 120 | button/button | accion | paymentQrUseBtn | Usar como pago | no |
+| 121 | select/- | entrada | paymentQrAccountSelect | paymentQrAccountSelect | no |
+| 122 | input/- | entrada | commissionWorker | commissionWorker | no |
+| 123 | button/button | accion | btnVipCodigo | Generar codigo para cliente vip | no |
+| 124 | input/hidden | entrada | itemId | itemId | no |
+| 125 | input/- | entrada | itemBuscarCatalogo | itemBuscarCatalogo | no |
+| 126 | button/button | accion | buscarCatalogoBtn | Buscar catálogo | no |
+| 127 | select/- | entrada | itemBusquedaResultados | itemBusquedaResultados | no |
+| 128 | button/button | accion | aplicarCatalogoBtn | Aplicar selección | no |
+| 129 | button/button | accion | limpiarCatalogoBtn | Quitar referencia | no |
+| 130 | select/- | entrada | itemTipo | Producto Receta Servicio Otro | no |
+| 131 | input/number | entrada | itemReferenciaID | itemReferenciaID | no |
+| 132 | input/- | entrada | itemCodigo | itemCodigo | no |
+| 133 | input/- | entrada | itemDescripcion | itemDescripcion | no |
+| 134 | input/- | entrada | itemUnidad | unidad | no |
+| 135 | input/number | entrada | itemCantidad | 1 | no |
+| 136 | input/number | entrada | itemPrecio | 0 | no |
+| 137 | input/number | entrada | itemDescuentoPct | 0 | no |
+| 138 | input/number | entrada | itemImpuestoPct | 0 | no |
+| 139 | input/- | entrada | itemImpuestoCodigo | IVA | no |
+| 140 | textarea/- | entrada | itemObservaciones | itemObservaciones | no |
+| 141 | button/submit | accion | saveItemBtn | Guardar item | no |
+| 142 | button/button | accion | cancelItemBtn | Cancelar | no |
+| 143 | button/button | accion | btnPagarCarrito | Pagar y cerrar carrito | no |
+| 144 | button/button | accion | retryInitialLoadBtn | Reintentar carga | no |
+| 145 | button/button | accion | backToStationsBtn | Regresar a ' + escapeHtml(stationTerm(false)) + ' | no |
+| 146 | button/- | accion | ' + item.id + ' | Abrir | sí |
+| 147 | button/- | accion | ' + item.id + ' | Buscar productos | sí |
+| 148 | button/- | accion | ' + item.id + ' | Editar | sí |
+| 149 | button/- | accion | ' + item.id + ' | Eliminar | sí |
+| 150 | button/- | accion | ' + item.id + ' | ' + toggleEstadoLabel + ' | sí |
+| 151 | button/- | accion | ' + item.id + ' | ' + toggleOperacionLabel + ' | sí |
+| 152 | button/button | accion | ' + escapeHtml(rele.id \|\| 0) + ' | ' + ' ' + escapeHtml(controlElectricoIcon(rele.tipo_carga)) + ' ' + escapeHtml(domoticaDeviceLabel(rele)) + ' ' + ' ' +  | sí |
+| 153 | input/checkbox | accion | domoticaScheduleEnabled | domoticaScheduleEnabled | no |
+| 154 | input/time | entrada | domoticaScheduleOn | ' + escapeHtml(normalize(rele.hora_encendido)) + ' | no |
+| 155 | input/time | entrada | domoticaScheduleOff | ' + escapeHtml(normalize(rele.hora_apagado)) + ' | no |
+| 156 | select/- | entrada | domoticaScheduleDays | ' + ' Todos ' + ' Lunes a viernes ' + ' Sabado y domingo ' + ' | no |
+| 157 | input/- | entrada | domoticaScheduleTimezone | ' + escapeHtml(normalize(rele.programacion_timezone) \|\| 'America/Bogota') + ' | no |
+| 158 | button/button | accion | ' + Number(item.id \|\| 0) + ' | - | sí |
+| 159 | input/number | entrada | ' + Number(item.id \|\| 0) + ' | ' + qtyValue + ' | sí |
+| 160 | button/button | accion | ' + Number(item.id \|\| 0) + ' | + | sí |
+| 161 | button/- | accion | ' + item.id + ' | Devolver | sí |
 
 ### `web/administrar_empresa/carrito_historial_productos.html` (3)
 
@@ -1011,18 +1000,17 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 36 | button/- | accion | ' + product.id + ' | Publicar | sí |
 | 37 | button/- | accion | - | Imprimir | sí |
 
-### `web/administrar_empresa/centro_ia_empresarial.html` (8)
+### `web/administrar_empresa/centro_ia_empresarial.html` (7)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | input/date | entrada | desde | desde | no |
 | 2 | input/date | entrada | hasta | hasta | no |
 | 3 | button/button | accion | btnActualizar | Actualizar | no |
-| 4 | input/checkbox | accion | agentMode | agentMode | no |
-| 5 | textarea/- | entrada | consulta | consulta | no |
-| 6 | button/button | accion | btnDiagnostico | Diagnostico ERP | sí |
-| 7 | button/button | accion | btnCustom | Analizar con IA | sí |
-| 8 | button/button | accion | - | Ejecutar IA | sí |
+| 4 | textarea/- | entrada | consulta | consulta | no |
+| 5 | button/button | accion | btnDiagnostico | Diagnostico ERP | sí |
+| 6 | button/button | accion | btnCustom | Analizar con IA | sí |
+| 7 | button/button | accion | - | Ejecutar IA | sí |
 
 ### `web/administrar_empresa/centros_costo.html` (43)
 
@@ -1412,34 +1400,34 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 33 | button/button | accion | - | Desactivar | sí |
 | 34 | button/button | accion | - | Activar | sí |
 
-### `web/administrar_empresa/compras_avanzadas.html` (53)
+### `web/administrar_empresa/compras_avanzadas.html` (55)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | btnRefresh | Actualizar | no |
-| 2 | button/button | accion | btnSeed | Cargar demo | no |
-| 3 | a/- | accion | btnProveedores | Proveedores | no |
-| 4 | button/button | accion | - | Requisicion | sí |
-| 5 | button/button | accion | - | Cotizacion | sí |
-| 6 | button/button | accion | - | Aprobar | sí |
-| 7 | button/button | accion | - | Recepcion | sí |
-| 8 | input/- | entrada | reqCodigo | reqCodigo | no |
-| 9 | input/- | entrada | reqSolicitante | reqSolicitante | no |
-| 10 | input/- | entrada | reqArea | reqArea | no |
-| 11 | select/- | entrada | reqPrioridad | media alta urgente baja | no |
-| 12 | input/- | entrada | reqCentroCosto | reqCentroCosto | no |
-| 13 | input/date | entrada | reqFecha | reqFecha | no |
-| 14 | input/date | entrada | reqNecesidad | reqNecesidad | no |
-| 15 | select/- | entrada | reqEstado | solicitada borrador cotizando | no |
-| 16 | textarea/- | entrada | reqJustificacion | reqJustificacion | no |
-| 17 | input/- | entrada | itemNombre1 | itemNombre1 | no |
-| 18 | input/number | entrada | itemCant1 | itemCant1 | no |
-| 19 | input/number | entrada | itemCosto1 | itemCosto1 | no |
-| 20 | select/- | entrada | itemProv1 | Cargando proveedores... | no |
-| 21 | input/- | entrada | itemNombre2 | itemNombre2 | no |
-| 22 | input/number | entrada | itemCant2 | itemCant2 | no |
-| 23 | input/number | entrada | itemCosto2 | itemCosto2 | no |
-| 24 | select/- | entrada | itemProv2 | Cargando proveedores... | no |
+| 2 | a/- | accion | btnProveedores | Proveedores | no |
+| 3 | button/button | accion | - | Requisicion | sí |
+| 4 | button/button | accion | - | Cotizacion | sí |
+| 5 | button/button | accion | - | Aprobar | sí |
+| 6 | button/button | accion | - | Recepcion | sí |
+| 7 | input/- | entrada | reqCodigo | reqCodigo | no |
+| 8 | input/- | entrada | reqSolicitante | reqSolicitante | no |
+| 9 | input/- | entrada | reqArea | reqArea | no |
+| 10 | select/- | entrada | reqPrioridad | media alta urgente baja | no |
+| 11 | input/- | entrada | reqCentroCosto | reqCentroCosto | no |
+| 12 | input/date | entrada | reqFecha | reqFecha | no |
+| 13 | input/date | entrada | reqNecesidad | reqNecesidad | no |
+| 14 | select/- | entrada | reqEstado | solicitada borrador cotizando | no |
+| 15 | textarea/- | entrada | reqJustificacion | reqJustificacion | no |
+| 16 | select/- | entrada | itemNombre1 | Cargando productos... | no |
+| 17 | input/number | entrada | itemCant1 | itemCant1 | no |
+| 18 | input/number | entrada | itemCosto1 | itemCosto1 | no |
+| 19 | select/- | entrada | itemProv1 | Cargando proveedores... | no |
+| 20 | select/- | entrada | itemNombre2 | Cargando productos... | no |
+| 21 | input/number | entrada | itemCant2 | itemCant2 | no |
+| 22 | input/number | entrada | itemCosto2 | itemCosto2 | no |
+| 23 | select/- | entrada | itemProv2 | Cargando proveedores... | no |
+| 24 | button/button | accion | btnAddReqItems | Añadir productos a la requisicion | no |
 | 25 | button/button | accion | btnSaveReq | Guardar requisicion | no |
 | 26 | input/number | entrada | cotReqID | cotReqID | no |
 | 27 | select/- | entrada | cotProveedor | Cargando proveedores... | no |
@@ -1460,15 +1448,17 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 42 | input/number | entrada | recReqID | recReqID | no |
 | 43 | input/number | entrada | recCotID | recCotID | no |
 | 44 | input/- | entrada | recDocumento | recDocumento | no |
-| 45 | select/- | entrada | recEstado | parcial total | no |
-| 46 | select/- | entrada | recProveedor | Cargando proveedores... | no |
-| 47 | input/date | entrada | recFecha | recFecha | no |
-| 48 | input/- | entrada | recProducto | recProducto | no |
-| 49 | input/number | entrada | recItemID | recItemID | no |
-| 50 | input/number | entrada | recOrdenada | recOrdenada | no |
-| 51 | input/number | entrada | recRecibida | recRecibida | no |
-| 52 | input/number | entrada | recCosto | recCosto | no |
-| 53 | button/button | accion | btnSaveRec | Guardar recepcion | no |
+| 45 | select/- | entrada | recProveedor | Cargando proveedores... | no |
+| 46 | input/date | entrada | recFecha | recFecha | no |
+| 47 | select/- | entrada | recProducto | Seleccione un item | no |
+| 48 | select/- | entrada | recItemID | Seleccione una requisicion | no |
+| 49 | input/number | entrada | recOrdenada | recOrdenada | no |
+| 50 | input/number | entrada | recRecibida | recRecibida | no |
+| 51 | input/number | entrada | recCosto | recCosto | no |
+| 52 | select/- | entrada | recBodega | Cargando bodegas... | no |
+| 53 | input/- | entrada | recLote | recLote | no |
+| 54 | button/button | accion | btnAddRecItem | Añadir item a la recepcion | no |
+| 55 | button/button | accion | btnSaveRec | Recibir y actualizar inventario | no |
 
 ### `web/administrar_empresa/compras_menu.html` (1)
 
@@ -1770,7 +1760,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | a/- | accion | - | Ver todas | no |
 
-### `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` (96)
+### `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` (97)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -1829,47 +1819,48 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 53 | input/checkbox | accion | carritoCfgTarjetaVip | carritoCfgTarjetaVip | no |
 | 54 | input/checkbox | accion | carritoCfgControlElectrico | carritoCfgControlElectrico | no |
 | 55 | input/checkbox | accion | carritoCfgTarjetaDomotica | carritoCfgTarjetaDomotica | no |
-| 56 | input/checkbox | accion | carritoCfgBotonDescuentos | carritoCfgBotonDescuentos | no |
-| 57 | input/checkbox | accion | carritoCfgBotonCambiarTarifa | carritoCfgBotonCambiarTarifa | no |
-| 58 | input/checkbox | accion | carritoCfgBotonTransferirCuenta | carritoCfgBotonTransferirCuenta | no |
-| 59 | input/checkbox | accion | carritoCfgBotonControlElectrico | carritoCfgBotonControlElectrico | no |
-| 60 | input/checkbox | accion | carritoCfgBotonCancelar | carritoCfgBotonCancelar | no |
-| 61 | input/checkbox | accion | carritoCfgBotonClientes | carritoCfgBotonClientes | no |
-| 62 | input/checkbox | accion | carritoCfgBotonAbonos | carritoCfgBotonAbonos | no |
-| 63 | input/checkbox | accion | carritoCfgBotonVehiculo | carritoCfgBotonVehiculo | no |
-| 64 | input/checkbox | accion | carritoCfgBotonesSelectorEnabled | carritoCfgBotonesSelectorEnabled | no |
-| 65 | select/- | entrada | carritoCfgBotonesSelector | Selecciona un boton Descuentos Cambiar tarifa Transferir cuenta Domotica Cancelar carrito Clientes Abonos Vehiculo | no |
-| 66 | select/- | entrada | carritoCfgBotonesSelectorAction | Mostrar Ocultar | no |
-| 67 | button/button | accion | carritoCfgBotonesSelectorApply | Aplicar al boton | no |
-| 68 | input/checkbox | accion | carritoCfgMostrarAlertaTiempo | carritoCfgMostrarAlertaTiempo | no |
-| 69 | input/number | entrada | carritoCfgAlertaTiempoMinutos | 10 | no |
-| 70 | input/checkbox | accion | carritoCfgAlertaTiempoDefault | carritoCfgAlertaTiempoDefault | no |
-| 71 | input/checkbox | accion | carritoCfgDescuentos | carritoCfgDescuentos | no |
-| 72 | input/checkbox | accion | carritoCfgPropina | carritoCfgPropina | no |
-| 73 | input/checkbox | accion | carritoCfgComision | carritoCfgComision | no |
-| 74 | input/checkbox | accion | carritoCfgPagoMixto | carritoCfgPagoMixto | no |
-| 75 | input/checkbox | accion | carritoCfgResumenTotales | carritoCfgResumenTotales | no |
-| 76 | input/checkbox | accion | carritoCfgDesgloseCobro | carritoCfgDesgloseCobro | no |
-| 77 | input/checkbox | accion | carritoCfgMetodoPagoEfectivo | carritoCfgMetodoPagoEfectivo | no |
-| 78 | input/checkbox | accion | carritoCfgMetodoPagoCredito | carritoCfgMetodoPagoCredito | no |
-| 79 | input/checkbox | accion | carritoCfgMetodoPagoDebito | carritoCfgMetodoPagoDebito | no |
-| 80 | input/checkbox | accion | carritoCfgMetodoPagoBreb | carritoCfgMetodoPagoBreb | no |
-| 81 | input/checkbox | accion | carritoCfgMetodoPagoNequi | carritoCfgMetodoPagoNequi | no |
-| 82 | input/checkbox | accion | carritoCfgMetodoPagoOtraTransferencia | carritoCfgMetodoPagoOtraTransferencia | no |
-| 83 | input/checkbox | accion | carritoCfgMetodoPagoCreditoCliente | carritoCfgMetodoPagoCreditoCliente | no |
-| 84 | input/checkbox | accion | carritoCfgFacturacionOffline | carritoCfgFacturacionOffline | no |
-| 85 | input/checkbox | accion | carritoCfgMarcaOffline | carritoCfgMarcaOffline | no |
-| 86 | input/checkbox | accion | carritoCfgQrFacturaElectronica | carritoCfgQrFacturaElectronica | no |
-| 87 | button/button | accion | btnAgregarCuentaQR | Agregar cuenta | no |
-| 88 | input/checkbox | accion | carritoCfgPagoQR | carritoCfgPagoQR | no |
-| 89 | input/checkbox | accion | - | sin etiqueta | sí |
-| 90 | input/- | entrada | - | ' + escapeAttr(account.nombre) + ' | sí |
-| 91 | select/- | entrada | - | ' + ' Bre-B ' + ' Nequi ' + ' Otro ' + ' | sí |
-| 92 | input/- | entrada | - | ' + escapeAttr(account.llave) + ' | sí |
-| 93 | input/- | entrada | - | ' + escapeAttr(account.comercio) + ' | sí |
-| 94 | textarea/- | entrada | - | ' + escapeHtmlText(account.payload_oficial) + ' | sí |
-| 95 | textarea/- | entrada | - | ' + escapeHtmlText(account.instrucciones) + ' | sí |
-| 96 | button/button | accion | - | Eliminar | no |
+| 56 | input/checkbox | accion | carritoCfgAbrirDomoticaEstaciones | carritoCfgAbrirDomoticaEstaciones | no |
+| 57 | input/checkbox | accion | carritoCfgBotonDescuentos | carritoCfgBotonDescuentos | no |
+| 58 | input/checkbox | accion | carritoCfgBotonCambiarTarifa | carritoCfgBotonCambiarTarifa | no |
+| 59 | input/checkbox | accion | carritoCfgBotonTransferirCuenta | carritoCfgBotonTransferirCuenta | no |
+| 60 | input/checkbox | accion | carritoCfgBotonControlElectrico | carritoCfgBotonControlElectrico | no |
+| 61 | input/checkbox | accion | carritoCfgBotonCancelar | carritoCfgBotonCancelar | no |
+| 62 | input/checkbox | accion | carritoCfgBotonClientes | carritoCfgBotonClientes | no |
+| 63 | input/checkbox | accion | carritoCfgBotonAbonos | carritoCfgBotonAbonos | no |
+| 64 | input/checkbox | accion | carritoCfgBotonVehiculo | carritoCfgBotonVehiculo | no |
+| 65 | input/checkbox | accion | carritoCfgBotonesSelectorEnabled | carritoCfgBotonesSelectorEnabled | no |
+| 66 | select/- | entrada | carritoCfgBotonesSelector | Selecciona un boton Descuentos Cambiar tarifa Transferir cuenta Domotica Cancelar carrito Clientes Abonos Vehiculo | no |
+| 67 | select/- | entrada | carritoCfgBotonesSelectorAction | Mostrar Ocultar | no |
+| 68 | button/button | accion | carritoCfgBotonesSelectorApply | Aplicar al boton | no |
+| 69 | input/checkbox | accion | carritoCfgMostrarAlertaTiempo | carritoCfgMostrarAlertaTiempo | no |
+| 70 | input/number | entrada | carritoCfgAlertaTiempoMinutos | 10 | no |
+| 71 | input/checkbox | accion | carritoCfgAlertaTiempoDefault | carritoCfgAlertaTiempoDefault | no |
+| 72 | input/checkbox | accion | carritoCfgDescuentos | carritoCfgDescuentos | no |
+| 73 | input/checkbox | accion | carritoCfgPropina | carritoCfgPropina | no |
+| 74 | input/checkbox | accion | carritoCfgComision | carritoCfgComision | no |
+| 75 | input/checkbox | accion | carritoCfgPagoMixto | carritoCfgPagoMixto | no |
+| 76 | input/checkbox | accion | carritoCfgResumenTotales | carritoCfgResumenTotales | no |
+| 77 | input/checkbox | accion | carritoCfgDesgloseCobro | carritoCfgDesgloseCobro | no |
+| 78 | input/checkbox | accion | carritoCfgMetodoPagoEfectivo | carritoCfgMetodoPagoEfectivo | no |
+| 79 | input/checkbox | accion | carritoCfgMetodoPagoCredito | carritoCfgMetodoPagoCredito | no |
+| 80 | input/checkbox | accion | carritoCfgMetodoPagoDebito | carritoCfgMetodoPagoDebito | no |
+| 81 | input/checkbox | accion | carritoCfgMetodoPagoBreb | carritoCfgMetodoPagoBreb | no |
+| 82 | input/checkbox | accion | carritoCfgMetodoPagoNequi | carritoCfgMetodoPagoNequi | no |
+| 83 | input/checkbox | accion | carritoCfgMetodoPagoOtraTransferencia | carritoCfgMetodoPagoOtraTransferencia | no |
+| 84 | input/checkbox | accion | carritoCfgMetodoPagoCreditoCliente | carritoCfgMetodoPagoCreditoCliente | no |
+| 85 | input/checkbox | accion | carritoCfgFacturacionOffline | carritoCfgFacturacionOffline | no |
+| 86 | input/checkbox | accion | carritoCfgMarcaOffline | carritoCfgMarcaOffline | no |
+| 87 | input/checkbox | accion | carritoCfgQrFacturaElectronica | carritoCfgQrFacturaElectronica | no |
+| 88 | button/button | accion | btnAgregarCuentaQR | Agregar cuenta | no |
+| 89 | input/checkbox | accion | carritoCfgPagoQR | carritoCfgPagoQR | no |
+| 90 | input/checkbox | accion | - | sin etiqueta | sí |
+| 91 | input/- | entrada | - | ' + escapeAttr(account.nombre) + ' | sí |
+| 92 | select/- | entrada | - | ' + ' Bre-B ' + ' Nequi ' + ' Otro ' + ' | sí |
+| 93 | input/- | entrada | - | ' + escapeAttr(account.llave) + ' | sí |
+| 94 | input/- | entrada | - | ' + escapeAttr(account.comercio) + ' | sí |
+| 95 | textarea/- | entrada | - | ' + escapeHtmlText(account.payload_oficial) + ' | sí |
+| 96 | textarea/- | entrada | - | ' + escapeHtmlText(account.instrucciones) + ' | sí |
+| 97 | button/button | accion | - | Eliminar | no |
 
 ### `web/administrar_empresa/configuracion_chat_flotante.html` (9)
 
@@ -2200,7 +2191,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 166 | input/- | entrada | printerTrabajoTitulo | Prueba de impresion PCS | no |
 | 167 | textarea/- | entrada | printerTrabajoContenido | Prueba de impresion desde PCS. | no |
 | 168 | button/button | accion | btnCrearTrabajoImpresion | Enviar prueba a cola | no |
-| 169 | button/button | accion | btnTomarTrabajosImpresion | Tomar pendientes | no |
+| 169 | button/button | accion | btnTomarTrabajosImpresion | Reclamar pendientes (sin imprimir) | no |
 | 170 | button/button | accion | btnDescargarBackup | Descargar backup | no |
 | 171 | input/file | accion | backupFile | backupFile | no |
 | 172 | button/button | accion | btnRestaurarBackup | Restaurar backup | no |
@@ -2225,8 +2216,8 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 191 | button/button | accion | ' + categoriaID + ' | Eliminar | sí |
 | 192 | button/button | accion | ' + productoID + ' | Eliminar | sí |
 | 193 | button/button | accion | ' + escapeConfigHtml(deviceID) + ' | Eliminar | sí |
-| 194 | button/button | accion | ' + id + ' | Marcar impreso | sí |
-| 195 | button/button | accion | ' + id + ' | Reintentar | sí |
+| 194 | button/button | accion | ' + id + ' | Confirmar papel impreso | sí |
+| 195 | button/button | accion | ' + id + ' | Reintentar si no salio | sí |
 
 ### `web/administrar_empresa/configuracion_menu.html` (1)
 
@@ -2303,24 +2294,26 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 53 | a/- | accion | linkEstacionesConfig | Configurar estaciones | no |
 | 54 | a/- | accion | linkImpresorasConfig | Impresoras y caja | no |
 
-### `web/administrar_empresa/configuracion_sensores_raspberry.html` (14)
+### `web/administrar_empresa/configuracion_sensores_raspberry.html` (16)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | input/checkbox | accion | sensorAutoActivarEstacion | sensorAutoActivarEstacion | no |
-| 2 | input/number | entrada | margenToleranciaEntradaMinutos | margenToleranciaEntradaMinutos | no |
-| 3 | input/checkbox | accion | margenDesactivacionHabilitado | margenDesactivacionHabilitado | no |
-| 4 | input/number | entrada | margenDesactivacionMinutos | margenDesactivacionMinutos | no |
-| 5 | button/button | accion | saveSensorRulesBtn | Guardar reglas | no |
-| 6 | input/- | entrada | deviceId | deviceId | no |
-| 7 | input/number | entrada | estacionId | estacionId | no |
-| 8 | input/- | entrada | deviceToken | deviceToken | no |
-| 9 | button/button | accion | generateToken | Generar | no |
-| 10 | button/button | accion | saveBtn | Guardar dispositivo | no |
-| 11 | button/button | accion | provisionBtn | Provisionar seguro | no |
-| 12 | button/button | accion | reloadBtn | Recargar estado | no |
-| 13 | textarea/- | entrada | provisioningOutput | provisioningOutput | no |
-| 14 | textarea/- | entrada | heartbeatExample | heartbeatExample | no |
+| 1 | a/- | accion | doorSensorTutorialLink | Tutorial de conexión | no |
+| 2 | input/checkbox | accion | sensorAutoActivarEstacion | sensorAutoActivarEstacion | no |
+| 3 | input/number | entrada | margenToleranciaEntradaMinutos | margenToleranciaEntradaMinutos | no |
+| 4 | input/checkbox | accion | margenDesactivacionHabilitado | margenDesactivacionHabilitado | no |
+| 5 | input/number | entrada | margenDesactivacionMinutos | margenDesactivacionMinutos | no |
+| 6 | button/button | accion | saveSensorRulesBtn | Guardar reglas | no |
+| 7 | input/- | entrada | deviceId | deviceId | no |
+| 8 | input/number | entrada | estacionId | estacionId | no |
+| 9 | input/- | entrada | deviceToken | deviceToken | no |
+| 10 | button/button | accion | generateToken | Generar | no |
+| 11 | button/button | accion | saveBtn | Guardar dispositivo | no |
+| 12 | button/button | accion | provisionBtn | Provisionar seguro | no |
+| 13 | button/button | accion | reloadBtn | Recargar estado | no |
+| 14 | textarea/- | entrada | provisioningOutput | provisioningOutput | no |
+| 15 | textarea/- | entrada | heartbeatExample | heartbeatExample | no |
+| 16 | button/button | accion | ' + sanitize(d.device_id \|\| '') + ' | Asignar habitación | sí |
 
 ### `web/administrar_empresa/contabilidad_colombia.html` (58)
 
@@ -2385,7 +2378,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 57 | button/button | accion | - | Quitar | no |
 | 58 | input/- | entrada | - | sin etiqueta | no |
 
-### `web/administrar_empresa/contabilidad_colombia_avanzada.html` (81)
+### `web/administrar_empresa/contabilidad_colombia_avanzada.html` (114)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -2423,157 +2416,226 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 32 | input/number | entrada | nomSalario | nomSalario | no |
 | 33 | input/number | entrada | nomDev | nomDev | no |
 | 34 | input/number | entrada | nomDed | nomDed | no |
-| 35 | select/- | entrada | nomEstado | borrador validado enviado rechazado | no |
-| 36 | button/button | accion | btnSaveNomina | Guardar nómina electrónica | no |
-| 37 | input/- | entrada | dsPeriodo | dsPeriodo | no |
-| 38 | input/date | entrada | dsFecha | dsFecha | no |
-| 39 | input/- | entrada | dsDoc | dsDoc | no |
-| 40 | input/- | entrada | dsProveedor | dsProveedor | no |
-| 41 | input/- | entrada | dsConcepto | dsConcepto | no |
-| 42 | input/number | entrada | dsSubtotal | dsSubtotal | no |
-| 43 | input/number | entrada | dsIva | dsIva | no |
-| 44 | input/number | entrada | dsRet | dsRet | no |
-| 45 | select/- | entrada | dsEstado | borrador validado enviado rechazado | no |
-| 46 | button/button | accion | btnSaveSoporte | Guardar documento soporte | no |
-| 47 | input/- | entrada | actCodigo | actCodigo | no |
-| 48 | input/- | entrada | actNombre | actNombre | no |
-| 49 | input/- | entrada | actCategoria | equipo | no |
-| 50 | input/date | entrada | actFecha | actFecha | no |
-| 51 | input/number | entrada | actCosto | actCosto | no |
-| 52 | input/number | entrada | actResidual | actResidual | no |
-| 53 | input/number | entrada | actVida | 60 | no |
-| 54 | input/- | entrada | actUbicacion | actUbicacion | no |
-| 55 | input/- | entrada | actCuenta | 152405 | no |
-| 56 | input/- | entrada | actDep | 159205 | no |
-| 57 | input/- | entrada | actGasto | 516010 | no |
-| 58 | input/- | entrada | actResponsable | actResponsable | no |
-| 59 | button/button | accion | btnSaveActivo | Guardar activo | no |
-| 60 | input/- | entrada | actAvPeriodo | actAvPeriodo | no |
-| 61 | input/number | entrada | actAvEventoID | actAvEventoID | no |
-| 62 | select/- | entrada | actAvEventoTipo | Mantenimiento Traslado Baja Venta Ajuste valor libros | no |
-| 63 | input/number | entrada | actAvEventoValor | actAvEventoValor | no |
-| 64 | input/- | entrada | actAvDestino | actAvDestino | no |
-| 65 | input/- | entrada | actAvResponsable | actAvResponsable | no |
-| 66 | input/- | entrada | actAvDetalle | actAvDetalle | no |
-| 67 | button/button | accion | btnActAvDep | Generar depreciacion | no |
-| 68 | button/button | accion | btnActAvEvento | Registrar evento | no |
-| 69 | select/- | entrada | cxTipo | Cuenta por cobrar Cuenta por pagar | no |
-| 70 | input/- | entrada | cxDoc | cxDoc | no |
-| 71 | input/- | entrada | cxTercero | cxTercero | no |
-| 72 | input/- | entrada | cxCuenta | cxCuenta | no |
-| 73 | input/- | entrada | cxConcepto | cxConcepto | no |
-| 74 | input/date | entrada | cxEmision | cxEmision | no |
-| 75 | input/date | entrada | cxVence | cxVence | no |
-| 76 | input/number | entrada | cxValor | cxValor | no |
-| 77 | input/number | entrada | cxPagado | cxPagado | no |
-| 78 | button/button | accion | btnSaveCartera | Guardar obligación | no |
-| 79 | select/- | entrada | libTipo | Libro diario Libro mayor / auxiliar Balance de prueba | no |
-| 80 | input/- | entrada | libPeriodo | libPeriodo | no |
-| 81 | button/button | accion | btnLoadLibro | Generar libro | no |
+| 35 | input/- | entrada | nomEstado | Borrador local - sin envío DIAN | no |
+| 36 | button/button | accion | btnSaveNomina | Creaci&oacute;n manual bloqueada | no |
+| 37 | a/- | accion | - | Abrir N&oacute;mina y sueldos | no |
+| 38 | select/- | entrada | dsCfgEstado | Configurando Habilitación Activo en producción Suspendido | no |
+| 39 | select/- | entrada | dsCfgAmbiente | Habilitación Producción | no |
+| 40 | input/- | entrada | dsCfgModo | dsCfgModo | no |
+| 41 | input/- | entrada | dsCfgPrefijo | dsCfgPrefijo | no |
+| 42 | input/- | entrada | dsCfgResolucion | dsCfgResolucion | no |
+| 43 | input/date | entrada | dsCfgDesde | dsCfgDesde | no |
+| 44 | input/date | entrada | dsCfgHasta | dsCfgHasta | no |
+| 45 | input/url | entrada | dsCfgURL | dsCfgURL | no |
+| 46 | input/number | entrada | dsCfgRangoDesde | dsCfgRangoDesde | no |
+| 47 | input/number | entrada | dsCfgRangoHasta | dsCfgRangoHasta | no |
+| 48 | input/number | entrada | dsCfgConsecutivo | dsCfgConsecutivo | no |
+| 49 | input/- | entrada | dsCfgObservaciones | dsCfgObservaciones | no |
+| 50 | button/button | accion | btnSaveSoporteConfig | Guardar configuración | no |
+| 51 | input/- | entrada | dsPeriodo | dsPeriodo | no |
+| 52 | input/date | entrada | dsFecha | dsFecha | no |
+| 53 | select/- | entrada | dsResidencia | Residente en Colombia No residente | no |
+| 54 | select/- | entrada | dsTipoDocumento | dsTipoDocumento | no |
+| 55 | input/- | entrada | dsDoc | dsDoc | no |
+| 56 | input/- | entrada | dsDV | dsDV | no |
+| 57 | input/- | entrada | dsProveedor | dsProveedor | no |
+| 58 | select/- | entrada | dsTipoPersona | Persona natural Persona jurídica | no |
+| 59 | input/- | entrada | dsResponsabilidad | R-99-PN | no |
+| 60 | input/- | entrada | dsPais | CO | no |
+| 61 | input/- | entrada | dsDireccion | dsDireccion | no |
+| 62 | input/- | entrada | dsPostal | dsPostal | no |
+| 63 | input/- | entrada | dsDepartamento | dsDepartamento | no |
+| 64 | input/- | entrada | dsDepartamentoDANE | dsDepartamentoDANE | no |
+| 65 | input/- | entrada | dsMunicipio | dsMunicipio | no |
+| 66 | input/- | entrada | dsMunicipioDANE | dsMunicipioDANE | no |
+| 67 | input/email | entrada | dsEmail | dsEmail | no |
+| 68 | input/- | entrada | dsTelefono | dsTelefono | no |
+| 69 | input/- | entrada | dsConcepto | dsConcepto | no |
+| 70 | input/- | entrada | dsMoneda | COP | no |
+| 71 | select/- | entrada | dsFormaPago | 1 · Contado 2 · Crédito | no |
+| 72 | select/- | entrada | dsMedioPago | 10 · Efectivo 42 · Consignación bancaria 47 · Transferencia débito 48 · Tarjeta crédito 49 · Tarjeta débito ZZZ · Otro | no |
+| 73 | input/date | entrada | dsVencimiento | dsVencimiento | no |
+| 74 | button/button | accion | btnAddSoporteLinea | Agregar línea | no |
+| 75 | button/button | accion | btnSaveSoporte | Guardar borrador | no |
+| 76 | input/- | entrada | dsEmitConfirmacion | dsEmitConfirmacion | no |
+| 77 | button/button | accion | btnCancelarSoporteEmision | Cancelar | no |
+| 78 | button/button | accion | btnConfirmarSoporteEmision | Emitir y transmitir | no |
+| 79 | input/- | entrada | actCodigo | actCodigo | no |
+| 80 | input/- | entrada | actNombre | actNombre | no |
+| 81 | input/- | entrada | actCategoria | equipo | no |
+| 82 | input/date | entrada | actFecha | actFecha | no |
+| 83 | input/number | entrada | actCosto | actCosto | no |
+| 84 | input/number | entrada | actResidual | actResidual | no |
+| 85 | input/number | entrada | actVida | 60 | no |
+| 86 | input/- | entrada | actUbicacion | actUbicacion | no |
+| 87 | input/- | entrada | actCuenta | 152405 | no |
+| 88 | input/- | entrada | actDep | 159205 | no |
+| 89 | input/- | entrada | actGasto | 516010 | no |
+| 90 | input/- | entrada | actResponsable | actResponsable | no |
+| 91 | button/button | accion | btnSaveActivo | Guardar activo | no |
+| 92 | input/- | entrada | actAvPeriodo | actAvPeriodo | no |
+| 93 | input/number | entrada | actAvEventoID | actAvEventoID | no |
+| 94 | select/- | entrada | actAvEventoTipo | Mantenimiento Traslado Baja Venta Ajuste valor libros | no |
+| 95 | input/number | entrada | actAvEventoValor | actAvEventoValor | no |
+| 96 | input/- | entrada | actAvDestino | actAvDestino | no |
+| 97 | input/- | entrada | actAvResponsable | actAvResponsable | no |
+| 98 | input/- | entrada | actAvDetalle | actAvDetalle | no |
+| 99 | button/button | accion | btnActAvDep | Generar depreciacion | no |
+| 100 | button/button | accion | btnActAvEvento | Registrar evento | no |
+| 101 | select/- | entrada | cxTipo | Cuenta por cobrar Cuenta por pagar | no |
+| 102 | input/- | entrada | cxDoc | cxDoc | no |
+| 103 | input/- | entrada | cxTercero | cxTercero | no |
+| 104 | input/- | entrada | cxCuenta | cxCuenta | no |
+| 105 | input/- | entrada | cxConcepto | cxConcepto | no |
+| 106 | input/date | entrada | cxEmision | cxEmision | no |
+| 107 | input/date | entrada | cxVence | cxVence | no |
+| 108 | input/number | entrada | cxValor | cxValor | no |
+| 109 | input/number | entrada | cxPagado | cxPagado | no |
+| 110 | button/button | accion | btnSaveCartera | Guardar obligación | no |
+| 111 | select/- | entrada | libTipo | Libro diario Libro mayor / auxiliar Balance de prueba | no |
+| 112 | input/- | entrada | libPeriodo | libPeriodo | no |
+| 113 | button/button | accion | btnLoadLibro | Generar libro | no |
+| 114 | button/- | accion | - | Revisar DIAN | sí |
 
-### `web/administrar_empresa/control_electrico.html` (97)
+### `web/administrar_empresa/control_electrico.html` (133)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | a/- | accion | - | Tutorial | no |
-| 2 | button/button | accion | scheduleBtn | Ejecutar agenda | no |
-| 3 | button/button | accion | syncBtn | Sincronizar | no |
-| 4 | button/button | accion | reloadBtn | Actualizar | no |
-| 5 | input/checkbox | accion | habilitado | habilitado | no |
-| 6 | input/- | entrada | raspberryIp | raspberryIp | no |
-| 7 | input/number | entrada | raspberryPort | 8081 | no |
-| 8 | input/- | entrada | apiPath | /api/gpio/relay | no |
-| 9 | input/password | entrada | apiToken | apiToken | no |
-| 10 | input/number | entrada | timeoutMs | 2500 | no |
-| 11 | input/number | entrada | activationDelaySeconds | 1 | no |
-| 12 | input/checkbox | accion | autoSync | autoSync | no |
-| 13 | input/checkbox | accion | failSafe | failSafe | no |
-| 14 | input/checkbox | accion | disconnectAlertEnabled | disconnectAlertEnabled | no |
-| 15 | input/email | entrada | disconnectAlertEmail | disconnectAlertEmail | no |
-| 16 | input/number | entrada | disconnectGraceMinutes | 5 | no |
-| 17 | textarea/- | entrada | observaciones | observaciones | no |
-| 18 | button/button | accion | saveConfigBtn | Guardar conexion | no |
-| 19 | input/hidden | entrada | raspberryId | 0 | no |
-| 20 | input/- | entrada | raspberryCodigo | raspberryCodigo | no |
-| 21 | input/- | entrada | raspberryNombre | raspberryNombre | no |
-| 22 | select/- | entrada | raspberryTipoControlador | Raspberry Pi / GPIO local Home Assistant REST Siri / Apple Home via HomeKit Bridge Matter via controlador/gateway Shelly | no |
-| 23 | input/- | entrada | raspberryProveedor | raspberryProveedor | no |
-| 24 | input/- | entrada | raspberryBaseUrl | raspberryBaseUrl | no |
-| 25 | input/- | entrada | raspberryNodeIp | raspberryNodeIp | no |
-| 26 | input/number | entrada | raspberryNodePort | 8081 | no |
-| 27 | input/- | entrada | raspberryNodeApiPath | /api/gpio/relay | no |
-| 28 | input/password | entrada | raspberryNodeApiToken | raspberryNodeApiToken | no |
-| 29 | input/number | entrada | raspberryNodeTimeout | 2500 | no |
-| 30 | textarea/- | entrada | raspberryNodeObservaciones | raspberryNodeObservaciones | no |
-| 31 | button/button | accion | newRaspberryBtn | Nuevo controlador | no |
-| 32 | button/button | accion | saveRaspberryBtn | Guardar controlador | no |
-| 33 | input/hidden | entrada | ruleId | 0 | no |
-| 34 | input/- | entrada | ruleNombre | ruleNombre | no |
-| 35 | input/- | entrada | ruleSensorCodigo | ruleSensorCodigo | no |
-| 36 | select/- | entrada | ruleRaspberry | Sensor externo / sin GPIO | no |
-| 37 | input/number | entrada | ruleGPIO | ruleGPIO | no |
-| 38 | select/- | entrada | rulePull | Sin pull Pull-up Pull-down | no |
-| 39 | input/number | entrada | ruleDebounce | 250 | no |
-| 40 | select/- | entrada | ruleCondicion | Igual a Distinto de Mayor que Menor que Contiene | no |
-| 41 | input/- | entrada | ruleValor | ruleValor | no |
-| 42 | select/- | entrada | ruleAccion | Encender aparato Encender con temporizador Activar según la programación del aparato Apagar aparato Solo alarma | no |
-| 43 | input/number | entrada | ruleTimerSeconds | 900 | no |
-| 44 | select/- | entrada | ruleRele | ruleRele | no |
-| 45 | select/- | entrada | ruleSeveridad | Info Advertencia Critica | no |
-| 46 | input/checkbox | accion | ruleAlarma | ruleAlarma | no |
-| 47 | textarea/- | entrada | ruleMensaje | ruleMensaje | no |
-| 48 | button/button | accion | newRuleBtn | Nueva regla | no |
-| 49 | button/button | accion | saveRuleBtn | Guardar regla | no |
-| 50 | select/- | entrada | reportCategoryFilter | Todas | no |
-| 51 | select/- | entrada | reportDeviceFilter | Todos | no |
-| 52 | button/button | accion | reportRefreshBtn | Actualizar reporte | no |
-| 53 | button/button | accion | reportPrintBtn | Imprimir reporte | no |
-| 54 | input/- | entrada | - | ' + sanitize(data.imagen_url) + ' | no |
-| 55 | input/file | accion | - | sin etiqueta | no |
-| 56 | button/button | accion | - | Subir foto | no |
-| 57 | input/number | entrada | - | ' + sanitize(data.gpio_pin) + ' | no |
-| 58 | input/number | entrada | - | ' + sanitize(data.pulso_ms) + ' | no |
-| 59 | input/- | entrada | - | ' + sanitize(data.salida_codigo) + ' | no |
-| 60 | select/- | entrada | - | Lampara / luces Motobomba Jacuzzi Aire Puerta Otro | no |
-| 61 | input/- | entrada | - | ' + sanitize(data.categoria \|\| '') + ' | no |
-| 62 | select/- | entrada | - | ' + relayIntegrationOptions(data.integracion_tipo) + ' | no |
-| 63 | select/- | entrada | - | ' + raspberryOptions(data.raspberry_id) + ' | no |
-| 64 | input/- | entrada | - | ' + sanitize(data.fabricante) + ' | no |
-| 65 | input/- | entrada | - | ' + sanitize(data.modelo) + ' | no |
-| 66 | input/- | entrada | - | ' + sanitize(data.entity_id) + ' | no |
-| 67 | input/- | entrada | - | ' + sanitize(data.device_id) + ' | no |
-| 68 | input/- | entrada | - | ' + sanitize(data.capability) + ' | no |
-| 69 | input/- | entrada | - | ' + sanitize(data.relay_name) + ' | no |
-| 70 | textarea/- | entrada | - | ' + sanitize(data.observaciones) + ' | no |
-| 71 | input/checkbox | accion | - | sin etiqueta | no |
-| 72 | input/number | entrada | - | ' + sanitize(data.potencia_w) + ' | no |
-| 73 | input/- | entrada | - | ' + sanitize(data.sensor_consumo_entity_id) + ' | no |
-| 74 | input/- | entrada | - | ' + sanitize((data.ultimo_consumo_w \|\| 0) + ' W / ' + (data.ultimo_consumo_kwh \|\| 0) + ' kWh / ' + (data.ultimo_voltaje_ | no |
-| 75 | input/checkbox | accion | - | sin etiqueta | no |
-| 76 | input/checkbox | accion | - | sin etiqueta | no |
-| 77 | input/checkbox | accion | - | sin etiqueta | no |
-| 78 | input/time | entrada | - | ' + sanitize(data.hora_encendido) + ' | no |
-| 79 | input/time | entrada | - | ' + sanitize(data.hora_apagado) + ' | no |
-| 80 | select/- | entrada | - | ' + relayDaysOptions(data.programacion_dias) + ' | no |
-| 81 | input/- | entrada | - | ' + sanitize(data.programacion_timezone \|\| 'America/Bogota') + ' | no |
-| 82 | input/- | entrada | - | ON ' + sanitize(data.ultima_programacion_on \|\| '--') + ' / OFF ' + sanitize(data.ultima_programacion_off \|\| '--') + ' | no |
-| 83 | input/checkbox | accion | - | sin etiqueta | no |
-| 84 | button/button | accion | - | Apagar | no |
-| 85 | button/button | accion | - | Encender | no |
-| 86 | button/button | accion | - | Guardar | no |
-| 87 | button/button | accion | - | GPIO ' + pin + ' | sí |
-| 88 | button/button | accion | - | Editar | no |
-| 89 | button/button | accion | - | Generar instalador | no |
-| 90 | button/button | accion | - | Probar conexión | no |
-| 91 | button/button | accion | - | Reiniciar | no |
-| 92 | button/button | accion | - | Apagar | no |
-| 93 | button/button | accion | - | Probar GPIO | no |
-| 94 | button/button | accion | - | Principal | no |
-| 95 | button/button | accion | - | Desactivar | no |
-| 96 | button/button | accion | - | Editar | no |
-| 97 | button/button | accion | - | Desactivar | no |
+| 1 | a/- | accion | - | Tutorial Domótica | no |
+| 2 | a/- | accion | doorSensorTutorialLink | Tutorial sensores | no |
+| 3 | button/button | accion | scheduleBtn | Ejecutar agenda | no |
+| 4 | button/button | accion | syncBtn | Sincronizar | no |
+| 5 | button/button | accion | reloadBtn | Actualizar | no |
+| 6 | input/checkbox | accion | habilitado | habilitado | no |
+| 7 | input/checkbox | accion | mostrarBotonDomoticaEstaciones | mostrarBotonDomoticaEstaciones | no |
+| 8 | input/- | entrada | raspberryIp | raspberryIp | no |
+| 9 | input/number | entrada | raspberryPort | 8081 | no |
+| 10 | input/- | entrada | apiPath | /api/gpio/relay | no |
+| 11 | input/password | entrada | apiToken | apiToken | no |
+| 12 | input/number | entrada | timeoutMs | 2500 | no |
+| 13 | input/number | entrada | activationDelaySeconds | 1 | no |
+| 14 | input/checkbox | accion | autoSync | autoSync | no |
+| 15 | input/checkbox | accion | failSafe | failSafe | no |
+| 16 | input/checkbox | accion | disconnectAlertEnabled | disconnectAlertEnabled | no |
+| 17 | input/email | entrada | disconnectAlertEmail | disconnectAlertEmail | no |
+| 18 | input/number | entrada | disconnectGraceMinutes | 5 | no |
+| 19 | textarea/- | entrada | observaciones | observaciones | no |
+| 20 | button/button | accion | saveConfigBtn | Guardar conexion | no |
+| 21 | input/hidden | entrada | raspberryId | 0 | no |
+| 22 | input/- | entrada | raspberryCodigo | raspberryCodigo | no |
+| 23 | input/- | entrada | raspberryNombre | raspberryNombre | no |
+| 24 | select/- | entrada | raspberryTipoControlador | Raspberry Pi / GPIO local Home Assistant REST Siri / Apple Home via HomeKit Bridge Matter via controlador/gateway Shelly | no |
+| 25 | select/- | entrada | raspberryUsoTipo | Domótica / control de equipos Sistema de sensores en puertas | no |
+| 26 | input/number | entrada | raspberryDoorOutputs | 16 | no |
+| 27 | input/number | entrada | raspberryDoorDelay | 100 | no |
+| 28 | input/- | entrada | raspberryProveedor | raspberryProveedor | no |
+| 29 | input/- | entrada | raspberryBaseUrl | raspberryBaseUrl | no |
+| 30 | input/- | entrada | raspberryNodeIp | raspberryNodeIp | no |
+| 31 | input/number | entrada | raspberryNodePort | 8081 | no |
+| 32 | input/- | entrada | raspberryNodeApiPath | /api/gpio/relay | no |
+| 33 | input/password | entrada | raspberryNodeApiToken | raspberryNodeApiToken | no |
+| 34 | input/number | entrada | raspberryNodeTimeout | 2500 | no |
+| 35 | textarea/- | entrada | raspberryNodeObservaciones | raspberryNodeObservaciones | no |
+| 36 | button/button | accion | newRaspberryBtn | Nuevo controlador | no |
+| 37 | button/button | accion | saveRaspberryBtn | Guardar controlador | no |
+| 38 | input/hidden | entrada | ruleId | 0 | no |
+| 39 | input/- | entrada | ruleNombre | ruleNombre | no |
+| 40 | input/- | entrada | ruleSensorCodigo | ruleSensorCodigo | no |
+| 41 | select/- | entrada | ruleRaspberry | Sensor externo / sin GPIO | no |
+| 42 | input/number | entrada | ruleGPIO | ruleGPIO | no |
+| 43 | select/- | entrada | rulePull | Sin pull Pull-up Pull-down | no |
+| 44 | input/number | entrada | ruleDebounce | 250 | no |
+| 45 | select/- | entrada | ruleCondicion | Igual a Distinto de Mayor que Menor que Contiene | no |
+| 46 | input/- | entrada | ruleValor | ruleValor | no |
+| 47 | select/- | entrada | ruleAccion | Encender aparato Encender con temporizador Activar según la programación del aparato Apagar aparato Solo alarma | no |
+| 48 | input/number | entrada | ruleTimerSeconds | 900 | no |
+| 49 | select/- | entrada | ruleRele | ruleRele | no |
+| 50 | select/- | entrada | ruleSeveridad | Info Advertencia Critica | no |
+| 51 | input/checkbox | accion | ruleAlarma | ruleAlarma | no |
+| 52 | textarea/- | entrada | ruleMensaje | ruleMensaje | no |
+| 53 | button/button | accion | newRuleBtn | Nueva regla | no |
+| 54 | button/button | accion | saveRuleBtn | Guardar regla | no |
+| 55 | input/hidden | entrada | sceneId | 0 | no |
+| 56 | input/- | entrada | sceneName | sceneName | no |
+| 57 | input/- | entrada | sceneDescription | sceneDescription | no |
+| 58 | button/button | accion | newSceneBtn | Nueva escena | no |
+| 59 | button/button | accion | saveSceneBtn | Guardar escena | no |
+| 60 | select/- | entrada | reportCategoryFilter | Todas | no |
+| 61 | select/- | entrada | reportDeviceFilter | Todos | no |
+| 62 | select/- | entrada | eventStationFilter | Todas | no |
+| 63 | select/- | entrada | eventDeviceFilter | Todos | no |
+| 64 | select/- | entrada | eventRaspberryFilter | Todas | no |
+| 65 | select/- | entrada | eventCommandFilter | Todos | no |
+| 66 | select/- | entrada | eventResultFilter | Todos Correcto Con error | no |
+| 67 | input/datetime-local | entrada | eventFromFilter | eventFromFilter | no |
+| 68 | input/datetime-local | entrada | eventUntilFilter | eventUntilFilter | no |
+| 69 | button/button | accion | eventFilterApplyBtn | Aplicar filtros | no |
+| 70 | button/button | accion | eventFilterClearBtn | Limpiar filtros | no |
+| 71 | button/button | accion | reportRefreshBtn | Actualizar reporte | no |
+| 72 | button/button | accion | reportPrintBtn | Imprimir reporte | no |
+| 73 | button/button | accion | sshCloseBtn | Cerrar | no |
+| 74 | input/hidden | entrada | sshRaspberryId | 0 | no |
+| 75 | input/checkbox | accion | sshUseSaved | sshUseSaved | no |
+| 76 | input/- | entrada | sshHost | sshHost | no |
+| 77 | input/number | entrada | sshPort | 22 | no |
+| 78 | input/- | entrada | sshUsername | sshUsername | no |
+| 79 | input/password | entrada | sshPassword | sshPassword | no |
+| 80 | input/password | entrada | sshSudoPassword | sshSudoPassword | no |
+| 81 | input/checkbox | accion | sshSaveCredentials | sshSaveCredentials | no |
+| 82 | input/checkbox | accion | sshFingerprintConfirmed | sshFingerprintConfirmed | no |
+| 83 | button/button | accion | sshDeleteCredentialsBtn | Eliminar credencial guardada | no |
+| 84 | button/button | accion | sshInstallBtn | Verificar e instalar | no |
+| 85 | input/- | entrada | - | ' + sanitize(data.imagen_url) + ' | no |
+| 86 | input/file | accion | - | sin etiqueta | no |
+| 87 | button/button | accion | - | Subir foto | no |
+| 88 | input/number | entrada | - | ' + sanitize(data.gpio_pin) + ' | no |
+| 89 | input/number | entrada | - | ' + sanitize(data.pulso_ms) + ' | no |
+| 90 | input/- | entrada | - | ' + sanitize(data.salida_codigo) + ' | no |
+| 91 | select/- | entrada | - | Lampara / luces Motobomba Jacuzzi Aire Puerta Otro | no |
+| 92 | input/- | entrada | - | ' + sanitize(data.categoria \|\| '') + ' | no |
+| 93 | select/- | entrada | - | ' + relayIntegrationOptions(data.integracion_tipo) + ' | no |
+| 94 | select/- | entrada | - | ' + raspberryOptions(data.raspberry_id) + ' | no |
+| 95 | input/- | entrada | - | ' + sanitize(data.fabricante) + ' | no |
+| 96 | input/- | entrada | - | ' + sanitize(data.modelo) + ' | no |
+| 97 | input/- | entrada | - | ' + sanitize(data.entity_id) + ' | no |
+| 98 | input/- | entrada | - | ' + sanitize(data.device_id) + ' | no |
+| 99 | input/- | entrada | - | ' + sanitize(data.capability) + ' | no |
+| 100 | input/- | entrada | - | ' + sanitize(data.relay_name) + ' | no |
+| 101 | textarea/- | entrada | - | ' + sanitize(data.observaciones) + ' | no |
+| 102 | input/checkbox | accion | - | sin etiqueta | no |
+| 103 | input/number | entrada | - | ' + sanitize(data.potencia_w) + ' | no |
+| 104 | input/- | entrada | - | ' + sanitize(data.sensor_consumo_entity_id) + ' | no |
+| 105 | input/- | entrada | - | ' + sanitize((data.ultimo_consumo_w \|\| 0) + ' W / ' + (data.ultimo_consumo_kwh \|\| 0) + ' kWh / ' + (data.ultimo_voltaje_ | no |
+| 106 | input/checkbox | accion | - | sin etiqueta | no |
+| 107 | input/checkbox | accion | - | sin etiqueta | no |
+| 108 | input/checkbox | accion | - | sin etiqueta | no |
+| 109 | input/time | entrada | - | ' + sanitize(data.hora_encendido) + ' | no |
+| 110 | input/time | entrada | - | ' + sanitize(data.hora_apagado) + ' | no |
+| 111 | select/- | entrada | - | ' + relayDaysOptions(data.programacion_dias) + ' | no |
+| 112 | input/- | entrada | - | ' + sanitize(data.programacion_timezone \|\| 'America/Bogota') + ' | no |
+| 113 | input/- | entrada | - | ON ' + sanitize(data.ultima_programacion_on \|\| '--') + ' / OFF ' + sanitize(data.ultima_programacion_off \|\| '--') + ' | no |
+| 114 | input/checkbox | accion | - | sin etiqueta | no |
+| 115 | button/button | accion | - | Apagar | no |
+| 116 | button/button | accion | - | Encender | no |
+| 117 | button/button | accion | - | Guardar | no |
+| 118 | button/button | accion | - | GPIO ' + pin + ' | sí |
+| 119 | button/button | accion | - | Editar | no |
+| 120 | button/button | accion | - | Generar instalador | no |
+| 121 | button/button | accion | - | Instalar por SSH | no |
+| 122 | button/button | accion | - | Probar conexión | no |
+| 123 | button/button | accion | - | Reiniciar | no |
+| 124 | button/button | accion | - | Apagar | no |
+| 125 | button/button | accion | - | Probar GPIO | no |
+| 126 | button/button | accion | - | Desactivar | no |
+| 127 | button/button | accion | - | Editar | no |
+| 128 | button/button | accion | - | Desactivar | no |
+| 129 | input/checkbox | accion | - | sin etiqueta | no |
+| 130 | select/- | entrada | - | Encendido Apagado | no |
+| 131 | button/button | accion | - | Ejecutar | no |
+| 132 | button/button | accion | - | Editar | no |
+| 133 | button/button | accion | - | Desactivar | no |
 
-### `web/administrar_empresa/corte_de_caja.html` (19)
+### `web/administrar_empresa/corte_de_caja.html` (20)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -2596,6 +2658,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 17 | button/button | accion | btnImprimir | Imprimir seleccion | no |
 | 18 | button/button | accion | btnTutorialTurno | Tutorial | no |
 | 19 | input/checkbox | accion | mantenerSesionCierre | mantenerSesionCierre | no |
+| 20 | input/checkbox | accion | mostrarReporteOffline | mostrarReporteOffline | sí |
 
 ### `web/administrar_empresa/creditos.html` (95)
 
@@ -3074,17 +3137,15 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 44 | input/text | entrada | solarLecturaEstadoInversor | solarLecturaEstadoInversor | no |
 | 45 | button/submit | accion | - | Registrar lectura | no |
 
-### `web/administrar_empresa/estacion_ia_pedidos.html` (5)
+### `web/administrar_empresa/estacion_ia_pedidos.html` (3)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | textarea/- | entrada | txt | txt | no |
-| 2 | select/- | entrada | agentSelect | agentSelect | no |
-| 3 | select/- | entrada | modelSelect | modelSelect | no |
-| 4 | button/button | accion | mic | Dictar | no |
-| 5 | button/submit | accion | go | Interpretar y agregar | no |
+| 2 | button/button | accion | mic | Dictar | no |
+| 3 | button/submit | accion | go | Interpretar y agregar | no |
 
-### `web/administrar_empresa/estaciones.html` (23)
+### `web/administrar_empresa/estaciones.html` (24)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -3109,10 +3170,11 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 19 | button/button | accion | notasStationSaveBtn | Guardar nota | no |
 | 20 | button/button | accion | notasStationDeleteBtn | Eliminar nota | no |
 | 21 | a/- | accion | - | Abrir camara | no |
-| 22 | button/button | accion | - | Minimizar | no |
-| 23 | button/button | accion | - | Cerrar | no |
+| 22 | button/button | accion | - | ⚡ | sí |
+| 23 | button/button | accion | - | Minimizar | no |
+| 24 | button/button | accion | - | Cerrar | no |
 
-### `web/administrar_empresa/facturacion_electronica.html` (134)
+### `web/administrar_empresa/facturacion_electronica.html` (174)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -3136,120 +3198,160 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 18 | input/hidden | entrada | dian_set_facturas_aceptadas_requeridas | dian_set_facturas_aceptadas_requeridas | no |
 | 19 | input/hidden | entrada | dian_set_notas_debito_aceptadas_requeridas | dian_set_notas_debito_aceptadas_requeridas | no |
 | 20 | input/hidden | entrada | dian_set_notas_credito_aceptadas_requeridas | dian_set_notas_credito_aceptadas_requeridas | no |
-| 21 | input/file | accion | dianNumeracionPdfInput | dianNumeracionPdfInput | no |
-| 22 | button/button | accion | btnDianNumeracionPdf | Cargar PDF con IA GPT-5.5 | sí |
-| 23 | button/button | accion | btnDianNumeracionAplicar | Aplicar valores | no |
-| 24 | input/- | entrada | dian_nit | dian_nit | no |
-| 25 | input/- | entrada | dian_dv | dian_dv | no |
-| 26 | input/- | entrada | dian_razon_social | dian_razon_social | no |
-| 27 | select/- | entrada | dian_tipo_ambiente | Habilitación Producción | no |
-| 28 | input/- | entrada | dian_url | dian_url | no |
-| 29 | input/- | entrada | dian_test_set_id | dian_test_set_id | no |
-| 30 | input/- | entrada | dian_software_id | dian_software_id | no |
-| 31 | input/password | entrada | dian_software_pin | dian_software_pin | no |
-| 32 | input/checkbox | accion | dian_usar_software_compartido | dian_usar_software_compartido | no |
-| 33 | input/- | entrada | dian_prefijo | dian_prefijo | no |
-| 34 | input/- | entrada | dian_resolucion_numero | dian_resolucion_numero | no |
-| 35 | input/number | entrada | dian_consecutivo_actual | 1 | no |
-| 36 | input/date | entrada | dian_resolucion_fecha_desde | dian_resolucion_fecha_desde | no |
-| 37 | input/date | entrada | dian_resolucion_fecha_hasta | dian_resolucion_fecha_hasta | no |
-| 38 | input/number | entrada | dian_rango_desde | dian_rango_desde | no |
-| 39 | input/number | entrada | dian_rango_hasta | dian_rango_hasta | no |
-| 40 | input/number | entrada | dian_resolucion_alerta_dias | 30 | no |
-| 41 | button/button | accion | btnDianResolucionVencimiento | Verificar vencimiento resoluci&oacute;n | no |
-| 42 | input/- | entrada | dian_llave_tecnica | dian_llave_tecnica | no |
-| 43 | input/- | entrada | dian_token_emisor_ref | dian_token_emisor_ref | no |
-| 44 | input/- | entrada | dian_certificado_url | dian_certificado_url | no |
-| 45 | input/- | entrada | dian_certificado_clave_ref | dian_certificado_clave_ref | no |
-| 46 | textarea/- | entrada | dian_observaciones | dian_observaciones | no |
-| 47 | button/submit | accion | btnDianConfigGuardar | Guardar DIAN Colombia | no |
-| 48 | button/button | accion | btnDianConfigValidar | Validar checklist | no |
-| 49 | button/button | accion | btnDianConfigRecargar | Recargar | no |
-| 50 | a/- | accion | btnDianAyudaNumeracion | Ayuda numeración DIAN | no |
-| 51 | a/- | accion | btnDianAsociarNumeracion | Asociar numeraci&oacute;n DIAN | no |
-| 52 | a/- | accion | btnDianPasarTest | Centro de habilitación DIAN | no |
-| 53 | button/button | accion | feDianSelectAllDocs | Activar todos | no |
-| 54 | button/button | accion | feDianApplyDocs | Aplicar seleccion al JSON | no |
-| 55 | input/- | entrada | fe_ec_ruc | fe_ec_ruc | no |
-| 56 | input/- | entrada | fe_ec_est | fe_ec_est | no |
-| 57 | input/- | entrada | fe_ec_punto | fe_ec_punto | no |
-| 58 | select/- | entrada | fe_ec_ambiente_sri | (definir en JSON o aquí) 1 — Pruebas 2 — Producción | no |
-| 59 | input/- | entrada | fe_pa_ruc | fe_pa_ruc | no |
-| 60 | input/- | entrada | fe_pa_dv | fe_pa_dv | no |
-| 61 | input/- | entrada | fe_cr_cedula | fe_cr_cedula | no |
-| 62 | input/- | entrada | fe_cr_tipo_identificacion | fe_cr_tipo_identificacion | no |
-| 63 | input/- | entrada | fe_cr_actividad | fe_cr_actividad | no |
-| 64 | input/- | entrada | fe_cr_sucursal | fe_cr_sucursal | no |
-| 65 | input/- | entrada | fe_cr_terminal | fe_cr_terminal | no |
-| 66 | input/- | entrada | fe_cr_version_xml | fe_cr_version_xml | no |
-| 67 | input/- | entrada | fe_ar_cuit | fe_ar_cuit | no |
-| 68 | input/- | entrada | fe_ar_punto_venta | fe_ar_punto_venta | no |
-| 69 | input/- | entrada | fe_ar_condicion_iva | fe_ar_condicion_iva | no |
-| 70 | input/- | entrada | fe_ar_tipo_comprobante | fe_ar_tipo_comprobante | no |
-| 71 | input/- | entrada | fe_ar_ws_servicio | fe_ar_ws_servicio | no |
-| 72 | input/- | entrada | fe_ve_rif | fe_ve_rif | no |
-| 73 | input/- | entrada | fe_ve_serie | fe_ve_serie | no |
-| 74 | input/- | entrada | fe_ve_moneda_ref | fe_ve_moneda_ref | no |
-| 75 | input/- | entrada | fe_ve_imprenta | fe_ve_imprenta | no |
-| 76 | input/- | entrada | fe_ve_proveedor | fe_ve_proveedor | no |
-| 77 | input/hidden | entrada | empresa_id | empresa_id | no |
-| 78 | input/- | entrada | proveedor | proveedor | no |
-| 79 | select/- | entrada | ambiente | Sandbox / pruebas Producción | no |
-| 80 | input/- | entrada | moneda_codigo | moneda_codigo | no |
-| 81 | input/- | entrada | tipo_documento_emisor | tipo_documento_emisor | no |
-| 82 | input/- | entrada | identificador_fiscal | identificador_fiscal | no |
-| 83 | input/- | entrada | razon_social | razon_social | no |
-| 84 | input/email | entrada | email_facturacion | email_facturacion | no |
-| 85 | input/checkbox | accion | enviar_factura_email_cliente_auto | enviar_factura_email_cliente_auto | no |
-| 86 | input/- | entrada | telefono_facturacion | telefono_facturacion | no |
-| 87 | input/- | entrada | direccion_fiscal | direccion_fiscal | no |
-| 88 | input/- | entrada | prefijo_factura | prefijo_factura | no |
-| 89 | input/- | entrada | resolucion_numero | resolucion_numero | no |
-| 90 | input/- | entrada | api_base_url | api_base_url | no |
-| 91 | textarea/- | entrada | campos_pais_json | campos_pais_json | no |
-| 92 | textarea/- | entrada | observaciones | observaciones | no |
-| 93 | button/submit | accion | - | Guardar configuración país | no |
-| 94 | button/button | accion | reloadBtn | Recargar país | no |
-| 95 | input/hidden | entrada | adv_empresa_id | adv_empresa_id | no |
-| 96 | input/checkbox | accion | adv_enviar_factura_electronica_venta | adv_enviar_factura_electronica_venta | no |
-| 97 | input/checkbox | accion | adv_facturacion_electronica_activa | adv_facturacion_electronica_activa | no |
-| 98 | input/checkbox | accion | adv_enviar_email_venta | adv_enviar_email_venta | no |
-| 99 | select/- | entrada | adv_tipo_documento_emisor | NIT CC CE PAS OTRO | no |
-| 100 | input/- | entrada | adv_nit | adv_nit | no |
-| 101 | input/- | entrada | adv_digito_verificacion | adv_digito_verificacion | no |
-| 102 | input/- | entrada | adv_razon_social | adv_razon_social | no |
-| 103 | input/- | entrada | adv_nombre_comercial | adv_nombre_comercial | no |
-| 104 | input/- | entrada | adv_regimen_fiscal | adv_regimen_fiscal | no |
-| 105 | input/- | entrada | adv_responsabilidad_tributaria | adv_responsabilidad_tributaria | no |
-| 106 | input/email | entrada | adv_email_facturacion | adv_email_facturacion | no |
-| 107 | input/- | entrada | adv_telefono_facturacion | adv_telefono_facturacion | no |
-| 108 | input/- | entrada | adv_direccion_fiscal | adv_direccion_fiscal | no |
-| 109 | input/- | entrada | adv_departamento | adv_departamento | no |
-| 110 | input/- | entrada | adv_municipio | adv_municipio | no |
-| 111 | input/- | entrada | adv_pais_codigo | CO | no |
-| 112 | input/- | entrada | adv_codigo_postal | adv_codigo_postal | no |
-| 113 | select/- | entrada | adv_ambiente_fe | Habilitación Producción | no |
-| 114 | input/- | entrada | adv_tipo_operacion | 10 | no |
-| 115 | input/- | entrada | adv_prefijo_factura | adv_prefijo_factura | no |
-| 116 | input/- | entrada | adv_resolucion_numero | adv_resolucion_numero | no |
-| 117 | input/date | entrada | adv_resolucion_fecha_desde | adv_resolucion_fecha_desde | no |
-| 118 | input/date | entrada | adv_resolucion_fecha_hasta | adv_resolucion_fecha_hasta | no |
-| 119 | input/number | entrada | adv_consecutivo_desde | 1 | no |
-| 120 | input/number | entrada | adv_consecutivo_hasta | 999999 | no |
-| 121 | input/number | entrada | adv_proximo_consecutivo | 1 | no |
-| 122 | select/- | entrada | adv_formato_impresion | Tamaño grande / carta Impresora POS (tirilla) | no |
-| 123 | input/checkbox | accion | adv_imprimir_copia_factura | adv_imprimir_copia_factura | no |
-| 124 | input/checkbox | accion | adv_total_en_letras | adv_total_en_letras | no |
-| 125 | input/- | entrada | adv_logo_url | adv_logo_url | no |
-| 126 | input/checkbox | accion | adv_mostrar_logo | adv_mostrar_logo | no |
-| 127 | textarea/- | entrada | adv_pie_factura | adv_pie_factura | no |
-| 128 | textarea/- | entrada | adv_notas_legales | adv_notas_legales | no |
-| 129 | input/color | entrada | adv_color_carrito_activo | #d9fbe8 | no |
-| 130 | input/color | entrada | adv_color_carrito_inactivo | #fff9ef | no |
-| 131 | textarea/- | entrada | adv_observaciones | adv_observaciones | no |
-| 132 | button/submit | accion | - | Guardar configuración avanzada | no |
-| 133 | button/button | accion | advReloadBtn | Recargar configuración avanzada | no |
-| 134 | button/- | accion | - | Cargar | sí |
+| 21 | input/file | accion | dianRutPdfInput | dianRutPdfInput | no |
+| 22 | button/button | accion | btnDianRutPdf | Cargar RUT con IA GPT-5.5 | sí |
+| 23 | button/button | accion | btnDianRutAplicar | Aplicar datos revisados | no |
+| 24 | input/file | accion | dianNumeracionPdfInput | dianNumeracionPdfInput | no |
+| 25 | button/button | accion | btnDianNumeracionPdf | Cargar PDF con IA GPT-5.5 | sí |
+| 26 | button/button | accion | btnDianNumeracionAplicar | Aplicar valores | no |
+| 27 | input/- | entrada | dian_nit | dian_nit | no |
+| 28 | input/- | entrada | dian_dv | dian_dv | no |
+| 29 | input/- | entrada | dian_razon_social | dian_razon_social | no |
+| 30 | select/- | entrada | dian_tipo_ambiente | Habilitación Producción | no |
+| 31 | input/- | entrada | dian_url | dian_url | no |
+| 32 | input/password | entrada | dian_test_set_id | dian_test_set_id | no |
+| 33 | input/password | entrada | dian_software_id | dian_software_id | no |
+| 34 | input/password | entrada | dian_software_pin | dian_software_pin | no |
+| 35 | input/checkbox | accion | dian_usar_software_compartido | dian_usar_software_compartido | no |
+| 36 | input/- | entrada | dian_software_proveedor_nit | dian_software_proveedor_nit | no |
+| 37 | input/- | entrada | dian_software_proveedor_dv | dian_software_proveedor_dv | no |
+| 38 | input/- | entrada | dian_software_proveedor_razon_social | dian_software_proveedor_razon_social | no |
+| 39 | input/- | entrada | dian_software_proveedor_primer_apellido | dian_software_proveedor_primer_apellido | no |
+| 40 | input/- | entrada | dian_software_proveedor_segundo_apellido | dian_software_proveedor_segundo_apellido | no |
+| 41 | input/- | entrada | dian_software_proveedor_primer_nombre | dian_software_proveedor_primer_nombre | no |
+| 42 | input/- | entrada | dian_software_proveedor_otros_nombres | dian_software_proveedor_otros_nombres | no |
+| 43 | input/- | entrada | dian_prefijo | dian_prefijo | no |
+| 44 | input/- | entrada | dian_resolucion_numero | dian_resolucion_numero | no |
+| 45 | input/number | entrada | dian_consecutivo_actual | 1 | no |
+| 46 | input/date | entrada | dian_resolucion_fecha_desde | dian_resolucion_fecha_desde | no |
+| 47 | input/date | entrada | dian_resolucion_fecha_hasta | dian_resolucion_fecha_hasta | no |
+| 48 | input/number | entrada | dian_rango_desde | dian_rango_desde | no |
+| 49 | input/number | entrada | dian_rango_hasta | dian_rango_hasta | no |
+| 50 | input/number | entrada | dian_resolucion_alerta_dias | 30 | no |
+| 51 | button/button | accion | btnDianResolucionVencimiento | Verificar vencimiento resoluci&oacute;n | no |
+| 52 | input/password | entrada | dian_llave_tecnica | dian_llave_tecnica | no |
+| 53 | input/password | entrada | dian_token_emisor_ref | dian_token_emisor_ref | no |
+| 54 | input/password | entrada | dian_certificado_url | dian_certificado_url | no |
+| 55 | input/password | entrada | dian_certificado_clave_ref | dian_certificado_clave_ref | no |
+| 56 | textarea/- | entrada | dian_observaciones | dian_observaciones | no |
+| 57 | button/submit | accion | btnDianConfigGuardar | Guardar DIAN Colombia | no |
+| 58 | button/button | accion | btnDianConfigValidar | Validar checklist | no |
+| 59 | button/button | accion | btnDianConfigRecargar | Recargar | no |
+| 60 | a/- | accion | btnDianAyudaNumeracion | Ayuda numeración DIAN | no |
+| 61 | a/- | accion | btnDianAsociarNumeracion | Asociar numeraci&oacute;n DIAN | no |
+| 62 | a/- | accion | btnDianPasarTest | Centro de habilitación DIAN | no |
+| 63 | button/button | accion | feDianSelectAllDocs | Seleccionar operativos | no |
+| 64 | button/button | accion | feDianApplyDocs | Aplicar seleccion al JSON | no |
+| 65 | input/- | entrada | cont_prefijo | cont_prefijo | no |
+| 66 | input/- | entrada | cont_resolucion | cont_resolucion | no |
+| 67 | select/- | entrada | cont_estado | Configurando Activo Suspendido | no |
+| 68 | input/date | entrada | cont_fecha_desde | cont_fecha_desde | no |
+| 69 | input/date | entrada | cont_fecha_hasta | cont_fecha_hasta | no |
+| 70 | input/number | entrada | cont_rango_desde | cont_rango_desde | no |
+| 71 | input/number | entrada | cont_rango_hasta | cont_rango_hasta | no |
+| 72 | input/number | entrada | cont_proximo | cont_proximo | no |
+| 73 | button/button | accion | contGuardarTalonario | Guardar autorizaci&oacute;n | no |
+| 74 | select/- | entrada | cont_tipo | Servicio DIAN no disponible Sistema del facturador no disponible | no |
+| 75 | input/- | entrada | cont_motivo | cont_motivo | no |
+| 76 | input/- | entrada | cont_evidencia | cont_evidencia | no |
+| 77 | input/- | entrada | cont_confirmacion | cont_confirmacion | no |
+| 78 | button/button | accion | contAbrir | Activar contingencia | no |
+| 79 | input/number | entrada | cont_reg_incidente | cont_reg_incidente | no |
+| 80 | input/number | entrada | cont_reg_carrito | cont_reg_carrito | no |
+| 81 | input/- | entrada | cont_reg_numero | cont_reg_numero | no |
+| 82 | input/date | entrada | cont_reg_fecha | cont_reg_fecha | no |
+| 83 | input/- | entrada | cont_reg_confirmacion | cont_reg_confirmacion | no |
+| 84 | button/button | accion | contRegistrarTalonario | Registrar expedici&oacute;n | no |
+| 85 | input/- | entrada | fe_ec_ruc | fe_ec_ruc | no |
+| 86 | input/- | entrada | fe_ec_est | fe_ec_est | no |
+| 87 | input/- | entrada | fe_ec_punto | fe_ec_punto | no |
+| 88 | select/- | entrada | fe_ec_ambiente_sri | (definir en JSON o aquí) 1 — Pruebas 2 — Producción | no |
+| 89 | input/- | entrada | fe_pa_ruc | fe_pa_ruc | no |
+| 90 | input/- | entrada | fe_pa_dv | fe_pa_dv | no |
+| 91 | input/- | entrada | fe_cr_cedula | fe_cr_cedula | no |
+| 92 | input/- | entrada | fe_cr_tipo_identificacion | fe_cr_tipo_identificacion | no |
+| 93 | input/- | entrada | fe_cr_actividad | fe_cr_actividad | no |
+| 94 | input/- | entrada | fe_cr_sucursal | fe_cr_sucursal | no |
+| 95 | input/- | entrada | fe_cr_terminal | fe_cr_terminal | no |
+| 96 | input/- | entrada | fe_cr_version_xml | fe_cr_version_xml | no |
+| 97 | input/- | entrada | fe_ar_cuit | fe_ar_cuit | no |
+| 98 | input/- | entrada | fe_ar_punto_venta | fe_ar_punto_venta | no |
+| 99 | input/- | entrada | fe_ar_condicion_iva | fe_ar_condicion_iva | no |
+| 100 | input/- | entrada | fe_ar_tipo_comprobante | fe_ar_tipo_comprobante | no |
+| 101 | input/- | entrada | fe_ar_ws_servicio | fe_ar_ws_servicio | no |
+| 102 | input/- | entrada | fe_ve_rif | fe_ve_rif | no |
+| 103 | input/- | entrada | fe_ve_serie | fe_ve_serie | no |
+| 104 | input/- | entrada | fe_ve_moneda_ref | fe_ve_moneda_ref | no |
+| 105 | input/- | entrada | fe_ve_imprenta | fe_ve_imprenta | no |
+| 106 | input/- | entrada | fe_ve_proveedor | fe_ve_proveedor | no |
+| 107 | input/- | entrada | new_country_code | new_country_code | no |
+| 108 | input/- | entrada | pais_nombre | pais_nombre | no |
+| 109 | input/- | entrada | new_country_currency | new_country_currency | no |
+| 110 | button/button | accion | addCountryBtn | Agregar país sin habilitar emisión | no |
+| 111 | input/hidden | entrada | empresa_id | empresa_id | no |
+| 112 | input/- | entrada | proveedor | proveedor | no |
+| 113 | select/- | entrada | ambiente | Sandbox / pruebas Producción | no |
+| 114 | input/- | entrada | moneda_codigo | moneda_codigo | no |
+| 115 | input/- | entrada | tipo_documento_emisor | tipo_documento_emisor | no |
+| 116 | input/- | entrada | identificador_fiscal | identificador_fiscal | no |
+| 117 | input/- | entrada | razon_social | razon_social | no |
+| 118 | input/email | entrada | email_facturacion | email_facturacion | no |
+| 119 | input/checkbox | accion | enviar_factura_email_cliente_auto | enviar_factura_email_cliente_auto | no |
+| 120 | input/- | entrada | telefono_facturacion | telefono_facturacion | no |
+| 121 | input/- | entrada | direccion_fiscal | direccion_fiscal | no |
+| 122 | input/- | entrada | prefijo_factura | prefijo_factura | no |
+| 123 | input/- | entrada | resolucion_numero | resolucion_numero | no |
+| 124 | input/- | entrada | api_base_url | api_base_url | no |
+| 125 | textarea/- | entrada | campos_pais_json | campos_pais_json | no |
+| 126 | textarea/- | entrada | observaciones | observaciones | no |
+| 127 | button/submit | accion | - | Guardar configuración país | no |
+| 128 | button/button | accion | reloadBtn | Recargar país | no |
+| 129 | input/hidden | entrada | adv_empresa_id | adv_empresa_id | no |
+| 130 | input/checkbox | accion | adv_enviar_factura_electronica_venta | adv_enviar_factura_electronica_venta | no |
+| 131 | input/checkbox | accion | adv_facturacion_electronica_activa | adv_facturacion_electronica_activa | no |
+| 132 | input/checkbox | accion | adv_enviar_email_venta | adv_enviar_email_venta | no |
+| 133 | select/- | entrada | adv_tipo_documento_emisor | NIT CC CE PAS OTRO | no |
+| 134 | input/- | entrada | adv_nit | adv_nit | no |
+| 135 | input/- | entrada | adv_digito_verificacion | adv_digito_verificacion | no |
+| 136 | input/- | entrada | adv_razon_social | adv_razon_social | no |
+| 137 | input/- | entrada | adv_nombre_comercial | adv_nombre_comercial | no |
+| 138 | input/- | entrada | adv_regimen_fiscal | adv_regimen_fiscal | no |
+| 139 | input/- | entrada | adv_responsabilidad_tributaria | adv_responsabilidad_tributaria | no |
+| 140 | select/- | entrada | adv_tipo_persona_fiscal | Seleccionar Persona natural Persona jurídica | no |
+| 141 | select/- | entrada | adv_regimen_tributario_colombia | Seleccionar Renta régimen ordinario Régimen Simple de Tributación Régimen Tributario Especial Ingresos y patrimonio Pers | no |
+| 142 | select/- | entrada | adv_iva_responsabilidad | Seleccionar Responsable de IVA No responsable de IVA Persona jurídica no responsable por SIMPLE Productor/exportador de  | no |
+| 143 | input/- | entrada | adv_responsabilidades_rut_codigos | adv_responsabilidades_rut_codigos | no |
+| 144 | input/email | entrada | adv_email_facturacion | adv_email_facturacion | no |
+| 145 | input/- | entrada | adv_telefono_facturacion | adv_telefono_facturacion | no |
+| 146 | input/- | entrada | adv_direccion_fiscal | adv_direccion_fiscal | no |
+| 147 | input/- | entrada | adv_departamento | adv_departamento | no |
+| 148 | input/- | entrada | adv_departamento_codigo_dane | adv_departamento_codigo_dane | no |
+| 149 | input/- | entrada | adv_municipio | adv_municipio | no |
+| 150 | input/- | entrada | adv_municipio_codigo_dane | adv_municipio_codigo_dane | no |
+| 151 | input/- | entrada | adv_pais_codigo | CO | no |
+| 152 | input/- | entrada | adv_codigo_postal | adv_codigo_postal | no |
+| 153 | select/- | entrada | adv_ambiente_fe | Habilitación Producción | no |
+| 154 | input/- | entrada | adv_tipo_operacion | 10 | no |
+| 155 | input/- | entrada | adv_prefijo_factura | adv_prefijo_factura | no |
+| 156 | input/- | entrada | adv_resolucion_numero | adv_resolucion_numero | no |
+| 157 | input/date | entrada | adv_resolucion_fecha_desde | adv_resolucion_fecha_desde | no |
+| 158 | input/date | entrada | adv_resolucion_fecha_hasta | adv_resolucion_fecha_hasta | no |
+| 159 | input/number | entrada | adv_consecutivo_desde | 1 | no |
+| 160 | input/number | entrada | adv_consecutivo_hasta | 999999 | no |
+| 161 | input/number | entrada | adv_proximo_consecutivo | 1 | no |
+| 162 | select/- | entrada | adv_formato_impresion | Tamaño grande / carta Impresora POS (tirilla) | no |
+| 163 | input/checkbox | accion | adv_imprimir_copia_factura | adv_imprimir_copia_factura | no |
+| 164 | input/checkbox | accion | adv_total_en_letras | adv_total_en_letras | no |
+| 165 | input/- | entrada | adv_logo_url | adv_logo_url | no |
+| 166 | input/checkbox | accion | adv_mostrar_logo | adv_mostrar_logo | no |
+| 167 | textarea/- | entrada | adv_pie_factura | adv_pie_factura | no |
+| 168 | textarea/- | entrada | adv_notas_legales | adv_notas_legales | no |
+| 169 | input/color | entrada | adv_color_carrito_activo | #d9fbe8 | no |
+| 170 | input/color | entrada | adv_color_carrito_inactivo | #fff9ef | no |
+| 171 | textarea/- | entrada | adv_observaciones | adv_observaciones | no |
+| 172 | button/submit | accion | - | Guardar configuración avanzada | no |
+| 173 | button/button | accion | advReloadBtn | Recargar configuración avanzada | no |
+| 174 | button/- | accion | - | Cargar | sí |
 
 ### `web/administrar_empresa/facturacion_electronica_ecuador.html` (27)
 
@@ -3322,7 +3424,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 26 | button/button | accion | validarBtn | Validar checklist | no |
 | 27 | button/button | accion | recargarBtn | Recargar | no |
 
-### `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` (54)
+### `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` (53)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -3334,52 +3436,51 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 6 | input/datetime-local | entrada | feDianModoFechaInicio | feDianModoFechaInicio | no |
 | 7 | input/datetime-local | entrada | feDianModoFechaTermino | feDianModoFechaTermino | no |
 | 8 | input/- | entrada | feDianTestSetId | feDianTestSetId | no |
-| 9 | select/- | entrada | feDianSetPreset | Portal DIAN software propio/proveedor: 30 + 10 + 10 Historico si DIAN lo exige: 60 + 20 + 20 Personalizado | no |
-| 10 | input/number | entrada | feDianSetFacturas | 30 | no |
-| 11 | input/number | entrada | feDianSetNotasDebito | 10 | no |
-| 12 | input/number | entrada | feDianSetNotasCredito | 10 | no |
-| 13 | input/number | entrada | feDianSetTotalRequerido | 50 | no |
-| 14 | input/number | entrada | feDianSetAceptadosTotal | 1 | no |
-| 15 | input/number | entrada | feDianSetAceptadasFacturas | 1 | no |
-| 16 | input/number | entrada | feDianSetAceptadasND | 0 | no |
-| 17 | input/number | entrada | feDianSetAceptadasNC | 0 | no |
-| 18 | input/number | entrada | feDianSetMaxEnvios | feDianSetMaxEnvios | no |
-| 19 | input/- | entrada | feDianProduccionURL | feDianProduccionURL | no |
-| 20 | input/checkbox | accion | feDianConfirmarHabilitado | feDianConfirmarHabilitado | no |
-| 21 | button/button | accion | btnDianGuardarObjetivo | Guardar objetivo DIAN | no |
-| 22 | button/button | accion | btnDianPruebas | Ejecutar set automatico | no |
-| 23 | button/button | accion | btnDianEnviarFactura | Enviar factura | no |
-| 24 | button/button | accion | btnDianEnviarND | Enviar nota debito | no |
-| 25 | button/button | accion | btnDianEnviarNC | Enviar nota credito | no |
-| 26 | button/button | accion | btnDianTrackRecargar | Recargar historial | no |
-| 27 | input/checkbox | accion | feDianConsoleAutoScroll | feDianConsoleAutoScroll | no |
-| 28 | button/button | accion | btnDianConsoleCopiar | Copiar consola | no |
-| 29 | button/button | accion | btnDianConsoleLimpiar | Limpiar consola | no |
-| 30 | button/button | accion | btnDianCheckConexion | Probar conexion | no |
-| 31 | button/button | accion | btnDianProcesarCola | Procesar cola | no |
-| 32 | input/- | entrada | op_documento_codigo | op_documento_codigo | no |
-| 33 | select/- | entrada | op_tipo_documento | Factura electronica de venta Nota credito electronica Nota debito electronica Documento soporte electronico Nomina elect | no |
-| 34 | select/- | entrada | op_estado_actual | borrador emitida anulada ajustada | no |
-| 35 | input/- | entrada | op_periodo_contable | op_periodo_contable | no |
-| 36 | input/number | entrada | op_monto_total | op_monto_total | no |
-| 37 | input/- | entrada | op_moneda | COP | no |
-| 38 | textarea/- | entrada | op_observaciones | op_observaciones | no |
-| 39 | input/number | entrada | op_cliente_id | op_cliente_id | no |
-| 40 | input/email | entrada | op_cliente_email | op_cliente_email | no |
-| 41 | input/- | entrada | op_cliente_nombre | op_cliente_nombre | no |
-| 42 | button/button | accion | btnEmitirDocumento | Emitir documento | no |
-| 43 | button/button | accion | btnAnularDocumento | Anular factura con nota credito | no |
-| 44 | button/button | accion | btnEmitirFactura | Emitir factura | no |
-| 45 | button/button | accion | btnEmitirNC | Emitir nota credito | no |
-| 46 | button/button | accion | btnEmitirND | Emitir nota debito | no |
-| 47 | button/button | accion | btnEmitirSoporte | Emitir soporte | no |
-| 48 | button/button | accion | btnEmitirNominaElectronica | Emitir nomina | no |
-| 49 | button/button | accion | btnEmitirPOSElectronico | Emitir POS electronico | no |
-| 50 | button/button | accion | btnEmitirRadian | Registrar evento RADIAN | no |
+| 9 | input/number | entrada | feDianSetFacturas | 0 | no |
+| 10 | input/number | entrada | feDianSetNotasDebito | 0 | no |
+| 11 | input/number | entrada | feDianSetNotasCredito | 0 | no |
+| 12 | input/number | entrada | feDianSetTotalRequerido | 0 | no |
+| 13 | input/number | entrada | feDianSetAceptadosTotal | 1 | no |
+| 14 | input/number | entrada | feDianSetAceptadasFacturas | 1 | no |
+| 15 | input/number | entrada | feDianSetAceptadasND | 0 | no |
+| 16 | input/number | entrada | feDianSetAceptadasNC | 0 | no |
+| 17 | input/number | entrada | feDianSetMaxEnvios | feDianSetMaxEnvios | no |
+| 18 | input/- | entrada | feDianProduccionURL | feDianProduccionURL | no |
+| 19 | input/checkbox | accion | feDianConfirmarHabilitado | feDianConfirmarHabilitado | no |
+| 20 | button/button | accion | btnDianGuardarObjetivo | Guardar objetivo DIAN | no |
+| 21 | button/button | accion | btnDianPruebas | Ejecutar set automatico | no |
+| 22 | button/button | accion | btnDianEnviarFactura | Factura manual no disponible | no |
+| 23 | button/button | accion | btnDianEnviarND | Nota debito no disponible | no |
+| 24 | button/button | accion | btnDianEnviarNC | Nota credito no disponible | no |
+| 25 | button/button | accion | btnDianTrackRecargar | Recargar historial | no |
+| 26 | input/checkbox | accion | feDianConsoleAutoScroll | feDianConsoleAutoScroll | no |
+| 27 | button/button | accion | btnDianConsoleCopiar | Copiar consola | no |
+| 28 | button/button | accion | btnDianConsoleLimpiar | Limpiar consola | no |
+| 29 | button/button | accion | btnDianCheckConexion | Probar conexion | no |
+| 30 | button/button | accion | btnDianProcesarCola | Procesar cola | no |
+| 31 | input/- | entrada | op_documento_codigo | op_documento_codigo | no |
+| 32 | select/- | entrada | op_tipo_documento | Factura electronica de venta Nota credito (fuente de ajuste pendiente) Nota debito (fuente de ajuste pendiente) Document | no |
+| 33 | select/- | entrada | op_estado_actual | borrador emitida anulada ajustada | no |
+| 34 | input/- | entrada | op_periodo_contable | op_periodo_contable | no |
+| 35 | input/number | entrada | op_monto_total | op_monto_total | no |
+| 36 | input/- | entrada | op_moneda | COP | no |
+| 37 | textarea/- | entrada | op_observaciones | op_observaciones | no |
+| 38 | input/number | entrada | op_cliente_id | op_cliente_id | no |
+| 39 | input/email | entrada | op_cliente_email | op_cliente_email | no |
+| 40 | input/- | entrada | op_cliente_nombre | op_cliente_nombre | no |
+| 41 | button/button | accion | btnEmitirDocumento | Emision manual no disponible | no |
+| 42 | button/button | accion | btnAnularDocumento | Anulacion manual no disponible | no |
+| 43 | button/button | accion | btnEmitirFactura | Factura manual no disponible | no |
+| 44 | button/button | accion | btnEmitirNC | Nota credito no disponible | no |
+| 45 | button/button | accion | btnEmitirND | Nota debito no disponible | no |
+| 46 | button/button | accion | btnEmitirSoporte | Usar módulo de documento soporte | no |
+| 47 | button/button | accion | btnEmitirNominaElectronica | N&oacute;mina: usar flujo mensual | no |
+| 48 | a/- | accion | - | Abrir N&oacute;mina y sueldos | no |
+| 49 | button/button | accion | btnEmitirPOSElectronico | POS no disponible | no |
+| 50 | button/button | accion | btnEmitirRadian | RADIAN no disponible | no |
 | 51 | button/button | accion | feDianConfirmCancel | Cancelar | no |
 | 52 | button/button | accion | feDianConfirmAccept | Enviar a DIAN | no |
-| 53 | input/checkbox | accion | feDianPortalMostrarSensibles | feDianPortalMostrarSensibles | no |
-| 54 | button/button | accion | - | Reconsultar | sí |
+| 53 | button/button | accion | - | Reconsultar | sí |
 
 ### `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` (22)
 
@@ -3408,7 +3509,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 21 | a/- | accion | - | PDF habilitación | no |
 | 22 | a/- | accion | - | Ruta oficial DIAN | no |
 
-### `web/administrar_empresa/facturas_electronicas.html` (25)
+### `web/administrar_empresa/facturas_electronicas.html` (26)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -3434,9 +3535,10 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 20 | button/button | accion | - | Cerrar | sí |
 | 21 | button/button | accion | - | Anular | sí |
 | 22 | button/button | accion | - | Reenviar DIAN | sí |
-| 23 | button/button | accion | - | Visualizar | sí |
-| 24 | button/button | accion | - | Correo | sí |
-| 25 | button/button | accion | - | WhatsApp | sí |
+| 23 | button/button | accion | - | Archivos fiscales | sí |
+| 24 | button/button | accion | - | Visualizar | sí |
+| 25 | button/button | accion | - | Correo | sí |
+| 26 | button/button | accion | - | WhatsApp | sí |
 
 ### `web/administrar_empresa/finanzas.html` (168)
 
@@ -3626,7 +3728,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 9 | input/checkbox | accion | cfgCuentaCaja | cfgCuentaCaja | no |
 | 10 | input/- | entrada | cfgPrefix | cfgPrefix | no |
 | 11 | input/number | entrada | cfgAlertMin | cfgAlertMin | no |
-| 12 | input/- | entrada | cfgWebhook | cfgWebhook | no |
+| 12 | input/- | entrada | cfgWebhook | No conectado | no |
 | 13 | textarea/- | entrada | cfgInstructions | cfgInstructions | no |
 | 14 | button/button | accion | brebAddAccountBtn | Agregar cuenta | no |
 | 15 | button/button | accion | brebManualBtn | Registrar pago | no |
@@ -3638,15 +3740,15 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 21 | input/- | entrada | manualCaja | manualCaja | no |
 | 22 | input/number | entrada | manualCarrito | manualCarrito | no |
 | 23 | input/- | entrada | manualPagador | manualPagador | no |
-| 24 | select/- | entrada | manualEstado | Pendiente Conciliado | no |
+| 24 | select/- | entrada | manualEstado | Pendiente de conciliacion bancaria | no |
 | 25 | textarea/- | entrada | manualObs | manualObs | no |
 | 26 | input/checkbox | accion | - | sin etiqueta | sí |
 | 27 | input/- | entrada | - | ${esc(row.nombre)} | sí |
 | 28 | select/- | entrada | - | Bre-B Nequi Otro | sí |
-| 29 | input/- | entrada | - | ${esc(row.tipo_llave)} | sí |
+| 29 | select/- | entrada | - | Selecciona Celular Correo Documento/NIT Alfanumerica @ Comercio 00 | sí |
 | 30 | input/- | entrada | - | ${esc(row.llave)} | sí |
 | 31 | input/- | entrada | - | ${esc(row.caja_codigo)} | sí |
-| 32 | select/- | entrada | - | Dinamico Estatico | sí |
+| 32 | select/- | entrada | - | Estatico oficial | sí |
 | 33 | input/- | entrada | - | ${esc(row.payload_oficial)} | sí |
 | 34 | button/button | accion | - | Quitar | no |
 | 35 | input/hidden | entrada | - | ${esc(row.comercio)} | sí |
@@ -3922,47 +4024,46 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 29 | input/date | entrada | filtroHasta | Hasta | no |
 | 30 | button/button | accion | btnBuscarMovimientos | Buscar | no |
 
-### `web/administrar_empresa/inventario_avanzado.html` (37)
+### `web/administrar_empresa/inventario_avanzado.html` (36)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | btnRefresh | Actualizar | no |
-| 2 | button/button | accion | btnSeed | Cargar demo | no |
-| 3 | button/button | accion | - | Lote | sí |
-| 4 | button/button | accion | - | Serial | sí |
-| 5 | button/button | accion | - | Reserva | sí |
-| 6 | input/number | entrada | loteProducto | loteProducto | no |
-| 7 | input/number | entrada | loteBodega | loteBodega | no |
-| 8 | input/- | entrada | loteCodigo | loteCodigo | no |
-| 9 | input/number | entrada | loteCantidad | loteCantidad | no |
-| 10 | input/number | entrada | loteCosto | loteCosto | no |
-| 11 | input/date | entrada | loteFabricacion | loteFabricacion | no |
-| 12 | input/date | entrada | loteVence | loteVence | no |
-| 13 | select/- | entrada | loteCalidad | liberado cuarentena bloqueado rechazado | no |
-| 14 | input/- | entrada | loteProveedor | loteProveedor | no |
-| 15 | input/- | entrada | loteDocumento | loteDocumento | no |
-| 16 | input/- | entrada | loteUbicacion | loteUbicacion | no |
-| 17 | button/button | accion | btnSaveLote | Guardar lote | no |
-| 18 | input/number | entrada | serialLote | serialLote | no |
-| 19 | input/number | entrada | serialProducto | serialProducto | no |
-| 20 | input/number | entrada | serialBodega | serialBodega | no |
-| 21 | input/- | entrada | serialCodigo | serialCodigo | no |
-| 22 | select/- | entrada | serialEstado | disponible reservado mantenimiento bloqueado | no |
-| 23 | input/date | entrada | serialIngreso | serialIngreso | no |
-| 24 | input/date | entrada | serialGarantia | serialGarantia | no |
-| 25 | button/button | accion | btnSaveSerial | Guardar serial | no |
-| 26 | input/number | entrada | resProducto | resProducto | no |
-| 27 | input/number | entrada | resBodega | resBodega | no |
-| 28 | input/number | entrada | resLote | resLote | no |
-| 29 | input/number | entrada | resSerial | resSerial | no |
-| 30 | input/number | entrada | resCantidad | resCantidad | no |
-| 31 | input/- | entrada | resModulo | venta | no |
-| 32 | input/- | entrada | resRef | resRef | no |
-| 33 | input/- | entrada | resCliente | resCliente | no |
-| 34 | input/date | entrada | resExpira | resExpira | no |
-| 35 | input/number | entrada | confirmReservaID | confirmReservaID | no |
-| 36 | button/button | accion | btnSaveReserva | Crear reserva | no |
-| 37 | button/button | accion | btnConfirmReserva | Confirmar salida | no |
+| 2 | button/button | accion | - | Lote | sí |
+| 3 | button/button | accion | - | Serial | sí |
+| 4 | button/button | accion | - | Reserva | sí |
+| 5 | select/- | entrada | loteProducto | Cargando productos... | no |
+| 6 | select/- | entrada | loteBodega | Cargando bodegas... | no |
+| 7 | input/- | entrada | loteCodigo | loteCodigo | no |
+| 8 | input/number | entrada | loteCantidad | loteCantidad | no |
+| 9 | input/number | entrada | loteCosto | loteCosto | no |
+| 10 | input/date | entrada | loteFabricacion | loteFabricacion | no |
+| 11 | input/date | entrada | loteVence | loteVence | no |
+| 12 | select/- | entrada | loteCalidad | liberado cuarentena bloqueado rechazado | no |
+| 13 | input/- | entrada | loteProveedor | loteProveedor | no |
+| 14 | input/- | entrada | loteDocumento | loteDocumento | no |
+| 15 | input/- | entrada | loteUbicacion | loteUbicacion | no |
+| 16 | button/button | accion | btnSaveLote | Guardar lote | no |
+| 17 | select/- | entrada | serialLote | Seleccione lote | no |
+| 18 | select/- | entrada | serialProducto | Cargando productos... | no |
+| 19 | select/- | entrada | serialBodega | Cargando bodegas... | no |
+| 20 | input/- | entrada | serialCodigo | serialCodigo | no |
+| 21 | select/- | entrada | serialEstado | disponible reservado mantenimiento bloqueado | no |
+| 22 | input/date | entrada | serialIngreso | serialIngreso | no |
+| 23 | input/date | entrada | serialGarantia | serialGarantia | no |
+| 24 | button/button | accion | btnSaveSerial | Guardar serial | no |
+| 25 | select/- | entrada | resProducto | Cargando productos... | no |
+| 26 | select/- | entrada | resBodega | Cargando bodegas... | no |
+| 27 | select/- | entrada | resLote | Seleccione lote | no |
+| 28 | select/- | entrada | resSerial | Sin serial | no |
+| 29 | input/number | entrada | resCantidad | resCantidad | no |
+| 30 | input/- | entrada | resModulo | venta | no |
+| 31 | input/- | entrada | resRef | resRef | no |
+| 32 | input/- | entrada | resCliente | resCliente | no |
+| 33 | input/date | entrada | resExpira | resExpira | no |
+| 34 | select/- | entrada | confirmReservaID | Seleccione reserva activa | no |
+| 35 | button/button | accion | btnSaveReserva | Crear reserva | no |
+| 36 | button/button | accion | btnConfirmReserva | Confirmar salida | no |
 
 ### `web/administrar_empresa/licencia_sistema.html` (10)
 
@@ -4115,7 +4216,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | - | &#9776; Ocultar menu | sí |
 
-### `web/administrar_empresa/nomina_sueldos.html` (100)
+### `web/administrar_empresa/nomina_sueldos.html` (142)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -4132,93 +4233,135 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 11 | input/number | entrada | cfgHorasSemana | 42 | no |
 | 12 | input/number | entrada | cfgHorasDia | 8 | no |
 | 13 | input/number | entrada | cfgDiasMes | 30 | no |
-| 14 | input/number | entrada | cfgDivisorHora | 210 | no |
-| 15 | input/time | entrada | cfgNocDesde | 19:00:00 | no |
-| 16 | input/time | entrada | cfgNocHasta | 06:00:00 | no |
-| 17 | input/number | entrada | cfgRecargoNocturno | 35 | no |
-| 18 | input/number | entrada | cfgExtraDiurna | 25 | no |
-| 19 | input/number | entrada | cfgExtraNocturna | 75 | no |
-| 20 | input/number | entrada | cfgDomDiurno | 75 | no |
-| 21 | input/number | entrada | cfgDomNocturno | 110 | no |
-| 22 | input/number | entrada | cfgExtraDomDiurna | 100 | no |
-| 23 | input/number | entrada | cfgExtraDomNocturna | 150 | no |
-| 24 | input/number | entrada | cfgDedSalud | 4 | no |
-| 25 | input/number | entrada | cfgDedPension | 4 | no |
-| 26 | input/number | entrada | cfgDedSolidaridad | 0 | no |
-| 27 | textarea/- | entrada | cfgObservaciones | cfgObservaciones | no |
-| 28 | input/number | entrada | cfgAporteSaludEmp | 8.5 | no |
-| 29 | input/number | entrada | cfgAportePensionEmp | 12 | no |
-| 30 | input/number | entrada | cfgAporteARL | 0.522 | no |
-| 31 | input/number | entrada | cfgCajaComp | 4 | no |
-| 32 | input/number | entrada | cfgICBF | 3 | no |
-| 33 | input/number | entrada | cfgSENA | 2 | no |
-| 34 | input/number | entrada | cfgCesantias | 8.33 | no |
-| 35 | input/number | entrada | cfgIntCesantias | 1 | no |
-| 36 | input/number | entrada | cfgPrima | 8.33 | no |
-| 37 | input/number | entrada | cfgVacaciones | 4.17 | no |
-| 38 | button/submit | accion | - | Guardar configuración | no |
-| 39 | input/hidden | entrada | empId | empId | no |
-| 40 | input/- | entrada | empCodigo | empCodigo | no |
-| 41 | input/- | entrada | empNombre | empNombre | no |
-| 42 | input/- | entrada | empDocumento | empDocumento | no |
-| 43 | input/- | entrada | empCargo | empCargo | no |
-| 44 | input/- | entrada | empSedeCodigo | empSedeCodigo | no |
-| 45 | input/- | entrada | empSedeNombre | empSedeNombre | no |
-| 46 | input/- | entrada | empCentroCosto | empCentroCosto | no |
-| 47 | select/- | entrada | empTipoContrato | Indefinido Fijo Obra labor Aprendizaje | no |
-| 48 | input/date | entrada | empFechaIngreso | empFechaIngreso | no |
-| 49 | input/number | entrada | empSalario | 0 | no |
-| 50 | input/number | entrada | empAuxilio | 0 | no |
-| 51 | input/number | entrada | empBonificacion | 0 | no |
-| 52 | input/number | entrada | empDeduccionFija | 0 | no |
-| 53 | input/number | entrada | empJornadaDia | 8 | no |
-| 54 | select/- | entrada | empAuxilioFlag | Incluir No incluir | no |
-| 55 | button/submit | accion | - | Guardar empleado | no |
-| 56 | button/button | accion | empCancelar | Cancelar | no |
-| 57 | input/- | entrada | empBuscar | empBuscar | no |
-| 58 | button/button | accion | empBuscarBtn | Buscar | no |
-| 59 | button/button | accion | empLimpiarBtn | Limpiar | no |
-| 60 | input/date | entrada | festFecha | festFecha | no |
-| 61 | input/- | entrada | festDescripcion | festDescripcion | no |
-| 62 | button/submit | accion | - | Agregar festivo | no |
-| 63 | input/date | entrada | festDesde | festDesde | no |
-| 64 | input/date | entrada | festHasta | festHasta | no |
-| 65 | button/button | accion | festBuscarBtn | Filtrar | no |
-| 66 | button/button | accion | festLimpiarBtn | Limpiar | no |
-| 67 | input/date | entrada | calcDesde | calcDesde | no |
-| 68 | input/date | entrada | calcHasta | calcHasta | no |
-| 69 | select/- | entrada | calcEmpleado | Todos los empleados | no |
-| 70 | input/number | entrada | calcOtrasDeducciones | 0 | no |
-| 71 | select/- | entrada | calcOverwrite | Si, reemplazar periodo No, mantener existentes | no |
-| 72 | button/submit | accion | - | Calcular nomina | no |
-| 73 | button/button | accion | calcListarBtn | Consultar liquidaciones | no |
-| 74 | button/button | accion | calcDesprendibleBtn | Generar desprendible | no |
-| 75 | select/- | entrada | calcConciliarFix | Conciliar: solo auditar Conciliar y recalcular | no |
-| 76 | button/button | accion | calcConciliarBtn | Conciliar asistencia | no |
-| 77 | select/- | entrada | calcExportFormat | PDF XLS (Excel) CSV JSON TXT | no |
-| 78 | button/button | accion | calcExportBtn | Exportar liquidaciones | no |
-| 79 | input/checkbox | accion | payConfirmControl | payConfirmControl | no |
-| 80 | button/button | accion | controlValidarBtn | Validar control contable | no |
-| 81 | select/- | entrada | payMetodo | Transferencia bancaria Efectivo Nequi Daviplata Cheque | no |
-| 82 | input/- | entrada | payCuenta | payCuenta | no |
-| 83 | button/button | accion | payGenerarBtn | Generar pagos del período | no |
-| 84 | button/button | accion | payConsultarBtn | Consultar pagos | no |
-| 85 | button/button | accion | provConsultarBtn | Consultar provisiones | no |
-| 86 | button/button | accion | nomCoRefreshBtn | Actualizar | no |
-| 87 | button/button | accion | nomCoSeedBtn | Cargar parametros demo | no |
-| 88 | button/button | accion | nomCoPilaBtn | Generar PILA | no |
-| 89 | button/button | accion | nomCoSeedProfesionalBtn | Crear nomina demo Motel Calipso | no |
-| 90 | button/button | accion | nomCoDianVerBtn | Ver estado DIAN | no |
-| 91 | button/button | accion | nomCoDianPrepararBtn | Preparar lote DIAN | no |
-| 92 | button/button | accion | nomCoDianEnviarBtn | Enviar nomina electronica a DIAN | no |
-| 93 | button/button | accion | ' + id + ' | Editar | sí |
-| 94 | button/button | accion | ' + id + ' | ' + actionLabel + ' | sí |
-| 95 | button/button | accion | ' + id + ' | Eliminar | sí |
-| 96 | button/button | accion | - | Eliminar | sí |
-| 97 | button/button | accion | - | Desprendible | sí |
-| 98 | button/button | accion | - | Aplicar este dato | sí |
-| 99 | button/button | accion | - | Aprobar | sí |
-| 100 | button/button | accion | - | Rechazar | sí |
+| 14 | select/- | entrada | cfgPeriodoNominaDian | Selecciona antes de emitir 1 - Semanal 2 - Decenal 3 - Catorcenal 4 - Quincenal 5 - Mensual 6 - Otro | no |
+| 15 | input/number | entrada | cfgDivisorHora | 210 | no |
+| 16 | input/time | entrada | cfgNocDesde | 19:00:00 | no |
+| 17 | input/time | entrada | cfgNocHasta | 06:00:00 | no |
+| 18 | input/number | entrada | cfgRecargoNocturno | 35 | no |
+| 19 | input/number | entrada | cfgExtraDiurna | 25 | no |
+| 20 | input/number | entrada | cfgExtraNocturna | 75 | no |
+| 21 | input/number | entrada | cfgDomDiurno | 75 | no |
+| 22 | input/number | entrada | cfgDomNocturno | 110 | no |
+| 23 | input/number | entrada | cfgExtraDomDiurna | 100 | no |
+| 24 | input/number | entrada | cfgExtraDomNocturna | 150 | no |
+| 25 | input/number | entrada | cfgDedSalud | 4 | no |
+| 26 | input/number | entrada | cfgDedPension | 4 | no |
+| 27 | input/number | entrada | cfgDedSolidaridad | 0 | no |
+| 28 | textarea/- | entrada | cfgObservaciones | cfgObservaciones | no |
+| 29 | input/number | entrada | cfgAporteSaludEmp | 8.5 | no |
+| 30 | input/number | entrada | cfgAportePensionEmp | 12 | no |
+| 31 | input/number | entrada | cfgAporteARL | 0.522 | no |
+| 32 | input/number | entrada | cfgCajaComp | 4 | no |
+| 33 | input/number | entrada | cfgICBF | 3 | no |
+| 34 | input/number | entrada | cfgSENA | 2 | no |
+| 35 | input/number | entrada | cfgCesantias | 8.33 | no |
+| 36 | input/number | entrada | cfgIntCesantias | 1 | no |
+| 37 | input/number | entrada | cfgPrima | 8.33 | no |
+| 38 | input/number | entrada | cfgVacaciones | 4.17 | no |
+| 39 | button/submit | accion | - | Guardar configuración | no |
+| 40 | input/hidden | entrada | empId | empId | no |
+| 41 | input/- | entrada | empCodigo | empCodigo | no |
+| 42 | input/- | entrada | empNombre | empNombre | no |
+| 43 | input/- | entrada | empDocumento | empDocumento | no |
+| 44 | input/- | entrada | empCargo | empCargo | no |
+| 45 | input/- | entrada | empSedeCodigo | empSedeCodigo | no |
+| 46 | input/- | entrada | empSedeNombre | empSedeNombre | no |
+| 47 | input/- | entrada | empCentroCosto | empCentroCosto | no |
+| 48 | select/- | entrada | empTipoContrato | Indefinido Fijo Obra labor Aprendizaje | no |
+| 49 | input/date | entrada | empFechaIngreso | empFechaIngreso | no |
+| 50 | input/number | entrada | empSalario | 0 | no |
+| 51 | input/number | entrada | empAuxilio | 0 | no |
+| 52 | input/number | entrada | empBonificacion | 0 | no |
+| 53 | input/number | entrada | empDeduccionFija | 0 | no |
+| 54 | input/number | entrada | empJornadaDia | 8 | no |
+| 55 | select/- | entrada | empAuxilioFlag | Incluir No incluir | no |
+| 56 | button/submit | accion | - | Guardar empleado | no |
+| 57 | button/button | accion | empCancelar | Cancelar | no |
+| 58 | input/- | entrada | empBuscar | empBuscar | no |
+| 59 | button/button | accion | empBuscarBtn | Buscar | no |
+| 60 | button/button | accion | empLimpiarBtn | Limpiar | no |
+| 61 | input/date | entrada | festFecha | festFecha | no |
+| 62 | input/- | entrada | festDescripcion | festDescripcion | no |
+| 63 | button/submit | accion | - | Agregar festivo | no |
+| 64 | input/date | entrada | festDesde | festDesde | no |
+| 65 | input/date | entrada | festHasta | festHasta | no |
+| 66 | button/button | accion | festBuscarBtn | Filtrar | no |
+| 67 | button/button | accion | festLimpiarBtn | Limpiar | no |
+| 68 | input/date | entrada | calcDesde | calcDesde | no |
+| 69 | input/date | entrada | calcHasta | calcHasta | no |
+| 70 | select/- | entrada | calcEmpleado | Todos los empleados | no |
+| 71 | input/number | entrada | calcOtrasDeducciones | 0 | no |
+| 72 | select/- | entrada | calcOverwrite | Si, reemplazar periodo No, mantener existentes | no |
+| 73 | button/submit | accion | - | Calcular nomina | no |
+| 74 | button/button | accion | calcListarBtn | Consultar liquidaciones | no |
+| 75 | button/button | accion | calcDesprendibleBtn | Generar desprendible | no |
+| 76 | select/- | entrada | calcConciliarFix | Conciliar: solo auditar Conciliar y recalcular | no |
+| 77 | button/button | accion | calcConciliarBtn | Conciliar asistencia | no |
+| 78 | select/- | entrada | calcExportFormat | PDF XLS (Excel) CSV JSON TXT | no |
+| 79 | button/button | accion | calcExportBtn | Exportar liquidaciones | no |
+| 80 | input/checkbox | accion | payConfirmControl | payConfirmControl | no |
+| 81 | button/button | accion | controlValidarBtn | Validar control contable | no |
+| 82 | select/- | entrada | payMetodo | Transferencia bancaria Efectivo Nequi Daviplata Cheque | no |
+| 83 | input/- | entrada | payCuenta | payCuenta | no |
+| 84 | button/button | accion | payGenerarBtn | Generar pagos del período | no |
+| 85 | button/button | accion | payConsultarBtn | Consultar pagos | no |
+| 86 | button/button | accion | provConsultarBtn | Consultar provisiones | no |
+| 87 | button/button | accion | nomCoRefreshBtn | Actualizar | no |
+| 88 | button/button | accion | nomCoSeedBtn | Cargar parametros demo | no |
+| 89 | button/button | accion | nomCoPilaBtn | Generar PILA | no |
+| 90 | button/button | accion | nomCoSeedProfesionalBtn | Crear nomina demo Motel Calipso | no |
+| 91 | button/button | accion | nomCoDianVerBtn | Ver estado DIAN | no |
+| 92 | button/button | accion | nomCoDianPrepararBtn | Ejecutar preflight | no |
+| 93 | button/button | accion | nomCoDianEnviarBtn | Emisión por empleado | no |
+| 94 | button/button | accion | nomCoDianConfigReloadBtn | Recargar configuraci&oacute;n | no |
+| 95 | select/- | entrada | nomCoDianConfigEstado | Configurando Habilitaci&oacute;n Activo Suspendido | no |
+| 96 | select/- | entrada | nomCoDianConfigAmbiente | Habilitaci&oacute;n Producci&oacute;n | no |
+| 97 | input/- | entrada | nomCoDianConfigPrefijo | nomCoDianConfigPrefijo | no |
+| 98 | input/number | entrada | nomCoDianConfigConsecutivo | 1 | no |
+| 99 | input/- | entrada | nomCoDianConfigModo | nomCoDianConfigModo | no |
+| 100 | input/- | entrada | nomCoDianConfigTestSet | nomCoDianConfigTestSet | no |
+| 101 | input/url | entrada | nomCoDianConfigURL | nomCoDianConfigURL | no |
+| 102 | input/- | entrada | nomCoDianConfigObservaciones | nomCoDianConfigObservaciones | no |
+| 103 | button/submit | accion | - | Guardar configuraci&oacute;n de n&oacute;mina | no |
+| 104 | button/button | accion | - | Cerrar | sí |
+| 105 | input/hidden | entrada | nomCoDianPerfilEmpleadoID | nomCoDianPerfilEmpleadoID | no |
+| 106 | select/- | entrada | nomCoDianPerfilTipoDocumento | Selecciona Cédula de ciudadanía Tarjeta de extranjería Cédula de extranjería NIT Pasaporte Permiso especial NIT extranje | no |
+| 107 | input/- | entrada | nomCoDianPerfilTipoTrabajador | nomCoDianPerfilTipoTrabajador | no |
+| 108 | input/- | entrada | nomCoDianPerfilPrimerNombre | nomCoDianPerfilPrimerNombre | no |
+| 109 | input/- | entrada | nomCoDianPerfilOtrosNombres | nomCoDianPerfilOtrosNombres | no |
+| 110 | input/- | entrada | nomCoDianPerfilPrimerApellido | nomCoDianPerfilPrimerApellido | no |
+| 111 | input/- | entrada | nomCoDianPerfilSegundoApellido | nomCoDianPerfilSegundoApellido | no |
+| 112 | select/- | entrada | nomCoDianPerfilSubtipo | 00 - No aplica 01 - Dependiente pensionado | no |
+| 113 | select/- | entrada | nomCoDianPerfilContrato | Selecciona 1 - Término fijo 2 - Término indefinido 3 - Obra o labor 4 - Aprendizaje 5 - Prácticas/pasantías | no |
+| 114 | input/date | entrada | nomCoDianPerfilFechaRetiro | nomCoDianPerfilFechaRetiro | no |
+| 115 | input/- | entrada | nomCoDianPerfilMetodoPago | nomCoDianPerfilMetodoPago | no |
+| 116 | input/- | entrada | nomCoDianPerfilPais | CO | no |
+| 117 | input/- | entrada | nomCoDianPerfilDepartamento | nomCoDianPerfilDepartamento | no |
+| 118 | input/- | entrada | nomCoDianPerfilMunicipio | nomCoDianPerfilMunicipio | no |
+| 119 | input/- | entrada | nomCoDianPerfilDireccion | nomCoDianPerfilDireccion | no |
+| 120 | input/- | entrada | nomCoDianPerfilBanco | nomCoDianPerfilBanco | no |
+| 121 | input/- | entrada | nomCoDianPerfilTipoCuenta | nomCoDianPerfilTipoCuenta | no |
+| 122 | input/- | entrada | nomCoDianPerfilNumeroCuenta | nomCoDianPerfilNumeroCuenta | no |
+| 123 | input/checkbox | accion | nomCoDianPerfilIntegral | nomCoDianPerfilIntegral | no |
+| 124 | input/checkbox | accion | nomCoDianPerfilAltoRiesgo | nomCoDianPerfilAltoRiesgo | no |
+| 125 | button/button | accion | - | Cancelar | sí |
+| 126 | button/submit | accion | - | Guardar perfil fiscal | no |
+| 127 | button/button | accion | - | Cerrar | sí |
+| 128 | input/hidden | entrada | nomCoDianEmitLiquidacionID | nomCoDianEmitLiquidacionID | no |
+| 129 | input/checkbox | accion | nomCoDianEmitConfirmCheck | nomCoDianEmitConfirmCheck | no |
+| 130 | input/- | entrada | nomCoDianEmitPhrase | nomCoDianEmitPhrase | no |
+| 131 | button/button | accion | - | Cancelar | sí |
+| 132 | button/submit | accion | nomCoDianEmitSubmit | Emitir a DIAN | no |
+| 133 | button/button | accion | ' + id + ' | Editar | sí |
+| 134 | button/button | accion | ' + id + ' | ' + actionLabel + ' | sí |
+| 135 | button/button | accion | ' + id + ' | Eliminar | sí |
+| 136 | button/button | accion | - | Eliminar | sí |
+| 137 | button/button | accion | - | Desprendible | sí |
+| 138 | button/button | accion | - | Aplicar este dato | sí |
+| 139 | button/button | accion | - | Aprobar | sí |
+| 140 | button/button | accion | - | Rechazar | sí |
+| 141 | button/button | accion | - | Perfil fiscal | sí |
+| 142 | button/button | accion | - | Emitir | sí |
 
 ### `web/administrar_empresa/nomina_tutorial.html` (6)
 
@@ -4535,8 +4678,8 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 6 | input/text | entrada | pubFoto | pubFoto | no |
 | 7 | button/button | accion | btnSubirFoto | Subir foto | no |
 | 8 | input/text | entrada | pubYoutube | pubYoutube | no |
-| 9 | button/- | accion | - | Publicar post | sí |
-| 10 | button/- | accion | - | Eliminar | sí |
+| 9 | button/button | accion | btnCrearPublicacion | Publicar post | no |
+| 10 | button/button | accion | ${Number(p.id)} | Eliminar | sí |
 
 ### `web/administrar_empresa/radio_online.html` (8)
 
@@ -4748,78 +4891,77 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 4 | a/- | accion | - | Guía oficial | no |
 | 5 | a/- | accion | - | Guía oficial | no |
 
-### `web/administrar_empresa/soportes_compras_ia.html` (68)
+### `web/administrar_empresa/soportes_compras_ia.html` (67)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | captureRefresh | Actualizar | no |
-| 2 | button/button | accion | captureSeed | Cargar demo | no |
-| 3 | button/button | accion | captureExport | Exportar CSV | no |
-| 4 | button/button | accion | - | Tablero | sí |
-| 5 | button/button | accion | - | Radicar soporte | sí |
-| 6 | button/button | accion | - | Bandeja | sí |
-| 7 | button/button | accion | - | Detalle y auditoria | sí |
-| 8 | input/file | accion | archivo | archivo | no |
-| 9 | select/- | entrada | tipoSoporte | Gasto Compra Documento soporte Servicio Recibo | no |
-| 10 | select/- | entrada | documentoTipo | Factura de compra Documento soporte Cuenta de cobro Recibo de caja Gasto Otro | no |
-| 11 | input/- | entrada | proveedorNombre | proveedor_nombre | no |
-| 12 | input/- | entrada | proveedorNit | proveedor_nit | no |
-| 13 | input/- | entrada | documentoNumero | documento_numero | no |
-| 14 | input/date | entrada | fechaDocumento | fecha_documento | no |
-| 15 | input/date | entrada | fechaVencimiento | fecha_vencimiento | no |
-| 16 | input/number | entrada | subtotal | 0 | no |
-| 17 | input/number | entrada | impuestoIVA | 0 | no |
-| 18 | input/number | entrada | total | 0 | no |
-| 19 | input/number | entrada | retencionFuente | 0 | no |
-| 20 | input/number | entrada | retencionICA | 0 | no |
-| 21 | input/number | entrada | retencionIVA | 0 | no |
-| 22 | input/- | entrada | categoriaContable | categoria_contable | no |
-| 23 | input/- | entrada | centroCosto | centro_costo | no |
-| 24 | input/checkbox | accion | impactaInventario | impacta_inventario | no |
-| 25 | textarea/- | entrada | observaciones | observaciones | no |
-| 26 | button/submit | accion | btnRadicar | Radicar soporte | no |
-| 27 | button/button | accion | btnLimpiar | Limpiar | no |
-| 28 | select/- | entrada | estadoFilter | Todos Radicado Extraido En revision Aprobado Contabilizado Duplicado Rechazado | no |
-| 29 | select/- | entrada | registroFilter | Activos Papelera Depuracion pendiente Depurados | no |
-| 30 | select/- | entrada | tipoFilter | Todos Gasto Compra Documento soporte Servicio Recibo | no |
-| 31 | input/- | entrada | searchFilter | searchFilter | no |
-| 32 | button/button | accion | btnExtraer | Extraer IA | no |
-| 33 | button/button | accion | btnCancelarIA | Cancelar IA | no |
-| 34 | button/button | accion | btnAprobar | Aprobar | no |
-| 35 | button/button | accion | btnRechazar | Rechazar | no |
-| 36 | button/button | accion | btnContabilizar | Contabilizar | no |
-| 37 | button/button | accion | btnEliminar | Enviar a papelera | no |
-| 38 | button/button | accion | btnRestaurar | Recuperar | no |
-| 39 | button/button | accion | btnPurgar | Depurar archivo | no |
-| 40 | input/number | entrada | retencionDias | 90 | no |
-| 41 | button/button | accion | btnRetencionPreview | Vista previa de retencion | no |
-| 42 | button/button | accion | btnCuarentenaPreview | Diagnostico de cuarentena | no |
-| 43 | input/hidden | entrada | editSoporteId | editSoporteId | no |
-| 44 | select/- | entrada | editProveedor | Selecciona antes de contabilizar | no |
-| 45 | input/- | entrada | editProveedorNombre | editProveedorNombre | no |
-| 46 | input/- | entrada | editProveedorNit | editProveedorNit | no |
-| 47 | select/- | entrada | editTipoSoporte | Gasto Compra Documento soporte Servicio Recibo | no |
-| 48 | select/- | entrada | editDocumentoTipo | Factura de compra Documento soporte Cuenta de cobro Recibo de caja Gasto Otro | no |
-| 49 | input/- | entrada | editDocumentoNumero | editDocumentoNumero | no |
-| 50 | input/date | entrada | editFechaDocumento | editFechaDocumento | no |
-| 51 | input/date | entrada | editFechaVencimiento | editFechaVencimiento | no |
-| 52 | input/- | entrada | editMoneda | COP | no |
-| 53 | input/number | entrada | editSubtotal | editSubtotal | no |
-| 54 | input/number | entrada | editIVA | editIVA | no |
-| 55 | input/number | entrada | editTotal | editTotal | no |
-| 56 | input/number | entrada | editReteFuente | editReteFuente | no |
-| 57 | input/number | entrada | editReteICA | editReteICA | no |
-| 58 | input/number | entrada | editReteIVA | editReteIVA | no |
-| 59 | input/- | entrada | editCategoria | editCategoria | no |
-| 60 | input/- | entrada | editCentroCosto | editCentroCosto | no |
-| 61 | input/checkbox | accion | editImpactaInventario | editImpactaInventario | no |
-| 62 | textarea/- | entrada | editObservaciones | editObservaciones | no |
-| 63 | button/submit | accion | btnGuardarRevision | Guardar revision | no |
-| 64 | button/button | accion | captureActionClose | × | no |
-| 65 | textarea/- | entrada | captureActionMotivo | captureActionMotivo | no |
-| 66 | input/- | entrada | captureActionConfirmacion | captureActionConfirmacion | no |
-| 67 | button/button | accion | captureActionCancel | Cancelar | no |
-| 68 | button/submit | accion | captureActionSubmit | Confirmar | no |
+| 2 | button/button | accion | captureExport | Exportar CSV | no |
+| 3 | button/button | accion | - | Tablero | sí |
+| 4 | button/button | accion | - | Radicar soporte | sí |
+| 5 | button/button | accion | - | Bandeja | sí |
+| 6 | button/button | accion | - | Detalle y auditoria | sí |
+| 7 | input/file | accion | archivo | archivo | no |
+| 8 | select/- | entrada | tipoSoporte | Gasto Compra Documento soporte Servicio Recibo | no |
+| 9 | select/- | entrada | documentoTipo | Factura de compra Documento soporte Cuenta de cobro Recibo de caja Gasto Otro | no |
+| 10 | input/- | entrada | proveedorNombre | proveedor_nombre | no |
+| 11 | input/- | entrada | proveedorNit | proveedor_nit | no |
+| 12 | input/- | entrada | documentoNumero | documento_numero | no |
+| 13 | input/date | entrada | fechaDocumento | fecha_documento | no |
+| 14 | input/date | entrada | fechaVencimiento | fecha_vencimiento | no |
+| 15 | input/number | entrada | subtotal | 0 | no |
+| 16 | input/number | entrada | impuestoIVA | 0 | no |
+| 17 | input/number | entrada | total | 0 | no |
+| 18 | input/number | entrada | retencionFuente | 0 | no |
+| 19 | input/number | entrada | retencionICA | 0 | no |
+| 20 | input/number | entrada | retencionIVA | 0 | no |
+| 21 | input/- | entrada | categoriaContable | categoria_contable | no |
+| 22 | input/- | entrada | centroCosto | centro_costo | no |
+| 23 | input/checkbox | accion | impactaInventario | impacta_inventario | no |
+| 24 | textarea/- | entrada | observaciones | observaciones | no |
+| 25 | button/submit | accion | btnRadicar | Radicar soporte | no |
+| 26 | button/button | accion | btnLimpiar | Limpiar | no |
+| 27 | select/- | entrada | estadoFilter | Todos Radicado Extraido En revision Aprobado Contabilizado Duplicado Rechazado | no |
+| 28 | select/- | entrada | registroFilter | Activos Papelera Depuracion pendiente Depurados | no |
+| 29 | select/- | entrada | tipoFilter | Todos Gasto Compra Documento soporte Servicio Recibo | no |
+| 30 | input/- | entrada | searchFilter | searchFilter | no |
+| 31 | button/button | accion | btnExtraer | Extraer IA | no |
+| 32 | button/button | accion | btnCancelarIA | Cancelar IA | no |
+| 33 | button/button | accion | btnAprobar | Aprobar | no |
+| 34 | button/button | accion | btnRechazar | Rechazar | no |
+| 35 | button/button | accion | btnContabilizar | Contabilizar | no |
+| 36 | button/button | accion | btnEliminar | Enviar a papelera | no |
+| 37 | button/button | accion | btnRestaurar | Recuperar | no |
+| 38 | button/button | accion | btnPurgar | Depurar archivo | no |
+| 39 | input/number | entrada | retencionDias | 90 | no |
+| 40 | button/button | accion | btnRetencionPreview | Vista previa de retencion | no |
+| 41 | button/button | accion | btnCuarentenaPreview | Diagnostico de cuarentena | no |
+| 42 | input/hidden | entrada | editSoporteId | editSoporteId | no |
+| 43 | select/- | entrada | editProveedor | Selecciona antes de contabilizar | no |
+| 44 | input/- | entrada | editProveedorNombre | editProveedorNombre | no |
+| 45 | input/- | entrada | editProveedorNit | editProveedorNit | no |
+| 46 | select/- | entrada | editTipoSoporte | Gasto Compra Documento soporte Servicio Recibo | no |
+| 47 | select/- | entrada | editDocumentoTipo | Factura de compra Documento soporte Cuenta de cobro Recibo de caja Gasto Otro | no |
+| 48 | input/- | entrada | editDocumentoNumero | editDocumentoNumero | no |
+| 49 | input/date | entrada | editFechaDocumento | editFechaDocumento | no |
+| 50 | input/date | entrada | editFechaVencimiento | editFechaVencimiento | no |
+| 51 | input/- | entrada | editMoneda | COP | no |
+| 52 | input/number | entrada | editSubtotal | editSubtotal | no |
+| 53 | input/number | entrada | editIVA | editIVA | no |
+| 54 | input/number | entrada | editTotal | editTotal | no |
+| 55 | input/number | entrada | editReteFuente | editReteFuente | no |
+| 56 | input/number | entrada | editReteICA | editReteICA | no |
+| 57 | input/number | entrada | editReteIVA | editReteIVA | no |
+| 58 | input/- | entrada | editCategoria | editCategoria | no |
+| 59 | input/- | entrada | editCentroCosto | editCentroCosto | no |
+| 60 | input/checkbox | accion | editImpactaInventario | editImpactaInventario | no |
+| 61 | textarea/- | entrada | editObservaciones | editObservaciones | no |
+| 62 | button/submit | accion | btnGuardarRevision | Guardar revision | no |
+| 63 | button/button | accion | captureActionClose | × | no |
+| 64 | textarea/- | entrada | captureActionMotivo | captureActionMotivo | no |
+| 65 | input/- | entrada | captureActionConfirmacion | captureActionConfirmacion | no |
+| 66 | button/button | accion | captureActionCancel | Cancelar | no |
+| 67 | button/submit | accion | captureActionSubmit | Confirmar | no |
 
 ### `web/administrar_empresa/suite_contador.html` (5)
 
@@ -5167,6 +5309,13 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 2 | a/- | accion | - | Configurar equipos | no |
 | 3 | a/- | accion | - | Ver Raspberrys | no |
 
+### `web/administrar_empresa/tutorial_sensores_puertas_raspberry.html` (2)
+
+| # | Tipo | Clase | ID | Etiqueta | Dinámico |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | a/- | accion | - | Raspberrys | no |
+| 2 | a/- | accion | - | Asignar habitaciones | no |
+
 ### `web/administrar_empresa/tutorial_tarifas_hotel.html` (1)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
@@ -5361,6 +5510,84 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 28 | button/button | accion | - | WhatsApp | sí |
 | 29 | button/button | accion | - | Imprimir ahora | sí |
 | 30 | button/button | accion | - | Cerrar | sí |
+
+### `web/administrar_empresa/vida.html` (73)
+
+| # | Tipo | Clase | ID | Etiqueta | Dinámico |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | button/button | accion | vidaNotificationBtn | Alarmas del navegador | no |
+| 2 | button/button | accion | vidaReminderConfigOpen | Email y WhatsApp | no |
+| 3 | button/button | accion | vidaAIOpen | IA: leer y registrar factura | no |
+| 4 | button/button | accion | - | + Registrar gasto | sí |
+| 5 | button/button | accion | - | Resumen | sí |
+| 6 | button/button | accion | - | Gastos | sí |
+| 7 | button/button | accion | - | Reportes | sí |
+| 8 | button/button | accion | - | Historial de precios | sí |
+| 9 | button/button | accion | - | Suscripciones | sí |
+| 10 | input/month | entrada | vidaMonth | vidaMonth | no |
+| 11 | button/button | accion | - | Ver todos | sí |
+| 12 | input/date | entrada | vidaFilterFrom | vidaFilterFrom | no |
+| 13 | input/date | entrada | vidaFilterTo | vidaFilterTo | no |
+| 14 | button/button | accion | vidaFilterBtn | Filtrar | no |
+| 15 | button/button | accion | - | + Registrar gasto | sí |
+| 16 | input/date | entrada | vidaReportFrom | vidaReportFrom | no |
+| 17 | input/date | entrada | vidaReportTo | vidaReportTo | no |
+| 18 | select/- | entrada | vidaReportCategory | Todas Supermercado Alimentación Transporte Salud Hogar Educación Familia Entretenimiento Servicios Ropa Mascotas Otros | no |
+| 19 | input/- | entrada | vidaReportMerchant | vidaReportMerchant | no |
+| 20 | select/- | entrada | vidaReportPayment | Todos Efectivo Débito Crédito Transferencia Billetera Otro | no |
+| 21 | button/button | accion | vidaReportFilterBtn | Actualizar reporte | no |
+| 22 | button/button | accion | - | + Nueva suscripción | sí |
+| 23 | input/- | entrada | vidaPriceCodeFilter | vidaPriceCodeFilter | no |
+| 24 | input/- | entrada | vidaPriceNameFilter | vidaPriceNameFilter | no |
+| 25 | button/button | accion | vidaPriceFilterBtn | Buscar | no |
+| 26 | button/button | accion | - | × | sí |
+| 27 | input/hidden | entrada | vidaExpenseId | vidaExpenseId | no |
+| 28 | input/date | entrada | vidaExpenseDate | fecha_gasto | no |
+| 29 | select/- | entrada | vidaExpenseCategory | Supermercado Alimentación Transporte Salud Hogar Educación Familia Entretenimiento Servicios Ropa Mascotas Otros | no |
+| 30 | input/- | entrada | vidaExpenseMerchant | comercio | no |
+| 31 | input/number | entrada | vidaExpenseAmount | monto | no |
+| 32 | select/- | entrada | vidaExpensePayment | Efectivo Tarjeta débito Tarjeta crédito Transferencia Billetera digital Otro | no |
+| 33 | input/- | entrada | vidaExpenseCurrency | COP | no |
+| 34 | textarea/- | entrada | vidaExpenseDescription | descripcion | no |
+| 35 | input/- | entrada | vidaExpenseProduct | producto_nombre | no |
+| 36 | input/- | entrada | vidaExpenseBarcode | codigo_barras | no |
+| 37 | button/button | accion | vidaScanOpen | Usar cámara | no |
+| 38 | input/number | entrada | vidaExpenseQuantity | 1 | no |
+| 39 | input/number | entrada | vidaExpenseUnitPrice | precio_unitario | no |
+| 40 | input/file | accion | vidaExpenseReceipt | recibo | no |
+| 41 | button/button | accion | - | Cancelar | sí |
+| 42 | button/submit | accion | vidaExpenseSave | Guardar gasto | no |
+| 43 | button/button | accion | - | × | sí |
+| 44 | input/file | accion | vidaAIInvoice | factura | no |
+| 45 | select/- | entrada | vidaAIPayment | Efectivo Tarjeta débito Tarjeta crédito Transferencia Billetera digital Otro | no |
+| 46 | button/button | accion | - | Cancelar | sí |
+| 47 | button/submit | accion | vidaAISubmit | Leer y registrar | no |
+| 48 | button/button | accion | vidaScanClose | × | no |
+| 49 | button/button | accion | vidaScanCancel | Cancelar | no |
+| 50 | button/button | accion | - | × | sí |
+| 51 | input/hidden | entrada | vidaSubscriptionId | vidaSubscriptionId | no |
+| 52 | input/- | entrada | vidaSubscriptionName | vidaSubscriptionName | no |
+| 53 | input/- | entrada | vidaSubscriptionProvider | vidaSubscriptionProvider | no |
+| 54 | input/number | entrada | vidaSubscriptionCost | vidaSubscriptionCost | no |
+| 55 | input/- | entrada | vidaSubscriptionCurrency | COP | no |
+| 56 | select/- | entrada | vidaSubscriptionPeriod | Semanal Mensual Trimestral Semestral Anual Personalizada (meses) | no |
+| 57 | input/number | entrada | vidaSubscriptionInterval | 1 | no |
+| 58 | input/date | entrada | vidaSubscriptionStart | vidaSubscriptionStart | no |
+| 59 | input/date | entrada | vidaSubscriptionNext | vidaSubscriptionNext | no |
+| 60 | input/number | entrada | vidaSubscriptionReminder | 5 | no |
+| 61 | select/- | entrada | vidaSubscriptionReminderType | Renovar Cancelar Renovar o cancelar | no |
+| 62 | select/- | entrada | vidaSubscriptionState | Activa Pausada Cancelada Vencida | no |
+| 63 | input/checkbox | accion | vidaSubscriptionAuto | vidaSubscriptionAuto | no |
+| 64 | textarea/- | entrada | vidaSubscriptionNotes | vidaSubscriptionNotes | no |
+| 65 | button/button | accion | - | Cancelar | sí |
+| 66 | button/submit | accion | vidaSubscriptionSave | Guardar suscripción | no |
+| 67 | button/button | accion | - | × | sí |
+| 68 | input/checkbox | accion | vidaReminderEmail | vidaReminderEmail | no |
+| 69 | input/checkbox | accion | vidaReminderWhatsApp | vidaReminderWhatsApp | no |
+| 70 | input/- | entrada | vidaReminderPhone | vidaReminderPhone | no |
+| 71 | input/time | entrada | vidaReminderHour | 09:00 | no |
+| 72 | button/button | accion | - | Cancelar | sí |
+| 73 | button/submit | accion | vidaReminderSave | Guardar avisos | no |
 
 ### `web/administrar_empresa/youtube_station_browser.html` (4)
 
@@ -5566,27 +5793,26 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 6 | button/button | accion | portalCarouselPrev | &lsaquo; | no |
 | 7 | button/button | accion | portalCarouselNext | &rsaquo; | no |
 
-### `web/login.html` (17)
+### `web/login.html` (16)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | input/email | entrada | adminEmail | adminEmail | no |
 | 2 | input/password | entrada | adminPassword | adminPassword | no |
 | 3 | button/button | accion | - | Mostrar contraseña | sí |
-| 4 | input/text | entrada | adminOtpCode | adminOtpCode | no |
-| 5 | input/checkbox | accion | rememberAdminEmailCheckbox | rememberAdminEmailCheckbox | no |
-| 6 | button/submit | accion | emailLoginBtn | Iniciar por correo | no |
-| 7 | a/- | accion | forgotLink | ¿Olvidó su contraseña? | no |
-| 8 | input/email | entrada | forgotEmail | forgotEmail | no |
-| 9 | button/submit | accion | forgotPasswordBtn | Enviar recuperación | no |
-| 10 | button/button | accion | backToLoginLink | Volver al login | no |
-| 11 | input/email | entrada | resetEmail | resetEmail | no |
-| 12 | input/password | entrada | resetPassword | resetPassword | no |
-| 13 | input/password | entrada | resetPasswordConfirm | resetPasswordConfirm | no |
-| 14 | button/submit | accion | resetPasswordBtn | Restablecer contraseña | no |
-| 15 | button/button | accion | backFromResetLink | Volver al login | no |
-| 16 | button/button | accion | installPwaBtn | &#8595; Instalar app | no |
-| 17 | a/- | accion | - | &#8962; Ir al inicio | no |
+| 4 | input/checkbox | accion | rememberAdminEmailCheckbox | rememberAdminEmailCheckbox | no |
+| 5 | button/submit | accion | emailLoginBtn | Iniciar por correo | no |
+| 6 | a/- | accion | forgotLink | ¿Olvidó su contraseña? | no |
+| 7 | input/email | entrada | forgotEmail | forgotEmail | no |
+| 8 | button/submit | accion | forgotPasswordBtn | Enviar recuperación | no |
+| 9 | button/button | accion | backToLoginLink | Volver al login | no |
+| 10 | input/email | entrada | resetEmail | resetEmail | no |
+| 11 | input/password | entrada | resetPassword | resetPassword | no |
+| 12 | input/password | entrada | resetPasswordConfirm | resetPasswordConfirm | no |
+| 13 | button/submit | accion | resetPasswordBtn | Restablecer contraseña | no |
+| 14 | button/button | accion | backFromResetLink | Volver al login | no |
+| 15 | button/button | accion | installPwaBtn | &#8595; Instalar app | no |
+| 16 | a/- | accion | - | &#8962; Ir al inicio | no |
 
 ### `web/login_usuario.html` (37)
 
@@ -5828,7 +6054,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 10 | button/button | accion | executeOutboxRecoveryBtn | Reactivar seleccionados | no |
 | 11 | input/checkbox | accion | ' + Number(item.id) + ' | Seleccionar evento ' + Number(item.id) + ' | sí |
 
-### `web/super/administrar_disco_vps.html` (5)
+### `web/super/administrar_disco_vps.html` (4)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -5836,7 +6062,6 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 2 | input/- | entrada | confirmation | confirmation | no |
 | 3 | button/button | accion | selectAllBtn | Seleccionar todos | no |
 | 4 | button/button | accion | cleanupBtn | Liberar espacio seleccionado | no |
-| 5 | input/checkbox | accion | - | ' + escapeHTML(item.id) + ' | no |
 
 ### `web/super/agentes_de_mantenimiento_qutomatico.html` (10)
 
@@ -5909,9 +6134,9 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 24 | button/submit | accion | saveBtn | Enviar invitación | no |
 | 25 | button/button | accion | cancelEditBtn | Cancelar edicion | no |
 | 26 | button/button | accion | reloadCommissionsBtn | Refrescar pagos | no |
-| 27 | button/button | accion | - | Editar configuración | sí |
-| 28 | button/button | accion | - | Desactivar | sí |
-| 29 | button/button | accion | - | Gestionar pago | sí |
+| 27 | button/button | accion | ${Number(a.id)} | Editar configuración | sí |
+| 28 | button/button | accion | ${Number(a.id)} | Desactivar | sí |
+| 29 | button/button | accion | ${Number(c.id)} | Gestionar pago | sí |
 
 ### `web/super/auditoria_global.html` (15)
 
@@ -5951,6 +6176,14 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 12 | button/button | accion | prevPage | Anterior | no |
 | 13 | button/button | accion | nextPage | Siguiente | no |
 | 14 | button/button | accion | cerrarDetalle | Cerrar | no |
+
+### `web/super/capacidad_colas.html` (3)
+
+| # | Tipo | Clase | ID | Etiqueta | Dinámico |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | button/button | accion | reloadBtn | Actualizar | no |
+| 2 | button/button | accion | evaluateBtn | Evaluar y alertar | no |
+| 3 | button/button | accion | saveBtn | Guardar configuración | no |
 
 ### `web/super/chat_con_ia_global.html` (1)
 
@@ -5993,12 +6226,6 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 5 | a/- | accion | - | Voz | no |
 
 ### `web/super/configuracion/limitaciones.html` (1)
-
-| # | Tipo | Clase | ID | Etiqueta | Dinámico |
-| ---: | --- | --- | --- | --- | --- |
-| 1 | a/- | accion | - | Ver todas | no |
-
-### `web/super/configuracion/login_2fa.html` (1)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -6081,7 +6308,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | a/- | accion | - | Ver todas | no |
 
-### `web/super/configuracion_avanzada.html` (171)
+### `web/super/configuracion_avanzada.html` (167)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -6099,95 +6326,95 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 12 | button/button | accion | - | Alertas licencia Vencimiento | sí |
 | 13 | button/button | accion | - | WhatsApp portal Contacto | sí |
 | 14 | button/button | accion | - | reCAPTCHA Seguridad | sí |
-| 15 | button/button | accion | - | 2FA login Acceso | sí |
-| 16 | button/button | accion | - | IA global Modelos | sí |
-| 17 | button/button | accion | - | Respaldo Backup | sí |
-| 18 | button/button | accion | - | &#9776; Ocultar menu | sí |
-| 19 | button/button | accion | btnReloadConsumos | Actualizar consumos | no |
-| 20 | button/button | accion | btnSaveConsumos | Guardar | no |
-| 21 | button/button | accion | btnEditConsumos | Editar | no |
-| 22 | button/button | accion | btnCancelConsumos | Cancelar | no |
-| 23 | input/- | entrada | openaiCostPer1M | openaiCostPer1M | no |
-| 24 | input/checkbox | accion | hostingerEnabled | hostingerEnabled | no |
-| 25 | input/- | entrada | hostBwUsed | hostBwUsed | no |
-| 26 | input/- | entrada | hostBwLimit | hostBwLimit | no |
-| 27 | input/- | entrada | hostDiskUsed | hostDiskUsed | no |
-| 28 | input/- | entrada | hostDiskLimit | hostDiskLimit | no |
-| 29 | input/- | entrada | hostCostMonth | hostCostMonth | no |
-| 30 | input/- | entrada | hostApiToken | hostApiToken | no |
-| 31 | input/checkbox | accion | cursorEnabled | cursorEnabled | no |
-| 32 | input/- | entrada | cursorCostMonth | cursorCostMonth | no |
-| 33 | input/- | entrada | cursorApiKey | cursorApiKey | no |
-| 34 | input/- | entrada | cursorNotes | cursorNotes | no |
-| 35 | input/text | entrada | rustdeskServerHost | rustdeskServerHost | no |
-| 36 | input/text | entrada | rustdeskServerKey | rustdeskServerKey | no |
-| 37 | input/checkbox | accion | rustdeskActiveToggle | Activar RustDesk | no |
-| 38 | input/checkbox | accion | rustdeskSshEnabledToggle | Usar SSH para gestionar RustDesk en el VPS | no |
-| 39 | input/text | entrada | rustdeskSshHost | rustdeskSshHost | no |
-| 40 | input/text | entrada | rustdeskSshUser | rustdeskSshUser | no |
-| 41 | input/text | entrada | rustdeskSshKeyPath | rustdeskSshKeyPath | no |
-| 42 | button/button | accion | rustdeskSaveSshBtn | Guardar SSH | no |
-| 43 | button/button | accion | rustdeskEditSshBtn | Editar SSH | no |
-| 44 | button/button | accion | rustdeskCancelSshBtn | Cancelar | no |
-| 45 | button/button | accion | rustdeskStartBtn | Iniciar | no |
-| 46 | button/button | accion | rustdeskRestartBtn | Reiniciar | no |
-| 47 | button/button | accion | rustdeskStopBtn | Detener | no |
-| 48 | button/button | accion | rustdeskProbeBtn | Probar funcionamiento | no |
+| 15 | button/button | accion | - | IA global Modelos | sí |
+| 16 | button/button | accion | - | Respaldo Backup | sí |
+| 17 | button/button | accion | - | &#9776; Ocultar menu | sí |
+| 18 | button/button | accion | btnReloadConsumos | Actualizar consumos | no |
+| 19 | button/button | accion | btnSaveConsumos | Guardar | no |
+| 20 | button/button | accion | btnEditConsumos | Editar | no |
+| 21 | button/button | accion | btnCancelConsumos | Cancelar | no |
+| 22 | input/- | entrada | openaiCostPer1M | openaiCostPer1M | no |
+| 23 | input/checkbox | accion | hostingerEnabled | hostingerEnabled | no |
+| 24 | input/- | entrada | hostBwUsed | hostBwUsed | no |
+| 25 | input/- | entrada | hostBwLimit | hostBwLimit | no |
+| 26 | input/- | entrada | hostDiskUsed | hostDiskUsed | no |
+| 27 | input/- | entrada | hostDiskLimit | hostDiskLimit | no |
+| 28 | input/- | entrada | hostCostMonth | hostCostMonth | no |
+| 29 | input/- | entrada | hostApiToken | hostApiToken | no |
+| 30 | input/checkbox | accion | cursorEnabled | cursorEnabled | no |
+| 31 | input/- | entrada | cursorCostMonth | cursorCostMonth | no |
+| 32 | input/- | entrada | cursorApiKey | cursorApiKey | no |
+| 33 | input/- | entrada | cursorNotes | cursorNotes | no |
+| 34 | input/text | entrada | rustdeskServerHost | rustdeskServerHost | no |
+| 35 | input/text | entrada | rustdeskServerKey | rustdeskServerKey | no |
+| 36 | input/checkbox | accion | rustdeskActiveToggle | Activar RustDesk | no |
+| 37 | input/checkbox | accion | rustdeskSshEnabledToggle | Usar SSH para gestionar RustDesk en el VPS | no |
+| 38 | input/text | entrada | rustdeskSshHost | rustdeskSshHost | no |
+| 39 | input/text | entrada | rustdeskSshUser | rustdeskSshUser | no |
+| 40 | input/text | entrada | rustdeskSshKeyPath | rustdeskSshKeyPath | no |
+| 41 | button/button | accion | rustdeskSaveSshBtn | Guardar SSH | no |
+| 42 | button/button | accion | rustdeskEditSshBtn | Editar SSH | no |
+| 43 | button/button | accion | rustdeskCancelSshBtn | Cancelar | no |
+| 44 | button/button | accion | rustdeskStartBtn | Iniciar | no |
+| 45 | button/button | accion | rustdeskRestartBtn | Reiniciar | no |
+| 46 | button/button | accion | rustdeskStopBtn | Detener | no |
+| 47 | button/button | accion | rustdeskProbeBtn | Probar funcionamiento | no |
+| 48 | a/- | accion | - | Abrir | no |
 | 49 | a/- | accion | - | Abrir | no |
 | 50 | a/- | accion | - | Abrir | no |
 | 51 | a/- | accion | - | Abrir | no |
 | 52 | a/- | accion | - | Abrir | no |
-| 53 | a/- | accion | - | Abrir | no |
-| 54 | input/number | entrada | empresaLimitAPIRequests | empresaLimitAPIRequests | no |
-| 55 | input/number | entrada | empresaLimitDBQueries | empresaLimitDBQueries | no |
-| 56 | input/number | entrada | empresaLimitRustDeskMinutes | empresaLimitRustDeskMinutes | no |
-| 57 | input/number | entrada | empresaLimitAIConsultas | empresaLimitAIConsultas | no |
-| 58 | input/number | entrada | empresaLimitGPSDispositivos | empresaLimitGPSDispositivos | no |
-| 59 | input/number | entrada | empresaLimitDBMaxGB | empresaLimitDBMaxGB | no |
-| 60 | button/button | accion | saveEmpresaLimitacionesBtn | Guardar limitaciones | no |
-| 61 | button/button | accion | editEmpresaLimitacionesBtn | Editar | no |
-| 62 | button/button | accion | cancelEmpresaLimitacionesBtn | Cancelar | no |
-| 63 | input/checkbox | accion | empresaStorageQuotaEnabled | Activar cuota de almacenamiento | no |
-| 64 | input/number | entrada | empresaStorageDefaultLimitMB | empresaStorageDefaultLimitMB | no |
-| 65 | input/number | entrada | empresaStorageWarnPercent | empresaStorageWarnPercent | no |
-| 66 | input/number | entrada | empresaStorageMaxUploadMB | empresaStorageMaxUploadMB | no |
-| 67 | input/checkbox | accion | empresaStorageBlockUploads | Bloquear cargas al superar limite | no |
-| 68 | button/button | accion | empresaStorageSaveBtn | Guardar almacenamiento | no |
-| 69 | button/button | accion | empresaStorageReloadBtn | Actualizar uso | no |
-| 70 | input/checkbox | accion | onlyofficeEnabledToggle | Activar OnlyOffice | no |
-| 71 | input/text | entrada | onlyofficeDSUrl | onlyofficeDSUrl | no |
-| 72 | input/password | entrada | onlyofficeJWTSecret | onlyofficeJWTSecret | no |
-| 73 | button/button | accion | onlyofficeSaveBtn | Guardar OnlyOffice | no |
-| 74 | button/button | accion | onlyofficeEditBtn | Editar | no |
-| 75 | button/button | accion | onlyofficeCancelBtn | Cancelar | no |
-| 76 | button/button | accion | onlyofficeTestBtn | Probar conexión | no |
-| 77 | input/checkbox | accion | adminPageURLsEnabledToggle | Mostrar URL real de subpaginas empresariales | no |
-| 78 | button/button | accion | saveAdminPageURLsBtn | Guardar URLs visibles | no |
-| 79 | button/button | accion | editAdminPageURLsBtn | Editar | no |
-| 80 | button/button | accion | cancelAdminPageURLsBtn | Cancelar | no |
-| 81 | a/- | accion | - | Abrir configuracion de voz IA | no |
-| 82 | button/button | accion | voiceStreamQuickActivateTestBtn | Activar y probar | no |
-| 83 | button/button | accion | voiceStreamQuickTestBtn | Probar servicio | no |
-| 84 | input/checkbox | accion | epaycoEnabledToggle | Activar Epayco | no |
-| 85 | input/text | entrada | epaycoPublicKey | epaycoPublicKey | no |
-| 86 | input/password | entrada | epaycoPrivateKey | epaycoPrivateKey | no |
-| 87 | input/text | entrada | epaycoCustomerId | epaycoCustomerId | no |
-| 88 | input/password | entrada | epaycoCheckoutKey | epaycoCheckoutKey | no |
-| 89 | input/checkbox | accion | epaycoCountryCO | epaycoCountryCO | no |
-| 90 | input/checkbox | accion | epaycoCountryEC | epaycoCountryEC | no |
-| 91 | input/checkbox | accion | epaycoCountryPA | epaycoCountryPA | no |
-| 92 | input/checkbox | accion | epaycoCountryMX | epaycoCountryMX | no |
-| 93 | input/checkbox | accion | epaycoCountryUS | epaycoCountryUS | no |
-| 94 | input/checkbox | accion | epaycoCountryES | epaycoCountryES | no |
-| 95 | button/button | accion | saveEpaycoBtn | Guardar cambios | no |
-| 96 | button/button | accion | editEpaycoBtn | Editar | no |
-| 97 | button/button | accion | cancelEpaycoBtn | Cancelar | no |
-| 98 | button/button | accion | testEpaycoBtn | Probar Epayco | no |
-| 99 | input/checkbox | accion | wompiModeToggle | Cambiar entre sandbox y real | no |
-| 100 | input/checkbox | accion | wompiEnabledToggle | Activar Wompi | no |
-| 101 | input/text | entrada | wompiPublicKey | wompiPublicKey | no |
-| 102 | input/password | entrada | wompiPrivateKey | wompiPrivateKey | no |
-| 103 | input/password | entrada | wompiIntegrityKey | wompiIntegrityKey | no |
+| 53 | input/number | entrada | empresaLimitAPIRequests | empresaLimitAPIRequests | no |
+| 54 | input/number | entrada | empresaLimitDBQueries | empresaLimitDBQueries | no |
+| 55 | input/number | entrada | empresaLimitRustDeskMinutes | empresaLimitRustDeskMinutes | no |
+| 56 | input/number | entrada | empresaLimitAIConsultas | empresaLimitAIConsultas | no |
+| 57 | input/number | entrada | empresaLimitGPSDispositivos | empresaLimitGPSDispositivos | no |
+| 58 | input/number | entrada | empresaLimitDBMaxGB | empresaLimitDBMaxGB | no |
+| 59 | button/button | accion | saveEmpresaLimitacionesBtn | Guardar limitaciones | no |
+| 60 | button/button | accion | editEmpresaLimitacionesBtn | Editar | no |
+| 61 | button/button | accion | cancelEmpresaLimitacionesBtn | Cancelar | no |
+| 62 | input/checkbox | accion | empresaStorageQuotaEnabled | Activar cuota de almacenamiento | no |
+| 63 | input/number | entrada | empresaStorageDefaultLimitMB | empresaStorageDefaultLimitMB | no |
+| 64 | input/number | entrada | empresaStorageWarnPercent | empresaStorageWarnPercent | no |
+| 65 | input/number | entrada | empresaStorageMaxUploadMB | empresaStorageMaxUploadMB | no |
+| 66 | input/checkbox | accion | empresaStorageBlockUploads | Bloquear cargas al superar limite | no |
+| 67 | button/button | accion | empresaStorageSaveBtn | Guardar almacenamiento | no |
+| 68 | button/button | accion | empresaStorageReloadBtn | Actualizar uso | no |
+| 69 | input/checkbox | accion | onlyofficeEnabledToggle | Activar OnlyOffice | no |
+| 70 | input/text | entrada | onlyofficeDSUrl | onlyofficeDSUrl | no |
+| 71 | input/password | entrada | onlyofficeJWTSecret | onlyofficeJWTSecret | no |
+| 72 | button/button | accion | onlyofficeSaveBtn | Guardar OnlyOffice | no |
+| 73 | button/button | accion | onlyofficeEditBtn | Editar | no |
+| 74 | button/button | accion | onlyofficeCancelBtn | Cancelar | no |
+| 75 | button/button | accion | onlyofficeTestBtn | Probar conexión | no |
+| 76 | input/checkbox | accion | adminPageURLsEnabledToggle | Mostrar URL real de subpaginas empresariales | no |
+| 77 | button/button | accion | saveAdminPageURLsBtn | Guardar URLs visibles | no |
+| 78 | button/button | accion | editAdminPageURLsBtn | Editar | no |
+| 79 | button/button | accion | cancelAdminPageURLsBtn | Cancelar | no |
+| 80 | a/- | accion | - | Abrir configuracion de voz IA | no |
+| 81 | button/button | accion | voiceStreamQuickActivateTestBtn | Activar y probar | no |
+| 82 | button/button | accion | voiceStreamQuickTestBtn | Probar servicio | no |
+| 83 | input/checkbox | accion | epaycoEnabledToggle | Activar Epayco | no |
+| 84 | input/text | entrada | epaycoPublicKey | epaycoPublicKey | no |
+| 85 | input/password | entrada | epaycoPrivateKey | epaycoPrivateKey | no |
+| 86 | input/text | entrada | epaycoCustomerId | epaycoCustomerId | no |
+| 87 | input/password | entrada | epaycoCheckoutKey | epaycoCheckoutKey | no |
+| 88 | input/checkbox | accion | epaycoCountryCO | epaycoCountryCO | no |
+| 89 | input/checkbox | accion | epaycoCountryEC | epaycoCountryEC | no |
+| 90 | input/checkbox | accion | epaycoCountryPA | epaycoCountryPA | no |
+| 91 | input/checkbox | accion | epaycoCountryMX | epaycoCountryMX | no |
+| 92 | input/checkbox | accion | epaycoCountryUS | epaycoCountryUS | no |
+| 93 | input/checkbox | accion | epaycoCountryES | epaycoCountryES | no |
+| 94 | button/button | accion | saveEpaycoBtn | Guardar cambios | no |
+| 95 | button/button | accion | editEpaycoBtn | Editar | no |
+| 96 | button/button | accion | cancelEpaycoBtn | Cancelar | no |
+| 97 | button/button | accion | testEpaycoBtn | Probar Epayco | no |
+| 98 | input/checkbox | accion | wompiModeToggle | Cambiar entre sandbox y real | no |
+| 99 | input/checkbox | accion | wompiEnabledToggle | Activar Wompi | no |
+| 100 | input/text | entrada | wompiPublicKey | wompiPublicKey | no |
+| 101 | input/password | entrada | wompiPrivateKey | wompiPrivateKey | no |
+| 102 | input/password | entrada | wompiIntegrityKey | wompiIntegrityKey | no |
+| 103 | input/password | entrada | wompiEventsSecret | wompiEventsSecret | no |
 | 104 | input/checkbox | accion | wompiCountryCO | wompiCountryCO | no |
 | 105 | input/checkbox | accion | wompiCountryEC | wompiCountryEC | no |
 | 106 | input/checkbox | accion | wompiCountryPA | wompiCountryPA | no |
@@ -6236,26 +6463,22 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 149 | button/button | accion | recaptchaTestBtn | Probar reCAPTCHA | no |
 | 150 | button/button | accion | recaptchaGetTokenBtn | Obtener token | no |
 | 151 | button/button | accion | recaptchaResetBtn | Reset widget | no |
-| 152 | input/checkbox | accion | admin2FAEnabledToggle | Activar 2FA en login de administradores | no |
-| 153 | button/button | accion | saveAdmin2FABtn | Guardar 2FA login | no |
-| 154 | button/button | accion | editAdmin2FABtn | Editar | no |
-| 155 | button/button | accion | cancelAdmin2FABtn | Cancelar | no |
-| 156 | input/checkbox | accion | aiProviderOpenAIEnabled | Activar OpenAI en los chats | no |
-| 157 | input/password | entrada | aiKeyOpenAI | aiKeyOpenAI | no |
-| 158 | select/- | entrada | aiOperationModel | aiOperationModel | no |
-| 159 | select/- | entrada | aiAttachmentModel | aiAttachmentModel | no |
-| 160 | input/checkbox | accion | aiEnabledToggle | Activar servicio global de IA | no |
-| 161 | button/- | accion | saveAiConfigBtn | Guardar gobierno IA | no |
-| 162 | button/button | accion | editAiConfigBtn | Editar | no |
-| 163 | button/button | accion | cancelAiConfigBtn | Cancelar | no |
-| 164 | button/button | accion | testAiBtn | Probar OpenAI | no |
-| 165 | a/- | accion | - | Limites y contexto | no |
-| 166 | a/- | accion | - | Conocimiento IA | no |
-| 167 | a/- | accion | - | Voz IA | no |
-| 168 | button/button | accion | downloadConfigBackupBtn | Descargar respaldo JSON | no |
-| 169 | input/file | accion | restoreConfigFile | restoreConfigFile | no |
-| 170 | button/button | accion | restoreConfigBtn | Restaurar respaldo | no |
-| 171 | button/button | accion | testBackupBtn | Probar respaldo | no |
+| 152 | input/checkbox | accion | aiProviderOpenAIEnabled | Activar OpenAI en los chats | no |
+| 153 | input/password | entrada | aiKeyOpenAI | aiKeyOpenAI | no |
+| 154 | select/- | entrada | aiPrimaryModel | aiPrimaryModel | no |
+| 155 | select/- | entrada | aiPrimaryReasoning | aiPrimaryReasoning | no |
+| 156 | input/checkbox | accion | aiEnabledToggle | Activar servicio global de IA | no |
+| 157 | button/- | accion | saveAiConfigBtn | Guardar gobierno IA | no |
+| 158 | button/button | accion | editAiConfigBtn | Editar | no |
+| 159 | button/button | accion | cancelAiConfigBtn | Cancelar | no |
+| 160 | button/button | accion | testAiBtn | Probar OpenAI | no |
+| 161 | a/- | accion | - | Limites y contexto | no |
+| 162 | a/- | accion | - | Conocimiento IA | no |
+| 163 | a/- | accion | - | Voz IA | no |
+| 164 | button/button | accion | downloadConfigBackupBtn | Descargar respaldo JSON | no |
+| 165 | input/file | accion | restoreConfigFile | restoreConfigFile | no |
+| 166 | button/button | accion | restoreConfigBtn | Restaurar respaldo | no |
+| 167 | button/button | accion | testBackupBtn | Probar respaldo | no |
 
 ### `web/super/configuracion_logica_del_chat_con_ia.html` (15)
 
@@ -6328,10 +6551,10 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 7 | input/number | entrada | snapshotRetentionDays | snapshotRetentionDays | no |
 | 8 | input/checkbox | accion | snapshotIncludeImages | snapshotIncludeImages | no |
 | 9 | input/checkbox | accion | snapshotCloudEnabled | snapshotCloudEnabled | no |
-| 10 | select/- | entrada | snapshotCloudProvider | rclone generico Google Drive Mega OneDrive S3 compatible | no |
+| 10 | select/- | entrada | snapshotCloudProvider | rclone generico Google Drive Mega OneDrive Dropbox Box pCloud Backblaze B2 S3 compatible | no |
 | 11 | input/text | entrada | snapshotRcloneRemotePath | snapshotRcloneRemotePath | no |
 | 12 | input/checkbox | accion | snapshotDeleteOldCloud | snapshotDeleteOldCloud | no |
-| 13 | select/- | entrada | snapshotScope | Completa: proyecto, bases y volúmenes Solo bases PostgreSQL | no |
+| 13 | select/- | entrada | snapshotScope | Solo bases PostgreSQL Sistema PCS: proyecto y archivos VPS: proyecto, bases y volúmenes | no |
 | 14 | input/checkbox | accion | snapshotIncludePostgres | snapshotIncludePostgres | no |
 | 15 | input/checkbox | accion | snapshotIncludeVolumes | snapshotIncludeVolumes | no |
 | 16 | button/button | accion | saveSnapshotConfigBtn | Guardar configuracion snapshot | no |
@@ -6349,15 +6572,13 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 4 | input/checkbox | accion | - | sin etiqueta | no |
 | 5 | button/button | accion | - | Guardar | no |
 
-### `web/super/domotica_storage.html` (5)
+### `web/super/domotica_storage.html` (3)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | reloadBtn | Actualizar | no |
 | 2 | input/number | entrada | defaultMaxKb | 2048 | no |
 | 3 | button/button | accion | saveDefaultBtn | Guardar limite general | no |
-| 4 | input/number | entrada | - | ' + esc(e.max_image_kb \|\| 2048) + ' | no |
-| 5 | button/button | accion | - | Guardar | no |
 
 ### `web/super/email_corporativo.html` (20)
 
@@ -6373,7 +6594,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 8 | input/- | entrada | domain | domain | no |
 | 9 | input/- | entrada | webmailURL | webmailURL | no |
 | 10 | input/- | entrada | logoURL | logoURL | no |
-| 11 | select/- | entrada | provisionMode | Manual / pendiente Mailu directo VPS | no |
+| 11 | select/- | entrada | provisionMode | Manual / pendiente Mailu API interna Mailu directo VPS | no |
 | 12 | input/number | entrada | quotaMB | quotaMB | no |
 | 13 | input/number | entrada | maxAccountsPerEmpresa | maxAccountsPerEmpresa | no |
 | 14 | input/- | entrada | apiBaseURL | apiBaseURL | no |
@@ -6688,6 +6909,19 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 20 | textarea/- | entrada | ppDetailParagraphOne' + idx + ' | ' + escapeHTML(detailParagraphOne) + ' | sí |
 | 21 | textarea/- | entrada | ppDetailParagraphTwo' + idx + ' | ' + escapeHTML(detailParagraphTwo) + ' | sí |
 | 22 | textarea/- | entrada | ppDetailPoints' + idx + ' | ' + escapeHTML(detailPoints) + ' | sí |
+
+### `web/super/pagos_auditoria.html` (8)
+
+| # | Tipo | Clase | ID | Etiqueta | Dinámico |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | select/- | entrada | auditProvider | Todos ePayco Wompi | no |
+| 2 | input/- | entrada | auditStatus | status | no |
+| 3 | input/number | entrada | auditEmpresa | empresa_id | no |
+| 4 | input/- | entrada | auditSearch | q | no |
+| 5 | select/- | entrada | auditLimit | 25 50 100 200 | no |
+| 6 | button/submit | accion | - | Consultar | no |
+| 7 | button/button | accion | auditPrevious | Anterior | no |
+| 8 | button/button | accion | auditNext | Siguiente | no |
 
 ### `web/super/permisos_rol.html` (14)
 

@@ -107,7 +107,7 @@ Documentos: 162. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/email_corporativo_mailu.md](<email_corporativo_mailu.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/energia_solar.md](<energia_solar.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/erp_multiempresa/README.md](<erp_multiempresa/README.md>) | vigente | Coordinación técnica | 2026-09-05 |
-| [documentos/estado_actual.md](<estado_actual.md>) | vigente | Coordinación técnica | 2026-09-06 |
+| [documentos/estado_actual.md](<estado_actual.md>) | vigente | Coordinación técnica | 2026-09-07 |
 | [documentos/estructura_bd.md](<estructura_bd.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/flujos_operativos.md](<flujos_operativos.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/gobernanza_tecnica/README.md](<gobernanza_tecnica/README.md>) | vigente | Coordinación técnica | 2026-09-05 |
@@ -115,7 +115,7 @@ Documentos: 162. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md](<gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/gobernanza_tecnica/adr/ADR-0003-gobierno-documental-y-fuentes-canonicas.md](<gobernanza_tecnica/adr/ADR-0003-gobierno-documental-y-fuentes-canonicas.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/README.md](<gobernanza_tecnica/contratos/README.md>) | vigente | Coordinación técnica | 2026-09-05 |
-| [documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md](<gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
+| [documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md](<gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md>) | vigente | Ingeniería backend y QA | 2026-09-07 |
 | [documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md](<gobernanza_tecnica/contratos/contrato_centro_soporte.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md](<gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md>) | vigente | Ingeniería de pagos y QA | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md](<gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |

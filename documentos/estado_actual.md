@@ -1,6 +1,6 @@
 # Estado actual del sistema
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-06.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-07.
 
 ## Snapshot operativo
 
@@ -22,7 +22,7 @@ producción.
 | Datos | `pcs-migrate` es el único dueño de DDL; PostgreSQL es el único runtime permitido; migraciones aplicadas no se reescriben |
 | Pagos y licencias | Firma, ambiente, importe, moneda, idempotencia y callback se validan en backend; una operación real exige autorización separada |
 | Facturación electrónica | Credenciales, NIT, numeración, firma y trazabilidad son por empresa; la aceptación debe venir del proveedor/autoridad para la familia documental concreta |
-| Seguridad | Secretos no se versionan; autenticación, MFA, proxy, headers, rate limit y permisos se prueban en el entorno que se pretende liberar |
+| Seguridad | Secretos no se versionan; autenticación, proxy, headers, rate limit y permisos se prueban en el entorno que se pretende liberar. PCS no exige ni expone 2FA administrativo |
 | Operación | Healthchecks, migración, backup/restore, observabilidad y rollback se verifican sobre el candidato inmutable |
 | UI y hardware | Una validación estática no sustituye sesión autenticada, navegador real, impresora, Raspberry ni confirmación del dispositivo |
 

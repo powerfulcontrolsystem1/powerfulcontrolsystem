@@ -19,7 +19,7 @@ func TestEmpresaOpenAIKeyUsesDedicatedEncryptedPurpose(t *testing.T) {
 	if strings.Contains(ciphertext, plain) || !strings.HasPrefix(ciphertext, "v1:"+empresaAIOpenAIEncryptionPurpose+":test-key:") {
 		t.Fatalf("la clave empresarial no quedo en una envoltura cifrada dedicada: %q", ciphertext)
 	}
-	if _, err := secure.DecryptStringForPurpose("totp", ciphertext); err == nil {
-		t.Fatal("un cifrado OpenAI empresarial no debe descifrarse como TOTP")
+	if _, err := secure.DecryptStringForPurpose("unrelated-domain", ciphertext); err == nil {
+		t.Fatal("un cifrado OpenAI empresarial no debe descifrarse bajo otro dominio")
 	}
 }

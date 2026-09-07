@@ -88,9 +88,13 @@ add("recaptcha_contract", /RECAPTCHA|recaptcha/i.test(allGo + "\n" + walk("web",
   evidence: "Recaptcha o verificacion humana presente en login/flujo publico.",
 }, "medium");
 
-add("super_admin_2fa_readiness", /two.?factor|2fa|totp|mfa|otp/i.test(allGo + "\n" + walk("web", (full) => /\.(html|js)$/i.test(full)).map(read).join("\n")), {
-  recommendation: "Activar 2FA/TOTP obligatorio para super administrador antes de delegar despliegues automaticos a produccion.",
-}, "medium");
+const adminLoginGo = read("backend/handlers/auth_admin_handlers.go");
+const adminLoginHTML = read("web/login.html");
+const adminLoginJS = read("web/js/login.js");
+add("super_admin_2fa_retired", !/\/super\/api\/(?:administradores\/2fa|config\/admin_2fa)/.test(mainGo)
+  && !/otp_code|two_factor_required|ADMIN_2FA_LOGIN_ENABLED|adminOtpCode/.test(adminLoginGo + "\n" + adminLoginHTML + "\n" + adminLoginJS), {
+  evidence: "El login administrativo no registra endpoints, payloads ni controles de segundo factor.",
+}, "high");
 
 add("cors_not_wildcard_credentials", !/Access-Control-Allow-Origin",\s*"\*"/.test(allGo), {
   evidence: "No se detecta CORS wildcard directo en Go.",

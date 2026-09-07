@@ -526,8 +526,7 @@ func csrfShouldRotate(r *http.Request) bool {
 		"/api/empresa/usuarios/login",
 		"/api/empresa/usuarios/establecer_password",
 		"/api/account/change_password",
-		"/api/account/set_google_password",
-		"/super/api/administradores/2fa":
+		"/api/account/set_google_password":
 		return true
 	default:
 		return false
@@ -566,7 +565,7 @@ func CSRFMiddleware(next http.Handler) http.Handler {
 
 func sensitiveNoStorePath(path string) bool {
 	path = strings.TrimSpace(path)
-	return path == "/login.html" || strings.HasPrefix(path, "/auth/") || strings.Contains(path, "recuperacion") || strings.Contains(path, "password") || strings.Contains(path, "totp")
+	return path == "/login.html" || strings.HasPrefix(path, "/auth/") || strings.Contains(path, "recuperacion") || strings.Contains(path, "password")
 }
 
 func cspOrigin(raw string) string {
