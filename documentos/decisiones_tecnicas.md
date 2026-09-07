@@ -192,6 +192,25 @@ trazabilidad en la PR, el ADR y la fuente técnica afectada.
   funciones existentes, además de privilegios por defecto para objetos futuros.
 - La contraseña runtime debe tener al menos 32 caracteres URL-safe y nunca se
   versiona.
+- Los respaldos lógicos usan `PCS_BACKUP_DB_USER`, un login separado del
+  propietario y del rol runtime, sin capacidades administrativas ni DDL y con
+  acceso de solo lectura. Su contraseña también exige al menos 32 caracteres
+  URL-safe y nunca se versiona.
+- Al actualizar una instalación existente, `sync_to_vps.ps1` inicializa el
+  nombre convencional `pcs_backup` y genera en el propio VPS el secreto ausente;
+  conserva valores válidos ya configurados y falla ante colisiones o formatos
+  inseguros. El valor secreto no se envía desde el checkout ni se imprime.
+
+## 2026-09-07 - Salud del proxy frontend durante recreaciones Docker
+
+- El frontend espera que el backend esté saludable, no solo iniciado, y su
+  healthcheck atraviesa `/ready` hasta el backend.
+- El flujo sidecar recarga el frontend una vez que las réplicas backend están
+  saludables, porque Nginx resuelve el upstream al cargar su configuración y no
+  debe conservar la IP de un contenedor reemplazado.
+- La aceptación del despliegue exige `/health` y `/ready`; servir únicamente la
+  raíz estática no acredita disponibilidad de API.
+
 ## 2026-08-13 - Domotica: SSH, escenas y VE.Direct
 
 - La conexión operativa sigue siendo HTTPS saliente desde la Raspberry. SSH es

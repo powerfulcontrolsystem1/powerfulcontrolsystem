@@ -10,6 +10,7 @@ La configuración efectiva se obtiene de loaders del código y Compose/scripts d
 | --- | --- | --- |
 | `DB_EMPRESAS_DSN`, `DB_SUPERADMIN_DSN` | Secreto: conexiones de los dos contextos PostgreSQL | [Migrador](../../backend/cmd/pcs-migrate/main.go), [worker](../../backend/cmd/pcs-worker/main.go), Compose |
 | `PCS_RUNTIME_DB_USER`, `PCS_RUNTIME_DB_PASSWORD` | Identidad y secreto del rol runtime distinto del propietario | Migrador y [decisiones](../decisiones_tecnicas.md) |
+| `PCS_BACKUP_DB_USER`, `PCS_BACKUP_DB_PASSWORD` | Identidad y secreto del rol de respaldo lógico, separado y de solo lectura | Migrador, `sync_to_vps.ps1` y [decisiones](../decisiones_tecnicas.md) |
 | `CONFIG_ENC_KEY` | Secreto de cifrado; debe conservar recuperación/rotación controlada | [Decisiones](../decisiones_tecnicas.md), contrato del módulo |
 | `PCS_RUNTIME_SCHEMA_BOOTSTRAP` | Control operativo sensible de compatibilidad de esquema | Migrador, [comandos](../comandos_codex.md) y Compose; API/worker productivos en 0 |
 | `PCS_ENV`, `PCS_ENVIRONMENT` | Identidad del entorno según consumidor; comprobar ambas cuando apliquen | Compose y loaders del código |
