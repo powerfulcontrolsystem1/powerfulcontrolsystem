@@ -871,13 +871,13 @@ liquidaciones + pagos + perfil + configuracion
 - `web/super/licencias_resumen.html` se reconstruye como consola ejecutiva frontend pura, sin dependencias externas, consumiendo los contratos super existentes de metricas, PostgreSQL, alertas, errores, servidores, licencias, empresas y consumos.
 - No hay rutas backend nuevas ni cambios de esquema; el flujo sigue dentro del panel super autenticado.
 
-## Actualizacion 2026-05-11 (2FA login desde configuracion avanzada)
+## Autenticacion administrativa sin 2FA
 
-- `backend/handlers/admin_totp_handlers.go` centraliza `security.admin_2fa.enabled`, expone `/super/api/config/admin_2fa` y separa la activacion global del secreto TOTP por administrador.
-- `backend/handlers/auth_admin_handlers.go` exige `otp_code` solo cuando la bandera global y el TOTP de la cuenta estan activos.
-- `backend/handlers/recaptcha.go` publica `window.ADMIN_2FA_LOGIN_ENABLED` dentro de `/config.js` para que el login oculte/muestre el campo sin una llamada adicional.
-- `web/login.html` y `web/js/login.js` mantienen oculto y deshabilitado el input `adminOtpCode` cuando la bandera global esta apagada.
-- `web/super/configuracion_avanzada.html` agrega la tarjeta `2FA login`; la vista legacy `web/super/seguridad_2fa.html` fue retirada del panel super por decision operativa.
+- `backend/handlers/auth_admin_handlers.go` valida correo/contraseña, confirmación, contrato, reCAPTCHA, estado y limitación de intentos sin aceptar un código OTP.
+- `backend/main.go` no registra endpoints de enrolamiento ni configuración 2FA; `backend/handlers/admin_totp_handlers.go` fue retirado.
+- `backend/handlers/recaptcha.go` limita `/config.js` a parámetros públicos de reCAPTCHA.
+- `web/login.html`, `web/js/login.js`, el menú super y Configuración avanzada no exponen controles 2FA.
+- `backend/db/admin_2fa_retirement.go` limpia el material autenticador anterior y revoca sesiones mediante una migración super versionada.
 
 ## Actualizacion 2026-05-11 (catalogos publicos de plantillas sin sesion)
 

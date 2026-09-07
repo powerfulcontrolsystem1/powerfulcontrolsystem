@@ -12,6 +12,23 @@ import (
 	"github.com/you/pos-backend/utils"
 )
 
+func issueReplacementAdminSession(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, adminEmail string) error {
+	if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, adminEmail); err != nil {
+		return err
+	}
+	utils.InvalidateAuthCacheForAdmin(adminEmail)
+	token, err := utils.GenerateSecureToken(32)
+	if err != nil {
+		return err
+	}
+	if err := dbpkg.CreateSession(dbSuper, adminEmail, r.RemoteAddr, r.UserAgent(), token); err != nil {
+		return err
+	}
+	http.SetCookie(w, &http.Cookie{Name: "session_token", Value: token, Path: "/", HttpOnly: true, MaxAge: utils.SessionCookieMaxAge(), Secure: SessionCookieSecure(r), SameSite: http.SameSiteLaxMode})
+	SetBrowserSessionStateCookie(w, r, true)
+	return nil
+}
+
 // AccountHandler devuelve el perfil compacto de la cuenta asociada a la cookie de sesión.
 // Combina el registro de administrador (dbSuper) y, si existe, el usuario de empresa (dbEmp).
 func AccountHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {

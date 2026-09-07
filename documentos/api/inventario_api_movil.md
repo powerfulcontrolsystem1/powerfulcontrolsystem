@@ -111,6 +111,7 @@ Total de rutas detectadas: **374**.
 | `/api/empresa/estacion_aseo` | `backend/main.go` |
 | `/api/empresa/estacion_prefs` | `backend/main.go` |
 | `/api/empresa/facturacion_electronica` | `backend/main.go` |
+| `/api/empresa/facturacion_electronica/contingencias` | `backend/main.go` |
 | `/api/empresa/facturacion_electronica/dian` | `backend/handlers/modulos_faltantes.go` |
 | `/api/empresa/facturacion_electronica/ecuador` | `backend/main.go` |
 | `/api/empresa/facturacion_electronica/pais_detectado` | `backend/main.go` |
@@ -318,7 +319,6 @@ Total de rutas detectadas: **374**.
 |---|---|
 | `/super/api/administradores` | `backend/main.go` |
 | `/super/api/administradores_frecuencia_fe` | `backend/main.go` |
-| `/super/api/administradores/2fa` | `backend/main.go` |
 | `/super/api/administradores/login` | `backend/main.go` |
 | `/super/api/administradores/register` | `backend/main.go` |
 | `/super/api/administradores/restablecer_password` | `backend/main.go` |
@@ -328,13 +328,13 @@ Total de rutas detectadas: **374**.
 | `/super/api/alertas_sistema` | `backend/main.go` |
 | `/super/api/asesor_comercial` | `backend/main.go` |
 | `/super/api/auditoria` | `backend/main.go` |
+| `/super/api/capacidad_colas` | `backend/main.go` |
 | `/super/api/chat_con_ia_global/consultar` | `backend/main.go` |
 | `/super/api/chat_con_ia_global/consultar_con_adjunto` | `backend/main.go` |
 | `/super/api/chat_con_ia_global/consultar_stream` | `backend/main.go` |
 | `/super/api/chat_con_ia_global/historial` | `backend/main.go` |
 | `/super/api/chat_con_ia_global/modelo_preferido` | `backend/main.go` |
 | `/super/api/chat_con_ia_global/modelos` | `backend/main.go` |
-| `/super/api/config/admin_2fa` | `backend/main.go` |
 | `/super/api/config/admin_page_urls` | `backend/main.go` |
 | `/super/api/config/ai` | `backend/main.go` |
 | `/super/api/config/backup` | `backend/main.go` |

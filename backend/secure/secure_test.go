@@ -44,19 +44,19 @@ func TestEncryptionEnvelopeDetectsTampering(t *testing.T) {
 	}
 }
 
-func TestPurposeEncryptionSeparatesTOTPAndSupportsPreviousKey(t *testing.T) {
+func TestPurposeEncryptionSeparatesDomainsAndSupportsPreviousKey(t *testing.T) {
 	active := testKey(t)
 	previous := testKey(t)
 	t.Setenv("CONFIG_ENC_KEY", active)
 	t.Setenv("CONFIG_ENC_KEY_ID", "key-current")
-	payload, err := EncryptStringForPurpose(TOTPEncryptionPurpose, "totp-secret")
-	if err != nil || !strings.HasPrefix(payload, "v1:totp:key-current:") {
+	payload, err := EncryptStringForPurpose("domain-a", "domain-secret")
+	if err != nil || !strings.HasPrefix(payload, "v1:domain-a:key-current:") {
 		t.Fatalf("purpose encryption failed: %q %v", payload, err)
 	}
-	if plain, err := DecryptStringForPurpose(TOTPEncryptionPurpose, payload); err != nil || plain != "totp-secret" {
+	if plain, err := DecryptStringForPurpose("domain-a", payload); err != nil || plain != "domain-secret" {
 		t.Fatalf("purpose decryption failed: %q %v", plain, err)
 	}
-	if _, err := DecryptStringForPurpose("config", payload); err == nil {
+	if _, err := DecryptStringForPurpose("domain-b", payload); err == nil {
 		t.Fatal("ciphertext accepted under another purpose")
 	}
 
@@ -64,14 +64,14 @@ func TestPurposeEncryptionSeparatesTOTPAndSupportsPreviousKey(t *testing.T) {
 	// active key rotates and the old key is declared as previous.
 	t.Setenv("CONFIG_ENC_KEY", previous)
 	t.Setenv("CONFIG_ENC_KEY_ID", "key-previous")
-	oldPayload, err := EncryptStringForPurpose(TOTPEncryptionPurpose, "old-secret")
+	oldPayload, err := EncryptStringForPurpose("domain-a", "old-secret")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("CONFIG_ENC_KEY", active)
 	t.Setenv("CONFIG_ENC_KEY_ID", "key-current")
 	t.Setenv("CONFIG_ENC_KEY_PREVIOUS", "key-previous:"+previous)
-	if plain, err := DecryptStringForPurpose(TOTPEncryptionPurpose, oldPayload); err != nil || plain != "old-secret" {
+	if plain, err := DecryptStringForPurpose("domain-a", oldPayload); err != nil || plain != "old-secret" {
 		t.Fatalf("previous key was not accepted: %q %v", plain, err)
 	}
 }

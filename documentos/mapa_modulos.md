@@ -332,12 +332,12 @@ reenvio y el checkout de licencias ignora codigos vencidos. `Super
 administrador > Empresas` agrega limpieza controlada de empresas sin licencia
 activa con minimo 6 meses desde `/super/api/empresas_estado`.
 
-Actualizacion 2026-06-19: el menu de `web/super_administrador.html` ya no
-incluye `Seleccionar empresa` ni `2FA super`. `Seleccionar empresa` queda como
-boton en el toolbar superior derecho y la pagina legacy
-`web/super/seguridad_2fa.html` fue retirada; el control vigente de login 2FA
-permanece en `web/super/configuracion_avanzada.html` y
-`web/super/configuracion/login_2fa.html`.
+Autenticacion administrativa: `web/login.html` ofrece correo/contraseña y Google
+OAuth; el backend aplica confirmación de correo, contrato, reCAPTCHA, limitación
+de intentos, sesión revocable y rol persistido. PCS no expone campo, menú, página,
+configuración ni API 2FA. La migración super
+`20260907-001-retire-admin-2fa-v1` elimina el material autenticador anterior y
+revoca sesiones activas para exigir un nuevo login bajo la política vigente.
 
 Actualizacion 2026-06-19: `Super administrador > Empresas` queda disponible en
 `web/super/empresas.html` y consume `/super/api/empresas_estado` para listar en

@@ -54,8 +54,6 @@
   var resetLinkToken = '';
   var emailInput = document.getElementById('adminEmail');
   var passInput = document.getElementById('adminPassword');
-  var otpRow = document.getElementById('adminOtpRow');
-  var otpInput = document.getElementById('adminOtpCode');
   var rememberAdminEmailCheckbox = document.getElementById('rememberAdminEmailCheckbox');
   var forgotEmailInput = document.getElementById('forgotEmail');
   var resetEmailInput = document.getElementById('resetEmail');
@@ -101,24 +99,6 @@
         input.focus();
       });
     });
-  }
-
-  function isAdmin2FALoginEnabled() {
-    return !!window.ADMIN_2FA_LOGIN_ENABLED;
-  }
-
-  function syncAdmin2FAFieldVisibility() {
-    var enabled = isAdmin2FALoginEnabled();
-    if (otpRow) {
-      otpRow.classList.toggle('is-hidden', !enabled);
-      otpRow.style.display = enabled ? '' : 'none';
-    }
-    if (otpInput) {
-      otpInput.disabled = !enabled;
-      if (!enabled) {
-        otpInput.value = '';
-      }
-    }
   }
 
   function showMsg(target, text, isError) {
@@ -329,7 +309,6 @@
       event.preventDefault();
       var email = normalizeEmail(emailInput && emailInput.value);
       var password = passInput && passInput.value ? passInput.value : '';
-      var otpCode = isAdmin2FALoginEnabled() && otpInput && otpInput.value ? otpInput.value.replace(/\D/g, '').slice(0, 6) : '';
       if (!email || !password) {
         showMsg(loginMessageDiv, 'Debes ingresar correo y contraseña.', true);
         return;
@@ -348,7 +327,7 @@
         if (loginToken === null) {
           return;
         }
-        var response = await postJson('/super/api/administradores/login', {email: email, password: password, otp_code: otpCode, recaptcha_token: loginToken});
+        var response = await postJson('/super/api/administradores/login', {email: email, password: password, recaptcha_token: loginToken});
         if (response.ok && response.json && response.json.redirect_url) {
           persistThemePreference(response.json.apariencia);
           var sharedInvitationToken = getSharedInvitationTokenFromQuery();
@@ -361,12 +340,6 @@
         }
         if (response.json && response.json.password_setup_required) {
           showMsg(loginMessageDiv, getResponseMessage(response, 'Tu cuenta todavía no tiene una contraseña activa.'), true);
-          return;
-        }
-        if (response.json && response.json.two_factor_required) {
-          showMsg(loginMessageDiv, getResponseMessage(response, 'Ingresa el codigo 2FA de tu aplicacion autenticadora.'), true);
-          syncAdmin2FAFieldVisibility();
-          if (otpInput) otpInput.focus();
           return;
         }
         if (response.status === 403) {
@@ -498,7 +471,6 @@
   }
 
   initPasswordVisibilityToggles();
-  syncAdmin2FAFieldVisibility();
 
   (function handleRecoveryFromQuery() {
     try {

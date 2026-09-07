@@ -60,7 +60,7 @@ func ProviderSafeFields(values map[string]string, allowed []string) map[string]s
 
 func IsSensitiveField(key string) bool {
 	key = strings.ToLower(strings.TrimSpace(key))
-	for _, part := range []string{"password", "secret", "token", "key", "certificate", "cookie", "cvv", "account_number", "bank", "totp"} {
+	for _, part := range []string{"password", "secret", "token", "key", "certificate", "cookie", "cvv", "account_number", "bank"} {
 		if strings.Contains(key, part) {
 			return true
 		}
