@@ -2156,11 +2156,11 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 - Cumplimiento: evita presentar como factura fiscal aceptada un documento que aun no tiene confirmacion DIAN/proveedor, en linea con validacion previa y acuse fiscal.
 - Alcance: no cambia tablas, permisos, endpoints ni dependencias; mantiene aislamiento por `empresa_id`.
 
-2026-05-13: Logos empresariales para Motel Calipso y Gimnasio el bollon
-- Modulos afectados: `administrar_empresa`, `configuracion_empresa`, `carritos`, `facturacion`, `reportes`.
-- Cambio funcional: Motel Calipso (`empresa_id=7`) y Gimnasio el bollon (`empresa_id=32`) quedan con logos propios cargados y activados desde `empresa_configuracion_avanzada`.
-- Activos: los SVG viven en `web/uploads/empresa_logos/empresa_7/motel-calipso-logo.svg` y `web/uploads/empresa_logos/empresa_32/gimnasio-el-bollon-logo.svg`.
-- Alcance: no cambia backend, base de datos estructural, permisos ni dependencias; esos activos quedan como historicos de logo corporativo. La configuracion vigente separa `logo_url` como logo corporativo y `logo_factura_url` como logo de factura.
+Identidad visual empresarial
+- Modulos afectados: `administrar_empresa`, `configuracion_empresa`, `carritos`, `facturacion` y `reportes`.
+- Los logos cargados por cada empresa se conservan en el volumen runtime `pcs_web_uploads`; `web/uploads/` no contiene activos versionados ni datos de empresas.
+- La configuracion separa `logo_url` como logo corporativo y `logo_factura_url` como logo de factura. Ningun logo real forma parte del snapshot de codigo.
+- Alcance: no cambia backend, esquema, permisos ni dependencias; evita que datos operativos de una empresa entren a Git.
 
 2026-05-13: Indicadores economicos moviles completos
 - Modulos afectados: `administrar_empresa`, `panel_empresarial`.
