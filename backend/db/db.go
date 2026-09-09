@@ -421,6 +421,30 @@ func UpsertAdministradorConCreador(dbConn *sql.DB, email, name, role, photo, usu
 	return tx.Commit()
 }
 
+// UpsertAdministradorIdentityForEmpresaUserPreservingRole conserva la identidad tecnica que
+// varias capas legacy consultan por correo para una sesion empresa_usuario, sin
+// permitir que el rol operativo de la empresa sobrescriba el rol administrativo
+// global de una cuenta que use el mismo correo.
+//
+// Una identidad nueva queda sin password confirmado por los defaults del
+// esquema, por lo que no habilita el login administrativo. En conflicto solo se
+// refrescan nombre, foto y creador faltante; role y credenciales se preservan.
+func UpsertAdministradorIdentityForEmpresaUserPreservingRole(dbConn *sql.DB, email, name, photo, usuarioCreador string) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	nowExpr := sqlNowExpr()
+	upsertSQL := "INSERT INTO administradores (email, name, role, photo, usuario_creador, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, 'administrador', ?, ?, " + nowExpr + ", " + nowExpr + ", 'activo') ON CONFLICT(email) DO UPDATE SET name = CASE WHEN TRIM(EXCLUDED.name) <> '' THEN EXCLUDED.name ELSE administradores.name END, photo = CASE WHEN TRIM(EXCLUDED.photo) <> '' THEN EXCLUDED.photo ELSE administradores.photo END, usuario_creador = CASE WHEN TRIM(COALESCE(administradores.usuario_creador, '')) <> '' THEN administradores.usuario_creador ELSE EXCLUDED.usuario_creador END, fecha_actualizacion = " + nowExpr
+	if _, err := execTxSQLCompat(tx, upsertSQL, strings.TrimSpace(email), strings.TrimSpace(name), strings.TrimSpace(photo), strings.TrimSpace(usuarioCreador)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 // UpdateAdministrador actualiza el nombre y rol de un administrador por id
 func UpdateAdministrador(dbConn *sql.DB, id int64, name, role string) error {
 	nowExpr := sqlNowExpr()

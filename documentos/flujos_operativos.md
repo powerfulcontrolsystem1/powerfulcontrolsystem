@@ -961,7 +961,10 @@ afecte dinero, documentos, licencias o seguridad.
    `Reenviar confirmacion`.
    El mismo correo puede existir como administrador del panel principal y como
    usuario operativo, porque son credenciales y pantallas distintas; en `users`
-   la unicidad vigente es por `lower(email), empresa_id`.
+   la unicidad vigente es por `lower(email), empresa_id`. Al crear la sesión
+   operativa, PCS conserva el rol global de `administradores`: el rol de cajero,
+   contador u otro perfil empresarial se guarda en la sesión tipada
+   `empresa_usuario` y nunca se copia sobre la identidad administrativa.
 2. El usuario abre `login_usuario.html` desde la invitacion para completar
    registro o iniciar con Google. Sin invitacion o usuario empresarial confirmado
    no hay alta publica. En este primer ingreso, un usuario pendiente puede tener
