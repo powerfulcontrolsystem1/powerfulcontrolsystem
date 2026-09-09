@@ -902,7 +902,7 @@ Actualizacion 2026-05-12 (registro operativo por invitacion)
 - No se agregan tablas ni columnas fisicas.
 - El flujo de primer ingreso reutiliza `pcs_empresas.users.email_confirm_token`, `email_confirm_expira` y `email_confirmado` como invitacion de un solo uso.
 - Al completar el primer password, el backend confirma el correo, consume el token, limpia expiracion y mantiene el usuario aislado por `empresa_id`.
-- La sesion se materializa en `pcs_superadministrador.administradores`, `sessions` y acceso compartido existente para que `/api/empresa/permisos_contexto` cargue rol efectivo y paginas permitidas.
+- La sesión operativa se materializa en `pcs_superadministrador.administradores`, `sesiones` y el acceso empresarial existente para que `/api/empresa/permisos_contexto` cargue rol efectivo y páginas permitidas. La identidad técnica usa un upsert que, ante un correo ya registrado, preserva `administradores.role`, credenciales, confirmación y estado; el rol operativo se conserva exclusivamente en `users` y `sesiones.principal_role`, con `principal_type=empresa_usuario` y `empresa_id` obligatorio.
 
 Actualizacion 2026-05-12 (adaptacion del nucleo por plantilla)
 - No se agregan tablas ni columnas fisicas.

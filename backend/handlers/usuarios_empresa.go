@@ -2773,8 +2773,11 @@ func createEmpresaUsuarioSession(w http.ResponseWriter, r *http.Request, dbSuper
 	if err != nil {
 		return result, err
 	}
-	if err := dbpkg.UpsertAdministrador(dbSuper, item.Email, item.Nombre, sessionRole, ""); err != nil {
-		return result, fmt.Errorf("failed to upsert admin: %w", err)
+	// La identidad tecnica mantiene compatibilidad con resoluciones legacy por
+	// correo, pero nunca debe copiar el rol operativo a administradores. Un mismo
+	// correo puede ser administrador global y cajero dentro de una empresa.
+	if err := dbpkg.UpsertAdministradorIdentityForEmpresaUserPreservingRole(dbSuper, item.Email, item.Nombre, "", item.UsuarioCreador); err != nil {
+		return result, fmt.Errorf("failed to ensure enterprise user identity: %w", err)
 	}
 	if _, err := dbpkg.UpsertAdminEmpresaCompartidaAcceso(dbSuper, dbpkg.AdminEmpresaCompartidaAcceso{
 		EmpresaID:          item.EmpresaID,

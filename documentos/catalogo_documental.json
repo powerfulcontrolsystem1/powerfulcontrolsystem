@@ -795,7 +795,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "6c6936ffc5bcf44befa6189f0c2100ac328211fa8a043cf248500e691ed40c5a"
+      "sha256_lf": "3d0afaabae9cedbd412b917f01639dd9e2cfaf327116b6fe0241e2cd7cbaeb69"
     },
     {
       "path": "documentos/flujos_operativos.md",
@@ -804,7 +804,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "8d61ac5171b6c7bb14ef29418267f83447f9921a469c7baa031b266e0f88243b"
+      "sha256_lf": "bd9d95e4f9390f5809cb40e6ed2f431d11a685341957e6af209cb89409820fe4"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
@@ -856,9 +856,9 @@
       "title": "Contrato tecnico: autenticacion administrativa y usuarios de empresa",
       "state": "vigente",
       "owner": "Ingeniería backend y QA",
-      "reviewed": "2026-09-07",
-      "review_due": "2026-12-06",
-      "sha256_lf": "f8fbe48a053e8e68073070772a49ff95952bef3ad11340d6a76edb3a433e8059"
+      "reviewed": "2026-09-08",
+      "review_due": "2026-12-07",
+      "sha256_lf": "2e852884159937a6d9af5d5d0aa988ed95d3ba6f2e5a15bccf80ddf7cd405cae"
     },
     {
       "path": "documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md",
@@ -1020,7 +1020,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "028c02d1df9477556b4afe530812618298108c5df561de19a180c7b197786f6c"
+      "sha256_lf": "44da539ac7f83b0923b41d918829227e1db35bd624b3a066d06466c717fae48f"
     },
     {
       "path": "documentos/gobernanza_tecnica/riesgos_y_brechas.md",

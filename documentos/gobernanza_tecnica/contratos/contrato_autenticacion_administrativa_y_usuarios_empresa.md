@@ -1,6 +1,6 @@
 # Contrato tecnico: autenticacion administrativa y usuarios de empresa
 
-Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-07.
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-08.
 
 ## Alcance revisado y límites
 
@@ -132,10 +132,11 @@ No se acepta `otp_code` ni otro segundo factor en el contrato vigente.
 11. El login de usuario de empresa debe registrar intentos fallidos y puede bloquear temporalmente el acceso; un login exitoso debe limpiar el contador de fallos.
 12. La cookie real de autenticacion debe seguir siendo `session_token` con `HttpOnly`; la UI solo puede apoyarse en cookies auxiliares visibles para estado de navegador.
 13. No debe existir un bloqueo, campo, endpoint ni configuración 2FA. Una futura validación opcional por WhatsApp será otro contrato y no se presume implementada por este retiro.
+14. Si el mismo correo existe como administrador global y usuario operativo, el login de empresa no puede modificar `administradores.role`, credenciales, confirmación ni estado administrativo. El rol operativo vive en `users` y en `sesiones.principal_role`, acotado por `sesiones.empresa_id`.
 
 ## Side effects obligatorios
 
-- alta o upsert de administradores en `pcs_superadministrador`
+- alta o upsert de administradores en `pcs_superadministrador`; la identidad técnica creada para un usuario de empresa usa un rol global neutro solo al insertar y preserva cualquier rol y credencial administrativa existente en conflicto
 - generacion y persistencia de tokens de confirmacion o recuperacion
 - envio de correos de confirmacion y recuperacion, o respuesta degradada `email_sent=false` cuando la cuenta ya fue creada pero el SMTP falla
 - creacion de sesiones administrativas y de usuario de empresa en la base super
@@ -150,6 +151,7 @@ No se acepta `otp_code` ni otro segundo factor en el contrato vigente.
 - una cuenta administrativa no confirmada debe recibir rechazo explicito al login por correo.
 - la recuperacion administrativa debe responder de manera no enumerativa cuando la cuenta no existe o no esta confirmada.
 - el login de usuario de empresa debe rechazar mismatch de `empresa_id` aunque el correo exista en otra empresa.
+- el login de usuario de empresa no debe sobrescribir el rol administrativo cuando un correo tenga ambas identidades.
 - el reset de usuario de empresa debe invalidar tokens expirados y limpiar el token cuando corresponda.
 
 ## Reglas de compatibilidad
