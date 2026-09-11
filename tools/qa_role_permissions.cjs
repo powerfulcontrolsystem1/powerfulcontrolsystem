@@ -126,7 +126,7 @@ async function controllerChecks() {
   assert.equal(get('rolePermissionsSave').disabled, true, 'security read-only users cannot edit the role matrix');
   assert.match(get('rolePermissionsMsg').textContent, /Modo consulta/);
 }
-async function superRaceChecks() {
+async function superRaceChecks(firstOutcome) {
   const elements = new Map(), requests = [];
   const get = id => { if (!elements.has(id)) elements.set(id, fakeElement()); return elements.get(id); };
   let releaseFirst;
@@ -136,7 +136,11 @@ async function superRaceChecks() {
     document: { getElementById: get, createElement: fakeElement, querySelectorAll: () => [] },
     fetch: async (url, options = {}) => {
       requests.push({ url, options });
-      if (url.endsWith('rol_id=7')) await first;
+      if (url.endsWith('rol_id=7')) {
+        await first;
+        if (firstOutcome === 'network_error') throw new Error('Obsolete request connection failed');
+        if (firstOutcome === 'http_error') return { ok: false, status: 403, text: async () => 'Obsolete role is no longer available' };
+      }
       const data = url.endsWith('/tipos_empresas') ? [] : url.endsWith('/roles_de_usuario') ? roleFixture : matrix(Number(new URL(url, 'http://fixture').searchParams.get('rol_id')));
       return { ok: true, json: async () => data, text: async () => JSON.stringify(data) };
     }
@@ -150,6 +154,9 @@ async function superRaceChecks() {
   assert.equal(get('saveBtn').disabled, false);
   releaseFirst();
   await new Promise(resolve => setImmediate(resolve));
+  assert.equal(get('saveBtn').disabled, false, firstOutcome + ': obsolete response must not disable the newer role');
+  assert.equal(get('panelPermisos').hidden, false, firstOutcome + ': obsolete response must not hide the newer role');
+  assert.equal(get('msg').textContent, '', firstOutcome + ': obsolete response must not replace the current status');
   await get('saveBtn').listeners.click();
   const mutation = requests.find(request => request.options.method === 'PUT');
   assert.equal(JSON.parse(mutation.options.body).rol_id, 8, 'late role A response cannot overwrite selected role B');
@@ -207,7 +214,7 @@ async function serve() {
   syntaxChecks();
   catalogChecks();
   await controllerChecks();
-  await superRaceChecks();
-  process.stdout.write('PASS: sintaxis, catálogo escalable por ID, tenant/rol del payload, guardado fallido, búsqueda, protección durante carga y respuesta super fuera de orden.\n');
+  for (const outcome of ['success', 'http_error', 'network_error']) await superRaceChecks(outcome);
+  process.stdout.write('PASS: sintaxis, catálogo escalable por ID, tenant/rol del payload, guardado fallido, búsqueda, protección durante carga y respuestas super fuera de orden (éxito, HTTP y red).\n');
   if (process.argv.includes('--serve')) await serve();
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });

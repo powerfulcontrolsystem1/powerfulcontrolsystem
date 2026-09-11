@@ -475,6 +475,11 @@
           saveBtn.disabled = false;
           if (saveBtn2) saveBtn2.disabled = false;
           setMessage('', false);
+        } catch (err) {
+          // A failed obsolete request must not reach a caller that would hide
+          // the newer role matrix or replace its status with an unrelated error.
+          if (sequence !== state.loadSequence || Number(rolSelect.value) !== rolID) return;
+          throw err;
         } finally {
           if (sequence === state.loadSequence) state.loading = false;
         }
