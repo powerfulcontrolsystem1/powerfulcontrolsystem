@@ -777,6 +777,12 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		loginAudit := &loginAuditAttempt{PrincipalType: "usuario_empresa", AuthMethod: "password"}
+		auditWriter := &auditCaptureResponseWriter{ResponseWriter: w}
+		w = auditWriter
+		defer func() {
+			loginAudit.record(dbSuper, r, auditWriter.status)
+		}()
 
 		var payload struct {
 			EmpresaID      int64  `json:"empresa_id"`
@@ -788,8 +794,10 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
 			return
 		}
+		loginAudit.EmpresaID = payload.EmpresaID
 
 		email := strings.TrimSpace(payload.Email)
+		loginAudit.Email = email
 		if email == "" {
 			http.Error(w, "email es obligatorio", http.StatusBadRequest)
 			return
@@ -804,6 +812,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		payload.EmpresaID = empresaID
+		loginAudit.EmpresaID = empresaID
 		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
 			writeRecaptchaValidationError(w, err)
 			return
@@ -834,6 +843,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		if item.PasswordSet != 1 || strings.TrimSpace(item.PasswordHash) == "" || strings.TrimSpace(item.PasswordSalt) == "" {
+			loginAudit.Reason = "contrasena_pendiente"
 			w.Header().Set("Content-Type", "application/json")
 			encodeJSONResponse(w, map[string]interface{}{
 				"ok":                      false,
@@ -888,6 +898,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		policy := resolveEmpresaUsuarioPasswordPolicy(dbSuper)
 		if rotationRequired, edadDias := empresaUsuarioPasswordRotationRequired(item, policy, time.Now()); rotationRequired {
+			loginAudit.Reason = "rotacion_contrasena_requerida"
 			w.Header().Set("Content-Type", "application/json")
 			encodeJSONResponse(w, map[string]interface{}{
 				"ok":                         false,
@@ -906,6 +917,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
+		loginAudit.markAuthenticated(item.RolNombre)
 		warmEmpresaPermissionSnapshot(dbEmp, dbSuper, item)
 	}
 }

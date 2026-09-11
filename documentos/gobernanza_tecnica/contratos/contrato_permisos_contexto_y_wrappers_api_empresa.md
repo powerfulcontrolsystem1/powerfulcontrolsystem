@@ -237,3 +237,16 @@ Aplica solo al modulo `seguridad` cuando la accion efectiva es `C`, `U`, `D` o `
 [empresa_permisos.go](../../../backend/handlers/empresa_permisos.go), [main_empresa_routes_security_test.go](../../../backend/main_empresa_routes_security_test.go), [main.go](../../../backend/main.go).
 
 Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).
+
+## Operación Domótica desde una estación
+
+La excepción operativa se limita a `GET action=estacion_controls` y a los POST
+`action=probar_rele|temporizador_rele` del endpoint
+`/api/empresa/control_electrico`. Esas tres acciones se autorizan con el módulo
+`ventas` (`R` para consultar y `U` para operar), aunque la licencia empresarial
+no incluya el módulo administrativo `control_electrico`.
+
+La excepción no concede acceso a configuración, Raspberry, relés globales,
+programaciones, escenas, SSH ni otras actions. El handler vuelve a validar el
+`empresa_id`, el rango de estaciones asignado a la caja y rechaza Domótica para
+una caja configurada como `solo_activar`.

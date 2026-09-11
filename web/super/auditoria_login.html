@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Auditoría super administrador</title>
+  <title>Auditoría de inicios de sesión</title>
   <link rel="stylesheet" href="/estilos.css">
-  <link rel="stylesheet" href="/super/auditoria_super_admin.css?v=20260813-p110-csp">
+  <link rel="stylesheet" href="/super/auditoria_super_admin.css?v=20260911-login-audit">
 </head>
-<body class="super-page auditoria-global-page" data-audit-scope="super_panel" data-audit-download-prefix="auditoria_super_admin">
+<body class="super-page auditoria-global-page" data-audit-scope="super_panel" data-audit-default-modulo="autenticacion" data-audit-download-prefix="auditoria_inicios_sesion">
   <div class="container">
     <div class="page-header auditoria-global-header">
       <div>
-        <h1>Auditoría super administrador</h1>
-        <p class="page-subtitle">Seguimiento especial de navegación, ediciones, pruebas y cambios realizados por usuarios super administradores dentro del panel super. Los secretos se registran siempre redactados.</p>
+        <h1>Auditoría de inicios de sesión</h1>
+        <p class="page-subtitle">Seguimiento centralizado de accesos exitosos, rechazados y errores para administradores y usuarios de empresa. Incluye empresa, fecha, IP, navegador, resultado y request ID; nunca almacena contraseñas ni tokens.</p>
       </div>
       <div class="auditoria-global-actions">
         <button id="btnActualizar" class="btn secondary" type="button">Actualizar</button>
@@ -20,10 +20,10 @@
     </div>
 
     <section class="card auditoria-global-control-card">
-      <div class="auditoria-global-kpis" aria-label="Resumen de auditoría super">
-        <article><span>Total filtrado</span><strong id="kpiTotal">0</strong></article>
-        <article><span>Errores</span><strong id="kpiErrores">0</strong></article>
-        <article><span>Usuarios</span><strong id="kpiUsuarios">0</strong></article>
+      <div class="auditoria-global-kpis" aria-label="Resumen de accesos">
+        <article><span>Intentos filtrados</span><strong id="kpiTotal">0</strong></article>
+        <article><span>Fallidos o con error</span><strong id="kpiErrores">0</strong></article>
+        <article><span>Identidades</span><strong id="kpiUsuarios">0</strong></article>
         <article><span>Alcance</span><strong id="kpiScope">-</strong></article>
       </div>
 
@@ -39,60 +39,46 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="modulo">Módulo</label>
-            <select id="modulo" class="form-input">
-              <option value="">Todos</option>
+            <select id="modulo" class="form-input" disabled>
               <option value="autenticacion">Inicios de sesión</option>
-              <option value="super_panel_ui">Panel super UI</option>
-              <option value="super_config_gmail">Gmail SMTP</option>
-              <option value="super_config_wompi">Wompi / Nequi</option>
-              <option value="super_config_epayco">Epayco</option>
-              <option value="super_config_recaptcha">reCAPTCHA</option>
-              <option value="super_config_ia_global">IA global</option>
-              <option value="super_config_onlyoffice">OnlyOffice</option>
-              <option value="super_config_rustdesk">RustDesk VPS</option>
-              <option value="super_config_voz_ia">Voz IA</option>
-              <option value="super_config_respaldo">Respaldo</option>
-              <option value="super_seguridad_vps">Seguridad VPS</option>
-              <option value="administradores">Administradores</option>
-              <option value="licencias">Licencias</option>
             </select>
           </div>
           <div class="form-col">
             <label class="form-label" for="resultado">Resultado</label>
             <select id="resultado" class="form-input">
               <option value="">Todos</option>
-              <option value="ok">OK</option>
-              <option value="error">Error</option>
+              <option value="ok">Exitoso</option>
               <option value="rechazado">Rechazado</option>
+              <option value="error">Error interno</option>
             </select>
           </div>
         </div>
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label" for="usuario">Usuario super</label>
-            <input id="usuario" class="form-input" placeholder="correo o usuario">
+            <label class="form-label" for="usuario">Correo o identidad</label>
+            <input id="usuario" class="form-input" placeholder="usuario@empresa.com">
           </div>
           <div class="form-col">
             <label class="form-label" for="empresaId">Empresa ID</label>
             <input id="empresaId" class="form-input" inputmode="numeric" placeholder="Opcional">
           </div>
           <div class="form-col form-col-wide">
-            <label class="form-label" for="search">Buscar</label>
-            <input id="search" class="form-input" placeholder="acción, endpoint, recurso, IP, observación">
+            <label class="form-label" for="search">Buscar evidencia</label>
+            <input id="search" class="form-input" placeholder="IP, request ID, tipo de cuenta o motivo">
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn" type="submit">Ver auditoría</button>
+          <button class="btn" type="submit">Consultar accesos</button>
           <button id="btnCSV" class="btn secondary" type="button">Exportar CSV</button>
           <button id="btnJSON" class="btn secondary" type="button">Exportar JSON</button>
         </div>
-        <div id="msg" class="form-help"></div>
+        <div id="msg" class="form-help" role="status" aria-live="polite"></div>
       </form>
     </section>
 
     <section class="card auditoria-global-table-card">
       <div class="auditoria-global-table-head">
-        <strong>Movimientos recientes del panel super</strong>
+        <strong>Accesos recientes</strong>
         <span id="pagerInfo">Mostrando 0-0 de 0</span>
       </div>
       <div class="table-responsive">
@@ -100,9 +86,9 @@
           <thead>
             <tr>
               <th>Fecha</th>
-              <th>Usuario</th>
+              <th>Identidad</th>
               <th>Módulo</th>
-              <th>Acción</th>
+              <th>Evento</th>
               <th>Empresa</th>
               <th>Resultado</th>
               <th>Endpoint</th>
@@ -121,13 +107,13 @@
 
   <dialog id="detalleDialog" class="auditoria-global-dialog">
     <div class="auditoria-global-dialog-head">
-      <strong>Detalle del movimiento</strong>
+      <strong>Detalle trazable del acceso</strong>
       <button id="cerrarDetalle" class="btn secondary small" type="button">Cerrar</button>
     </div>
     <pre id="detalleJson" class="auditoria-detail-pre"></pre>
   </dialog>
 
-  <script src="/js/super_auditoria_global.js"></script>
+  <script src="/js/super_auditoria_global.js?v=20260911-login-audit"></script>
   <script src="/js/super_page_tools.js?v=20260707"></script>
 </body>
 </html>

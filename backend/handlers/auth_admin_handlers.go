@@ -511,12 +511,19 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
+		loginAudit := &loginAuditAttempt{PrincipalType: "administrador", AuthMethod: "password"}
+		auditWriter := &auditCaptureResponseWriter{ResponseWriter: w}
+		w = auditWriter
+		defer func() {
+			loginAudit.record(dbSuper, r, auditWriter.status)
+		}()
 		var payload adminLoginPayload
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeAdminAuthError(w, http.StatusBadRequest, "El formulario de acceso es inválido.")
 			return
 		}
 		payload.Email = strings.TrimSpace(payload.Email)
+		loginAudit.Email = payload.Email
 		payload.Password = strings.TrimSpace(payload.Password)
 		if payload.Email == "" || payload.Password == "" {
 			writeAdminAuthError(w, http.StatusBadRequest, "Debes ingresar correo y contraseña.")
@@ -550,6 +557,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if contractRequired {
+			loginAudit.Reason = "contrato_pendiente"
 			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":                           true,
 				"contract_acceptance_required": true,
@@ -585,6 +593,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if strings.ToLower(strings.TrimSpace(admin.Role)) == "super_administrador" {
 			redirectURL = "/super_administrador.html"
 		}
+		loginAudit.markAuthenticated(admin.Role)
 		apariencia, appearanceErr := dbpkg.GetUsuarioApariencia(dbSuper, admin.Email)
 		if appearanceErr != nil {
 			log.Println("AdminLoginHandler get appearance error:", appearanceErr)
@@ -1209,6 +1218,12 @@ func HandleGoogleUsuarioLogin(clientID, redirectURL string) http.HandlerFunc {
 // HandleGoogleCallback procesa el callback OAuth y crea sesión/administrador
 func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientSecret, redirectURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		loginAudit := &loginAuditAttempt{PrincipalType: "administrador", AuthMethod: "google_oauth"}
+		auditWriter := &auditCaptureResponseWriter{ResponseWriter: w}
+		w = auditWriter
+		defer func() {
+			loginAudit.record(dbSuper, r, auditWriter.status)
+		}()
 		q := r.URL.Query()
 		usuarioFlow, verifier, stateErr := validateAndConsumeGoogleOAuthState(w, r)
 		if stateErr != nil {
@@ -1261,10 +1276,12 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			http.Error(w, "La cuenta de Google debe tener un correo verificado", http.StatusForbidden)
 			return
 		}
+		loginAudit.Email = userinfo.Email
 
 		if usuarioFlow && googleUsuarioFlowActive(r) {
+			loginAudit.PrincipalType = "usuario_empresa"
 			clearGoogleUsuarioFlowCookies(w, r)
-			handleGoogleUsuarioCallback(w, r, dbEmpresas, dbSuper, userinfo)
+			handleGoogleUsuarioCallback(w, r, dbEmpresas, dbSuper, userinfo, loginAudit)
 			return
 		}
 
@@ -1318,6 +1335,8 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			ua := r.UserAgent()
 			if err := dbpkg.CreateSession(dbSuper, userinfo.Email, ip, ua, token); err != nil {
 				log.Println("create session error:", err)
+				http.Error(w, "No se pudo guardar la sesion", http.StatusInternalServerError)
+				return
 			}
 			cookie := &http.Cookie{
 				Name:     "session_token",
@@ -1330,6 +1349,7 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			}
 			http.SetCookie(w, cookie)
 			SetBrowserSessionStateCookie(w, r, true)
+			loginAudit.markAuthenticated(roleToSet)
 
 			admin, err := dbpkg.GetAdminByEmailFull(dbSuper, userinfo.Email)
 			if err != nil || admin == nil {
@@ -1347,6 +1367,7 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 
 		// Si no aceptó, redirigir a página de aceptación server-side con payload cifrado.
 		if userinfo.Email != "" {
+			loginAudit.Reason = "contrato_pendiente"
 			next := "/seleccionar_empresa.html"
 			if roleToSet == "super_administrador" {
 				next = "/super_administrador.html"
@@ -1433,7 +1454,7 @@ func resolveGoogleUsuarioFromCookies(r *http.Request, dbEmpresas *sql.DB, email 
 	return item, item.EmpresaID, invitationToken, consumeInvitation, nil
 }
 
-func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpresas *sql.DB, dbSuper *sql.DB, userinfo *auth.UserInfo) {
+func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpresas *sql.DB, dbSuper *sql.DB, userinfo *auth.UserInfo, loginAudit *loginAuditAttempt) {
 	if userinfo == nil || strings.TrimSpace(userinfo.Email) == "" {
 		redirectGoogleUsuarioError(w, r, "google_sin_email", "", 0, "")
 		return
@@ -1445,6 +1466,9 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 	}
 
 	item, empresaID, invitationToken, consumeInvitation, err := resolveGoogleUsuarioFromCookies(r, dbEmpresas, email)
+	if loginAudit != nil {
+		loginAudit.EmpresaID = empresaID
+	}
 	if err != nil {
 		switch {
 		case errors.Is(err, errEmpresaUsuarioScopeRequired):
@@ -1464,6 +1488,9 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 	if item == nil {
 		redirectGoogleUsuarioError(w, r, "sin_invitacion", email, empresaID, invitationToken)
 		return
+	}
+	if loginAudit != nil {
+		loginAudit.EmpresaID = item.EmpresaID
 	}
 	if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
 		redirectGoogleUsuarioError(w, r, "usuario_inactivo", email, item.EmpresaID, invitationToken)
@@ -1504,6 +1531,9 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 		log.Printf("[usuarios_empresa] failed to create session (google usuario) empresa_id=%d email=%s error=%v", item.EmpresaID, redactEmailForLog(item.Email), err)
 		redirectGoogleUsuarioError(w, r, "sesion_error", email, item.EmpresaID, "")
 		return
+	}
+	if loginAudit != nil {
+		loginAudit.markAuthenticated(item.RolNombre)
 	}
 	warmEmpresaPermissionSnapshot(dbEmpresas, dbSuper, item)
 	http.Redirect(w, r, sessionResult.RedirectURL, http.StatusFound)

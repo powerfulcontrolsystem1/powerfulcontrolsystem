@@ -68,6 +68,7 @@
     "/super/empresas.html": true,
     "/super/administradores.html": true,
     "/super/administradores_frecuencia_fe.html": true,
+    "/super/auditoria_login.html": true,
     "/super/contrato.html": true,
     "/super/roles_de_usuario.html": true,
     "/super/permisos_rol.html": true,
