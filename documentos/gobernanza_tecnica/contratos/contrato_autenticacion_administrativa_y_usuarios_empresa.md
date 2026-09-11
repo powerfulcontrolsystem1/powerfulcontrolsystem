@@ -1,6 +1,19 @@
 # Contrato tecnico: autenticacion administrativa y usuarios de empresa
 
-Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-08.
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-11.
+
+## Identidad y revocación de usuarios operativos
+
+Una sesión empresarial conserva tipo `empresa_usuario`, ID de usuario y empresa.
+El motor comprueba el usuario y rol actuales en cada petición. Compartir correo con
+un administrador no mezcla sus permisos ni permite entrar al ámbito Super.
+
+Cambiar correo/rol, desactivar, eliminar o restablecer la contraseña de un usuario
+revoca sus sesiones operativas por empresa, ID y correo. Las sesiones
+administrativas y de otras empresas del mismo correo son independientes. El
+login no precalienta un snapshot administrativo por correo: los permisos se
+resuelven para la petición autenticada. Véase el
+[contrato de autorización](contrato_permisos_contexto_y_wrappers_api_empresa.md).
 
 ## Alcance revisado y límites
 

@@ -1,252 +1,200 @@
-# Contrato tecnico: permisos_contexto y wrappers de /api/empresa
-
-Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-05.
-
-## Alcance revisado y límites
-
-- El listado de ocho wrappers y siete módulos es el núcleo original, no el catálogo completo actual; backend/main.go y empresa_permisos.go contienen las ampliaciones.
-- La aprobación trazable se exige en roles_de_usuario y permisos_empresa; usuarios se rige por permisos, tenant y auditoría sin pedir el código adicional.
-- La auditoría genérica posterior al handler no garantiza atomicidad con el negocio. El reporte local de reparaciones es evidencia separada.
-
-Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
-
-Fecha: 2026-04-18
-
-## Alcance
-
-Este contrato cubre la capa de autorizacion por `empresa_id` para rutas `/api/empresa/*`, el endpoint `GET /api/empresa/permisos_contexto`, los wrappers por modulo, la extraccion de alcance para rutas publicas empresariales y la interaccion entre rol base, overrides dinamicos y restricciones de licencia.
-
-## Wrappers cubiertos
-
-- `WithEmpresaVentasPermissions`
-- `WithEmpresaInventarioPermissions`
-- `WithEmpresaFinanzasPermissions`
-- `WithEmpresaClientesPermissions`
-- `WithEmpresaComprasPermissions`
-- `WithEmpresaFacturacionPermissions`
-- `WithEmpresaSeguridadPermissions`
-- `WithEmpresaPublicScope`
-
-## Rutas implicadas
-
-### Endpoint de contexto
-
-- `GET /api/empresa/permisos_contexto?empresa_id={id}`
-- `GET /api/empresa/permisos_contexto?empresa_id={id}&include_matrix=1`
-
-### Rutas publicas empresariales permitidas con scope minimo
-
-- `POST /api/empresa/usuarios/login`
-- `POST /api/empresa/usuarios/establecer_password`
-- `POST /api/empresa/usuarios/solicitar_recuperacion_password`
-- `POST /api/empresa/usuarios/restablecer_password`
-- `POST /api/empresa/usuarios/cambiar_password`
-
-### Familias protegidas por wrappers de modulo
-
-- ventas
-- inventario
-- finanzas
-- clientes
-- compras
-- facturacion
-- seguridad
-
-## Entradas obligatorias
-
-### Para wrappers protegidos
-
-- `empresa_id` resuelto desde query string, header `X-Empresa-ID` o payload permitido
-- identidad administrativa autenticada (`adminEmail`) para wrappers de modulo
-
-### Para `permisos_contexto`
-
-- `empresa_id`
-
-## Entradas opcionales
-
-- `include_matrix=1` para exponer la matriz catalogada de roles
-- evidencia de aprobacion para cambios criticos en seguridad:
-  - query/body/header `aprobado_por` o `approved_by`
-  - query/body/header `codigo_aprobacion` o `approval_code`
-  - query/body/header `motivo_aprobacion` o `approval_reason`
-  - aplica a cambios de catalogo de roles y matriz fina de permisos
-    (`/api/empresa/roles_de_usuario`, `/api/empresa/permisos_empresa`), no al
-    ciclo operativo de usuarios (`/api/empresa/usuarios`), que queda protegido
-    por permisos `seguridad:C/R/U/D`, alcance empresarial y auditoria.
-
-## Fuentes de resolucion de `empresa_id`
-
-Orden de prioridad:
-
-1. query string `empresa_id`
-2. header `X-Empresa-ID`
-3. body JSON: `empresa_id`, `empresaId` o `empresa.id`
-4. body `application/x-www-form-urlencoded`: `empresa_id`
-5. body `multipart/form-data`: `empresa_id`
-
-## Salidas y estados funcionales
-
-### Wrappers de modulo
-
-- `200+` cuando el handler downstream completa sin denegacion del wrapper
-- `400` si falta `empresa_id` o si una accion de seguridad requiere aprobacion trazable y no se suministra
-- `401` si no hay usuario administrativo autenticado valido
-- `403` si la empresa esta fuera del alcance, la licencia no habilita el modulo o el rol efectivo no permite la accion
-- `500` si falla la validacion de alcance, admin o licencia
-
-### `permisos_contexto`
-
-- `200` con:
-  - `empresa_id`
-  - `admin_email`
-  - `rol`
-  - `rol_efectivo`
-  - `acciones_catalogo`
-  - `modulos[]`
-  - `paginas{}`
-  - `resumen`
-  - `licencia` cuando exista politica vigente
-  - `incluye_matriz`
-  - `matriz_roles[]` solo con `include_matrix=1`
-
-## Catalogos base
-
-### Modulos canonicos
-
-- `ventas`
-- `inventario`
-- `finanzas`
-- `clientes`
-- `compras`
-- `facturacion`
-- `seguridad`
-
-### Acciones canonicas
-
-- `R`
-- `C`
-- `U`
-- `D`
-- `A`
-
-### Roles canonicos
-
-- `super_administrador`
-- `admin_empresa`
-- `supervisor_sucursal`
-- `cajero`
-- `inventario`
-- `compras`
-- `contabilidad`
-- `auditor`
-
-## Invariantes
-
-1. Toda ruta registrada bajo `/api/empresa/*` debe quedar envuelta por uno de los wrappers permitidos; no puede exponerse directamente sin wrapper.
-2. `WithEmpresaPublicScope` solo puede usarse en las cinco rutas publicas empresariales de autenticacion ya autorizadas.
-3. Ningun wrapper protegido puede continuar si `empresa_id <= 0`.
-4. Ningun wrapper protegido puede continuar sin `adminEmail` autentico distinto de vacio o `sistema`.
-5. El wrapper protegido siempre valida alcance real de empresa con `CanAdminAccessEmpresaIA`; conocer el `empresa_id` no concede acceso.
-6. La licencia activa vigente puede restringir modulos por `modulos_habilitados`; si el modulo no esta habilitado, el wrapper debe devolver `403` aunque el rol base normalmente lo permita.
-7. `permisos_contexto` es una excepcion controlada: aun estando bajo wrapper de seguridad, la licencia no bloquea la consulta del propio endpoint aunque `seguridad` no este habilitado por licencia.
-8. El rol efectivo puede diferir del rol base: si `super_rol_habilitado=1` en la licencia, `supervisor_sucursal` escala a `admin_empresa` para permisos efectivos.
-9. Los overrides dinamicos por rol en `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` prevalecen sobre la politica base por rol.
-10. La visibilidad de paginas del panel empresa debe derivarse de la matriz efectiva por modulo/accion y luego aplicar overrides por pagina.
-11. Para cambios criticos del modulo `seguridad`, el sistema exige aprobacion trazable antes de ejecutar el handler downstream.
-12. La evidencia de aprobacion puede venir por query, headers o body JSON, incluyendo el objeto anidado `aprobacion`.
-13. Los cambios criticos de seguridad aprobados deben propagar metadata de aprobacion y quedar auditados.
-14. Todo wrapper protegido debe fijar `X-Empresa-ID` en la respuesta y `X-Admin-Role` / `X-Admin-Role-Efectivo` en la solicitud reenviada.
-15. Los wrappers protegidos deben registrar auditoria no bloqueante con modulo, accion, codigo HTTP y duracion.
-
-## Politica base por rol y modulo
-
-### Regla global
-
-- `super_administrador` permite todo
-- lectura `R` en todos los modulos para: `admin_empresa`, `supervisor_sucursal`, `cajero`, `inventario`, `compras`, `contabilidad`, `auditor`
-
-### Politica base adicional
-
-- `ventas`: `C/U/D/A` para `admin_empresa`, `supervisor_sucursal`, `cajero`
-- `inventario`: `C/U/D/A` para `admin_empresa`, `supervisor_sucursal`, `inventario`
-- `finanzas`: `C/U/A` para `admin_empresa`, `contabilidad`; `D` solo para `contabilidad`
-- `clientes`: `C/U/A` para `admin_empresa`, `supervisor_sucursal`, `cajero`; `D` denegado por politica base
-- `compras`: `C/U/A` para `admin_empresa`, `supervisor_sucursal`, `compras`; `D` denegado por politica base
-- `facturacion`: `C/U/A` para `admin_empresa`, `cajero`; `D` denegado por politica base
-- `seguridad`: `C/U/D/A` solo para `admin_empresa`
-
-## Mapeo de acciones por wrapper
-
-### Por metodo HTTP
-
-- `GET|HEAD|OPTIONS -> R`
-- `POST -> C`
-- `PUT|PATCH -> U`
-- `DELETE -> D`
-
-### Overrides por query `action`
-
-- ventas: `cerrar`, `reabrir`, `pagar_estacion`, `activar_estacion`, `pagar`, `suspender`, `reactivar`, `convertir_* -> A`
-- finanzas: `cerrar`, `reabrir`, `aprobar`, `procesar_asientos`, `conciliar_*`, `aprobar_*`, `rechazar_* -> A`; `anular -> D`
-- compras: `emitir_*`, `recepcionar_*`, `contabilizar_*`, `aprobar_*`, `rechazar_*`, `validar_documentos -> A`; `anular|cancelar -> D`
-- facturacion: `emitir*`, `nota_credito`, `procesar_reintentos`, `reconciliar_estados`, `firmar_xml_real`, `enviar_documento_real`, `reconexion_dian`, `consultar_acuse_real -> A`; `anular -> D`
-- seguridad: `versionar`, `restaurar|restore`, `depurar_fecha`, `sync_manual`, `rotar_credencial`, `aprobar`, `rechazar`, `vincular_nomina`, `reenviar_confirmacion -> A`
-
-## Cambios criticos que requieren aprobacion trazable
-
-Aplica solo al modulo `seguridad` cuando la accion efectiva es `C`, `U`, `D` o `A` y se toca:
-
-- `/api/empresa/permisos_empresa` en cualquier método distinto de `GET`
-- `/api/empresa/roles_de_usuario` en cualquier metodo distinto de `GET`
-
-## Side effects obligatorios
-
-- enriquecimiento del contexto con `empresaID`, `adminRole` y `adminRoleEfectivo`
-- fijacion de headers operativos `X-Empresa-ID`, `X-Admin-Role`, `X-Admin-Role-Efectivo`
-- auditoria no bloqueante del acceso o denegacion
-- carga opcional de overrides dinamicos por rol
-- carga opcional de politica vigente de licencia por empresa
-
-## Errores de contrato esperados
-
-- ruta `/api/empresa/*` sin wrapper: falla de politica estructural, cubierta por `main_empresa_routes_security_test.go`
-- wrapper publico aplicado a una ruta no permitida: falla de politica estructural, cubierta por prueba de rutas
-- rol con permiso base pero override denegado: el override debe prevalecer
-- rol con permiso base sobre modulo no habilitado por licencia: debe prevalecer la licencia y devolver `403`
-- intento de alta o cambio critico de seguridad sin aprobacion trazable: debe devolver `400`
-
-## Evidencia tecnica minima
-
-- pruebas de `backend/handlers/empresa_permisos_test.go` para politica base, overrides, `include_matrix`, restricciones por licencia y aprobacion trazable
-- prueba de `backend/main_empresa_routes_security_test.go` para asegurar que todas las rutas `/api/empresa/*` usan wrappers autorizados
-- pruebas de auditoria sobre wrappers criticos cuando aplique
-
-## ADRs relacionados
-
-- `ADR-0001-frontera-multiempresa-empresa-id.md`
-
-## Contratos relacionados
-
-- `documentos/api/ayuda_apis.md`
-- `documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md`
-- `documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md`
-
-## Fuentes y aceptación de la revisión
-
-[empresa_permisos.go](../../../backend/handlers/empresa_permisos.go), [main_empresa_routes_security_test.go](../../../backend/main_empresa_routes_security_test.go), [main.go](../../../backend/main.go).
-
-Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).
+# Contrato técnico: permisos de roles y empresa
+
+Estado: Vigente. Responsable: Ingeniería backend y QA. Revisión documental: 2026-09-11.
+
+## Autoridad y alcance
+
+El motor de [autorización](../../../backend/handlers/empresa_permisos.go) es la
+fuente de permisos efectivos. La matriz publicada describe una petición y su
+identidad validada; ocultar enlaces, cambiar un nombre o enviar headers de rol no
+concede permisos. Este contrato cubre usuarios operativos, administradores,
+catálogo global, perfiles propios y límites de cada empresa.
+
+## Identidad y aislamiento
+
+Una sesión `empresa_usuario` identifica `principal_id` y `empresa_id`. El motor
+consulta al usuario por ambos IDs, comprueba correo, confirmación y estado activo,
+y resuelve el `rol_usuario_id` actual. Nunca sustituye esa identidad por el
+administrador que comparta correo. El acceso administrativo sigue una sesión
+administrativa y relación empresarial propias.
+
+Las rutas Super exigen una sesión tipada `admin`, sin empresa y vinculada al ID
+administrativo vigente. Una cookie de usuario operativo que comparta correo con
+un Super recibe `403`. Un cambio de rol, desactivación o revocación de la sesión
+administrativa se observa en la siguiente petición.
+
+Cada rol propio pertenece a `roles_de_usuario.empresa_id` y referencia una base
+global activa mediante `rol_base_id`. Un ID de otra empresa, una base ajena,
+inactiva o de plataforma se rechaza. El nombre libre no determina privilegios.
+Las lecturas y escrituras de permisos verifican el rol y su empresa en backend.
+
+Los cambios de correo o rol, la desactivación y la eliminación de usuarios revocan
+sus sesiones operativas por empresa, ID y correo. No revocan sesiones de otras
+empresas ni administrativas por compartir correo. La autorización se vuelve a
+resolver en cada petición; solo se reutiliza el snapshot dentro de esa petición.
+La membresía administrativa, propietario y acceso compartido se consultan sin
+caché de autorización; transferencias, desactivaciones y revocaciones se observan
+en la siguiente petición. Ser un compartidor histórico no concede acceso actual.
+La [plantilla administrativa](../../../backend/db/roles_autorizacion_empresa.go)
+se resuelve por el tipo de empresa y luego por la variante universal. No hereda
+una matriz de otra vertical; una configuración aplicable ambigua o inactiva
+requiere corrección del catálogo y deniega acceso mientras tanto.
+
+## Resolución de permisos
+
+1. Resolver sesión, usuario, empresa activa y rol persistido.
+2. Construir la política base del rol operativo; para perfiles propios, usar el
+   rol base global exacto, conservando el ID del perfil.
+3. Aplicar ajustes del rol base y después ajustes del perfil propio por ID.
+4. Intersectar con licencia, módulos de la vertical, techo de la empresa y alcance
+   de acceso compartido. Estos límites no se convierten en concesiones.
+5. Derivar páginas desde las acciones efectivas y aplicar restricciones de página.
+6. Autorizar módulo y acción de la ruta. Los IDs secundarios y reglas de negocio
+   siguen siendo responsabilidad del handler y sus consultas por empresa.
+
+Las acciones son `R` lectura, `C` creación, `U` actualización, `D` eliminación y
+`A` aprobación. Los métodos aportan el valor inicial; las acciones financieras,
+fiscales y administrativas pueden exigir otro permiso. Consultar el mapeo real
+por wrapper; no deducir permisos solamente de `GET` o `POST`.
+
+Un fallo al leer la política, el rol o sus ajustes detiene la autorización. No
+se recupera acceso mediante la política base. Los perfiles operativos y las
+preferencias de menú no reactivan denegaciones. `super_rol_habilitado` en una
+licencia no eleva un supervisor a administrador.
+
+## Catálogo y escalabilidad
+
+[Roles](../../../backend/db/roles_tipos_usuario.go) administra catálogo global y
+perfiles propios. El catálogo empresarial publica `asignable` y `nombre_visible`,
+prioriza variantes del tipo de la empresa y conserva sus IDs. Si solo existen
+variantes de otros tipos, muestra cada una con su tipo e ID; no decide sus
+permisos por orden de creación. Conserva los IDs globales históricos usados por
+sus usuarios. Las asignaciones se consultan mediante
+[IDs distintos por empresa](../../../backend/db/empresa_usuario_role_ids.go), sin
+recorrer perfiles ni credenciales de cada usuario.
+
+Los perfiles propios tienen matrices independientes en las tablas existentes
+`roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos`. No se necesita
+una nueva rama condicional en Go por cada nombre de perfil. Los módulos, acciones
+y páginas pertenecen al catálogo central del motor: un módulo nuevo requiere
+registrar su wrapper y reglas, y ampliar las pruebas. No se aceptan claves libres
+que no correspondan a ese catálogo.
+
+Un rol global activo sin política base conocida parte sin concesiones y obtiene
+solo sus permisos persistidos. La herencia de módulos y páginas se carga en dos
+consultas agrupadas por empresa y por IDs, conservando el orden base/perfil.
+El perfil Mesero puede registrar pedidos, pero parte con tarifas por minuto/día,
+tarifas de motel y administración de descuentos ocultas. Un permiso explícito
+puede habilitarlas. Cajero conserva la consulta de descuentos necesaria para el
+POS; crear, editar o eliminar códigos exige la página y acción correspondientes.
+
+Las altas homónimas se serializan por empresa. El reemplazo de una matriz se
+realiza en una transacción que bloquea el rol y su base, valida nuevamente su
+alcance y compara una revisión del estado persistido. Un formulario obsoleto se
+rechaza con `409`; la ausencia de revisión devuelve `428`. Un error conserva la
+matriz anterior completa. Las operaciones runtime verifican
+esquema existente; solo `pcs-migrate` aplica DDL.
+
+El editor global también compara una revisión antes de guardar. Cambiar la base
+de un perfil propio exige `expected_rol_base_id`, capturado al abrir el formulario;
+una descripción editada desde un formulario antiguo no restaura una base revocada.
+
+## APIs
+
+| Ruta | Contrato |
+| --- | --- |
+| `GET /api/empresa/permisos_contexto?empresa_id=N` | Identidad, rol, acciones, módulos y páginas efectivos para la petición |
+| Contexto con `include_matrix=1` | Requiere actualización de seguridad; la matriz global base es informativa, no sustituye el contexto efectivo |
+| `GET /api/empresa/roles_de_usuario?empresa_id=N` | Catálogo global asignable y perfiles propios, conservando IDs usados |
+| `POST/PUT/DELETE /api/empresa/roles_de_usuario` | Crear, editar o desactivar perfiles propios; nunca modifica roles de otra empresa |
+| `GET /api/empresa/roles_de_usuario?empresa_id=N&action=permisos&rol_id=M` | Matriz del perfil propio, base y catálogo de acciones/páginas |
+| `PUT` a la misma URL | Reemplazo de los ajustes de módulos y páginas del perfil propio |
+| `/api/empresa/permisos_empresa` | Techo empresarial independiente de la matriz de cada perfil |
+| `/super/api/roles_de_usuario` y `/super/api/roles_de_usuario/permisos` | Gestión global exclusiva de la sesión Super |
+
+El editor empresarial delega en
+[EmpresaRolDeUsuarioPermisosHandler](../../../backend/handlers/roles_tipos_usuario.go)
+desde [usuarios_empresa.go](../../../backend/handlers/usuarios_empresa.go). Exige
+`TenantContext`, `rol_id` coherente y perfil de la empresa. El JSON contiene
+`rol_id`, `revision`, `permisos_modulo[{modulo,accion,permitido}]` y
+`permisos_pagina[{pagina_clave,permitido}]`. Las listas contienen únicamente
+excepciones explícitas; una clave ausente hereda su base. Rechaza claves desconocidas,
+duplicadas, IDs cruzados y cuerpos inválidos o excesivos antes de guardar.
+
+Las mutaciones de roles y del techo empresarial conservan la aprobación trazable
+exigida por el wrapper de seguridad: aprobador, código y motivo. El CRUD de usuarios
+usa permisos, tenant y auditoría sin exigir ese código adicional. La auditoría
+posterior del wrapper no garantiza atomicidad con la transacción de negocio.
+
+## Interfaz
+
+[Administrar usuarios](../../../web/administrar_empresa/administrar_usuarios.html)
+usa el [editor por rol](../../../web/js/empresa_role_permissions.js): búsqueda,
+agrupar módulos y páginas, cambios pendientes y modo consulta cuando no existe
+`seguridad:U`. Cada acción o página permite heredar, permitir o denegar. El guardado
+conserva las excepciones aunque haya filtros visibles y no fija la herencia de
+las casillas que no se editaron. Un conflicto o resultado de guardado incierto
+conserva el borrador y exige recarga explícita antes de otro intento.
+
+[Configuración de permisos](../../../web/administrar_empresa/configuracion_permisos.html)
+edita el techo empresarial. [Permisos globales](../../../web/super/permisos_rol.html)
+conserva el ID de la matriz cargada; cambiar rápidamente el selector no permite
+guardar los datos de un rol contra otro. Durante carga o error no se guarda una
+matriz vacía ni anterior.
+
+## Validación requerida
+
+Ejecutar pruebas dirigidas de roles, permisos, sesiones y rutas con PostgreSQL
+local aislado. Cubrir empresas A/B, dos perfiles con la misma base, IDs ajenos,
+rol/base inactivos, denegaciones por módulo/página/licencia, errores de esquema,
+revocación en la siguiente petición, rollback y concurrencia de altas/matrices.
+
+[qa_role_permissions.cjs](../../../tools/qa_role_permissions.cjs) valida el
+controlador y puede servir datos sintéticos para interacción de escritorio/móvil.
+No acredita autenticación ni API productiva. Las pruebas de sesiones están en
+[empresa_usuario_sessions_test.go](../../../backend/db/empresa_usuario_sessions_test.go)
+y la implementación en
+[empresa_usuario_sessions.go](../../../backend/db/empresa_usuario_sessions.go).
+
+La comprobación visual autenticada, pruebas de cuentas operativas, integración,
+CI y despliegue son evidencias distintas. Un catálogo estático o un healthcheck
+no certifica permisos de todos los usuarios.
+
+Pruebas de regresión relacionadas:
+
+- [Aislamiento y transacciones de roles](../../../backend/db/roles_empresa_postgres_test.go).
+- [Membresía administrativa actual](../../../backend/db/admin_empresa_authorization_test.go).
+- [Revocación de licencia](../../../backend/db/licencias_permiso_cache_test.go).
+- [Contrato del editor](../../../backend/handlers/roles_empresa_permisos_test.go).
+- [Denegaciones e identidad tipada](../../../backend/handlers/empresa_permisos_security_test.go).
+- [Permisos efectivos con PostgreSQL](../../../backend/handlers/empresa_permisos_postgres_test.go).
+- [Identidad y permisos en IA](../../../backend/handlers/ai_enterprise_request_permissions_test.go).
+- [Servidor visual local con PostgreSQL](../../../backend/handlers/roles_visual_postgres_test.go):
+  habilitar `PCS_ROLES_VISUAL_QA=1` y `PCS_TEST_POSTGRES_DSN` de una base local
+  aislada, ejecutar desde `backend` la prueba `TestRolesVisualPostgresQA` con
+  `go test -p 1 -timeout 12m -count=1 -v ./handlers -run ^TestRolesVisualPostgresQA$`
+  y abrir `http://127.0.0.1:8875`. Sirve el editor real contra handlers y PostgreSQL;
+  reemplaza únicamente el login por identidades sintéticas. Se limita a loopback,
+  caduca a los diez minutos y limpia su esquema al terminar.
+- [Frontera de sesión Super](../../../backend/handlers/roles_super_session_test.go).
 
 ## Operación Domótica desde una estación
 
 La excepción operativa se limita a `GET action=estacion_controls` y a los POST
-`action=probar_rele|temporizador_rele` del endpoint
-`/api/empresa/control_electrico`. Esas tres acciones se autorizan con el módulo
-`ventas` (`R` para consultar y `U` para operar), aunque la licencia empresarial
-no incluya el módulo administrativo `control_electrico`.
+`action=probar_rele|temporizador_rele` de `/api/empresa/control_electrico`. Se
+autorizan mediante `ventas` (`R` para consultar y `U` para operar), aunque la
+licencia no incluya el módulo administrativo `control_electrico`.
 
 La excepción no concede acceso a configuración, Raspberry, relés globales,
-programaciones, escenas, SSH ni otras actions. El handler vuelve a validar el
-`empresa_id`, el rango de estaciones asignado a la caja y rechaza Domótica para
-una caja configurada como `solo_activar`.
+programaciones, escenas ni SSH. El handler valida `empresa_id`, rango de estaciones
+de la caja y rechaza Domótica cuando la caja se configura como `solo_activar`.
+
+## Referencias
+
+[Matriz de roles](../../matriz_roles_permisos_pos_multiempresa.md),
+[checklist multiempresa](../../checklist_seguridad_endpoint_multiempresa.md),
+[contrato de autenticación](contrato_autenticacion_administrativa_y_usuarios_empresa.md),
+[autorización OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html)
+y [seguridad multiempresa OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html).
+
+Requisitos aplicables: PCS-REQ-001, PCS-REQ-002 y PCS-REQ-016.

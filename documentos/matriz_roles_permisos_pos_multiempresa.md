@@ -1,6 +1,33 @@
 # Roles, permisos y licencias
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-11.
+
+## Perfiles propios y permisos escalables
+
+Cada empresa puede crear perfiles con nombre propio y una base global activa.
+La autorización conserva el ID del perfil y aplica sus ajustes de acciones y
+páginas después de la base. Dos perfiles con la misma base o el mismo nombre en
+empresas diferentes tienen matrices independientes. Un nombre nuevo no concede
+privilegios: las claves de módulos, acciones y páginas pertenecen al catálogo
+central y los roles nuevos requieren permisos explícitos.
+
+Mesero conserva `ventas:R/C/U` para pedidos sin recibir por ello gestión de
+tarifas ni códigos de descuento. Cajero puede consultar descuentos desde el POS,
+pero las escrituras requieren permiso de página y la acción correspondiente.
+
+El editor `Permisos` en Administrar usuarios permite buscar dentro del catálogo
+y cambiar la matriz del perfil propio. La licencia y el techo empresarial siguen
+siendo límites. El servidor publica los permisos efectivos de la sesión;
+`include_matrix=1` requiere `seguridad:U` y solo añade el catálogo base informativo.
+Una licencia no convierte al supervisor en administrador. Los fallos de lectura
+de autorización deniegan acceso y no recuperan permisos base.
+
+Las sesiones operativas se resuelven por usuario y empresa, aunque su correo
+coincida con el de un administrador. Cambiar correo/rol, desactivar o eliminar un
+usuario revoca únicamente sus sesiones operativas de esa empresa. El contexto
+efectivo se consulta de nuevo por petición y la IA conserva ese contexto también
+al confirmar una propuesta. Detalles, APIs y pruebas en el
+[contrato de autorización](gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md).
 
 ## Alcance revisado y límites
 

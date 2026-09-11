@@ -2,6 +2,23 @@
 
 Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
 
+## Roles y sesiones por empresa
+
+`roles_de_usuario` conserva el catálogo global (`empresa_id=0`) y los perfiles
+propios (`empresa_id>0`, `rol_base_id` global activo). Las tablas existentes
+`roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` almacenan ajustes
+por ID exacto; su lectura/escritura empresarial verifica ownership contra el rol.
+El reemplazo de ambas matrices bloquea el rol y es transaccional; las altas del
+mismo nombre se serializan por empresa. No se añade esquema ni se modifica DDL
+histórico. Runtime verifica el esquema y `pcs-migrate` conserva su autoridad.
+
+`users.rol_usuario_id` mantiene asignaciones históricas sin convertir IDs al
+deduplicar etiquetas. El catálogo consulta IDs distintos por `empresa_id`, sin
+cargar datos privados de usuarios. `sesiones` revoca el acceso operativo por
+`principal_type=empresa_usuario`, `empresa_id`, `principal_id` y correo;
+administradores y otras empresas permanecen independientes. Véase el
+[contrato de autorización](gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md).
+
 ## Reserva fiscal multicaja 2026-09-06 (candidato)
 
 `20260906-001-facturacion-reservas-v1`, aplicada exclusivamente por pcs-migrate,

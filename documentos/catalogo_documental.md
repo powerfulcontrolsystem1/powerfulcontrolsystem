@@ -115,7 +115,7 @@ Documentos: 162. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md](<gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/gobernanza_tecnica/adr/ADR-0003-gobierno-documental-y-fuentes-canonicas.md](<gobernanza_tecnica/adr/ADR-0003-gobierno-documental-y-fuentes-canonicas.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/README.md](<gobernanza_tecnica/contratos/README.md>) | vigente | Coordinación técnica | 2026-09-05 |
-| [documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md](<gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md>) | vigente | Ingeniería backend y QA | 2026-09-08 |
+| [documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md](<gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md>) | vigente | Ingeniería backend y QA | 2026-09-11 |
 | [documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md](<gobernanza_tecnica/contratos/contrato_centro_soporte.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md](<gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md>) | vigente | Ingeniería de pagos y QA | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md](<gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
@@ -125,7 +125,7 @@ Documentos: 162. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md](<gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md](<gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/contrato_matriz_pagos_reales.md](<gobernanza_tecnica/contratos/contrato_matriz_pagos_reales.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
-| [documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md](<gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
+| [documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md](<gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md>) | vigente | Ingeniería backend y QA | 2026-09-11 |
 | [documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md](<gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md](<gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
 | [documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md](<gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md>) | vigente | Ingeniería backend y QA | 2026-09-05 |
@@ -163,7 +163,7 @@ Documentos: 162. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/manual_vps_seguridad.md](<manual_vps_seguridad.md>) | vigente | QA/operación | 2026-09-05 |
 | [documentos/mapa_modulos.md](<mapa_modulos.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/matriz_integracion_plantillas.md](<matriz_integracion_plantillas.md>) | vigente | Ingeniería de módulos | 2026-09-05 |
-| [documentos/matriz_roles_permisos_pos_multiempresa.md](<matriz_roles_permisos_pos_multiempresa.md>) | vigente | Coordinación técnica | 2026-09-05 |
+| [documentos/matriz_roles_permisos_pos_multiempresa.md](<matriz_roles_permisos_pos_multiempresa.md>) | vigente | Coordinación técnica | 2026-09-11 |
 | [documentos/modulos_empresariales_colombia.md](<modulos_empresariales_colombia.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/nextcloud_empresarial.md](<nextcloud_empresarial.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/nomina_colombia_avanzada.md](<nomina_colombia_avanzada.md>) | vigente | Ingeniería del módulo | 2026-09-05 |

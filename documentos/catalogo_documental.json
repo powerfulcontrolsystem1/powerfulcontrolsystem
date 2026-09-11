@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "da81f8e22849688665f171756f7876be4507d6cd76fd47cc40e691488a0feb1c"
+      "sha256_lf": "ed9c242ed5ab56da2cce593eacb2355447f7db5a1e4ce22550e65d44b408656f"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -723,7 +723,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "5847b4fd9d981bb6918850dfe3952d49e2f78cb00d0c8364b12b81cb364bc37f"
+      "sha256_lf": "ab036a17339f47f369ec05203c5b9c478bba2f3bcb788d6a54f11bc0ab0fab62"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -795,7 +795,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "5345efa6d8038ae640e9ce9d2673fd5c300706942ce9dfd848d179cca2cd2a20"
+      "sha256_lf": "05586d31fbe52c82f67d6fb1492fe8dac47c4143dd2befc5ff6d3f06d66697e4"
     },
     {
       "path": "documentos/flujos_operativos.md",
@@ -804,7 +804,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "ad30dd5d1d7e8b55cbe0f818e4970efcecb5b3de3f65f0861fabbc9c2853a638"
+      "sha256_lf": "823c4feda2f2c237f6f3c4ffb8cba5b6998818fcf42979b0abcc743c80da9099"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
@@ -856,9 +856,9 @@
       "title": "Contrato tecnico: autenticacion administrativa y usuarios de empresa",
       "state": "vigente",
       "owner": "Ingeniería backend y QA",
-      "reviewed": "2026-09-08",
-      "review_due": "2026-12-07",
-      "sha256_lf": "49925ea3d0ca69ccda4b6e1dba2dfa460f4a81f23a191d2b7f727ee9df108852"
+      "reviewed": "2026-09-11",
+      "review_due": "2026-12-10",
+      "sha256_lf": "3aa424bda373b52336974e279575b0a925264e1f4255db1c5e22a2235eea29bd"
     },
     {
       "path": "documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md",
@@ -943,12 +943,12 @@
     },
     {
       "path": "documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md",
-      "title": "Contrato tecnico: permisos_contexto y wrappers de /api/empresa",
+      "title": "Contrato técnico: permisos de roles y empresa",
       "state": "vigente",
       "owner": "Ingeniería backend y QA",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "627c97643a4111bb2598634120cdf94cc4ac9995f1d8579f82320abad682da99"
+      "reviewed": "2026-09-11",
+      "review_due": "2026-12-10",
+      "sha256_lf": "b6e758f968f2e6e48ca9934827d97084c223bd41fa1c26a74d4f4536cbcdcde9"
     },
     {
       "path": "documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md",
@@ -1020,7 +1020,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "44da539ac7f83b0923b41d918829227e1db35bd624b3a066d06466c717fae48f"
+      "sha256_lf": "369f6ad56ffd53ceb08a3d6f4c85cdeb53088580ca3f5c9e7cd722e8787bce0a"
     },
     {
       "path": "documentos/gobernanza_tecnica/riesgos_y_brechas.md",
@@ -1272,7 +1272,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "c7598b8713c8378f6e4b870fdf6edc2c7816b4af48be28bb59c4a3e9df2af100"
+      "sha256_lf": "80c6c0742b10c7da214b755b13a8ea2ba34851983cb8e1d2e4d830e7cd05916d"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",
@@ -1288,9 +1288,9 @@
       "title": "Roles, permisos y licencias",
       "state": "vigente",
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "b5cf6c5b895e5c9d35e23ab6a57f5e5cb40574c95830468076d3e58670908b9b"
+      "reviewed": "2026-09-11",
+      "review_due": "2026-12-10",
+      "sha256_lf": "b8d6fa108c4119f8b1ff658b0f9370036f878862709761ebb2ba7249f022bbc7"
     },
     {
       "path": "documentos/modulos_empresariales_colombia.md",

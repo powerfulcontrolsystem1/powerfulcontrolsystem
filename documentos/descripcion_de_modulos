@@ -411,8 +411,8 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 - Modulo afectado: Administrar usuarios / Seguridad empresarial.
 - Navegacion: `Administrar empresa > Administrar usuarios` muestra la tarjeta `Roles personalizados de esta empresa`.
 - Backend: `/api/empresa/roles_de_usuario` lista roles globales y roles propios, y permite crear/editar/desactivar roles personalizados con `empresa_id`, `origen=empresa` y `rol_base_id`.
-- Operacion: el administrador define nombre, descripcion y rol base; el rol queda disponible de inmediato para asignarlo a usuarios de la misma empresa.
-- Seguridad: el rol propio no se puede asignar a otra empresa; permisos efectivos heredan el rol base global para evitar permisos accidentales por nombre libre.
+- Operacion: el administrador define nombre, descripcion y rol base, y usa `Permisos` para ajustar acciones y páginas del perfil. El editor permite búsqueda, conserva cambios al filtrar y bloquea guardados durante carga/error.
+- Seguridad: el rol propio no se puede asignar a otra empresa; la autorización conserva su ID y aplica base global, ajustes propios y límites de licencia/empresa. Las sesiones operativas se resuelven por usuario y empresa, sin sustituirse por un administrador del mismo correo. La IA conserva esa identidad al proponer y confirmar. El [contrato de autorización](gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md) define API, almacenamiento y pruebas.
 
 2026-06-11: Impresoras por computador detectado
 - Modulo: Configuracion de impresora / agente local.
