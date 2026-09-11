@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -279,5 +280,142 @@ func TestEmpresaRolesPostgresCatalogUsesCompanyTypeMatrix(t *testing.T) {
 	}
 	if got, err := GetRolDeUsuarioByIDEmpresaScope(conn, 71001, first); err != nil || got.ID != first {
 		t.Fatal("historical assigned IDs must remain addressable")
+	}
+}
+
+func TestEmpresaRolesPostgresRevisionPreservesRevocationsAndInheritance(t *testing.T) {
+	conn := empresaRolesTestDB(t)
+	ctx := context.Background()
+	base, err := CreateRolDeUsuario(conn, 1, "cajero", "", "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, err := CreateEmpresaRolDeUsuario(conn, 71001, "Revision QA", "", base, "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	read := func() *EmpresaRolPermisosEstado {
+		t.Helper()
+		state, err := GetEmpresaRolPermisosEstado(ctx, conn, 71001, role)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return state
+	}
+	initial := read()
+	if len(initial.Revision) != 64 || initial.Revision != read().Revision {
+		t.Fatal("unchanged policy must have a stable SHA256 revision")
+	}
+	if err := ReplaceEmpresaRolPermisosDeUsuarioConRevision(ctx, conn, 71001, role, "", nil, nil, "qa"); !errors.Is(err, ErrRolPermisosRevisionRequired) {
+		t.Fatalf("missing revision err=%v", err)
+	}
+	grant := []RolPermisoModulo{{Modulo: "inventario", Accion: "C", Permitido: true}}
+	if err := ReplaceEmpresaRolPermisosDeUsuarioConRevision(ctx, conn, 71001, role, initial.Revision, grant, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	editorA, editorB := read(), read()
+	deny := []RolPermisoModulo{{Modulo: "inventario", Accion: "C", Permitido: false}}
+	if err := ReplaceEmpresaRolPermisosDeUsuarioConRevision(ctx, conn, 71001, role, editorA.Revision, deny, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceEmpresaRolPermisosDeUsuarioConRevision(ctx, conn, 71001, role, editorB.Revision, grant, nil, "qa"); !errors.Is(err, ErrRolPermisosRevisionConflict) {
+		t.Fatalf("stale editor restored revoked capability: %v", err)
+	}
+	revoked := read()
+	if len(revoked.Modulos) != 1 || revoked.Modulos[0].Permitido {
+		t.Fatal("obsolete replacement changed current denial")
+	}
+	if err := ReplaceRolPermisosDeUsuario(conn, base, []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: false}}, []RolPermisoPagina{{PaginaClave: "linkEstaciones", Permitido: false}}, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceEmpresaRolPermisosDeUsuarioConRevision(ctx, conn, 71001, role, revoked.Revision, grant, nil, "qa"); !errors.Is(err, ErrRolPermisosRevisionConflict) {
+		t.Fatalf("base policy change was not detected: %v", err)
+	}
+	current := read()
+	if len(current.ModulosBase) != 1 || current.ModulosBase[0].Permitido || len(current.PaginasBase) != 1 || current.PaginasBase[0].Permitido {
+		t.Fatal("inherited revocation missing from snapshot")
+	}
+	if err := ReplaceEmpresaRolPermisosDeUsuarioConRevision(ctx, conn, 71001, role, current.Revision, grant, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceRolPermisosDeUsuario(conn, base, []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: true}}, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	updated := read()
+	if len(updated.Modulos) != 1 || updated.Modulos[0].Modulo != "inventario" || len(updated.Paginas) != 0 || len(updated.ModulosBase) != 1 || !updated.ModulosBase[0].Permitido {
+		t.Fatal("unrelated custom edit froze inherited base policy")
+	}
+	if _, err := GetEmpresaRolPermisosEstado(ctx, conn, 71002, role); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatal("foreign snapshot exposed tenant policy")
+	}
+}
+
+func TestEmpresaRolesPostgresRevisionSerializesConcurrentEditors(t *testing.T) {
+	conn := empresaRolesTestDB(t)
+	ctx := context.Background()
+	base, err := CreateRolDeUsuario(conn, 1, "cajero", "", "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, err := CreateEmpresaRolDeUsuario(conn, 71001, "Two editors QA", "", base, "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err := GetEmpresaRolPermisosEstado(ctx, conn, 71001, role)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := make(chan struct{})
+	results := make(chan error, 2)
+	for _, allowed := range []bool{true, false} {
+		go func(allowed bool) {
+			<-start
+			results <- ReplaceEmpresaRolPermisosDeUsuarioConRevision(ctx, conn, 71001, role, state.Revision,
+				[]RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: allowed}},
+				[]RolPermisoPagina{{PaginaClave: "linkEstaciones", Permitido: allowed}}, "qa")
+		}(allowed)
+	}
+	close(start)
+	accepted, rejected := 0, 0
+	for i := 0; i < 2; i++ {
+		err := <-results
+		if err == nil {
+			accepted++
+		} else if errors.Is(err, ErrRolPermisosRevisionConflict) {
+			rejected++
+		} else {
+			t.Fatal(err)
+		}
+	}
+	if accepted != 1 || rejected != 1 {
+		t.Fatalf("concurrent edits accepted=%d rejected=%d", accepted, rejected)
+	}
+	after, err := GetEmpresaRolPermisosEstado(ctx, conn, 71001, role)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(after.Modulos) != 1 || len(after.Paginas) != 1 || after.Modulos[0].Permitido != after.Paginas[0].Permitido {
+		t.Fatal("concurrent editors mixed module and page policies")
+	}
+}
+
+func TestGlobalRolesPostgresPermissionReplacementIsAtomic(t *testing.T) {
+	conn := empresaRolesTestDB(t)
+	base, err := CreateRolDeUsuario(conn, 1, "cajero", "", "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceRolPermisosDeUsuario(conn, base, []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: false}}, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := conn.Exec(`ALTER TABLE roles_de_usuario_paginas_permisos ADD CONSTRAINT roles_qa_reject CHECK (pagina_clave <> 'reject_qa')`); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceRolPermisosDeUsuario(conn, base, []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: true}}, []RolPermisoPagina{{PaginaClave: "reject_qa", Permitido: true}}, "qa"); err == nil {
+		t.Fatal("expected page constraint failure")
+	}
+	modules, err := ListRolPermisosModuloByRolID(conn, base)
+	if err != nil || len(modules) != 1 || modules[0].Permitido {
+		t.Fatal("global module grant persisted despite failing page replacement")
 	}
 }

@@ -111,11 +111,18 @@ func TestEmpresaRoleEditorPostgresRoundTripPreservesInheritedDenials(t *testing.
 		t.Fatalf("editor GET status=%d", w.Code)
 	}
 	var data struct {
-		Modulos []permissionModuleMatrixRow `json:"modulos"`
-		Paginas []permissionPageAccessRow   `json:"paginas"`
+		Revision       string                      `json:"revision"`
+		Modulos        []permissionModuleMatrixRow `json:"modulos"`
+		Paginas        []permissionPageAccessRow   `json:"paginas"`
+		PermisosModulo []rolPermisoModuloPayload   `json:"permisos_modulo"`
+		PermisosPagina []rolPermisoPaginaPayload   `json:"permisos_pagina"`
+		Heredados      []permissionModuleMatrixRow `json:"modulos_heredados"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &data); err != nil {
 		t.Fatal(err)
+	}
+	if len(data.Revision) != 64 || data.PermisosModulo == nil || data.PermisosPagina == nil || len(data.PermisosModulo) != 0 || len(data.PermisosPagina) != 0 || len(data.Heredados) != len(data.Modulos) {
+		t.Fatal("editor must provide revision, inherited preview and sparse own overrides")
 	}
 	beforeByKey := map[string]bool{}
 	for _, row := range before {
@@ -123,25 +130,19 @@ func TestEmpresaRoleEditorPostgresRoundTripPreservesInheritedDenials(t *testing.
 			beforeByKey[permissionModuleActionKey(row.Modulo, action)] = row.Acciones[action]
 		}
 	}
-	payload := rolPermisosUpsertPayload{RolID: role, PermisosModulo: []rolPermisoModuloPayload{}, PermisosPagina: []rolPermisoPaginaPayload{}}
+	payload := rolPermisosUpsertPayload{RolID: role, Revision: data.Revision, PermisosModulo: []rolPermisoModuloPayload{{Modulo: "inventario", Accion: "C", Permitido: true}}, PermisosPagina: []rolPermisoPaginaPayload{}}
 	for _, row := range data.Modulos {
 		for _, action := range permissionActionsCatalogOrdered {
 			key := permissionModuleActionKey(row.Modulo, action)
 			if row.Acciones[action] != beforeByKey[key] {
 				t.Fatalf("editor differs from authorization for %s", key)
 			}
-			allowed := row.Acciones[action]
-			if key == "inventario|C" {
-				allowed = true
-			}
-			payload.PermisosModulo = append(payload.PermisosModulo, rolPermisoModuloPayload{Modulo: row.Modulo, Accion: action, Permitido: allowed})
 		}
 	}
 	for _, page := range data.Paginas {
 		if page.Permitido != beforePages[page.PaginaClave] {
 			t.Fatalf("editor differs from role page %s", page.PaginaClave)
 		}
-		payload.PermisosPagina = append(payload.PermisosPagina, rolPermisoPaginaPayload{PaginaClave: page.PaginaClave, Permitido: page.Permitido})
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {
@@ -152,6 +153,13 @@ func TestEmpresaRoleEditorPostgresRoundTripPreservesInheritedDenials(t *testing.
 	EmpresaRolDeUsuarioPermisosHandler(conn)(w, req)
 	if w.Code != http.StatusNoContent {
 		t.Fatalf("editor PUT status=%d", w.Code)
+	}
+	// The same initial revision cannot restore an older policy after any edit.
+	req = requestWithTenantContext(httptest.NewRequest(http.MethodPut, target, bytes.NewReader(raw)), TenantContext{EmpresaID: 71001, AdminEmail: "qa@example.invalid"})
+	w = httptest.NewRecorder()
+	EmpresaRolDeUsuarioPermisosHandler(conn)(w, req)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("obsolete editor PUT status=%d", w.Code)
 	}
 	_, after, _, err := loadEmpresaRolePermissionMatrix(conn, 71001, role, "sin_rol")
 	if err != nil {
@@ -168,6 +176,35 @@ func TestEmpresaRoleEditorPostgresRoundTripPreservesInheritedDenials(t *testing.
 				t.Fatalf("saving one checkbox changed unrelated capability %s", key)
 			}
 		}
+	}
+	if err := dbpkg.ReplaceRolPermisosDeUsuario(conn, base, []dbpkg.RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: false}}, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	_, inheritedAfter, _, err := loadEmpresaRolePermissionMatrix(conn, 71001, role, "sin_rol")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range inheritedAfter {
+		if row.Modulo == "ventas" && row.Create {
+			t.Fatal("editing inventory froze the inherited sales permission")
+		}
+		if row.Modulo == "inventario" && !row.Create {
+			t.Fatal("updating base policy erased the own inventory grant")
+		}
+	}
+	state, err := dbpkg.GetEmpresaRolPermisosEstado(req.Context(), conn, 71001, role)
+	if err != nil || len(state.Modulos) != 1 || len(state.Paginas) != 0 {
+		t.Fatal("editor persisted a full snapshot instead of the one edited override")
+	}
+}
+
+func TestEmpresaRolPermissionHandlerRequiresRevisionBeforeWriting(t *testing.T) {
+	r := httptest.NewRequest(http.MethodPut, "/api/empresa/roles_de_usuario?empresa_id=1&rol_id=1", bytes.NewBufferString(`{"permisos_modulo":[],"permisos_pagina":[]}`))
+	r = requestWithTenantContext(r, TenantContext{EmpresaID: 1, AdminEmail: "synthetic@example.invalid"})
+	w := httptest.NewRecorder()
+	EmpresaRolDeUsuarioPermisosHandler(nil)(w, r)
+	if w.Code != http.StatusPreconditionRequired {
+		t.Fatalf("missing revision status=%d", w.Code)
 	}
 }
 

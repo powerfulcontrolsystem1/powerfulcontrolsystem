@@ -25,6 +25,7 @@ type rolPermisoPaginaPayload struct {
 
 type rolPermisosUpsertPayload struct {
 	RolID          int64                     `json:"rol_id"`
+	Revision       string                    `json:"revision"`
 	PermisosModulo []rolPermisoModuloPayload `json:"permisos_modulo"`
 	PermisosPagina []rolPermisoPaginaPayload `json:"permisos_pagina"`
 }
@@ -253,6 +254,7 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 // La matriz inicial del editor conserva las restricciones operativas; sólo una
 // regla persistida explícita puede ampliar esos permisos.
 func buildRolPermissionEditorModuleRows(role string, overrides []dbpkg.RolPermisoModulo) []permissionModuleMatrixRow {
+	role = normalizePermissionRole(role)
 	rows := restrictPermissionModuleRowsForOperationalRole(role, buildPermissionModuleMatrixForRole(role))
 	byKey := make(map[string]bool, len(overrides))
 	for _, item := range overrides {
@@ -262,6 +264,10 @@ func buildRolPermissionEditorModuleRows(role string, overrides []dbpkg.RolPermis
 		for _, action := range permissionActionsCatalogOrdered {
 			if allowed, ok := byKey[permissionModuleActionKey(rows[idx].Modulo, action)]; ok {
 				setPermissionActionOnModuleRow(&rows[idx], action, allowed)
+				if rows[idx].deniedActions == nil {
+					rows[idx].deniedActions = map[string]bool{}
+				}
+				rows[idx].deniedActions[action] = !allowed
 			}
 		}
 	}
@@ -286,38 +292,33 @@ func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "rol_id invalido", http.StatusBadRequest)
 			return
 		}
-		rol, err := dbpkg.GetRolDeUsuarioEmpresaByID(dbSuper, tenant.EmpresaID, rolID)
-		if err != nil {
-			writeEmpresaRolPermissionError(w, err)
-			return
-		}
-		base, err := dbpkg.GetRolDeUsuarioByIDEmpresaScope(dbSuper, tenant.EmpresaID, rol.RolBaseID)
-		if err != nil {
-			writeEmpresaRolPermissionError(w, err)
-			return
-		}
-		if !dbpkg.IsRolDeUsuarioAsignable(rol) || base.EmpresaID != 0 || !dbpkg.IsRolDeUsuarioAsignable(base) {
-			http.Error(w, "el rol y su base deben estar activos y ser empresariales", http.StatusConflict)
-			return
-		}
-		if err := dbpkg.RolesPermisosSchemaReady(dbSuper); err != nil {
-			writeEmpresaRolPermissionError(w, err)
-			return
-		}
 		if r.Method == http.MethodGet {
-			_, modulos, pageOverrides, err := loadEmpresaRolePermissionMatrix(dbSuper, tenant.EmpresaID, rol.ID, "sin_rol")
+			state, err := dbpkg.GetEmpresaRolPermisosEstado(r.Context(), dbSuper, tenant.EmpresaID, rolID)
 			if err != nil {
 				writeEmpresaRolPermissionError(w, err)
 				return
 			}
+			inherited := buildRolPermissionEditorModuleRows(state.Base.Nombre, state.ModulosBase)
+			combined := append(append([]dbpkg.RolPermisoModulo{}, state.ModulosBase...), state.Modulos...)
+			modulos := buildRolPermissionEditorModuleRows(state.Base.Nombre, combined)
+			inheritedPages, ownPages := map[string]bool{}, map[string]bool{}
+			for _, item := range state.PaginasBase {
+				inheritedPages[item.PaginaClave] = item.Permitido
+				ownPages[item.PaginaClave] = item.Permitido
+			}
+			for _, item := range state.Paginas {
+				ownPages[item.PaginaClave] = item.Permitido
+			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
-				"empresa_id": tenant.EmpresaID, "rol_id": rol.ID, "rol_nombre": rol.Nombre,
-				"rol_base_id": base.ID, "rol_base_nombre": base.Nombre,
+				"empresa_id": tenant.EmpresaID, "rol_id": state.Rol.ID, "rol_nombre": state.Rol.Nombre,
+				"rol_base_id": state.Base.ID, "rol_base_nombre": state.Base.Nombre,
+				"revision": state.Revision, "permisos_modulo": state.Modulos, "permisos_pagina": state.Paginas,
 				"acciones_catalogo": append([]string{}, permissionActionsCatalogOrdered...),
 				"acciones_etiqueta": PermissionActionDisplayNameMap(),
 				"modulos_catalogo":  append([]string{}, permissionModulesCatalogOrdered...),
 				"modulos_etiqueta":  PermissionModuleDisplayNameMap(),
-				"modulos":           modulos, "paginas": buildPermissionPagesCatalogFromModuleRows(modulos, pageOverrides),
+				"modulos":           modulos, "paginas": buildPermissionPagesCatalogFromModuleRows(modulos, ownPages),
+				"modulos_heredados": inherited, "paginas_heredadas": buildPermissionPagesCatalogFromModuleRows(inherited, inheritedPages),
 			})
 			return
 		}
@@ -332,12 +333,16 @@ func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "payload o rol_id inconsistente", http.StatusBadRequest)
 			return
 		}
+		if strings.TrimSpace(payload.Revision) == "" {
+			writeEmpresaRolPermissionError(w, dbpkg.ErrRolPermisosRevisionRequired)
+			return
+		}
 		modulos, paginas, err := validateEmpresaRolPermissionPayload(rolID, payload)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := dbpkg.ReplaceEmpresaRolPermisosDeUsuario(dbSuper, tenant.EmpresaID, rolID, modulos, paginas, tenant.AdminEmail); err != nil {
+		if err := dbpkg.ReplaceEmpresaRolPermisosDeUsuarioConRevision(r.Context(), dbSuper, tenant.EmpresaID, rolID, payload.Revision, modulos, paginas, tenant.AdminEmail); err != nil {
 			writeEmpresaRolPermissionError(w, err)
 			return
 		}
@@ -347,6 +352,14 @@ func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 }
 
 func writeEmpresaRolPermissionError(w http.ResponseWriter, err error) {
+	if errors.Is(err, dbpkg.ErrRolPermisosRevisionRequired) {
+		http.Error(w, "debe cargar la revision actual antes de guardar permisos", http.StatusPreconditionRequired)
+		return
+	}
+	if errors.Is(err, dbpkg.ErrRolPermisosRevisionConflict) {
+		http.Error(w, "los permisos propios o heredados cambiaron; recargue antes de guardar", http.StatusConflict)
+		return
+	}
 	if errors.Is(err, sql.ErrNoRows) {
 		http.Error(w, "rol personalizado no encontrado", http.StatusNotFound)
 		return

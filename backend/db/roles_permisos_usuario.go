@@ -1,7 +1,11 @@
 package db
 
 import (
+	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"strings"
 )
@@ -226,6 +230,17 @@ func ListRolPermisosPaginaByRolIDEmpresaScope(dbConn *sql.DB, empresaID, rolID i
 // consulta. LEFT JOIN distingue un rol sin reglas de un ID ajeno o inactivo.
 // La salida respeta el orden de rolIDs para que el personalizado prevalezca.
 func ListRolesPermisosModuloByRolIDEmpresaScope(dbConn *sql.DB, empresaID int64, rolIDs []int64) ([]RolPermisoModulo, error) {
+	if dbConn == nil {
+		return nil, errors.New("conexion de permisos no disponible")
+	}
+	return listRolesPermisosModuloScoped(context.Background(), dbConn, empresaID, rolIDs)
+}
+
+type rolePermissionQuerier interface {
+	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
+}
+
+func listRolesPermisosModuloScoped(ctx context.Context, conn rolePermissionQuerier, empresaID int64, rolIDs []int64) ([]RolPermisoModulo, error) {
 	clause, args, ids, err := rolesPermissionScope(empresaID, rolIDs)
 	if err != nil {
 		return nil, err
@@ -233,13 +248,10 @@ func ListRolesPermisosModuloByRolIDEmpresaScope(dbConn *sql.DB, empresaID int64,
 	if len(ids) == 0 {
 		return []RolPermisoModulo{}, nil
 	}
-	if dbConn == nil {
-		return nil, errors.New("conexion de permisos no disponible")
-	}
-	rows, err := querySQLCompat(dbConn, `SELECT r.id, COALESCE(p.modulo, ''), COALESCE(p.accion, ''), COALESCE(p.permitido, 1)
+	rows, err := conn.QueryContext(ctx, rebindCompatQuery(`SELECT r.id, COALESCE(p.modulo, ''), COALESCE(p.accion, ''), COALESCE(p.permitido, 1)
 		FROM roles_de_usuario r
 		LEFT JOIN roles_de_usuario_permisos p ON p.rol_id = r.id AND COALESCE(p.estado, 'activo') = 'activo'
-		WHERE `+clause+` ORDER BY p.modulo, p.accion`, args...)
+		WHERE `+clause+` ORDER BY p.modulo, p.accion`), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -275,6 +287,13 @@ func ListRolesPermisosModuloByRolIDEmpresaScope(dbConn *sql.DB, empresaID int64,
 
 // ListRolesPermisosPaginaByRolIDEmpresaScope aplica el mismo alcance y orden a páginas.
 func ListRolesPermisosPaginaByRolIDEmpresaScope(dbConn *sql.DB, empresaID int64, rolIDs []int64) ([]RolPermisoPagina, error) {
+	if dbConn == nil {
+		return nil, errors.New("conexion de permisos no disponible")
+	}
+	return listRolesPermisosPaginaScoped(context.Background(), dbConn, empresaID, rolIDs)
+}
+
+func listRolesPermisosPaginaScoped(ctx context.Context, conn rolePermissionQuerier, empresaID int64, rolIDs []int64) ([]RolPermisoPagina, error) {
 	clause, args, ids, err := rolesPermissionScope(empresaID, rolIDs)
 	if err != nil {
 		return nil, err
@@ -282,13 +301,10 @@ func ListRolesPermisosPaginaByRolIDEmpresaScope(dbConn *sql.DB, empresaID int64,
 	if len(ids) == 0 {
 		return []RolPermisoPagina{}, nil
 	}
-	if dbConn == nil {
-		return nil, errors.New("conexion de permisos no disponible")
-	}
-	rows, err := querySQLCompat(dbConn, `SELECT r.id, COALESCE(p.pagina_clave, ''), COALESCE(p.permitido, 1)
+	rows, err := conn.QueryContext(ctx, rebindCompatQuery(`SELECT r.id, COALESCE(p.pagina_clave, ''), COALESCE(p.permitido, 1)
 		FROM roles_de_usuario r
 		LEFT JOIN roles_de_usuario_paginas_permisos p ON p.rol_id = r.id AND COALESCE(p.estado, 'activo') = 'activo'
-		WHERE `+clause+` ORDER BY p.pagina_clave`, args...)
+		WHERE `+clause+` ORDER BY p.pagina_clave`), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -352,6 +368,133 @@ func ReplaceEmpresaRolPermisosDeUsuario(dbConn *sql.DB, empresaID, rolID int64, 
 	return replaceRolPermisosDeUsuario(dbConn, empresaID, rolID, modulos, paginas, usuario)
 }
 
+var ErrRolPermisosRevisionRequired = errors.New("revision de permisos requerida")
+var ErrRolPermisosRevisionConflict = errors.New("la politica de permisos fue modificada; recargue antes de guardar")
+
+// EmpresaRolPermisosEstado contiene una lectura coherente de la política propia y
+// heredada. Las listas propias son excepciones; una lista vacía conserva herencia.
+type EmpresaRolPermisosEstado struct {
+	Rol         RolDeUsuario
+	Base        RolDeUsuario
+	ModulosBase []RolPermisoModulo
+	PaginasBase []RolPermisoPagina
+	Modulos     []RolPermisoModulo
+	Paginas     []RolPermisoPagina
+	Revision    string
+}
+
+// GetEmpresaRolPermisosEstado usa un único snapshot para que matriz y revisión
+// nunca representen políticas leídas a ambos lados de una edición concurrente.
+func GetEmpresaRolPermisosEstado(ctx context.Context, dbConn *sql.DB, empresaID, rolID int64) (*EmpresaRolPermisosEstado, error) {
+	if dbConn == nil {
+		return nil, errors.New("conexion de permisos no disponible")
+	}
+	tx, err := dbConn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	state, err := loadEmpresaRolPermisosEstado(ctx, tx, empresaID, rolID, false)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return state, nil
+}
+
+func loadEmpresaRolPermisosEstado(ctx context.Context, tx *sql.Tx, empresaID, rolID int64, lock bool) (*EmpresaRolPermisosEstado, error) {
+	if empresaID <= 0 || rolID <= 0 {
+		return nil, sql.ErrNoRows
+	}
+	state := &EmpresaRolPermisosEstado{Modulos: []RolPermisoModulo{}, Paginas: []RolPermisoPagina{}, ModulosBase: []RolPermisoModulo{}, PaginasBase: []RolPermisoPagina{}}
+	query := `SELECT r.id, r.empresa_id, r.tipo_empresa_id, COALESCE(r.nombre, ''),
+		COALESCE(r.estado, 'activo'), r.rol_base_id,
+		b.id, COALESCE(b.empresa_id, 0), b.tipo_empresa_id, COALESCE(b.nombre, ''), COALESCE(b.estado, 'activo')
+		FROM roles_de_usuario r JOIN roles_de_usuario b ON b.id = r.rol_base_id
+		WHERE r.id = ? AND r.empresa_id = ? AND COALESCE(b.empresa_id, 0) = 0`
+	if lock {
+		// Todos los escritores de matrices bloquean el rol. El bloqueo compartido
+		// de la base impide que cambie entre comparar la revisión y guardar.
+		query += ` FOR UPDATE OF r FOR SHARE OF b`
+	}
+	err := tx.QueryRowContext(ctx, rebindCompatQuery(query), rolID, empresaID).Scan(
+		&state.Rol.ID, &state.Rol.EmpresaID, &state.Rol.TipoEmpresaID, &state.Rol.Nombre, &state.Rol.Estado, &state.Rol.RolBaseID,
+		&state.Base.ID, &state.Base.EmpresaID, &state.Base.TipoEmpresaID, &state.Base.Nombre, &state.Base.Estado)
+	if err != nil {
+		return nil, err
+	}
+	if !IsRolDeUsuarioAsignable(&state.Rol) || !IsRolDeUsuarioAsignable(&state.Base) {
+		return nil, sql.ErrNoRows
+	}
+	ids := []int64{state.Base.ID, state.Rol.ID}
+	modules, err := listRolesPermisosModuloScoped(ctx, tx, empresaID, ids)
+	if err != nil {
+		return nil, err
+	}
+	pages, err := listRolesPermisosPaginaScoped(ctx, tx, empresaID, ids)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range modules {
+		if item.RolID == state.Base.ID {
+			state.ModulosBase = append(state.ModulosBase, item)
+		} else {
+			state.Modulos = append(state.Modulos, item)
+		}
+	}
+	for _, item := range pages {
+		if item.RolID == state.Base.ID {
+			state.PaginasBase = append(state.PaginasBase, item)
+		} else {
+			state.Paginas = append(state.Paginas, item)
+		}
+	}
+	// El orden SQL es determinista. La versión cubre cambios de semántica del
+	// contrato y debe incrementarse si cambia la política heredada en código.
+	raw, err := json.Marshal(struct {
+		Version string
+		State   *EmpresaRolPermisosEstado
+	}{Version: "empresa-roles-v1", State: state})
+	if err != nil {
+		return nil, err
+	}
+	digest := sha256.Sum256(raw)
+	state.Revision = hex.EncodeToString(digest[:])
+	return state, nil
+}
+
+// ReplaceEmpresaRolPermisosDeUsuarioConRevision evita sobrescribir decisiones
+// nuevas desde un editor obsoleto y conserva sólo excepciones propias explícitas.
+func ReplaceEmpresaRolPermisosDeUsuarioConRevision(ctx context.Context, dbConn *sql.DB, empresaID, rolID int64, revision string, modulos []RolPermisoModulo, paginas []RolPermisoPagina, usuario string) error {
+	if strings.TrimSpace(revision) == "" {
+		return ErrRolPermisosRevisionRequired
+	}
+	if dbConn == nil {
+		return errors.New("conexion de permisos no disponible")
+	}
+	if err := validateRolPermisosInput(rolID, modulos, paginas); err != nil {
+		return err
+	}
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	state, err := loadEmpresaRolPermisosEstado(ctx, tx, empresaID, rolID, true)
+	if err != nil {
+		return err
+	}
+	if state.Revision != revision {
+		return ErrRolPermisosRevisionConflict
+	}
+	if err := writeRolPermisosTx(tx, rolID, modulos, paginas, usuario); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // ReplaceRolPermisosDeUsuario reemplaza en bloque los permisos por modulo y pagina de un rol.
 func ReplaceRolPermisosDeUsuario(dbConn *sql.DB, rolID int64, permisosModulo []RolPermisoModulo, permisosPagina []RolPermisoPagina, usuarioCreador string) error {
 	return replaceRolPermisosDeUsuario(dbConn, 0, rolID, permisosModulo, permisosPagina, usuarioCreador)
@@ -373,11 +516,17 @@ func replaceRolPermisosDeUsuario(dbConn *sql.DB, empresaID, rolID int64, permiso
 	if err = tx.QueryRow(`SELECT id FROM roles_de_usuario WHERE id = ? AND (? = 0 OR empresa_id = ?) AND COALESCE(estado, 'activo') = 'activo' FOR UPDATE`, rolID, empresaID, empresaID).Scan(&lockedID); err != nil {
 		return err
 	}
-
-	if _, err = tx.Exec(`DELETE FROM roles_de_usuario_permisos WHERE rol_id = ?`, rolID); err != nil {
+	if err := writeRolPermisosTx(tx, rolID, permisosModulo, permisosPagina, usuarioCreador); err != nil {
 		return err
 	}
-	if _, err = tx.Exec(`DELETE FROM roles_de_usuario_paginas_permisos WHERE rol_id = ?`, rolID); err != nil {
+	return tx.Commit()
+}
+
+func writeRolPermisosTx(tx *sql.Tx, rolID int64, permisosModulo []RolPermisoModulo, permisosPagina []RolPermisoPagina, usuarioCreador string) error {
+	if _, err := tx.Exec(`DELETE FROM roles_de_usuario_permisos WHERE rol_id = ?`, rolID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM roles_de_usuario_paginas_permisos WHERE rol_id = ?`, rolID); err != nil {
 		return err
 	}
 
@@ -387,7 +536,7 @@ func replaceRolPermisosDeUsuario(dbConn *sql.DB, empresaID, rolID int64, permiso
 		if item.Permitido {
 			permitido = 1
 		}
-		if _, err = tx.Exec(`INSERT INTO roles_de_usuario_permisos (
+		if _, err := tx.Exec(`INSERT INTO roles_de_usuario_permisos (
 			rol_id, modulo, accion, permitido, usuario_creador, estado, fecha_creacion, fecha_actualizacion
 		) VALUES (?, ?, ?, ?, ?, 'activo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 			item.RolID, item.Modulo, item.Accion, permitido, usuarioCreador); err != nil {
@@ -401,7 +550,7 @@ func replaceRolPermisosDeUsuario(dbConn *sql.DB, empresaID, rolID int64, permiso
 		if item.Permitido {
 			permitido = 1
 		}
-		if _, err = tx.Exec(`INSERT INTO roles_de_usuario_paginas_permisos (
+		if _, err := tx.Exec(`INSERT INTO roles_de_usuario_paginas_permisos (
 			rol_id, pagina_clave, permitido, usuario_creador, estado, fecha_creacion, fecha_actualizacion
 		) VALUES (?, ?, ?, ?, 'activo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 			item.RolID, item.PaginaClave, permitido, usuarioCreador); err != nil {
@@ -409,9 +558,6 @@ func replaceRolPermisosDeUsuario(dbConn *sql.DB, empresaID, rolID int64, permiso
 		}
 	}
 
-	if err = tx.Commit(); err != nil {
-		return err
-	}
 	return nil
 }
 
