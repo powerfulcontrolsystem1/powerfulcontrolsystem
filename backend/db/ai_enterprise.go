@@ -704,21 +704,29 @@ func ConfigureEmpresaAIHotelRoomStation(dbConn *sql.DB, empresaID int64, plan Em
 	if err := NormalizeEmpresaAIHotelRoomPlan(&plan); err != nil {
 		return nil, err
 	}
-	if err := EnsureEmpresaEstacionPrefsSchema(dbConn); err != nil {
+	if err := EmpresaEstacionPrefsSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
-	if err := EnsureEmpresaTarifasPorDiaSchema(dbConn); err != nil {
+	if err := EmpresaTarifasPorDiaSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
-	pref, err := GetEmpresaEstacionPref(dbConn, empresaID, 0, "estaciones_config")
+	tx, err := dbConn.Begin()
 	if err != nil {
 		return nil, err
 	}
-	if pref == nil {
-		return nil, fmt.Errorf("no existe configuracion de estaciones para la empresa")
+	defer tx.Rollback()
+	var rawConfig string
+	if err := queryRowTxSQLCompat(tx, `SELECT COALESCE(valor, '')
+		FROM empresa_estacion_prefs
+		WHERE empresa_id=? AND estacion_id=0 AND clave='estaciones_config'
+		FOR UPDATE`, empresaID).Scan(&rawConfig); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no existe configuracion de estaciones para la empresa")
+		}
+		return nil, err
 	}
 	var cfg map[string]interface{}
-	if err := json.Unmarshal([]byte(pref.Valor), &cfg); err != nil {
+	if err := json.Unmarshal([]byte(rawConfig), &cfg); err != nil {
 		return nil, fmt.Errorf("configuracion de estaciones invalida")
 	}
 	items, ok := cfg["estaciones"].([]interface{})
@@ -738,7 +746,8 @@ func ConfigureEmpresaAIHotelRoomStation(dbConn *sql.DB, empresaID int64, plan Em
 		}
 		stationFound = true
 		station["nombre"] = plan.NombreHabitacion
-		station["tipo_estacion"] = "hotel"
+		station["tipo_estacion"] = "normal"
+		station["tipo_operacion"] = "hotel"
 		station["activa"] = plan.Activa
 		station["moneda"] = plan.Moneda
 		stationCode = strings.TrimSpace(fmt.Sprint(station["codigo"]))
@@ -756,13 +765,13 @@ func ConfigureEmpresaAIHotelRoomStation(dbConn *sql.DB, empresaID int64, plan Em
 	if err != nil {
 		return nil, err
 	}
-	tx, err := dbConn.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 	if _, err := execTxSQLCompat(tx, `UPDATE empresa_estacion_prefs SET valor=?, usuario_creador=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND estacion_id=0 AND clave='estaciones_config'`, string(cfgJSON), strings.TrimSpace(usuario), empresaID); err != nil {
 		return nil, err
+	}
+	if !plan.ConservarConfiguracion {
+		if _, err := execTxSQLCompat(tx, `UPDATE empresa_tarifas_por_dia SET estado='inactivo', fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND estacion_id=? AND COALESCE(estado,'activo')='activo'`, empresaID, plan.EstacionID); err != nil {
+			return nil, err
+		}
 	}
 	ids := make([]int64, 0, len(plan.Tarifas))
 	for _, rate := range plan.Tarifas {

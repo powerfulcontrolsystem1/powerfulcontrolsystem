@@ -11,9 +11,9 @@
     <section class="empresa-module-header" style="margin-bottom:18px;">
       <div>
         <span class="empresa-module-kicker">Liquidación variable</span>
-        <h2 style="margin:6px 0 8px;">Comisiones por servicio con reglas claras</h2>
+        <h2 style="margin:6px 0 8px;">Comisionistas con reglas claras</h2>
         <p class="page-header-lead" style="margin:0;">
-          Define porcentajes, escalas y topes por rol o servicio para sostener pagos variables con trazabilidad y control de nómina.
+          Define el porcentaje que recibe cada comisionista y decide si la base incluye solo servicios o también los productos aplicados.
         </p>
       </div>
       <div class="empresa-module-overview">
@@ -33,7 +33,7 @@
     </section>
 
     <div class="page-header">
-      <h1>Módulo de comisiones por servicio</h1>
+      <h1>Módulo de comisionistas</h1>
     </div>
     <p class="form-help" style="margin:0 0 12px 0;">
       Configura comisiones, define escalas y topes por rol/servicio, registra ajustes manuales y revisa trazabilidad para liquidación de nómina.
@@ -57,6 +57,13 @@
         <div class="form-col" style="max-width:280px;">
           <label class="form-label" for="cfgFiltroServicio">Filtro de servicio</label>
           <input id="cfgFiltroServicio" class="form-input" placeholder="Ej: lavado" value="lavado">
+        </div>
+        <div class="form-col" style="max-width:320px;">
+          <label class="form-label">Base de la comisión</label>
+          <label class="form-help" style="display:flex;gap:8px;align-items:center;">
+            <input id="cfgIncluirProductos" type="checkbox"> Incluir productos vendidos o aplicados
+          </label>
+          <span class="form-help">Desactivado: el porcentaje se calcula únicamente sobre servicios. Activado: servicios y productos se facturan juntos y ambos integran la base.</span>
         </div>
         <div class="form-col" style="max-width:280px;">
           <label class="form-label">Aplicación por defecto</label>
@@ -87,7 +94,7 @@
       <div class="form-row">
         <div class="form-col" style="max-width:240px;">
           <label class="form-label" for="escalaRol">Rol operación</label>
-          <input id="escalaRol" class="form-input" placeholder="Ej: lavador, supervisor">
+          <input id="escalaRol" class="form-input" placeholder="Ej: comisionista, estilista">
         </div>
         <div class="form-col" style="max-width:260px;">
           <label class="form-label" for="escalaServicio">Filtro servicio</label>
@@ -146,13 +153,13 @@
       </div>
       <div class="form-row">
         <div class="form-col" style="max-width:220px;">
-          <label class="form-label" for="ajUsuarioLavador">Lavador</label>
-          <input id="ajUsuarioLavador" class="form-input" placeholder="email o codigo" maxlength="180" list="usuariosEmpresaList">
+          <label class="form-label" for="ajUsuarioLavador">Comisionista</label>
+          <input id="ajUsuarioLavador" class="form-input" placeholder="correo o nombre" maxlength="180" list="usuariosEmpresaList">
           <datalist id="usuariosEmpresaList"></datalist>
         </div>
         <div class="form-col" style="max-width:220px;">
           <label class="form-label" for="ajRolOperacion">Rol operación</label>
-          <input id="ajRolOperacion" class="form-input" placeholder="Ej: lavador" maxlength="120">
+          <input id="ajRolOperacion" class="form-input" placeholder="Ej: comisionista" maxlength="120">
         </div>
         <div class="form-col" style="max-width:220px;">
           <label class="form-label" for="ajMonto">Monto ajuste (+/-)</label>
@@ -225,12 +232,12 @@
           <input id="fHasta" class="form-input" type="date">
         </div>
         <div class="form-col" style="max-width:260px;">
-          <label class="form-label" for="fUsuarioLavador">Lavador</label>
+          <label class="form-label" for="fUsuarioLavador">Comisionista</label>
           <input id="fUsuarioLavador" class="form-input" placeholder="email o nombre">
         </div>
         <div class="form-col" style="max-width:220px;">
           <label class="form-label" for="fRolOperacion">Rol operación</label>
-          <input id="fRolOperacion" class="form-input" placeholder="Ej: lavador">
+          <input id="fRolOperacion" class="form-input" placeholder="Ej: comisionista">
         </div>
         <div class="form-col" style="max-width:220px;">
           <label class="form-label" for="fServicioFiltro">Filtro servicio</label>
@@ -284,12 +291,12 @@
       <div id="resumenBox" class="form-help" ></div>
 
       <div >
-        <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Acumulado por lavador</h3>
+        <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Acumulado por comisionista</h3>
         <div style="overflow:auto;">
           <table class="crud-table">
             <thead>
               <tr>
-                <th>Lavador</th>
+                <th>Comisionista</th>
                 <th>Movimientos</th>
                 <th>Base servicios</th>
                 <th>Total comision</th>
@@ -317,7 +324,7 @@
                 <th>Servicio</th>
                 <th>Categoria</th>
                 <th>Usuario origen</th>
-                <th>Lavador</th>
+                <th>Comisionista</th>
                 <th>Rol</th>
                 <th>Base servicio</th>
                 <th>%</th>
@@ -350,7 +357,7 @@
           <input id="liqHasta" class="form-input" type="date">
         </div>
         <div class="form-col" style="max-width:260px;">
-          <label class="form-label" for="liqLavador">Lavador / identificador</label>
+          <label class="form-label" for="liqLavador">Comisionista / identificador</label>
           <input id="liqLavador" class="form-input" placeholder="email, codigo o documento">
         </div>
         <div class="form-col" style="max-width:260px;">
@@ -461,6 +468,7 @@
           porcentaje_comision: Math.max(0, Math.min(100, Number(document.getElementById('cfgPorcentaje').value || 0))),
           filtro_servicio: normalize(document.getElementById('cfgFiltroServicio').value) || 'lavado',
           aplicar_automaticamente: Boolean(document.getElementById('cfgAplicarAuto').checked),
+          incluir_productos: Boolean(document.getElementById('cfgIncluirProductos').checked),
           observaciones: normalize(document.getElementById('cfgObservaciones').value)
         };
       }
@@ -471,6 +479,7 @@
         document.getElementById('cfgPorcentaje').value = Number(cfg.porcentaje_comision || 10);
         document.getElementById('cfgFiltroServicio').value = normalize(cfg.filtro_servicio) || 'lavado';
         document.getElementById('cfgAplicarAuto').checked = cfg.aplicar_automaticamente !== false;
+        document.getElementById('cfgIncluirProductos').checked = Boolean(cfg.incluir_productos);
         document.getElementById('cfgObservaciones').value = normalize(cfg.observaciones);
       }
 
@@ -629,8 +638,8 @@
           servicio_codigo: normalize(document.getElementById('ajServicioCodigo').value),
           servicio_nombre: normalize(document.getElementById('ajServicioNombre').value),
           servicio_categoria: normalize(document.getElementById('ajServicioCategoria').value),
-          usuario_lavador: normalize(document.getElementById('ajUsuarioLavador').value),
-          usuario_lavador_id: usuarioIDPorEntrada(document.getElementById('ajUsuarioLavador').value),
+          usuario_comisionista: normalize(document.getElementById('ajUsuarioLavador').value),
+          usuario_comisionista_id: usuarioIDPorEntrada(document.getElementById('ajUsuarioLavador').value),
           rol_operacion: normalize(document.getElementById('ajRolOperacion').value),
           venta_referencia: normalize(document.getElementById('ajVentaRef').value),
           moneda: normalize(document.getElementById('ajMoneda').value) || 'COP',
@@ -643,8 +652,8 @@
 
       function registrarAjuste() {
         var payload = buildAjustePayload();
-        if (!payload.usuario_lavador) {
-          setMessage('ajusteMsg', 'usuario_lavador es obligatorio.', true);
+        if (!payload.usuario_comisionista) {
+          setMessage('ajusteMsg', 'El comisionista es obligatorio.', true);
           return Promise.resolve();
         }
         if (Math.abs(payload.monto_ajuste) < 0.0001) {
@@ -691,7 +700,7 @@
 
         if (desde) url.searchParams.set('desde', desde);
         if (hasta) url.searchParams.set('hasta', hasta);
-        if (usuario) url.searchParams.set('usuario_lavador', usuario);
+        if (usuario) url.searchParams.set('usuario_comisionista', usuario);
         if (rolOperacion) url.searchParams.set('rol_operacion', rolOperacion);
         if (servicioFiltro) url.searchParams.set('servicio_filtro', servicioFiltro);
         if (origen) url.searchParams.set('origen', origen);
@@ -720,13 +729,13 @@
           ' | Ajustes manuales: ' + money(resumen.total_ajustes_manuales) +
           ' | Pendientes aprobar: ' + Number(resumen.pendientes_aprobacion || 0) +
           ' | Pendientes liquidar: ' + money(resumen.total_pendientes_liquidar) +
-          ' | Lavadores con comision: ' + Number(resumen.lavadores_con_comision || 0);
+          ' | Comisionistas con comisión: ' + Number(resumen.comisionistas_con_comision || resumen.lavadores_con_comision || 0);
 
         document.getElementById('resumenBox').textContent = txt;
       }
 
       function renderLavadores(report) {
-        var rows = report && Array.isArray(report.lavadores) ? report.lavadores : [];
+        var rows = report && Array.isArray(report.comisionistas) ? report.comisionistas : (report && Array.isArray(report.lavadores) ? report.lavadores : []);
         var body = document.getElementById('tablaLavadoresBody');
         if (!rows.length) {
           body.innerHTML = '<tr><td colspan="4" class="text-empty" style="text-align:center;">Sin datos para el período seleccionado</td></tr>';
@@ -734,7 +743,7 @@
         }
 
         body.innerHTML = rows.map(function (item) {
-          var lavador = item.usuario_lavador || '-';
+          var lavador = item.usuario_comisionista || item.usuario_lavador || '-';
           if (item.usuario_id) lavador += ' #' + String(item.usuario_id);
           return '<tr>' +
             '<td>' + escapeHtml(lavador) + '</td>' +
@@ -773,7 +782,7 @@
             '<td>' + escapeHtml(item.servicio_nombre || item.servicio_codigo || '-') + '</td>' +
             '<td>' + escapeHtml(item.servicio_categoria || '-') + '</td>' +
             '<td>' + escapeHtml(formatUsuarioMovimiento(item.usuario_origen, item.usuario_origen_id)) + '</td>' +
-            '<td>' + escapeHtml(formatUsuarioMovimiento(item.usuario_lavador, item.usuario_lavador_id)) + '</td>' +
+            '<td>' + escapeHtml(formatUsuarioMovimiento(item.usuario_comisionista || item.usuario_lavador, item.usuario_comisionista_id || item.usuario_lavador_id)) + '</td>' +
             '<td>' + escapeHtml(item.rol_operacion || '-') + '</td>' +
             '<td>' + money(item.base_servicio) + '</td>' +
             '<td>' + money(item.porcentaje_comision) + '</td>' +
@@ -869,7 +878,7 @@
         url.searchParams.set('periodo_hasta', hasta);
         if (identificador) {
           url.searchParams.set('identificador', identificador);
-          url.searchParams.set('usuario_lavador', identificador);
+          url.searchParams.set('usuario_comisionista', identificador);
           url.searchParams.set('empleado_codigo', identificador);
           url.searchParams.set('empleado_documento', identificador);
         }

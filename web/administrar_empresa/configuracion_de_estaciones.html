@@ -93,7 +93,7 @@
             <div class="empresa-section-header">
               <div>
                 <label class="form-label">Cajas fisicas de la empresa</label>
-                <p class="form-help">Configura el codigo, nombre y descripcion de cada caja para operar varias cajas en simultaneo.</p>
+                <p class="form-help">Configura cada caja y limita las estaciones que puede ver. El modo solo activar sirve para porteria: permite dar entrada a la estacion, pero no cobrar ni modificar la cuenta.</p>
               </div>
               <div class="form-actions">
                 <button id="btnAgregarCajaConfig" class="btn secondary" type="button">Agregar caja</button>
@@ -113,6 +113,8 @@
                     <th>Codigo</th>
                     <th>Nombre</th>
                     <th>Bodega de descuento</th>
+                    <th>Estaciones visibles</th>
+                    <th>Modo</th>
                     <th>Descripcion</th>
                     <th>Acciones</th>
                   </tr>
@@ -380,7 +382,11 @@
               </th>
               <th>Operación</th>
               <th>Información visible</th>
-              <th>Usuario asignado</th>
+              <th>Responsable general</th>
+              <th>Mesero a cargo</th>
+              <th>Comisionista predeterminado</th>
+              <th>Selector de comisionista</th>
+              <th>Caja propia</th>
               <th>Tipo técnico</th>
               <th>Camara</th>
               <th>Carrito unificado</th>
@@ -565,7 +571,7 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgTarjetaComision" type="checkbox" checked>
-              Activar tarjeta de lavador / comisión
+              Activar tarjeta de comisionista
             </label>
           </div>
         </div>
@@ -837,8 +843,52 @@
         nombre: pos === 1 ? 'Caja principal' : ('Caja ' + pos),
         descripcion: pos === 1 ? 'Caja principal' : '',
         bodega_id: 0,
+        limitar_estaciones: false,
+        estaciones: [],
+        modo_estaciones: 'operar',
         activa: true
       };
+    }
+
+    function parseStationRangeList(value) {
+      if (Array.isArray(value)) {
+        return Array.from(new Set(value.map(function(item) { return Math.trunc(Number(item || 0)); }).filter(function(id) { return id > 0 && id <= 500; }))).sort(function(a, b) { return a - b; });
+      }
+      var found = {};
+      String(value == null ? '' : value).split(/[;,\s]+/).forEach(function(part) {
+        var token = String(part || '').trim();
+        if (!token) return;
+        var range = token.match(/^(\d+)-(\d+)$/);
+        if (range) {
+          var start = Math.max(1, Math.min(500, Number(range[1])));
+          var end = Math.max(1, Math.min(500, Number(range[2])));
+          if (start > end) { var swap = start; start = end; end = swap; }
+          for (var id = start; id <= end; id += 1) found[id] = true;
+          return;
+        }
+        var single = Math.trunc(Number(token || 0));
+        if (single > 0 && single <= 500) found[single] = true;
+      });
+      return Object.keys(found).map(Number).sort(function(a, b) { return a - b; });
+    }
+
+    function formatStationRangeList(value) {
+      var ids = parseStationRangeList(value);
+      if (!ids.length) return '';
+      var parts = [];
+      var start = ids[0];
+      var previous = ids[0];
+      for (var index = 1; index <= ids.length; index += 1) {
+        var currentID = ids[index];
+        if (currentID === previous + 1) {
+          previous = currentID;
+          continue;
+        }
+        parts.push(start === previous ? String(start) : (String(start) + '-' + String(previous)));
+        start = currentID;
+        previous = currentID;
+      }
+      return parts.join(',');
     }
 
     function normalizeCajasConfig(raw) {
@@ -854,12 +904,22 @@
         var nombre = String(item.nombre || item.caja_nombre || item.name || fallback.nombre).trim();
         var descripcion = String(item.descripcion || item.caja_descripcion || item.description || '').trim();
         var bodegaID = Math.max(0, Math.trunc(Number(item.bodega_id || item.bodegaID || item.bodega || fallback.bodega_id || 0) || 0));
+        var stationIDs = parseStationRangeList(item.estaciones || item.station_ids || item.estaciones_visibles || []);
+        var hasExplicitLimit = item.limitar_estaciones !== undefined || item.restringir_estaciones !== undefined;
+        var limitStations = hasExplicitLimit
+          ? toBool(item.limitar_estaciones !== undefined ? item.limitar_estaciones : item.restringir_estaciones)
+          : stationIDs.length > 0;
+        var stationMode = String(item.modo_estaciones || item.modo || 'operar').trim().toLowerCase();
+        if (stationMode !== 'solo_activar') stationMode = 'operar';
         out.push({
           id: String(item.id || item.uid || codigo.toLowerCase().replace(/[^a-z0-9_-]/g, '_')).trim(),
           codigo: codigo,
           nombre: nombre || fallback.nombre,
           descripcion: descripcion,
           bodega_id: bodegaID,
+          limitar_estaciones: limitStations,
+          estaciones: stationIDs,
+          modo_estaciones: stationMode,
           activa: item.activa === undefined && item.active === undefined ? true : toBool(item.activa !== undefined ? item.activa : item.active)
         });
       });
@@ -1395,6 +1455,14 @@
           descripcion: String(current.descripcion || current.informacion || '').trim(),
           usuario_asignado: String(current.usuario_asignado || current.responsable || '').trim(),
           usuario_asignado_id: Math.max(0, Math.trunc(Number(current.usuario_asignado_id || current.responsable_id || 0) || 0)),
+          mesero_asignado: String(current.mesero_asignado || '').trim(),
+          mesero_asignado_id: Math.max(0, Math.trunc(Number(current.mesero_asignado_id || 0) || 0)),
+          comisionista_asignado: String(current.comisionista_asignado || current.usuario_lavador || '').trim(),
+          comisionista_asignado_id: Math.max(0, Math.trunc(Number(current.comisionista_asignado_id || current.usuario_lavador_id || 0) || 0)),
+          mostrar_comisionista: current.mostrar_comisionista === undefined ? true : toBool(current.mostrar_comisionista),
+          conservar_ultimo_comisionista: toBool(current.conservar_ultimo_comisionista),
+          funciona_como_caja: toBool(current.funciona_como_caja || current.es_caja),
+          caja_codigo: String(current.caja_codigo || ('ESTACION-' + (i + 1))).trim().toUpperCase(),
           tipo_estacion: String(current.tipo_estacion || current.tipo || '').trim().toLowerCase() === 'camara' ? 'camara' : 'normal',
           camara_id: Math.max(0, Math.trunc(Number(current.camara_id || current.camaraId || 0) || 0)),
           carrito: normalizeStationCarritoConfig(current.carrito || current.carrito_ui)
@@ -1618,6 +1686,12 @@
           '<td><input class="form-input" data-caja-codigo value="' + sanitize(caja.codigo) + '" placeholder="CAJA-' + (index + 1) + '"></td>' +
           '<td><input class="form-input" data-caja-nombre value="' + sanitize(caja.nombre) + '" placeholder="FRUTERA"></td>' +
           '<td><select class="form-input" data-caja-bodega>' + renderBodegaOptions(caja.bodega_id) + '</select></td>' +
+          '<td><label class="form-help" style="display:flex;gap:6px;align-items:center;"><input type="checkbox" data-caja-limitar ' + (caja.limitar_estaciones ? 'checked' : '') + '> Limitar</label>' +
+            '<input class="form-input" data-caja-estaciones value="' + sanitize(formatStationRangeList(caja.estaciones)) + '" placeholder="Ej: 1-5,8" aria-label="Estaciones visibles"></td>' +
+          '<td><select class="form-input" data-caja-modo>' +
+            '<option value="operar"' + (caja.modo_estaciones === 'operar' ? ' selected' : '') + '>Operar y cobrar</option>' +
+            '<option value="solo_activar"' + (caja.modo_estaciones === 'solo_activar' ? ' selected' : '') + '>Solo activar</option>' +
+          '</select></td>' +
           '<td><input class="form-input" data-caja-descripcion value="' + sanitize(caja.descripcion) + '" placeholder="Ej: caja de frutera"></td>' +
           '<td><button type="button" class="btn secondary" data-caja-eliminar>Eliminar</button></td>' +
           '</tr>';
@@ -1637,6 +1711,9 @@
         var codigo = row.querySelector('[data-caja-codigo]');
         var nombre = row.querySelector('[data-caja-nombre]');
         var bodega = row.querySelector('[data-caja-bodega]');
+        var limitar = row.querySelector('[data-caja-limitar]');
+        var estaciones = row.querySelector('[data-caja-estaciones]');
+        var modo = row.querySelector('[data-caja-modo]');
         var descripcion = row.querySelector('[data-caja-descripcion]');
         var activa = row.querySelector('[data-caja-activa]');
         return {
@@ -1644,6 +1721,9 @@
           codigo: codigo ? codigo.value : '',
           nombre: nombre ? nombre.value : '',
           bodega_id: bodega ? Math.max(0, Math.trunc(Number(bodega.value || 0) || 0)) : 0,
+          limitar_estaciones: limitar ? !!limitar.checked : false,
+          estaciones: estaciones ? parseStationRangeList(estaciones.value) : [],
+          modo_estaciones: modo ? modo.value : 'operar',
           descripcion: descripcion ? descripcion.value : '',
           activa: activa ? !!activa.checked : true
         };
@@ -2060,7 +2140,7 @@
     function renderRows(cfg) {
       var tbody = document.querySelector('#estacionesTable tbody');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
-        tbody.innerHTML = '<tr><td colspan="12">No hay estaciones configuradas.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="17">No hay estaciones configuradas.</td></tr>';
         applyStationLabelsToDOM(cfg, tbody);
         updateMasterCheckboxes();
         return;
@@ -2084,6 +2164,12 @@
           '</select></td>' +
           '<td><input class="form-input" data-descripcion-idx="' + idx + '" value="' + sanitize(est.descripcion || '') + '" placeholder="Tarifa, capacidad o uso"></td>' +
           '<td><input class="form-input" data-usuario-idx="' + idx + '" value="' + sanitize(est.usuario_asignado || '') + '" list="estacionesUsuariosList" placeholder="Nombre o correo"></td>' +
+          '<td><input class="form-input" data-mesero-idx="' + idx + '" value="' + sanitize(est.mesero_asignado || '') + '" list="estacionesUsuariosList" placeholder="Mesero responsable"></td>' +
+          '<td><input class="form-input" data-comisionista-idx="' + idx + '" value="' + sanitize(est.comisionista_asignado || '') + '" list="estacionesUsuariosList" placeholder="Comisionista por defecto"></td>' +
+          '<td><label><input type="checkbox" data-mostrar-comisionista-idx="' + idx + '" ' + (est.mostrar_comisionista !== false ? 'checked' : '') + '> Mostrar</label><br>' +
+            '<label><input type="checkbox" data-recordar-comisionista-idx="' + idx + '" ' + (est.conservar_ultimo_comisionista ? 'checked' : '') + '> Recordar último</label></td>' +
+          '<td><label><input type="checkbox" data-caja-idx="' + idx + '" ' + (est.funciona_como_caja ? 'checked' : '') + '> Funciona como caja</label>' +
+            '<input class="form-input" data-caja-codigo-idx="' + idx + '" value="' + sanitize(est.caja_codigo || ('ESTACION-' + est.id)) + '" placeholder="Código de caja"></td>' +
           '<td><select class="form-input" data-tipo-estacion-idx="' + idx + '"><option value="normal"' + (est.tipo_estacion !== 'camara' ? ' selected' : '') + '>Normal</option><option value="camara"' + (est.tipo_estacion === 'camara' ? ' selected' : '') + '>Camara</option></select></td>' +
           '<td><select class="form-input" data-camara-id-idx="' + idx + '">' + buildCamaraOptions(est.camara_id) + '</select></td>' +
           '<td><button type="button" class="btn secondary" data-config-station="' + Number(est.id || 0) + '">Editar checks</button></td>' +
@@ -2120,6 +2206,12 @@
       var operacionInputs = document.querySelectorAll('#estacionesTable tbody select[data-operacion-idx]');
       var descripcionInputs = document.querySelectorAll('#estacionesTable tbody input[data-descripcion-idx]');
       var usuarioInputs = document.querySelectorAll('#estacionesTable tbody input[data-usuario-idx]');
+      var meseroInputs = document.querySelectorAll('#estacionesTable tbody input[data-mesero-idx]');
+      var comisionistaInputs = document.querySelectorAll('#estacionesTable tbody input[data-comisionista-idx]');
+      var mostrarComisionistaInputs = document.querySelectorAll('#estacionesTable tbody input[data-mostrar-comisionista-idx]');
+      var recordarComisionistaInputs = document.querySelectorAll('#estacionesTable tbody input[data-recordar-comisionista-idx]');
+      var cajaInputs = document.querySelectorAll('#estacionesTable tbody input[data-caja-idx]');
+      var cajaCodigoInputs = document.querySelectorAll('#estacionesTable tbody input[data-caja-codigo-idx]');
       var tipoInputs = document.querySelectorAll('#estacionesTable tbody select[data-tipo-estacion-idx]');
       var camaraInputs = document.querySelectorAll('#estacionesTable tbody select[data-camara-id-idx]');
 
@@ -2132,6 +2224,12 @@
         var operacionInput = Array.prototype.find.call(operacionInputs, function (x) { return Number(x.dataset.operacionIdx) === idx; });
         var descripcionInput = Array.prototype.find.call(descripcionInputs, function (x) { return Number(x.dataset.descripcionIdx) === idx; });
         var usuarioInput = Array.prototype.find.call(usuarioInputs, function (x) { return Number(x.dataset.usuarioIdx) === idx; });
+        var meseroInput = Array.prototype.find.call(meseroInputs, function (x) { return Number(x.dataset.meseroIdx) === idx; });
+        var comisionistaInput = Array.prototype.find.call(comisionistaInputs, function (x) { return Number(x.dataset.comisionistaIdx) === idx; });
+        var mostrarComisionistaInput = Array.prototype.find.call(mostrarComisionistaInputs, function (x) { return Number(x.dataset.mostrarComisionistaIdx) === idx; });
+        var recordarComisionistaInput = Array.prototype.find.call(recordarComisionistaInputs, function (x) { return Number(x.dataset.recordarComisionistaIdx) === idx; });
+        var cajaInput = Array.prototype.find.call(cajaInputs, function (x) { return Number(x.dataset.cajaIdx) === idx; });
+        var cajaCodigoInput = Array.prototype.find.call(cajaCodigoInputs, function (x) { return Number(x.dataset.cajaCodigoIdx) === idx; });
         var tipoInput = Array.prototype.find.call(tipoInputs, function (x) { return Number(x.dataset.tipoEstacionIdx) === idx; });
         var camaraInput = Array.prototype.find.call(camaraInputs, function (x) { return Number(x.dataset.camaraIdIdx) === idx; });
         var nombre = input ? String(input.value || '').trim() : '';
@@ -2147,6 +2245,22 @@
           }
           return false;
         });
+        var resolveUsuarioID = function(value, fallbackID) {
+          var candidate = String(value || '').trim().toLowerCase();
+          var foundID = 0;
+          stationUsersCatalog.some(function(user) {
+            var email = String(user.email || '').trim();
+            var name = String(user.name || user.nombre || '').trim();
+            if (candidate && [email.toLowerCase(), name.toLowerCase(), (name + ' - ' + email).toLowerCase()].indexOf(candidate) >= 0) {
+              foundID = Number(user.id || 0);
+              return true;
+            }
+            return false;
+          });
+          return foundID || Number(fallbackID || 0);
+        };
+        var meseroAsignado = meseroInput ? String(meseroInput.value || '').trim() : '';
+        var comisionistaAsignado = comisionistaInput ? String(comisionistaInput.value || '').trim() : '';
         return {
           id: est.id,
           nombre: nombre || stationDefaultName(est.id, current),
@@ -2157,6 +2271,14 @@
           descripcion: descripcionInput ? String(descripcionInput.value || '').trim() : String(est.descripcion || '').trim(),
           usuario_asignado: usuarioAsignado,
           usuario_asignado_id: usuarioAsignadoID || Number(est.usuario_asignado_id || 0),
+          mesero_asignado: meseroAsignado,
+          mesero_asignado_id: resolveUsuarioID(meseroAsignado, est.mesero_asignado_id),
+          comisionista_asignado: comisionistaAsignado,
+          comisionista_asignado_id: resolveUsuarioID(comisionistaAsignado, est.comisionista_asignado_id),
+          mostrar_comisionista: mostrarComisionistaInput ? !!mostrarComisionistaInput.checked : est.mostrar_comisionista !== false,
+          conservar_ultimo_comisionista: recordarComisionistaInput ? !!recordarComisionistaInput.checked : !!est.conservar_ultimo_comisionista,
+          funciona_como_caja: cajaInput ? !!cajaInput.checked : !!est.funciona_como_caja,
+          caja_codigo: String(cajaCodigoInput ? cajaCodigoInput.value : (est.caja_codigo || ('ESTACION-' + est.id))).trim().toUpperCase(),
           tipo_estacion: tipoInput && String(tipoInput.value || '').trim().toLowerCase() === 'camara' ? 'camara' : 'normal',
           camara_id: Math.max(0, Math.trunc(Number(camaraInput && camaraInput.value || 0) || 0)),
           carrito: normalizeStationCarritoConfig({
@@ -2378,9 +2500,8 @@
             counters.updated += 1;
           }
 
-          var transition = await ensureCarritoClosedAndInactive(currentID, current);
-          counters.updated += transition.applied;
-          counters.ignored += transition.ignored;
+          // La sincronización de identidad no modifica el ciclo de una sesión
+          // existente: cerrar/inactivar aquí reiniciaba el check-in al reabrirla.
         } catch (err) {
           counters.errors += 1;
           console.error('No se pudo sincronizar carrito para estación', stationID, err);

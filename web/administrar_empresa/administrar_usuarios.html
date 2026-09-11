@@ -216,8 +216,8 @@
     <div id="list">Cargando...</div>
 
     <section class="card empresa-section" id="stationAccessPanel" style="margin-top:16px;">
-      <h2>Acceso a estaciones por cajero</h2>
-      <p class="form-help">Activa esta regla cuando tengas dos o mas cajeros en simultaneo y quieras que cada usuario vea y opere solo sus estaciones asignadas. Caja y corte siguen siendo independientes por usuario.</p>
+      <h2>Acceso a estaciones por caja y usuario</h2>
+      <p class="form-help">Asigna el usuario a una caja configurada. Se aplican en conjunto las estaciones permitidas por la caja y las restricciones particulares del usuario. Una caja en modo Solo activar bloquea cobros y cambios de cuenta; úsala con el rol Portero.</p>
       <div class="form-row">
         <div class="form-col">
           <label class="form-help" style="display:flex;align-items:center;gap:8px;">
@@ -228,6 +228,11 @@
         <div class="form-col">
           <label class="form-label" for="stationAccessUser">Usuario cajero</label>
           <select id="stationAccessUser" class="form-input"></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="stationAccessCashbox">Caja asignada</label>
+          <select id="stationAccessCashbox" class="form-input"></select>
+          <p id="stationAccessCashboxHelp" class="form-help"></p>
         </div>
       </div>
       <div class="form-row">
@@ -744,14 +749,31 @@
 
     function currentStationAccessEntry() {
       const email = selectedStationAccessUserEmail();
-      if (!email) return { limitar_estaciones: false, estaciones: [], ver_caja: true };
+      if (!email) return { limitar_estaciones: false, estaciones: [], ver_caja: true, caja_codigo: '' };
       const users = state.stationAccess.usuarios || {};
       const entry = users[email] && typeof users[email] === 'object' ? users[email] : {};
       return {
         limitar_estaciones: !!entry.limitar_estaciones,
         estaciones: Array.isArray(entry.estaciones) ? entry.estaciones.map(Number).filter(Boolean) : [],
-        ver_caja: entry.ver_caja === undefined ? true : !!entry.ver_caja
+        ver_caja: entry.ver_caja === undefined ? true : !!entry.ver_caja,
+        caja_codigo: String(entry.caja_codigo || entry.cashbox_code || '').trim().toUpperCase()
       };
+    }
+
+    function cashboxRowsFromConfig() {
+      const cfg = state.stationConfig && typeof state.stationConfig === 'object' ? state.stationConfig : {};
+      const rows = Array.isArray(cfg.cajas_config) ? cfg.cajas_config : [];
+      return rows.filter(function(item) { return item && item.activa !== false; }).map(function(item) {
+        const code = String(item.codigo || item.caja_codigo || '').trim().toUpperCase();
+        const mode = String(item.modo_estaciones || item.modo || 'operar').trim().toLowerCase() === 'solo_activar' ? 'solo_activar' : 'operar';
+        return {
+          codigo: code,
+          nombre: String(item.nombre || item.caja_nombre || code).trim(),
+          modo_estaciones: mode,
+          limitar_estaciones: !!item.limitar_estaciones,
+          estaciones: Array.isArray(item.estaciones) ? item.estaciones.map(Number).filter(Boolean) : []
+        };
+      }).filter(function(item) { return !!item.codigo; });
     }
 
     function renderStationAccessPanel() {
@@ -759,8 +781,10 @@
       const select = document.getElementById('stationAccessUser');
       const limit = document.getElementById('stationAccessLimit');
       const caja = document.getElementById('stationAccessCaja');
+      const cashbox = document.getElementById('stationAccessCashbox');
+      const cashboxHelp = document.getElementById('stationAccessCashboxHelp');
       const checks = document.getElementById('stationAccessChecks');
-      if (!enabled || !select || !limit || !caja || !checks) return;
+      if (!enabled || !select || !limit || !caja || !cashbox || !checks) return;
 
       enabled.checked = !!state.stationAccess.habilitado;
       const previous = select.value;
@@ -776,8 +800,19 @@
       if (previous) select.value = previous;
 
       const entry = currentStationAccessEntry();
+      cashbox.innerHTML = '<option value="">-- Sin caja fija --</option>' + cashboxRowsFromConfig().map(function(item) {
+        const suffix = item.modo_estaciones === 'solo_activar' ? ' · Solo activar' : ' · Operar y cobrar';
+        return '<option value="' + escapeHTML(item.codigo) + '">' + escapeHTML(item.codigo + ' - ' + item.nombre + suffix) + '</option>';
+      }).join('');
+      cashbox.value = entry.caja_codigo;
       limit.checked = !!entry.limitar_estaciones;
       caja.checked = !!entry.ver_caja;
+      const selectedCashbox = cashboxRowsFromConfig().find(function(item) { return item.codigo === entry.caja_codigo; });
+      if (cashboxHelp) {
+        cashboxHelp.textContent = selectedCashbox && selectedCashbox.limitar_estaciones
+          ? ('Esta caja permite ' + selectedCashbox.estaciones.length + ' estación(es). La restricción del usuario se intersecta con esa lista.')
+          : (selectedCashbox ? 'Esta caja puede ver todas las estaciones, salvo la restricción particular del usuario.' : 'El usuario conservará únicamente su restricción particular.');
+      }
       const allowed = new Set(entry.estaciones.map(String));
       checks.innerHTML = stationRowsFromConfig().map(function(st) {
         const id = String(st.id);
@@ -849,7 +884,8 @@
         entry: {
           limitar_estaciones: !!document.getElementById('stationAccessLimit').checked,
           estaciones: stations,
-          ver_caja: !!document.getElementById('stationAccessCaja').checked
+          ver_caja: !!document.getElementById('stationAccessCaja').checked,
+          caja_codigo: String(document.getElementById('stationAccessCashbox').value || '').trim().toUpperCase()
         }
       };
     }
@@ -1165,6 +1201,16 @@
     });
 
     document.getElementById('stationAccessUser').addEventListener('change', function() {
+      renderStationAccessPanel();
+    });
+
+    document.getElementById('stationAccessCashbox').addEventListener('change', function() {
+      const entry = currentStationAccessEntry();
+      entry.caja_codigo = String(this.value || '').trim().toUpperCase();
+      const email = selectedStationAccessUserEmail();
+      if (email) {
+        state.stationAccess.usuarios[email] = entry;
+      }
       renderStationAccessPanel();
     });
 

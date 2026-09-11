@@ -233,6 +233,7 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260906-002-facturacion-contingencias-v1", Description: "tenant fiscal outage incidents, paper authorization and 48-hour transmission ledger", Body: empresaFacturacionContingenciasFingerprint, Apply: applyEmpresaFacturacionContingenciasTx},
 			{Version: "20260906-003-queue-capacity-business-v1", Description: "fair tenant queue service state and operational queue indexes", Body: queueCapacityBusinessSchemaFingerprint, Apply: applyQueueCapacityBusinessSchemaTx},
 			{Version: "20260906-004-offline-cash-report-v1", Description: "tenant cash-register breakdown for synchronized offline sales", Body: empresaOfflineCashReportSchemaFingerprint, Apply: applyEmpresaOfflineCashReportSchemaTx},
+			{Version: "20260910-001-comisiones-productos-v1", Description: "configurable product lines in worker commission base", Body: empresaComisionesProductosSchemaFingerprint, Apply: applyEmpresaComisionesProductosSchemaTx},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{

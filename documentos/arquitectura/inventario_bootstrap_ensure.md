@@ -45,7 +45,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaClientesSchema` | [backend/db/clientes.go:253](../../backend/db/clientes.go#L253) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCobranzaSchema` | [backend/db/cobranza.go:151](../../backend/db/cobranza.go#L151) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCodigosDescuentoSchema` | [backend/db/codigos_descuento.go:97](../../backend/db/codigos_descuento.go#L97) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaComisionesServicioSchema` | [backend/db/comisiones_servicio.go:188](../../backend/db/comisiones_servicio.go#L188) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaComisionesServicioSchema` | [backend/db/comisiones_servicio.go:197](../../backend/db/comisiones_servicio.go#L197) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaComprasAvanzadasSchema` | [backend/db/compras_avanzadas.go:123](../../backend/db/compras_avanzadas.go#L123) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresasComprasSchema` | [backend/db/compras_y_proveedores.go:87](../../backend/db/compras_y_proveedores.go#L87) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaConfiguracionOperativaSchema` | [backend/db/configuracion_operativa.go:232](../../backend/db/configuracion_operativa.go#L232) | DDL / indice / funcion | empresas o por confirmar |
@@ -75,7 +75,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaConfiguracionAvanzadaSchema` | [backend/db/empresa_configuracion_avanzada.go:124](../../backend/db/empresa_configuracion_avanzada.go#L124) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaConfiguracionGeneralSchema` | [backend/db/empresa_configuracion_general.go:52](../../backend/db/empresa_configuracion_general.go#L52) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaEstacionAseoSchema` | [backend/db/empresa_estacion_aseo.go:55](../../backend/db/empresa_estacion_aseo.go#L55) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaEstacionPrefsSchema` | [backend/db/empresa_estacion_prefs.go:44](../../backend/db/empresa_estacion_prefs.go#L44) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaEstacionPrefsSchema` | [backend/db/empresa_estacion_prefs.go:51](../../backend/db/empresa_estacion_prefs.go#L51) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaImpresorasSchema` | [backend/db/empresa_impresoras.go:171](../../backend/db/empresa_impresoras.go#L171) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPOS80Defaults` | [backend/db/empresa_impresoras.go:905](../../backend/db/empresa_impresoras.go#L905) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureAllEmpresasPOS80Defaults` | [backend/db/empresa_impresoras.go:980](../../backend/db/empresa_impresoras.go#L980) | seed o provisionamiento idempotente | empresas o por confirmar |

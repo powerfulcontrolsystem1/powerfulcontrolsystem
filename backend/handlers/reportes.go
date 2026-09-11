@@ -340,16 +340,16 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 	},
 	{
 		Key:         reporteDatasetOperativoPropinas,
-		Title:       "Propinas - Acumulado por Usuario",
+		Title:       "Propinas - Acumulado por Mesero",
 		Level:       "operativo",
-		Description: "Consolida propinas por usuario y periodo con distribucion directa/universal y participacion sobre el total.",
+		Description: "Consolida propinas por mesero y periodo con distribucion directa/universal y participacion sobre el total.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetOperativoComisiones,
-		Title:       "Comisiones por Servicio - Acumulado por Lavador",
+		Title:       "Comisiones por Servicio - Acumulado por Comisionista",
 		Level:       "operativo",
-		Description: "Consolida comisiones por lavador en el periodo con base de servicios, total de comision y participacion.",
+		Description: "Consolida comisiones por comisionista en el periodo con base de servicios o productos, total de comision y participacion.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
@@ -4916,7 +4916,7 @@ func (b *reportesBuilder) buildOperativoComisionesLavadorDataset() (empresaRepor
 	}
 
 	ds := b.newDataset(reporteDatasetOperativoComisiones, []string{
-		"usuario_lavador",
+		"usuario_comisionista",
 		"movimientos",
 		"base_servicios",
 		"monto_comision",
@@ -4953,16 +4953,19 @@ func (b *reportesBuilder) buildOperativoComisionesLavadorDataset() (empresaRepor
 		}
 	}
 
-	lavadores := append([]dbpkg.EmpresaComisionServicioLavadorResumen{}, reporte.Lavadores...)
-	shown := lavadores
+	comisionistas := append([]dbpkg.EmpresaComisionServicioLavadorResumen{}, reporte.Comisionistas...)
+	if len(comisionistas) == 0 {
+		comisionistas = append(comisionistas, reporte.Lavadores...)
+	}
+	shown := comisionistas
 	if len(shown) > b.maxRows {
 		shown = shown[:b.maxRows]
 	}
 
 	totalComision := reportesRound(reporte.Resumen.TotalComisiones)
-	for _, lavador := range shown {
-		movimientos := lavador.CantidadMovimientos
-		montoComision := reportesRound(lavador.TotalComision)
+	for _, comisionista := range shown {
+		movimientos := comisionista.CantidadMovimientos
+		montoComision := reportesRound(comisionista.TotalComision)
 		ticketComision := 0.0
 		if movimientos > 0 {
 			ticketComision = reportesRound(montoComision / float64(movimientos))
@@ -4973,12 +4976,13 @@ func (b *reportesBuilder) buildOperativoComisionesLavadorDataset() (empresaRepor
 		}
 
 		ds.Rows = append(ds.Rows, map[string]interface{}{
-			"usuario_lavador":   reportesFirstNonBlank(strings.TrimSpace(lavador.UsuarioLavador), "sistema"),
-			"movimientos":       movimientos,
-			"base_servicios":    reportesRound(lavador.TotalBaseServicios),
-			"monto_comision":    montoComision,
-			"ticket_comision":   ticketComision,
-			"participacion_pct": participacion,
+			"usuario_comisionista": reportesFirstNonBlank(strings.TrimSpace(comisionista.UsuarioComisionista), strings.TrimSpace(comisionista.UsuarioLavador), "sistema"),
+			"usuario_lavador":      reportesFirstNonBlank(strings.TrimSpace(comisionista.UsuarioLavador), strings.TrimSpace(comisionista.UsuarioComisionista), "sistema"),
+			"movimientos":          movimientos,
+			"base_servicios":       reportesRound(comisionista.TotalBaseServicios),
+			"monto_comision":       montoComision,
+			"ticket_comision":      ticketComision,
+			"participacion_pct":    participacion,
 		})
 	}
 
@@ -5003,7 +5007,11 @@ func (b *reportesBuilder) buildOperativoComisionesLavadorDataset() (empresaRepor
 	ds.Summary["porcentaje_comision_config"] = reportesRound(cfg.PorcentajeComision)
 	ds.Summary["filtro_servicio_config"] = reportesFirstNonBlank(strings.TrimSpace(cfg.FiltroServicio), "lavado")
 	ds.Summary["aplicar_automaticamente"] = cfg.AplicarAutomaticamente
-	ds.Summary["lavadores_totales"] = len(lavadores)
+	ds.Summary["comisionistas_totales"] = len(comisionistas)
+	ds.Summary["comisionistas_listados"] = ds.RowCount
+	ds.Summary["comisionistas_con_comision"] = reporte.Resumen.ComisionistasConComision
+	// Alias historicos para integraciones existentes.
+	ds.Summary["lavadores_totales"] = len(comisionistas)
 	ds.Summary["lavadores_listados"] = ds.RowCount
 	ds.Summary["lavadores_con_comision"] = reporte.Resumen.LavadoresConComision
 	ds.Summary["movimientos_total"] = reporte.Resumen.CantidadMovimientos
@@ -5022,6 +5030,10 @@ func (b *reportesBuilder) buildOperativoComisionesLavadorDataset() (empresaRepor
 		ds.Summary["ticket_promedio_comision"] = 0.0
 	}
 	if ds.RowCount > 0 {
+		ds.Summary["comisionista_top"] = ds.Rows[0]["usuario_comisionista"]
+		ds.Summary["comisionista_top_total_comision"] = ds.Rows[0]["monto_comision"]
+		ds.Summary["comisionista_top_participacion_pct"] = ds.Rows[0]["participacion_pct"]
+		// Alias historicos para integraciones existentes.
 		ds.Summary["lavador_top"] = ds.Rows[0]["usuario_lavador"]
 		ds.Summary["lavador_top_total_comision"] = ds.Rows[0]["monto_comision"]
 		ds.Summary["lavador_top_participacion_pct"] = ds.Rows[0]["participacion_pct"]

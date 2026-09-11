@@ -66,6 +66,30 @@ func TestEnterpriseOperationsRejectAuthorityAndInvalidQuantity(t *testing.T) {
 	}
 }
 
+func TestEnterpriseTariffToolsRequireAdministratorRole(t *testing.T) {
+	for _, flag := range []string{"AI_ENTERPRISE_ORCHESTRATOR_ENABLED", "AI_AGENT_MODE_ENABLED", "AI_WRITE_TOOLS_ENABLED", "AI_TARIFF_TOOLS_ENABLED"} {
+		t.Setenv(flag, "true")
+	}
+	permissions := []string{"ventas:U"}
+	adminTools := enterpriseAIChatTools(aipkg.ExecutionContext{Role: "administrador", Permissions: permissions}, "configura la tarifa de la estacion 4")
+	if !containsEnterpriseTool(adminTools, aipkg.ToolTariffsConfigureMinutes) || !containsEnterpriseTool(adminTools, aipkg.ToolHotelConfigureRoomStation) {
+		t.Fatal("el administrador debe recibir herramientas confirmables de tarifas")
+	}
+	cashierTools := enterpriseAIChatTools(aipkg.ExecutionContext{Role: "cajero", Permissions: permissions}, "configura la tarifa de la estacion 4")
+	if containsEnterpriseTool(cashierTools, aipkg.ToolTariffsConfigureMinutes) || containsEnterpriseTool(cashierTools, aipkg.ToolHotelConfigureRoomStation) {
+		t.Fatal("un rol operativo no debe recibir herramientas de configuracion de tarifas")
+	}
+}
+
+func containsEnterpriseTool(tools []map[string]interface{}, name string) bool {
+	for _, tool := range tools {
+		if tool["name"] == name {
+			return true
+		}
+	}
+	return false
+}
+
 func TestEnterpriseResponsesMultipleToolsAccumulateUsage(t *testing.T) {
 	requests, dispatches := 0, 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

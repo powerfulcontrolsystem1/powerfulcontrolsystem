@@ -1874,6 +1874,8 @@ func normalizeCarritoTarifaTiempoTipo(raw string) string {
 		return "minutos"
 	case "dia", "día", "hotel", "tarifa_hotel", "por_dia", "por_día":
 		return "dia"
+	case "ninguna", "sin_tarifa", "sin tarifa", "none":
+		return "sin_tarifa"
 	default:
 		return strings.TrimSpace(strings.ToLower(raw))
 	}
@@ -1895,10 +1897,10 @@ func SetCarritoTarifaTiempoManual(dbConn *sql.DB, empresaID, carritoID int64, ti
 	if tipo == "" {
 		tipo = "auto"
 	}
-	if tipo != "auto" && tipo != "minutos" && tipo != "dia" {
-		return fmt.Errorf("tipo_tarifa invalido: use auto, minutos o dia")
+	if tipo != "auto" && tipo != "minutos" && tipo != "dia" && tipo != "sin_tarifa" {
+		return fmt.Errorf("tipo_tarifa invalido: use auto, minutos, dia o sin_tarifa")
 	}
-	if tipo == "auto" {
+	if tipo == "auto" || tipo == "sin_tarifa" {
 		tarifaID = 0
 	} else if tarifaID <= 0 {
 		return fmt.Errorf("tarifa_id es obligatorio para cambiar tarifa manualmente")
@@ -2043,6 +2045,21 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 		}
 	}
 
+	var referenciaExterna, codigo string
+	if err := queryRowTxSQLCompat(tx, `SELECT
+		COALESCE(referencia_externa, ''),
+		COALESCE(codigo, '')
+	FROM carritos_compras
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, carritoID).Scan(&referenciaExterna, &codigo); err != nil {
+		return err
+	}
+	estacionID := parseReservaHotelEstacionID(referenciaExterna, codigo, empresaID)
+	tarifaTipo, tarifaID, err := resolveTarifaTiempoAlActivarTx(tx, empresaID, estacionID, time.Now())
+	if err != nil {
+		return err
+	}
+
 	if _, err := tx.Exec(`UPDATE carritos_compras SET
 		estado = 'activo',
 		estado_carrito = 'abierto',
@@ -2056,8 +2073,10 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 		total_pagado = 0,
 		metodo_pago = 'efectivo',
 		referencia_pago = '',
+		tarifa_tiempo_tipo = ?,
+		tarifa_tiempo_id = ?,
 		fecha_actualizacion = CURRENT_TIMESTAMP
-	WHERE empresa_id = ? AND id = ?`, empresaID, carritoID); err != nil {
+	WHERE empresa_id = ? AND id = ?`, tarifaTipo, tarifaID, empresaID, carritoID); err != nil {
 		return err
 	}
 
@@ -2066,6 +2085,61 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 	}
 
 	return tx.Commit()
+}
+
+func resolveTarifaTiempoAlActivarTx(tx *sql.Tx, empresaID, estacionID int64, activadoEn time.Time) (string, int64, error) {
+	if estacionID <= 0 {
+		return "auto", 0, nil
+	}
+
+	tipoOperacion := ""
+	var rawConfig string
+	err := queryRowTxSQLCompat(tx, `SELECT COALESCE(valor, '')
+		FROM empresa_estacion_prefs
+		WHERE empresa_id = ? AND estacion_id = 0 AND clave = 'estaciones_config'
+		LIMIT 1`, empresaID).Scan(&rawConfig)
+	if err != nil && err != sql.ErrNoRows {
+		return "", 0, err
+	}
+	if err == nil {
+		cfg, parseErr := parseEmpresaEstacionesConfig(rawConfig)
+		if parseErr != nil {
+			return "", 0, parseErr
+		}
+		if cfg != nil {
+			for _, station := range cfg.Estaciones {
+				if station.ID == estacionID {
+					tipoOperacion = strings.TrimSpace(strings.ToLower(station.TipoOperacion))
+					break
+				}
+			}
+		}
+	}
+
+	switch tipoOperacion {
+	case "motel":
+		tarifa, tarifaErr := getEmpresaTarifaPorMinutosAplicableTx(tx, empresaID, estacionID, DayOfWeekISO(activadoEn))
+		if tarifaErr != nil {
+			return "", 0, tarifaErr
+		}
+		if tarifa == nil {
+			return "sin_tarifa", 0, nil
+		}
+		return "minutos", tarifa.ID, nil
+	case "hotel":
+		tarifa, tarifaErr := getEmpresaTarifaPorDiaAplicableTx(tx, empresaID, estacionID)
+		if tarifaErr != nil {
+			return "", 0, tarifaErr
+		}
+		if tarifa == nil {
+			return "sin_tarifa", 0, nil
+		}
+		return "dia", tarifa.ID, nil
+	case "restaurante", "lavadero":
+		return "sin_tarifa", 0, nil
+	default:
+		return "auto", 0, nil
+	}
 }
 
 type carritoTransferSnapshot struct {

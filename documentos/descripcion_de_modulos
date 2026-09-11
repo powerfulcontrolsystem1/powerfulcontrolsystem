@@ -1852,7 +1852,7 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 2026-05-17: Carrito simplificado como default por tipo de empresa.
 - Las empresas nuevas, tipos de empresa y empresas antiguas heredan el preset limpio del carrito.
 - Quedan activos por defecto: buscar productos, catalogo, lector, items, totales, acciones, valores por medio de pago, pago mixto y boton pagar.
-- Quedan apagados por defecto: `Cobro y estados del carrito`, descuentos, propina, comision, desglose de cobro y `Lavador / comision`.
+- Quedan apagados por defecto: `Cobro y estados del carrito`, descuentos, propina, comision, desglose de cobro y `Comisionista`.
 - Alcance: no cambia endpoints, tablas ni permisos; el arranque actualiza o crea el JSON `estaciones_config` para dejar todas las empresas activas alineadas antes de produccion.
 
 2026-05-17: Carrito acerca busqueda de productos al alta rapida.
@@ -1872,7 +1872,7 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 
 2026-05-17: Carrito con secciones avanzadas opcionales.
 - `Cobro y estados del carrito` se activa con el check `Mostrar opciones de cobro`.
-- `Lavador` se activa con el check `Mostrar lavador`.
+- `Comisionista` se activa con el check `Mostrar comisionista`.
 - Por defecto ambas secciones quedan ocultas para reducir ruido operativo; el pago principal y los valores por medio de pago siguen disponibles.
 - Alcance: no cambia backend, endpoints, tablas ni permisos.
 
@@ -4229,12 +4229,14 @@ Criterio de esta guia:
 - Reglas promocionales por canal/segmento/horario y trazabilidad de redenciones.
 
 14) Propinas
-- Configuracion fiscal, movimientos, ajustes manuales y conciliacion en cierre de caja.
+- Configuracion, movimientos, ajustes manuales y conciliacion en cierre de caja; la propina se cobra y registra separada del total documental/fiscal de la venta.
+- Cada estacion puede asignar un `mesero_asignado`; en distribucion `por_usuario`, el movimiento queda a nombre de ese mesero y el reporte permite filtrar por persona y rango `desde`/`hasta`.
 - Los movimientos quedan enlazados al usuario creado en `users` por `usuario_origen_id` y `usuario_asignado_id`, conservando la etiqueta historica para reportes y auditoria.
 
-15) Comisiones por servicio
-- Reglas por rol/servicio, topes, ajustes y vinculacion a nomina.
-- Las comisiones automaticas y manuales quedan asociadas al usuario creado en `users` por `usuario_origen_id` y `usuario_lavador_id`, para liquidacion, filtros y reportes por empleado real.
+15) Comisionistas
+- Reglas por rol/servicio, topes, ajustes y vinculacion a nomina. `incluir_productos` decide si la base contiene solo servicios o también productos vendidos/aplicados en la misma factura.
+- Cada estacion configura `comisionista_asignado`, `mostrar_comisionista` y `conservar_ultimo_comisionista`; el ultimo elegido se guarda en la preferencia aislada `carrito.comisionista_ultimo` de esa estacion.
+- La API y la UI usan `usuario_comisionista`; `usuario_lavador` se conserva como alias y columna historica compatible. Toda persona seleccionada debe pertenecer a `users` de la misma empresa y estar activa.
 
 16) Compras
 - Documentos de compra con flujo de aprobacion, recepcion y contabilizacion.
@@ -4727,22 +4729,25 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 2026-07-10: Estaciones para operacion mixta
 - Una empresa puede identificar estaciones como motel, hotel, restaurante, lavadero u operacion general y asignarles descripcion y responsable.
 - Las tarifas por minutos permiten reglas distintas por dia de semana; las tarifas diarias permiten rangos de personas y horarios de check-in/check-out.
+- Cada estacion puede activar `funciona_como_caja` y un `caja_codigo` propio sin perder su carrito. La tarjeta separa operacion, tarifa y caja, y ofrece accesos configurables para cambiar tarifa o abrir el corte de esa caja.
 - Propinas por usuario o universales y comisiones por servicio permanecen auditadas por empresa. La propina no forma parte del total documental ni de la venta contable y se muestra separada en la impresion.
 - En hotel, cada regla puede tener nombre y ocupacion minima/maxima; el simulador recibe la cantidad de personas y muestra el valor aplicable antes de operar la estacion.
-- En motel, activar cobro por fraccion no modifica el bloque ni el valor escritos por el administrador.
+- En motel, `cobrar_por_fraccion=true` cobra el primer bloque parcial mediante redondeo hacia arriba; apagado exige completar el bloque extra. La tarifa aplicable se fija al activar la sesion para que un cambio de dia o de configuracion no revalorice una cuenta abierta.
 
 2026-07-11: Fiscalidad de comisiones y cancelacion temporizada de estaciones.
-- La comision del lavador se causa como costo laboral fiscal enlazado a la venta y queda disponible para liquidacion de nomina; no aumenta el total cobrado al cliente.
+- La comision del comisionista se causa como costo laboral fiscal enlazado a la venta y queda disponible para liquidacion de nomina; no aumenta el total cobrado al cliente.
 - La propina puede coexistir con la comision para el mismo trabajador, pero permanece separada del total fiscal del documento.
 - Configuracion de estaciones expone `Tiempo para cancelar el servicio`: al activar el check se define un limite en minutos y, una vez vencido, la estacion solo puede cerrarse mediante pago.
 - El carrito permite cambiar manualmente entre tarifa por minutos (motel) y tarifa por dia (hotel), conservando la seleccion por carrito y empresa.
+- El selector incluye `Sin tarifa de tiempo` para mesas y operaciones que solo usan productos. Una tarifa diaria tipo amanecida puede cruzar medianoche (por ejemplo, check-in 14:00 y check-out 13:00 del dia siguiente) sin modificar `activado_en` al cambiarla.
+- El chat IA empresarial expone propuestas de tarifas por minutos y hospedaje unicamente a roles administrativos. El modelo no recibe `empresa_id`, usuario, rol ni confirmacion como argumentos: el servidor los deriva, valida la estacion, muestra el resumen y exige confirmacion separada e idempotente antes de la transaccion.
 
 2026-07-10: Compras y captura IA
 - El boton de Compras se presenta como `Carga automática de factura de compra`; la extraccion no crea una compra de forma silenciosa: deja proveedor, referencia, monto, moneda y periodo precargados para que el usuario revise y confirme el guardado.
 
 2026-07-11: Preproduccion PCS, roles operativos y cobro de carrito.
 - Carrito: `Pagar y cerrar carrito` conserva el listener delegado y agrega un listener directo con el bloqueo `paymentClickLock`; el doble clic no puede iniciar dos pagos.
-- Roles: Administrar usuarios muestra un catalogo operativo reducido para nuevas asignaciones (administrador, supervisor, cajero, vendedor, recepcion, portero, camarera/aseo, inventario, compras, talento humano, contador, propietario, auditor y operaciones). Los roles de verticales ajenas ya asignados permanecen validos y los perfiles como lavador, camarera o portero se gestionan como roles personalizados por empresa.
+- Roles: Administrar usuarios muestra un catalogo operativo reducido para nuevas asignaciones (administrador, supervisor, cajero, vendedor, recepcion, portero, camarera/aseo, inventario, compras, talento humano, contador, propietario, auditor y operaciones). Los roles de verticales ajenas ya asignados permanecen validos y los perfiles como comisionista, camarera o portero se gestionan como roles personalizados por empresa.
 - Seguridad publica: la pagina Privacidad y datos comunica cifrado en transito, secretos/configuraciones sensibles cifrados, aislamiento por empresa y control de acceso por sesion/rol sin afirmar un cifrado inexistente de toda la base de datos.
 - Super administrador: Configuracion avanzada vuelve a construir la lista de secciones observadas antes de activar `IntersectionObserver`, evitando el error `nodes is not defined`.
 - QA: ver `documentos/validacion_preproduccion_pcs.md`; Epayco/Wompi, Bre-B e impresion fisica solo se consideran aprobados en produccion despues de evidencia del proveedor, banco o hardware real.

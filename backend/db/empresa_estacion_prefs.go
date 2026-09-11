@@ -36,8 +36,15 @@ type empresaEstacionesConfig struct {
 }
 
 type empresaEstacionConfigRecord struct {
-	ID     int64  `json:"id"`
-	Nombre string `json:"nombre"`
+	ID                          int64  `json:"id"`
+	Nombre                      string `json:"nombre"`
+	TipoOperacion               string `json:"tipo_operacion"`
+	MeseroAsignado              string `json:"mesero_asignado,omitempty"`
+	MeseroAsignadoID            int64  `json:"mesero_asignado_id,omitempty"`
+	ComisionistaAsignado        string `json:"comisionista_asignado,omitempty"`
+	ComisionistaAsignadoID      int64  `json:"comisionista_asignado_id,omitempty"`
+	MostrarComisionista         *bool  `json:"mostrar_comisionista,omitempty"`
+	ConservarUltimoComisionista bool   `json:"conservar_ultimo_comisionista,omitempty"`
 }
 
 // EnsureEmpresaEstacionPrefsSchema crea/migra la tabla de preferencias por estacion.
@@ -580,6 +587,7 @@ func SyncEmpresaEstacionCarritos(dbConn *sql.DB, empresaID int64, rawConfig stri
 		reference := fmt.Sprintf("ESTACION_%d", station.ID)
 
 		current := resolveCarrito(code, reference, stationName)
+		createdNow := false
 		if current == nil {
 			createdID, createErr := CreateCarritoCompra(dbConn, CarritoCompra{
 				EmpresaID:         empresaID,
@@ -609,6 +617,7 @@ func SyncEmpresaEstacionCarritos(dbConn *sql.DB, empresaID int64, rawConfig stri
 				}
 				current = created
 				result.Created += 1
+				createdNow = true
 			}
 		}
 
@@ -631,11 +640,16 @@ func SyncEmpresaEstacionCarritos(dbConn *sql.DB, empresaID int64, rawConfig stri
 			updated += 1
 		}
 
-		stateUpdates, err := ensureEmpresaEstacionCarritoDefaultState(dbConn, empresaID, current.ID)
-		if err != nil {
-			return nil, err
+		// La sincronizacion de nombres/codigos nunca debe cerrar una sesion operativa.
+		// Los carritos nuevos se inicializan cerrados; los existentes conservan estado,
+		// activado_en, items y tarifa fijada hasta que el operador los cierre.
+		if createdNow {
+			stateUpdates, err := ensureEmpresaEstacionCarritoDefaultState(dbConn, empresaID, current.ID)
+			if err != nil {
+				return nil, err
+			}
+			updated += stateUpdates
 		}
-		updated += stateUpdates
 		if updated == 0 {
 			result.Ignored += 1
 		} else {

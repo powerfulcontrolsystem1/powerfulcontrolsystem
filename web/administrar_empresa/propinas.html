@@ -14,7 +14,7 @@
         <span class="empresa-module-kicker">Caja y conciliación</span>
         <h2 style="margin:6px 0 8px;">Propinas con trazabilidad</h2>
         <p class="page-header-lead" style="margin:0;">
-          Configura distribución, tratamiento fiscal y ajustes auditados para mantener control transparente entre operación y cierres de caja.
+          Registra y distribuye propinas por mesero sin incorporarlas al total del documento fiscal de la venta.
         </p>
       </div>
       <div class="empresa-module-overview">
@@ -38,7 +38,7 @@
     </div>
     <p id="empresaContextoPropinas" class="form-help" style="margin:0 0 8px 0;"></p>
     <p class="form-help" style="margin:0 0 12px 0;">
-      Configura reglas de propinas y tratamiento fiscal, registra ajustes manuales auditados y revisa la conciliación por cierre de caja.
+      Configura reglas de propinas, registra ajustes manuales auditados y consulta lo recibido por cada mesero entre dos fechas. La propina se cobra y controla por separado del documento fiscal.
     </p>
 
     <div class="form" >
@@ -49,7 +49,7 @@
         <div class="form-col" style="max-width:260px;">
           <label class="form-label">Estado</label>
           <label class="form-help" style="display:flex;gap:8px;align-items:center;">
-            <input id="cfgHabilitar" type="checkbox"> Habilitar propina en facturas
+            <input id="cfgHabilitar" type="checkbox"> Habilitar propina en cobros
           </label>
         </div>
         <div class="form-col" style="max-width:260px;">
@@ -119,8 +119,8 @@
           <input id="fHasta" class="form-input" type="date">
         </div>
         <div class="form-col" style="max-width:280px;">
-          <label class="form-label" for="fUsuario">Usuario</label>
-          <input id="fUsuario" class="form-input" placeholder="email o nombre">
+          <label class="form-label" for="fUsuario">Mesero</label>
+          <input id="fUsuario" class="form-input" placeholder="correo o nombre del mesero">
         </div>
         <div class="form-col" style="max-width:220px;">
           <label class="form-label" for="fModo">Modo</label>
@@ -161,12 +161,12 @@
       <div id="resumenBox" class="form-help" ></div>
 
       <div >
-        <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Acumulado por usuario</h3>
+        <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Propinas por mesero</h3>
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
-                <th>Usuario</th>
+                <th>Mesero</th>
                 <th>Activo</th>
                 <th>Propina por usuario</th>
                 <th>Propina universal</th>
@@ -194,7 +194,7 @@
                 <th>Cierre caja</th>
                 <th>Modo</th>
                 <th>Usuario origen</th>
-                <th>Usuario asignado</th>
+                <th>Mesero asignado</th>
                 <th>Base cobro</th>
                 <th>%</th>
                 <th>Impuesto</th>
@@ -224,7 +224,7 @@
           <input id="ajCierreCajaId" class="form-input" type="number" min="0" step="1" placeholder="Opcional">
         </div>
         <div class="form-col" style="max-width:240px;">
-          <label class="form-label" for="ajUsuario">Usuario asignado</label>
+          <label class="form-label" for="ajUsuario">Mesero asignado</label>
           <input id="ajUsuario" class="form-input" type="text" maxlength="180" placeholder="usuario@empresa.com" list="usuariosEmpresaList">
           <datalist id="usuariosEmpresaList"></datalist>
         </div>

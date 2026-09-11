@@ -10,6 +10,28 @@ dominio correspondiente. Inventario R/C conserva búsqueda/creación de
 productos. La ayuda usa nombres de páginas autorizadas. Véase la
 [matriz de capacidades](chat_ia_capacidades_2026-09-06.md).
 
+Configuracion de tarifas mediante Chat IA: requiere rol efectivo
+`administrador`, `admin_empresa`, `administrador_total` o
+`super_administrador`, permiso `ventas:U`, herramienta de tarifas habilitada y
+confirmacion separada de una propuesta temporal. Un rol operativo no recibe la
+herramienta aunque intente enviar sus argumentos manualmente; confirmacion y
+ejecucion vuelven a verificar rol, permiso, usuario y `empresa_id`.
+
+Personal variable por estacion: configurar `mesero_asignado`,
+`comisionista_asignado`, visibilidad o memoria del ultimo comisionista requiere
+permiso de configuracion/seguridad sobre la empresa. El cobro conserva su permiso
+efectivo de ventas y valida en backend que mesero y comisionista sean usuarios
+activos del mismo `empresa_id`. Los reportes y ajustes de propinas/comisiones
+mantienen el wrapper financiero; ocultar el selector no concede ni retira
+permisos del endpoint.
+
+Acceso por caja: configurar `cajas_config[].estaciones`, `modo_estaciones` o
+asignar `acceso_estaciones_cajeros.usuarios[email].caja_codigo` requiere permiso
+de configuracion/seguridad de la empresa. Backend intersecta la lista de caja y
+usuario. El modo `solo_activar` permite únicamente leer el tablero y ejecutar
+`action=activar_estacion`; no habilita cobros ni sustituye el rol `portero` para
+ocultar las demás páginas del menú.
+
 - Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.
 - El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente.
 

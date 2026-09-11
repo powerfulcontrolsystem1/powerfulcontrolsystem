@@ -128,6 +128,9 @@ func dispatchEnterpriseAIOperation(dbEmp *sql.DB, r *http.Request, ctx aipkg.Exe
 	if !enterpriseAIRequireTool(ctx, call.Name) {
 		return "", fmt.Errorf("herramienta no autorizada")
 	}
+	if (call.Name == aipkg.ToolHotelConfigureRoomStation || call.Name == aipkg.ToolTariffsConfigureMinutes) && !enterpriseAITariffAdminRole(ctx.Role) {
+		return "", fmt.Errorf("las tarifas solo pueden ser configuradas por un administrador")
+	}
 	if call.Name == aipkg.ToolCatalogCreateProduct {
 		return dispatchEnterpriseAIResponsesFunctionCall(dbEmp, r, ctx, call)
 	}
@@ -229,6 +232,63 @@ func dispatchEnterpriseAIOperation(dbEmp *sql.DB, r *http.Request, ctx aipkg.Exe
 		}
 		summary := fmt.Sprintf("Agregar %d × %s a %s. Precio unitario: %.2f; impuesto: %.2f%%. No cobra ni cierra la cuenta.", args.Cantidad, product.Nombre, cart.Nombre, product.Precio, product.ImpuestoPorcentaje)
 		p, err := dbpkg.CreateEmpresaAIProposal(dbEmp, dbpkg.EmpresaAIProposal{ProposalID: id, ConversationID: ctx.ConversationID, EmpresaID: ctx.EmpresaID, UsuarioCreador: ctx.UserID, ToolName: call.Name, RiskLevel: "medium", PlanJSON: string(raw), Resumen: summary, EstadoAnterior: `{}`, EstadoEsperado: `{}`, RollbackPolicy: "transactional_before_commit", Estado: dbpkg.AIProposalAwaitingConfirmation}, 15*time.Minute)
+		if err != nil {
+			return "", err
+		}
+		result = map[string]interface{}{"status": p.Estado, "proposal_id": p.ProposalID, "summary": p.Resumen, "confirmation_required": true}
+	case aipkg.ToolHotelConfigureRoomStation:
+		if !enterpriseAIWriteToolEnabled(call.Name) {
+			return "", fmt.Errorf("herramienta desactivada")
+		}
+		var plan dbpkg.EmpresaAIHotelRoomPlan
+		if err := decodeEnterpriseTool(call.Arguments, &plan); err != nil {
+			return "", err
+		}
+		if err := dbpkg.NormalizeEmpresaAIHotelRoomPlan(&plan); err != nil {
+			return "", err
+		}
+		current, err := dbpkg.GetEmpresaAIHotelRoomStationSnapshot(dbEmp, ctx.EmpresaID, plan.EstacionID)
+		if err != nil {
+			return "", err
+		}
+		planJSON, _ := json.Marshal(plan)
+		beforeJSON, _ := json.Marshal(current)
+		proposalID, err := aipkg.NewOpaqueID("proposal")
+		if err != nil {
+			return "", err
+		}
+		p, err := dbpkg.CreateEmpresaAIProposal(dbEmp, dbpkg.EmpresaAIProposal{ProposalID: proposalID, ConversationID: ctx.ConversationID, EmpresaID: ctx.EmpresaID, UsuarioCreador: ctx.UserID, ToolName: call.Name, RiskLevel: "medium", PlanJSON: string(planJSON), Resumen: "Configurar " + plan.NombreHabitacion + " con tarifas por ocupacion y horario de check-in/check-out.", EstadoAnterior: string(beforeJSON), EstadoEsperado: string(planJSON), RollbackPolicy: "transactional_before_commit", Estado: dbpkg.AIProposalAwaitingConfirmation}, 15*time.Minute)
+		if err != nil {
+			return "", err
+		}
+		result = map[string]interface{}{"status": p.Estado, "proposal_id": p.ProposalID, "summary": p.Resumen, "confirmation_required": true}
+	case aipkg.ToolTariffsConfigureMinutes:
+		if !enterpriseAIWriteToolEnabled(call.Name) {
+			return "", fmt.Errorf("herramienta desactivada")
+		}
+		var plan dbpkg.EmpresaAITarifaMinutosPlan
+		if err := decodeEnterpriseTool(call.Arguments, &plan); err != nil {
+			return "", err
+		}
+		if err := dbpkg.NormalizeEmpresaAITarifaMinutosPlan(&plan); err != nil {
+			return "", err
+		}
+		stationSnapshot, err := dbpkg.GetEmpresaAIHotelRoomStationSnapshot(dbEmp, ctx.EmpresaID, plan.EstacionID)
+		if err != nil {
+			return "", err
+		}
+		minuteRates, err := dbpkg.ListEmpresaTarifasPorMinutos(dbEmp, ctx.EmpresaID, dbpkg.EmpresaTarifaPorMinutosFilter{EstacionID: plan.EstacionID, IncludeInactive: true, Limit: 100})
+		if err != nil {
+			return "", err
+		}
+		planJSON, _ := json.Marshal(plan)
+		beforeJSON, _ := json.Marshal(map[string]interface{}{"estacion": stationSnapshot, "tarifas_minutos": minuteRates})
+		proposalID, err := aipkg.NewOpaqueID("proposal")
+		if err != nil {
+			return "", err
+		}
+		summary := fmt.Sprintf("Configurar %d regla(s) de tarifa por minutos en la estacion %d.", len(plan.Tarifas), plan.EstacionID)
+		p, err := dbpkg.CreateEmpresaAIProposal(dbEmp, dbpkg.EmpresaAIProposal{ProposalID: proposalID, ConversationID: ctx.ConversationID, EmpresaID: ctx.EmpresaID, UsuarioCreador: ctx.UserID, ToolName: call.Name, RiskLevel: "medium", PlanJSON: string(planJSON), Resumen: summary, EstadoAnterior: string(beforeJSON), EstadoEsperado: string(planJSON), RollbackPolicy: "transactional_before_commit", Estado: dbpkg.AIProposalAwaitingConfirmation}, 15*time.Minute)
 		if err != nil {
 			return "", err
 		}

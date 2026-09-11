@@ -121,7 +121,9 @@ func enterpriseAIWriteToolEnabled(tool string) bool {
 	}
 	switch tool {
 	case aipkg.ToolHotelConfigureRoomStation:
-		return strings.EqualFold(strings.TrimSpace(os.Getenv("AI_HOTEL_TOOLS_ENABLED")), "true")
+		return strings.EqualFold(strings.TrimSpace(os.Getenv("AI_HOTEL_TOOLS_ENABLED")), "true") || strings.EqualFold(strings.TrimSpace(os.Getenv("AI_TARIFF_TOOLS_ENABLED")), "true")
+	case aipkg.ToolTariffsConfigureMinutes:
+		return strings.EqualFold(strings.TrimSpace(os.Getenv("AI_TARIFF_TOOLS_ENABLED")), "true")
 	case aipkg.ToolCatalogCreateProduct:
 		return strings.EqualFold(strings.TrimSpace(os.Getenv("AI_CATALOG_TOOLS_ENABLED")), "true")
 	case aipkg.ToolSalesAddStationProduct:
@@ -168,6 +170,9 @@ func enterpriseAIRequireTool(ctx aipkg.ExecutionContext, toolName string) bool {
 func enterpriseAIAvailableTools(ctx aipkg.ExecutionContext) map[string]aipkg.ToolDefinition {
 	out := make(map[string]aipkg.ToolDefinition)
 	for name, def := range aipkg.Registry() {
+		if (name == aipkg.ToolHotelConfigureRoomStation || name == aipkg.ToolTariffsConfigureMinutes) && !enterpriseAITariffAdminRole(ctx.Role) {
+			continue
+		}
 		if !aipkg.ToolAllowed(def, ctx.Permissions) {
 			continue
 		}
@@ -179,6 +184,15 @@ func enterpriseAIAvailableTools(ctx aipkg.ExecutionContext) map[string]aipkg.Too
 		}
 	}
 	return out
+}
+
+func enterpriseAITariffAdminRole(role string) bool {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "super_administrador", "administrador_total", "administrador", "admin_empresa":
+		return true
+	default:
+		return false
+	}
 }
 
 func decodeEnterpriseJSON(w http.ResponseWriter, r *http.Request, dst interface{}, maxBytes int64) error {
@@ -418,6 +432,10 @@ func enterpriseAIConfirmProposal(w http.ResponseWriter, r *http.Request, dbEmp *
 		http.Error(w, "La herramienta ya no esta disponible para este usuario", http.StatusForbidden)
 		return
 	}
+	if (preview.ToolName == aipkg.ToolHotelConfigureRoomStation || preview.ToolName == aipkg.ToolTariffsConfigureMinutes) && !enterpriseAITariffAdminRole(ctx.Role) {
+		http.Error(w, "Solo un administrador puede confirmar cambios de tarifas", http.StatusForbidden)
+		return
+	}
 	p, err := dbpkg.BeginEmpresaAIProposalExecution(dbEmp, ctx.EmpresaID, strings.TrimSpace(req.ProposalID), ctx.UserID, strings.TrimSpace(req.PlanHash), strings.TrimSpace(req.IdempotencyKey))
 	if err != nil {
 		http.Error(w, "No se pudo confirmar la propuesta", http.StatusConflict)
@@ -436,7 +454,7 @@ func enterpriseAIConfirmProposal(w http.ResponseWriter, r *http.Request, dbEmp *
 		return
 	}
 	if p.ToolName != aipkg.ToolHotelConfigureRoomStation {
-		if p.ToolName != aipkg.ToolCatalogCreateProduct {
+		if p.ToolName != aipkg.ToolCatalogCreateProduct && p.ToolName != aipkg.ToolTariffsConfigureMinutes {
 			_ = dbpkg.FinishEmpresaAIProposal(dbEmp, ctx.EmpresaID, p.ProposalID, dbpkg.AIProposalFailed, `{"error":"herramienta no habilitada"}`)
 			http.Error(w, "herramienta no habilitada", http.StatusBadRequest)
 			return
@@ -449,6 +467,29 @@ func enterpriseAIConfirmProposal(w http.ResponseWriter, r *http.Request, dbEmp *
 	}
 	if p.ToolName == aipkg.ToolCatalogCreateProduct {
 		enterpriseAIConfirmProductProposal(w, r, dbEmp, ctx, p)
+		return
+	}
+	if p.ToolName == aipkg.ToolTariffsConfigureMinutes {
+		var plan dbpkg.EmpresaAITarifaMinutosPlan
+		if err := json.Unmarshal([]byte(p.PlanJSON), &plan); err != nil {
+			_ = dbpkg.FinishEmpresaAIProposal(dbEmp, ctx.EmpresaID, p.ProposalID, dbpkg.AIProposalFailed, `{"error":"plan invalido"}`)
+			http.Error(w, "plan invalido", http.StatusBadRequest)
+			return
+		}
+		ids, err := dbpkg.ConfigureEmpresaAITarifasMinutosStation(dbEmp, ctx.EmpresaID, plan, ctx.UserID)
+		if err != nil {
+			_ = dbpkg.FinishEmpresaAIProposal(dbEmp, ctx.EmpresaID, p.ProposalID, dbpkg.AIProposalFailed, `{"error":"ejecucion rechazada"}`)
+			http.Error(w, "No se pudo aplicar la configuracion de tarifas", http.StatusConflict)
+			return
+		}
+		result, _ := json.Marshal(map[string]interface{}{"tarifa_ids": ids, "estacion_id": plan.EstacionID, "verified": true})
+		if err := dbpkg.FinishEmpresaAIProposal(dbEmp, ctx.EmpresaID, p.ProposalID, dbpkg.AIProposalCompleted, string(result)); err != nil {
+			http.Error(w, "Las tarifas se aplicaron pero no se pudo cerrar la propuesta", http.StatusInternalServerError)
+			return
+		}
+		registrarAuditoriaModuloEmpresaNoBloqueante(dbEmp, r, ctx.EmpresaID, "centro_ia_empresarial", "propuesta_tarifas_minutos_ejecutada", "empresa_ai_propuestas", 0, http.StatusOK, map[string]interface{}{"proposal_id": p.ProposalID, "tool": p.ToolName, "tarifas_configuradas": len(ids)}, "tarifas por minutos confirmadas desde chat IA")
+		_ = dbpkg.RecordEmpresaAIExecution(dbEmp, dbpkg.EmpresaAIExecution{EmpresaID: ctx.EmpresaID, UsuarioID: ctx.UserID, ConversationID: p.ConversationID, ProposalID: p.ProposalID, ToolName: p.ToolName, Modo: ctx.Mode, RiskLevel: p.RiskLevel, Resultado: "completed", FuentesJSON: `["Configuracion actual de estaciones","Tarifas por minutos"]`, CategoriasJSON: `["internal"]`})
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "proposal_id": p.ProposalID, "status": dbpkg.AIProposalCompleted, "result": json.RawMessage(result)})
 		return
 	}
 	var plan dbpkg.EmpresaAIHotelRoomPlan

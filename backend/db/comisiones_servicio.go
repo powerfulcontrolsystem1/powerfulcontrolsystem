@@ -25,6 +25,7 @@ type EmpresaComisionesServicioConfiguracion struct {
 	PorcentajeComision     float64 `json:"porcentaje_comision"`
 	FiltroServicio         string  `json:"filtro_servicio,omitempty"`
 	AplicarAutomaticamente bool    `json:"aplicar_automaticamente"`
+	IncluirProductos       bool    `json:"incluir_productos"`
 	FechaCreacion          string  `json:"fecha_creacion,omitempty"`
 	FechaActualizacion     string  `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador         string  `json:"usuario_creador,omitempty"`
@@ -62,6 +63,8 @@ type EmpresaComisionServicioMovimiento struct {
 	UsuarioOrigenID         int64   `json:"usuario_origen_id,omitempty"`
 	UsuarioLavador          string  `json:"usuario_lavador,omitempty"`
 	UsuarioLavadorID        int64   `json:"usuario_lavador_id,omitempty"`
+	UsuarioComisionista     string  `json:"usuario_comisionista,omitempty"`
+	UsuarioComisionistaID   int64   `json:"usuario_comisionista_id,omitempty"`
 	RolOperacion            string  `json:"rol_operacion,omitempty"`
 	EscalaID                int64   `json:"escala_id,omitempty"`
 	VentaReferencia         string  `json:"venta_referencia,omitempty"`
@@ -110,20 +113,22 @@ type EmpresaComisionServicioMovimientoFilter struct {
 
 // EmpresaComisionesServicioResumen consolida metricas de comisiones por servicio.
 type EmpresaComisionesServicioResumen struct {
-	TotalBaseServicios      float64 `json:"total_base_servicios"`
-	TotalComisiones         float64 `json:"total_comisiones"`
-	TotalAjustesManuales    float64 `json:"total_ajustes_manuales"`
-	TotalLiquidadas         float64 `json:"total_liquidadas"`
-	TotalPendientesLiquidar float64 `json:"total_pendientes_liquidar"`
-	CantidadMovimientos     int64   `json:"cantidad_movimientos"`
-	LavadoresConComision    int64   `json:"lavadores_con_comision"`
-	PendientesAprobacion    int64   `json:"pendientes_aprobacion"`
+	TotalBaseServicios       float64 `json:"total_base_servicios"`
+	TotalComisiones          float64 `json:"total_comisiones"`
+	TotalAjustesManuales     float64 `json:"total_ajustes_manuales"`
+	TotalLiquidadas          float64 `json:"total_liquidadas"`
+	TotalPendientesLiquidar  float64 `json:"total_pendientes_liquidar"`
+	CantidadMovimientos      int64   `json:"cantidad_movimientos"`
+	LavadoresConComision     int64   `json:"lavadores_con_comision"`
+	ComisionistasConComision int64   `json:"comisionistas_con_comision"`
+	PendientesAprobacion     int64   `json:"pendientes_aprobacion"`
 }
 
 // EmpresaComisionServicioLavadorResumen presenta acumulado por lavador.
 type EmpresaComisionServicioLavadorResumen struct {
 	UsuarioID           int64   `json:"usuario_id,omitempty"`
 	UsuarioLavador      string  `json:"usuario_lavador"`
+	UsuarioComisionista string  `json:"usuario_comisionista"`
 	TotalBaseServicios  float64 `json:"total_base_servicios"`
 	TotalComision       float64 `json:"total_comision"`
 	CantidadMovimientos int64   `json:"cantidad_movimientos"`
@@ -138,6 +143,7 @@ type EmpresaComisionesServicioReporte struct {
 	Escalas       []EmpresaComisionServicioEscala         `json:"escalas"`
 	Resumen       EmpresaComisionesServicioResumen        `json:"resumen"`
 	Lavadores     []EmpresaComisionServicioLavadorResumen `json:"lavadores"`
+	Comisionistas []EmpresaComisionServicioLavadorResumen `json:"comisionistas"`
 	Movimientos   []EmpresaComisionServicioMovimiento     `json:"movimientos"`
 }
 
@@ -150,6 +156,8 @@ type EmpresaComisionServicioRegistroResultado struct {
 	FiltroServicio         string  `json:"filtro_servicio,omitempty"`
 	UsuarioLavador         string  `json:"usuario_lavador,omitempty"`
 	UsuarioLavadorID       int64   `json:"usuario_lavador_id,omitempty"`
+	UsuarioComisionista    string  `json:"usuario_comisionista,omitempty"`
+	UsuarioComisionistaID  int64   `json:"usuario_comisionista_id,omitempty"`
 	RolOperacion           string  `json:"rol_operacion,omitempty"`
 	BaseServicios          float64 `json:"base_servicios"`
 	MontoComision          float64 `json:"monto_comision"`
@@ -182,6 +190,7 @@ type comisionServicioItemSnapshot struct {
 	CodigoItem        string
 	Descripcion       string
 	TotalLinea        float64
+	TipoItem          string
 }
 
 // EnsureEmpresaComisionesServicioSchema crea/migra tablas de comisiones por servicio.
@@ -837,6 +846,7 @@ func GetEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, empresaID int64) 
 		COALESCE(porcentaje_comision, 10),
 		COALESCE(filtro_servicio, 'lavado'),
 		COALESCE(aplicar_automaticamente, 1),
+		COALESCE(incluir_productos, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -849,6 +859,7 @@ func GetEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, empresaID int64) 
 	cfg := defaultEmpresaComisionesServicioConfiguracion(empresaID)
 	var habilitarInt int
 	var aplicarAutoInt int
+	var incluirProductosInt int
 	if err := row.Scan(
 		&cfg.ID,
 		&cfg.EmpresaID,
@@ -856,6 +867,7 @@ func GetEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, empresaID int64) 
 		&cfg.PorcentajeComision,
 		&cfg.FiltroServicio,
 		&aplicarAutoInt,
+		&incluirProductosInt,
 		&cfg.FechaCreacion,
 		&cfg.FechaActualizacion,
 		&cfg.UsuarioCreador,
@@ -870,6 +882,7 @@ func GetEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, empresaID int64) 
 
 	cfg.HabilitarComisiones = habilitarInt == 1
 	cfg.AplicarAutomaticamente = aplicarAutoInt != 0
+	cfg.IncluirProductos = incluirProductosInt != 0
 	cfg.PorcentajeComision = normalizeComisionPorcentaje(cfg.PorcentajeComision)
 	cfg.FiltroServicio = normalizeComisionFiltro(cfg.FiltroServicio)
 	if strings.TrimSpace(cfg.Estado) == "" {
@@ -906,6 +919,7 @@ func UpsertEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, payload Empres
 			porcentaje_comision = ?,
 			filtro_servicio = ?,
 			aplicar_automaticamente = ?,
+			incluir_productos = ?,
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
@@ -915,6 +929,7 @@ func UpsertEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, payload Empres
 			payload.PorcentajeComision,
 			payload.FiltroServicio,
 			boolToInt(payload.AplicarAutomaticamente),
+			boolToInt(payload.IncluirProductos),
 			strings.TrimSpace(payload.UsuarioCreador),
 			strings.TrimSpace(payload.Estado),
 			strings.TrimSpace(payload.Observaciones),
@@ -932,17 +947,19 @@ func UpsertEmpresaComisionesServicioConfiguracion(dbConn *sql.DB, payload Empres
 		porcentaje_comision,
 		filtro_servicio,
 		aplicar_automaticamente,
+		incluir_productos,
 		usuario_creador,
 		estado,
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		payload.EmpresaID,
 		boolToInt(payload.HabilitarComisiones),
 		payload.PorcentajeComision,
 		payload.FiltroServicio,
 		boolToInt(payload.AplicarAutomaticamente),
+		boolToInt(payload.IncluirProductos),
 		strings.TrimSpace(payload.UsuarioCreador),
 		strings.TrimSpace(payload.Estado),
 		strings.TrimSpace(payload.Observaciones),
@@ -959,9 +976,15 @@ func CreateEmpresaComisionServicioMovimiento(dbConn *sql.DB, payload EmpresaComi
 		return 0, fmt.Errorf("empresa_id es obligatorio")
 	}
 	payload.UsuarioOrigen = strings.TrimSpace(payload.UsuarioOrigen)
+	if strings.TrimSpace(payload.UsuarioComisionista) != "" {
+		payload.UsuarioLavador = strings.TrimSpace(payload.UsuarioComisionista)
+		payload.UsuarioLavadorID = payload.UsuarioComisionistaID
+	}
 	payload.UsuarioLavador = defaultComisionLavador(payload.UsuarioLavador, payload.UsuarioOrigen)
 	payload.UsuarioOrigenID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, payload.EmpresaID, payload.UsuarioOrigenID, payload.UsuarioOrigen)
 	payload.UsuarioLavadorID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, payload.EmpresaID, payload.UsuarioLavadorID, payload.UsuarioLavador)
+	payload.UsuarioComisionista = payload.UsuarioLavador
+	payload.UsuarioComisionistaID = payload.UsuarioLavadorID
 	payload.RolOperacion = normalizeComisionRol(payload.RolOperacion)
 	payload.Moneda = normalizeComisionMoneda(payload.Moneda)
 	payload.BaseServicio = round2(payload.BaseServicio)
@@ -1406,6 +1429,8 @@ func ListEmpresaComisionServicioMovimientos(dbConn *sql.DB, empresaID int64, fil
 		if row.UsuarioLavadorID == 0 {
 			row.UsuarioLavadorID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, row.EmpresaID, 0, row.UsuarioLavador)
 		}
+		row.UsuarioComisionista = row.UsuarioLavador
+		row.UsuarioComisionistaID = row.UsuarioLavadorID
 		row.RolOperacion = normalizeComisionRol(row.RolOperacion)
 		row.Estado = normalizeComisionEstado(row.Estado)
 		result = append(result, row)
@@ -1482,8 +1507,9 @@ func GetEmpresaComisionesServicioReporte(dbConn *sql.DB, empresaID int64, filter
 		entry := byLavador[key]
 		if entry == nil {
 			entry = &EmpresaComisionServicioLavadorResumen{
-				UsuarioID:      mov.UsuarioLavadorID,
-				UsuarioLavador: defaultComisionLavador(mov.UsuarioLavador, mov.UsuarioOrigen),
+				UsuarioID:           mov.UsuarioLavadorID,
+				UsuarioLavador:      defaultComisionLavador(mov.UsuarioLavador, mov.UsuarioOrigen),
+				UsuarioComisionista: defaultComisionLavador(mov.UsuarioLavador, mov.UsuarioOrigen),
 			}
 			byLavador[key] = entry
 		}
@@ -1507,6 +1533,7 @@ func GetEmpresaComisionesServicioReporte(dbConn *sql.DB, empresaID int64, filter
 	})
 
 	resumen.LavadoresConComision = int64(len(lavadores))
+	resumen.ComisionistasConComision = int64(len(lavadores))
 
 	return &EmpresaComisionesServicioReporte{
 		EmpresaID:     empresaID,
@@ -1516,11 +1543,12 @@ func GetEmpresaComisionesServicioReporte(dbConn *sql.DB, empresaID int64, filter
 		Escalas:       escalas,
 		Resumen:       resumen,
 		Lavadores:     lavadores,
+		Comisionistas: lavadores,
 		Movimientos:   movs,
 	}, nil
 }
 
-func listComisionServicioItemsFromCarrito(dbConn *sql.DB, empresaID, carritoID int64) ([]comisionServicioItemSnapshot, error) {
+func listComisionServicioItemsFromCarrito(dbConn *sql.DB, empresaID, carritoID int64, incluirProductos bool) ([]comisionServicioItemSnapshot, error) {
 	if empresaID <= 0 || carritoID <= 0 {
 		return nil, fmt.Errorf("empresa_id y carrito_id son obligatorios")
 	}
@@ -1532,10 +1560,11 @@ func listComisionServicioItemsFromCarrito(dbConn *sql.DB, empresaID, carritoID i
 
 	query := `SELECT
 		i.id,
-		COALESCE(i.referencia_id, 0),
+		CASE WHEN lower(COALESCE(i.tipo_item, 'producto')) = 'servicio' THEN COALESCE(i.referencia_id, 0) ELSE 0 END,
 		COALESCE(i.codigo_item, ''),
 		COALESCE(i.descripcion, ''),
 		COALESCE(i.total_linea, 0),
+		lower(COALESCE(i.tipo_item, 'producto')),
 		'',
 		'',
 		''
@@ -1543,28 +1572,32 @@ func listComisionServicioItemsFromCarrito(dbConn *sql.DB, empresaID, carritoID i
 	WHERE i.empresa_id = ?
 		AND i.carrito_id = ?
 		AND COALESCE(i.estado, 'activo') = 'activo'
-		AND lower(COALESCE(i.tipo_item, 'producto')) = 'servicio'
+		AND (lower(COALESCE(i.tipo_item, 'producto')) = 'servicio'
+			OR (? AND lower(COALESCE(i.tipo_item, 'producto')) = 'producto'))
 	ORDER BY i.id ASC`
 	if hasServicios {
 		query = `SELECT
 			i.id,
-			COALESCE(i.referencia_id, 0),
+			CASE WHEN lower(COALESCE(i.tipo_item, 'producto')) = 'servicio' THEN COALESCE(i.referencia_id, 0) ELSE 0 END,
 			COALESCE(i.codigo_item, ''),
 			COALESCE(i.descripcion, ''),
 			COALESCE(i.total_linea, 0),
+			lower(COALESCE(i.tipo_item, 'producto')),
 			COALESCE(s.codigo, ''),
 			COALESCE(s.nombre, ''),
 			COALESCE(s.categoria, '')
 		FROM carrito_compra_items i
 		LEFT JOIN servicios s ON s.empresa_id = i.empresa_id AND s.id = i.referencia_id
+			AND lower(COALESCE(i.tipo_item, 'producto')) = 'servicio'
 		WHERE i.empresa_id = ?
 			AND i.carrito_id = ?
 			AND COALESCE(i.estado, 'activo') = 'activo'
-			AND lower(COALESCE(i.tipo_item, 'producto')) = 'servicio'
+			AND (lower(COALESCE(i.tipo_item, 'producto')) = 'servicio'
+				OR (? AND lower(COALESCE(i.tipo_item, 'producto')) = 'producto'))
 		ORDER BY i.id ASC`
 	}
 
-	rows, err := dbConn.Query(query, empresaID, carritoID)
+	rows, err := dbConn.Query(query, empresaID, carritoID, incluirProductos)
 	if err != nil {
 		return nil, err
 	}
@@ -1579,6 +1612,7 @@ func listComisionServicioItemsFromCarrito(dbConn *sql.DB, empresaID, carritoID i
 			&row.CodigoItem,
 			&row.Descripcion,
 			&row.TotalLinea,
+			&row.TipoItem,
 			&row.ServicioCodigo,
 			&row.ServicioNombre,
 			&row.ServicioCategoria,
@@ -1595,6 +1629,9 @@ func listComisionServicioItemsFromCarrito(dbConn *sql.DB, empresaID, carritoID i
 }
 
 func servicioCumpleFiltroComision(item comisionServicioItemSnapshot, filtro string) bool {
+	if item.TipoItem == "producto" {
+		return normalizeComisionFiltro(filtro) == ""
+	}
 	filtro = normalizeComisionFiltro(filtro)
 	if filtro == "" {
 		return true
@@ -1607,6 +1644,13 @@ func servicioCumpleFiltroComision(item comisionServicioItemSnapshot, filtro stri
 		item.Descripcion,
 	}, " "))
 	return strings.Contains(haystack, filtro)
+}
+
+func itemCumpleBaseComision(item comisionServicioItemSnapshot, cfg EmpresaComisionesServicioConfiguracion) bool {
+	if item.TipoItem == "producto" {
+		return cfg.IncluirProductos
+	}
+	return servicioCumpleFiltroComision(item, cfg.FiltroServicio)
 }
 
 func findMatchingComisionEscala(escalas []EmpresaComisionServicioEscala, item comisionServicioItemSnapshot, rolOperacion string) *EmpresaComisionServicioEscala {
@@ -1644,15 +1688,18 @@ func RegisterEmpresaComisionesServicioDesdeCarrito(dbConn *sql.DB, empresaID, ca
 		return nil, err
 	}
 
+	usuarioComisionista := strings.TrimSpace(usuarioLavador)
 	result := &EmpresaComisionServicioRegistroResultado{
 		Habilitada:           cfg.HabilitarComisiones,
 		AplicacionAutomatica: cfg.AplicarAutomaticamente,
 		PorcentajeComision:   cfg.PorcentajeComision,
 		FiltroServicio:       cfg.FiltroServicio,
-		UsuarioLavador:       defaultComisionLavador(usuarioLavador, usuarioOrigen),
-		UsuarioLavadorID:     resolveEmpresaUsuarioIDByReferenceSilent(dbConn, empresaID, 0, defaultComisionLavador(usuarioLavador, usuarioOrigen)),
+		UsuarioLavador:       usuarioComisionista,
+		UsuarioLavadorID:     resolveEmpresaUsuarioIDByReferenceSilent(dbConn, empresaID, 0, usuarioComisionista),
 		RolOperacion:         normalizeComisionRol(rolOperacion),
 	}
+	result.UsuarioComisionista = result.UsuarioLavador
+	result.UsuarioComisionistaID = result.UsuarioLavadorID
 	usuarioOrigenID := resolveEmpresaUsuarioIDByReferenceSilent(dbConn, empresaID, 0, usuarioOrigen)
 
 	if !cfg.HabilitarComisiones {
@@ -1661,6 +1708,10 @@ func RegisterEmpresaComisionesServicioDesdeCarrito(dbConn *sql.DB, empresaID, ca
 	}
 	if !cfg.AplicarAutomaticamente {
 		result.Warning = "comisiones configuradas en modo manual"
+		return result, nil
+	}
+	if usuarioComisionista == "" {
+		result.Warning = "seleccione un comisionista para registrar la comision"
 		return result, nil
 	}
 	if cfg.PorcentajeComision <= 0 && len(escalas) == 0 {
@@ -1683,12 +1734,12 @@ func RegisterEmpresaComisionesServicioDesdeCarrito(dbConn *sql.DB, empresaID, ca
 		return nil, err
 	}
 
-	items, err := listComisionServicioItemsFromCarrito(dbConn, empresaID, carritoID)
+	items, err := listComisionServicioItemsFromCarrito(dbConn, empresaID, carritoID, cfg.IncluirProductos)
 	if err != nil {
 		return nil, err
 	}
 	if len(items) == 0 {
-		result.Warning = "sin items de tipo servicio para comision"
+		result.Warning = "sin items comisionables para comision"
 		return result, nil
 	}
 
@@ -1700,7 +1751,7 @@ func RegisterEmpresaComisionesServicioDesdeCarrito(dbConn *sql.DB, empresaID, ca
 	escalasAplicadas := make(map[int64]struct{})
 	for _, item := range items {
 		escala := findMatchingComisionEscala(escalas, item, rolOperacion)
-		coincideFiltroBase := servicioCumpleFiltroComision(item, cfg.FiltroServicio)
+		coincideFiltroBase := itemCumpleBaseComision(item, *cfg)
 		if escala == nil && !coincideFiltroBase {
 			continue
 		}
@@ -1736,6 +1787,10 @@ func RegisterEmpresaComisionesServicioDesdeCarrito(dbConn *sql.DB, empresaID, ca
 			result.TotalTopesAplicados = round2(result.TotalTopesAplicados + (montoBruto - montoComision))
 		}
 
+		categoria := item.ServicioCategoria
+		if item.TipoItem == "producto" && strings.TrimSpace(categoria) == "" {
+			categoria = "producto"
+		}
 		id, err := CreateEmpresaComisionServicioMovimiento(dbConn, EmpresaComisionServicioMovimiento{
 			EmpresaID:            empresaID,
 			CarritoID:            carritoID,
@@ -1743,7 +1798,7 @@ func RegisterEmpresaComisionesServicioDesdeCarrito(dbConn *sql.DB, empresaID, ca
 			ServicioID:           item.ServicioID,
 			ServicioCodigo:       firstNonEmpty(item.ServicioCodigo, item.CodigoItem),
 			ServicioNombre:       firstNonEmpty(item.ServicioNombre, item.Descripcion),
-			ServicioCategoria:    item.ServicioCategoria,
+			ServicioCategoria:    categoria,
 			UsuarioOrigen:        usuarioOrigen,
 			UsuarioOrigenID:      usuarioOrigenID,
 			UsuarioLavador:       result.UsuarioLavador,

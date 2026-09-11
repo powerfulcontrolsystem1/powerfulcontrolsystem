@@ -345,7 +345,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "562378a2799a108448419fdd6a137bd3176f9c37844359b1a8de17b7fd6ccd48"
+      "sha256_lf": "caf40d5414d1f5d386b6aa3790f14f5adacd87a16f645dae86224a46ec6ba485"
     },
     {
       "path": "documentos/arquitectura/inventario_cliente_movil_plan_105.md",
@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "26fff3326b5863f8f3c78b5a86d10ea941793855c932b03874f2f42d7803c9ee"
+      "sha256_lf": "c78f37293a0dc1391301e12e929588214686d7e979c2de77ea9406e4509d0795"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -795,7 +795,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "3d0afaabae9cedbd412b917f01639dd9e2cfaf327116b6fe0241e2cd7cbaeb69"
+      "sha256_lf": "b61cd3abef161c2fc6f10d7221c499a4e56996c84599b8760191a6af63b664f5"
     },
     {
       "path": "documentos/flujos_operativos.md",
@@ -804,7 +804,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "bd9d95e4f9390f5809cb40e6ed2f431d11a685341957e6af209cb89409820fe4"
+      "sha256_lf": "db6a9b3a7658d9bc9eb8dfd32ab6cc28d18017bc124e641d567e505fcf9ff1ca"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
@@ -1272,7 +1272,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "5bb10dc4ba4bca36504e03b46e77d461fd70a50c14be67850b4a288cc9bddea1"
+      "sha256_lf": "0dc554845d980428c3ef414de875dc3bccc37e002945b7477779904d8d5bef54"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",
@@ -1290,7 +1290,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "4aa2479a52c02995c91c606739492736dee1e12006eca88ab7179d342a6d2b69"
+      "sha256_lf": "b6353f0f16402c4ac53d46b25dfc24f4ec2c6719bef83ecd326ef63401433ba0"
     },
     {
       "path": "documentos/modulos_empresariales_colombia.md",

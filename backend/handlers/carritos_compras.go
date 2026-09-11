@@ -101,6 +101,60 @@ func isServicioLimpiezaRestrictedCarritoRequest(r *http.Request, action string) 
 	return !(r.Method == http.MethodGet && strings.TrimSpace(action) == "")
 }
 
+func isActivationOnlyRestrictedCarritoRequest(dbEmp *sql.DB, r *http.Request, action string) (bool, error) {
+	if r == nil || dbEmp == nil {
+		return false, nil
+	}
+	empresaID, err := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("empresa_id")), 10, 64)
+	if err != nil || empresaID <= 0 {
+		return false, nil
+	}
+	policy, err := loadCarritoStationAccessPolicy(dbEmp, empresaID, adminEmailFromRequest(r))
+	if err != nil {
+		return false, err
+	}
+	return isActivationOnlyPolicyRestricted(policy, r.Method, action), nil
+}
+
+func isActivationOnlyPolicyRestricted(policy carritoStationAccessPolicy, method, action string) bool {
+	if !policy.Enabled || !policy.ActivationOnly {
+		return false
+	}
+	if method == http.MethodGet {
+		return strings.TrimSpace(action) != ""
+	}
+	return !(method == http.MethodPut && strings.EqualFold(strings.TrimSpace(action), "activar_estacion"))
+}
+
+func enforceActivationOnlyCarritoRequest(w http.ResponseWriter, dbEmp *sql.DB, r *http.Request, action string) bool {
+	denied, err := isActivationOnlyRestrictedCarritoRequest(dbEmp, r, action)
+	if err != nil {
+		http.Error(w, "No se pudo validar el modo operativo de la caja", http.StatusInternalServerError)
+		return true
+	}
+	if denied {
+		http.Error(w, "forbidden: esta caja solo puede ver y activar estaciones", http.StatusForbidden)
+		return true
+	}
+	return false
+}
+
+func carritoMontoEfectivoParaCaja(metodoPago string, pagosMixtos []carritoPagoMixtoNormalizado, totalEsperado float64) float64 {
+	if metodoPago == "efectivo" {
+		return totalEsperado
+	}
+	if metodoPago != "mixto" {
+		return 0
+	}
+	monto := 0.0
+	for _, tramo := range pagosMixtos {
+		if tramo.Metodo == "efectivo" {
+			monto += tramo.Monto
+		}
+	}
+	return monto
+}
+
 // EmpresaCarritosCompraHandler gestiona CRUD de carritos por empresa.
 type carritoCancellationMetricOptions struct {
 	eventoOperacion     string
@@ -130,9 +184,12 @@ func recordCarritoCancellationMetric(dbEmp *sql.DB, carrito, actualizado *dbpkg.
 
 func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		if enforceActivationOnlyCarritoRequest(w, dbEmp, r, action) {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
-			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if isPorteroRestrictedCarritoRequest(r, action) {
 				http.Error(w, "forbidden: el rol portero solo puede ver y activar estaciones", http.StatusForbidden)
 				return
@@ -450,7 +507,6 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPost:
-			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if isPorteroRestrictedCarritoRequest(r, action) {
 				http.Error(w, "forbidden: el rol portero solo puede ver y activar estaciones", http.StatusForbidden)
 				return
@@ -642,7 +698,6 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPut:
-			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if isPorteroRestrictedCarritoRequest(r, action) {
 				http.Error(w, "forbidden: el rol portero solo puede ver y activar estaciones", http.StatusForbidden)
 				return
@@ -1034,24 +1089,26 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 
 				var payload struct {
-					MetodoPago         string                    `json:"metodo_pago"`
-					ReferenciaPago     string                    `json:"referencia_pago"`
-					PagosMixtos        []carritoPagoMixtoEntrada `json:"pagos_mixtos"`
-					Pagos              []carritoPagoMixtoEntrada `json:"pagos"`
-					DescuentoTipo      string                    `json:"descuento_tipo"`
-					DescuentoCodigo    string                    `json:"descuento_codigo"`
-					CodigoDescuento    string                    `json:"codigo_descuento"`
-					DescuentoValor     float64                   `json:"descuento_valor"`
-					DevolucionTotal    float64                   `json:"devolucion_total"`
-					AbonosTotal        float64                   `json:"abonos_total"`
-					TotalPagado        float64                   `json:"total_pagado"`
-					AplicarPropina     *bool                     `json:"aplicar_propina"`
-					ModoDocumentoVenta string                    `json:"modo_documento_venta"`
-					UsuarioLavador     string                    `json:"usuario_lavador"`
-					CierreCajaID       int64                     `json:"cierre_caja_id"`
-					CajaCodigo         string                    `json:"caja_codigo"`
-					CajaTurno          string                    `json:"caja_turno"`
-					CajaSucursalID     int64                     `json:"caja_sucursal_id"`
+					MetodoPago            string                    `json:"metodo_pago"`
+					ReferenciaPago        string                    `json:"referencia_pago"`
+					PagosMixtos           []carritoPagoMixtoEntrada `json:"pagos_mixtos"`
+					Pagos                 []carritoPagoMixtoEntrada `json:"pagos"`
+					DescuentoTipo         string                    `json:"descuento_tipo"`
+					DescuentoCodigo       string                    `json:"descuento_codigo"`
+					CodigoDescuento       string                    `json:"codigo_descuento"`
+					DescuentoValor        float64                   `json:"descuento_valor"`
+					DevolucionTotal       float64                   `json:"devolucion_total"`
+					AbonosTotal           float64                   `json:"abonos_total"`
+					TotalPagado           float64                   `json:"total_pagado"`
+					AplicarPropina        *bool                     `json:"aplicar_propina"`
+					ModoDocumentoVenta    string                    `json:"modo_documento_venta"`
+					UsuarioLavador        string                    `json:"usuario_lavador"`
+					UsuarioComisionista   string                    `json:"usuario_comisionista"`
+					UsuarioComisionistaID int64                     `json:"usuario_comisionista_id"`
+					CierreCajaID          int64                     `json:"cierre_caja_id"`
+					CajaCodigo            string                    `json:"caja_codigo"`
+					CajaTurno             string                    `json:"caja_turno"`
+					CajaSucursalID        int64                     `json:"caja_sucursal_id"`
 				}
 				if r.Body != nil {
 					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
@@ -1293,6 +1350,16 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if usuarioOperacionItem, errUsuario := dbpkg.ResolveEmpresaUsuarioByReference(dbEmp, empresaID, usuarioOperacion); errUsuario == nil && usuarioOperacionItem != nil {
 					usuarioOperacionID = usuarioOperacionItem.ID
 				}
+				paymentStaff, errStaff := resolveCarritoPaymentStaff(
+					dbEmp, empresaID, carrito, montoPropina, propinaModo, permisosOperativos.HabilitarComisiones,
+					payload.UsuarioComisionistaID, payload.UsuarioComisionista, payload.UsuarioLavador,
+				)
+				if errStaff != nil {
+					writeCarritoPaymentStaffError(w, empresaID, id, errStaff)
+					return
+				}
+				meseroOperacion := paymentStaff.Mesero
+				comisionistaReferencia := paymentStaff.ComisionistaReferencia
 				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(r.Context(), dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
 				if errCierreCaja != nil {
 					if errors.Is(errCierreCaja, sql.ErrNoRows) {
@@ -1303,16 +1370,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo validar la caja abierta para este pago", http.StatusInternalServerError)
 					return
 				}
-				montoEfectivoCaja := 0.0
-				if metodoPago == "efectivo" {
-					montoEfectivoCaja = totalEsperadoConPropina
-				} else if metodoPago == "mixto" {
-					for _, tramo := range pagosMixtos {
-						if tramo.Metodo == "efectivo" {
-							montoEfectivoCaja += tramo.Monto
-						}
-					}
-				}
+				montoEfectivoCaja := carritoMontoEfectivoParaCaja(metodoPago, pagosMixtos, totalEsperadoConPropina)
 
 				totalPagadoCarrito := roundMoneyCarritoForMoneda(totalPagado+abonosAplicados, carrito.Moneda)
 				documentIntent, errPago := dbpkg.PayCarritoStationSessionWithDocumentIntent(
@@ -1401,6 +1459,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					if movimientoPropina.ModoDistribucion == dbpkg.EmpresaPropinaModoUniversal {
 						movimientoPropina.UsuarioAsignado = ""
 						movimientoPropina.UsuarioAsignadoID = 0
+					} else if meseroOperacion != nil {
+						movimientoPropina.UsuarioAsignado = strings.TrimSpace(meseroOperacion.Email)
+						movimientoPropina.UsuarioAsignadoID = meseroOperacion.ID
 					}
 					propinaRegistroIDTmp, errReg := dbpkg.CreateEmpresaPropinaMovimiento(dbEmp, movimientoPropina)
 					if errReg != nil {
@@ -1420,7 +1481,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						dbEmp,
 						empresaID,
 						id,
-						strings.TrimSpace(payload.UsuarioLavador),
+						comisionistaReferencia,
 						usuarioOperacion,
 						rolOperacion,
 					); errComision != nil {
@@ -1430,6 +1491,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						comisionResultado = result
 					}
 				}
+				rememberCarritoStationCommissionist(dbEmp, empresaID, paymentStaff, usuarioOperacion)
 				if comisionResultado.Aplicada && comisionResultado.MontoComision > 0 {
 					registrarEventoContableNoBloqueante(dbEmp, r, "comisiones", dbpkg.EmpresaEventoContable{
 						EmpresaID:       empresaID,
@@ -1449,6 +1511,8 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"venta_referencia":         strings.TrimSpace(carrito.Codigo),
 						"usuario_lavador":          comisionResultado.UsuarioLavador,
 						"usuario_lavador_id":       comisionResultado.UsuarioLavadorID,
+						"usuario_comisionista":     comisionResultado.UsuarioComisionista,
+						"usuario_comisionista_id":  comisionResultado.UsuarioComisionistaID,
 						"base_servicios":           comisionResultado.BaseServicios,
 						"porcentaje_comision":      comisionResultado.PorcentajeComision,
 						"monto_comision":           comisionResultado.MontoComision,
@@ -1610,6 +1674,8 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"filtro_servicio":          comisionResultado.FiltroServicio,
 						"usuario_lavador":          comisionResultado.UsuarioLavador,
 						"usuario_lavador_id":       comisionResultado.UsuarioLavadorID,
+						"usuario_comisionista":     comisionResultado.UsuarioComisionista,
+						"usuario_comisionista_id":  comisionResultado.UsuarioComisionistaID,
 						"base_servicios":           comisionResultado.BaseServicios,
 						"monto_comision":           comisionResultado.MontoComision,
 						"movimientos_registrados":  comisionResultado.MovimientosRegistrados,
@@ -2169,6 +2235,15 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 // EmpresaCarritoItemsHandler gestiona CRUD de items dentro de un carrito.
 func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		activationOnlyDenied, activationOnlyErr := isActivationOnlyRestrictedCarritoRequest(dbEmp, r, "items")
+		if activationOnlyErr != nil {
+			http.Error(w, "No se pudo validar el modo operativo de la caja", http.StatusInternalServerError)
+			return
+		}
+		if activationOnlyDenied {
+			http.Error(w, "forbidden: esta caja solo puede ver y activar estaciones", http.StatusForbidden)
+			return
+		}
 		if isStationBoardOnlyCarritoRequest(r) {
 			http.Error(w, "forbidden: este rol no puede consultar ni modificar items del carrito", http.StatusForbidden)
 			return
@@ -2369,6 +2444,15 @@ Si necesita ayuda, consulte la sección de Inventario o contacte al administrado
 // EmpresaCarritoProductoHistorialHandler expone el historial no agrupado de productos pedidos en un carrito.
 func EmpresaCarritoProductoHistorialHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		activationOnlyDenied, activationOnlyErr := isActivationOnlyRestrictedCarritoRequest(dbEmp, r, "historial_items")
+		if activationOnlyErr != nil {
+			http.Error(w, "No se pudo validar el modo operativo de la caja", http.StatusInternalServerError)
+			return
+		}
+		if activationOnlyDenied {
+			http.Error(w, "forbidden: esta caja solo puede ver y activar estaciones", http.StatusForbidden)
+			return
+		}
 		if isStationBoardOnlyCarritoRequest(r) {
 			http.Error(w, "forbidden: este rol no puede consultar historial del carrito", http.StatusForbidden)
 			return
@@ -2668,10 +2752,12 @@ func registrarCreditoVentaDesdeCarrito(dbEmp *sql.DB, carrito *dbpkg.CarritoComp
 var errCarritoStationAccessDenied = errors.New("usuario sin acceso a esta estacion")
 
 type carritoStationAccessPolicy struct {
-	Enabled       bool
-	LimitStations bool
-	AllowCaja     bool
-	Stations      map[int64]bool
+	Enabled        bool
+	LimitStations  bool
+	AllowCaja      bool
+	ActivationOnly bool
+	CajaCode       string
+	Stations       map[int64]bool
 }
 
 func loadCarritoStationAccessPolicy(dbEmp *sql.DB, empresaID int64, usuario string) (carritoStationAccessPolicy, error) {
@@ -2733,12 +2819,89 @@ func loadCarritoStationAccessPolicy(dbEmp *sql.DB, empresaID int64, usuario stri
 			policy.Stations[id] = true
 		}
 	}
-	return policy, nil
+
+	return applyCarritoCashboxPolicy(policy, root, entry), nil
+}
+
+func applyCarritoCashboxPolicy(policy carritoStationAccessPolicy, root, entry map[string]interface{}) carritoStationAccessPolicy {
+	policy.CajaCode = strings.ToUpper(strings.TrimSpace(carritoStringFromConfig(entry["caja_codigo"])))
+	if policy.CajaCode == "" {
+		policy.CajaCode = strings.ToUpper(strings.TrimSpace(carritoStringFromConfig(entry["cashbox_code"])))
+	}
+	if policy.CajaCode == "" {
+		return policy
+	}
+	var cajaConfig map[string]interface{}
+	for _, rawCaja := range carritoSliceFromConfig(root["cajas_config"]) {
+		candidate := carritoMapFromConfig(rawCaja)
+		if candidate == nil {
+			continue
+		}
+		candidateCode := strings.ToUpper(strings.TrimSpace(carritoStringFromConfig(candidate["codigo"])))
+		if candidateCode == "" {
+			candidateCode = strings.ToUpper(strings.TrimSpace(carritoStringFromConfig(candidate["caja_codigo"])))
+		}
+		if candidateCode == policy.CajaCode {
+			cajaConfig = candidate
+			break
+		}
+	}
+	if cajaConfig == nil {
+		return policy
+	}
+	mode := strings.ToLower(strings.TrimSpace(carritoStringFromConfig(cajaConfig["modo_estaciones"])))
+	if mode == "" {
+		mode = strings.ToLower(strings.TrimSpace(carritoStringFromConfig(cajaConfig["modo"])))
+	}
+	policy.ActivationOnly = mode == "solo_activar"
+	if policy.ActivationOnly {
+		policy.AllowCaja = false
+	}
+	cajaStations := carritoInt64SliceFromConfig(cajaConfig["estaciones"])
+	if len(cajaStations) == 0 {
+		cajaStations = carritoInt64SliceFromConfig(cajaConfig["station_ids"])
+	}
+	cajaLimit := carritoBoolFromConfigValue(cajaConfig["limitar_estaciones"])
+	if _, exists := cajaConfig["restringir_estaciones"]; exists {
+		cajaLimit = carritoBoolFromConfigValue(cajaConfig["restringir_estaciones"])
+	}
+	if _, explicit := cajaConfig["limitar_estaciones"]; len(cajaStations) > 0 && !explicit {
+		cajaLimit = true
+	}
+	if !cajaLimit {
+		return policy
+	}
+	cajaAllowed := make(map[int64]bool, len(cajaStations))
+	for _, id := range cajaStations {
+		if id > 0 {
+			cajaAllowed[id] = true
+		}
+	}
+	if !policy.LimitStations {
+		policy.LimitStations = true
+		policy.Stations = cajaAllowed
+		return policy
+	}
+	for id := range policy.Stations {
+		if !cajaAllowed[id] {
+			delete(policy.Stations, id)
+		}
+	}
+	return policy
 }
 
 func carritoMapFromConfig(value interface{}) map[string]interface{} {
 	switch v := value.(type) {
 	case map[string]interface{}:
+		return v
+	default:
+		return nil
+	}
+}
+
+func carritoSliceFromConfig(value interface{}) []interface{} {
+	switch v := value.(type) {
+	case []interface{}:
 		return v
 	default:
 		return nil
@@ -2814,6 +2977,178 @@ func ensureCarritoStationAccessForStation(dbEmp *sql.DB, empresaID int64, usuari
 func ensureCarritoStationAccessForCarrito(dbEmp *sql.DB, empresaID int64, usuario string, carrito *dbpkg.CarritoCompra) error {
 	estacionID, _, _ := dbpkg.ResolveCarritoStationIdentity(carrito)
 	return ensureCarritoStationAccessForStation(dbEmp, empresaID, usuario, estacionID)
+}
+
+type carritoStationStaffConfig struct {
+	Mesero                      string
+	MeseroID                    int64
+	Comisionista                string
+	ComisionistaID              int64
+	MostrarComisionista         bool
+	ConservarUltimoComisionista bool
+}
+
+func loadCarritoStationStaffConfig(dbEmp *sql.DB, empresaID, estacionID int64) (carritoStationStaffConfig, error) {
+	cfg := carritoStationStaffConfig{MostrarComisionista: true}
+	if dbEmp == nil || empresaID <= 0 || estacionID <= 0 {
+		return cfg, nil
+	}
+	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "estaciones_config")
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return cfg, nil
+		}
+		return cfg, err
+	}
+	if pref == nil {
+		return cfg, nil
+	}
+	root := carritoParseConfigJSON(pref.Valor)
+	if root == nil {
+		return cfg, nil
+	}
+	stations, _ := root["estaciones"].([]interface{})
+	for _, raw := range stations {
+		station, _ := raw.(map[string]interface{})
+		if carritoInt64FromConfig(station["id"]) != estacionID {
+			continue
+		}
+		cfg.Mesero = carritoStringFromConfig(station["mesero_asignado"])
+		cfg.MeseroID = carritoInt64FromConfig(station["mesero_asignado_id"])
+		cfg.Comisionista = carritoStringFromConfig(station["comisionista_asignado"])
+		cfg.ComisionistaID = carritoInt64FromConfig(station["comisionista_asignado_id"])
+		cfg.MostrarComisionista = carritoBoolFromConfigValueDefault(station, "mostrar_comisionista", true)
+		cfg.ConservarUltimoComisionista = carritoBoolFromConfigValueDefault(station, "conservar_ultimo_comisionista", false)
+		break
+	}
+	if cfg.ConservarUltimoComisionista {
+		last, lastErr := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, estacionID, "carrito.comisionista_ultimo")
+		if lastErr == nil && last != nil && strings.TrimSpace(last.Valor) != "" {
+			cfg.Comisionista = strings.TrimSpace(last.Valor)
+			cfg.ComisionistaID = 0
+		} else if lastErr != nil && !errors.Is(lastErr, sql.ErrNoRows) {
+			return cfg, lastErr
+		}
+	}
+	return cfg, nil
+}
+
+func carritoStringFromConfig(value interface{}) string {
+	text, _ := value.(string)
+	return strings.TrimSpace(text)
+}
+
+func resolveCarritoStaffUser(dbEmp *sql.DB, empresaID, configuredID int64, reference string) (*dbpkg.EmpresaUsuario, error) {
+	reference = strings.TrimSpace(reference)
+	if reference == "" && configuredID > 0 {
+		reference = strconv.FormatInt(configuredID, 10)
+	}
+	if reference == "" {
+		return nil, nil
+	}
+	user, err := dbpkg.ResolveEmpresaUsuarioByReference(dbEmp, empresaID, reference)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil || !strings.EqualFold(strings.TrimSpace(user.Estado), "activo") {
+		return nil, sql.ErrNoRows
+	}
+	return user, nil
+}
+
+type carritoPaymentStaff struct {
+	StationID              int64
+	Config                 carritoStationStaffConfig
+	Mesero                 *dbpkg.EmpresaUsuario
+	Comisionista           *dbpkg.EmpresaUsuario
+	ComisionistaReferencia string
+}
+
+type carritoPaymentStaffError struct {
+	Status  int
+	Message string
+	Cause   error
+}
+
+func (e *carritoPaymentStaffError) Error() string {
+	if e == nil {
+		return ""
+	}
+	return e.Message
+}
+
+func resolveCarritoPaymentStaff(dbEmp *sql.DB, empresaID int64, carrito *dbpkg.CarritoCompra, montoPropina float64, propinaModo string, habilitarComisiones bool, comisionistaID int64, comisionistaReferencia, comisionistaLegacy string) (carritoPaymentStaff, error) {
+	result := carritoPaymentStaff{}
+	result.StationID, _, _ = dbpkg.ResolveCarritoStationIdentity(carrito)
+	staffCfg, err := loadCarritoStationStaffConfig(dbEmp, empresaID, result.StationID)
+	if err != nil {
+		return result, &carritoPaymentStaffError{Status: http.StatusInternalServerError, Message: "No se pudo validar el personal asignado a la estacion", Cause: err}
+	}
+	result.Config = staffCfg
+	if montoPropina > 0 && propinaModo == dbpkg.EmpresaPropinaModoPorUsuario {
+		result.Mesero, err = resolveCarritoStaffUser(dbEmp, empresaID, staffCfg.MeseroID, staffCfg.Mesero)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return result, &carritoPaymentStaffError{Status: http.StatusInternalServerError, Message: "No se pudo validar el mesero asignado", Cause: err}
+		}
+		if errors.Is(err, sql.ErrNoRows) && (staffCfg.Mesero != "" || staffCfg.MeseroID > 0) {
+			return result, &carritoPaymentStaffError{Status: http.StatusBadRequest, Message: "El mesero asignado no pertenece a esta empresa o esta inactivo", Cause: err}
+		}
+	}
+	result.ComisionistaReferencia = strings.TrimSpace(comisionistaReferencia)
+	if result.ComisionistaReferencia == "" {
+		result.ComisionistaReferencia = strings.TrimSpace(comisionistaLegacy)
+	}
+	if !staffCfg.MostrarComisionista || result.ComisionistaReferencia == "" {
+		result.ComisionistaReferencia = staffCfg.Comisionista
+		comisionistaID = staffCfg.ComisionistaID
+	}
+	if !habilitarComisiones {
+		return result, nil
+	}
+	commissionCfg, err := dbpkg.GetEmpresaComisionesServicioConfiguracion(dbEmp, empresaID)
+	if err != nil {
+		return result, &carritoPaymentStaffError{Status: http.StatusInternalServerError, Message: "No se pudo validar la configuracion de comisiones", Cause: err}
+	}
+	if commissionCfg == nil || !commissionCfg.HabilitarComisiones || !commissionCfg.AplicarAutomaticamente {
+		return result, nil
+	}
+	result.Comisionista, err = resolveCarritoStaffUser(dbEmp, empresaID, comisionistaID, result.ComisionistaReferencia)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return result, &carritoPaymentStaffError{Status: http.StatusInternalServerError, Message: "No se pudo validar el comisionista", Cause: err}
+	}
+	if errors.Is(err, sql.ErrNoRows) && (result.ComisionistaReferencia != "" || comisionistaID > 0) {
+		return result, &carritoPaymentStaffError{Status: http.StatusBadRequest, Message: "El comisionista seleccionado no pertenece a esta empresa o esta inactivo", Cause: err}
+	}
+	if result.Comisionista != nil {
+		result.ComisionistaReferencia = strings.TrimSpace(result.Comisionista.Email)
+	}
+	return result, nil
+}
+
+func writeCarritoPaymentStaffError(w http.ResponseWriter, empresaID, carritoID int64, err error) {
+	var validationErr *carritoPaymentStaffError
+	if errors.As(err, &validationErr) {
+		if validationErr.Cause != nil {
+			log.Printf("[carritos] validar personal empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, validationErr.Cause)
+		}
+		http.Error(w, validationErr.Message, validationErr.Status)
+		return
+	}
+	http.Error(w, "No se pudo validar el personal asignado a la estacion", http.StatusInternalServerError)
+}
+
+func rememberCarritoStationCommissionist(dbEmp *sql.DB, empresaID int64, staff carritoPaymentStaff, usuarioOperacion string) {
+	if !staff.Config.MostrarComisionista || !staff.Config.ConservarUltimoComisionista || staff.StationID <= 0 || staff.Comisionista == nil {
+		return
+	}
+	_, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID: empresaID, EstacionID: staff.StationID, Clave: "carrito.comisionista_ultimo",
+		Valor: strings.TrimSpace(staff.Comisionista.Email), UsuarioCreador: usuarioOperacion,
+		Estado: "activo", Observaciones: "ultimo comisionista elegido para la estacion",
+	})
+	if err != nil {
+		log.Printf("[carritos] recordar comisionista empresa_id=%d estacion_id=%d error: %v", empresaID, staff.StationID, err)
+	}
 }
 
 func ensureCarritoStationCajaAccess(dbEmp *sql.DB, empresaID int64, usuario string) error {
@@ -3024,11 +3359,6 @@ func attachCarritoStationRuntimeSummaries(dbEmp *sql.DB, rows []dbpkg.CarritoCom
 	}
 	now := time.Now()
 	for i := range rows {
-		estadoRegistro := normalizeCarritoRegistroEstado(rows[i].Estado)
-		estadoOperativo := normalizeCarritoOperativoEstado(rows[i].EstadoCarrito)
-		if estadoRegistro != "activo" || estadoOperativo != "abierto" || strings.TrimSpace(rows[i].PagadoEn) != "" {
-			continue
-		}
 		estacionID, _, _ := dbpkg.ResolveCarritoStationIdentity(&rows[i])
 		if estacionID <= 0 {
 			continue
