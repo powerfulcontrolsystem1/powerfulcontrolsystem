@@ -32,9 +32,11 @@
     .role-permissions-content{display:grid;gap:12px;min-width:0}
     .role-permissions-content details{border:1px solid var(--border);border-radius:8px;padding:12px;min-width:0}
     .role-permissions-content summary{cursor:pointer;font-weight:700;overflow-wrap:anywhere}
-    .role-permissions-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
-    .role-permissions-actions label,.role-permissions-page{display:flex;gap:8px;align-items:center}
-    .role-permissions-actions input,.role-permissions-page input{width:18px;height:18px;flex:none}
+    .role-permissions-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:12px}
+    .role-permissions-actions label{display:grid;gap:6px;min-width:0}
+    .role-permissions-actions small{color:var(--muted)}
+    .role-permissions-page{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .role-permissions-page select{flex:0 0 160px;width:160px;max-width:100%}
     .role-permissions-page{padding:10px 0;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
     .role-permissions-page span{min-width:0}
     .role-permissions-page small{display:block;color:var(--muted)}
@@ -99,7 +101,7 @@
       background:linear-gradient(90deg,var(--accent),var(--accent-2));
     }
     @media(max-width:760px){.role-editor-grid,.custom-role-grid{grid-template-columns:1fr}}
-    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}.role-row{grid-template-columns:1fr}.role-actions{justify-content:flex-start}}
+    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}.role-row{grid-template-columns:1fr}.role-actions{justify-content:flex-start}.role-permissions-page{align-items:stretch;flex-direction:column}.role-permissions-page select{flex:auto;width:100%}}
   </style>
 </head>
 <body class="super-page usuarios-page">
@@ -227,12 +229,13 @@
     <section class="card empresa-section" id="rolePermissionsPanel" hidden aria-labelledby="rolePermissionsTitle">
       <h2 id="rolePermissionsTitle">Permisos del rol personalizado</h2>
       <p id="rolePermissionsInfo" class="form-help"></p>
-      <p class="form-help">Configura las acciones de este perfil sin cambiar otros roles. La licencia y el techo de permisos de la empresa siguen limitando el acceso. La visibilidad de páginas organiza la navegación; las acciones de cada API mantienen su autorización.</p>
+      <p class="form-help"><strong>Heredar</strong> sigue los cambios del rol base. <strong>Permitir</strong> y <strong>Denegar</strong> crean excepciones propias de este perfil. La licencia y el techo de la empresa siguen limitando el acceso. La visibilidad de páginas organiza la navegación; cada API mantiene su autorización.</p>
       <div class="role-permissions-toolbar">
         <label class="form-label" for="rolePermissionsSearch">Buscar módulo, acción o página
           <input id="rolePermissionsSearch" class="form-input" type="search" placeholder="Ej.: inventario, eliminar, reportes" autocomplete="off">
         </label>
         <button id="rolePermissionsSave" type="button" class="btn" disabled>Guardar permisos del rol</button>
+        <button id="rolePermissionsReload" type="button" class="btn secondary">Recargar permisos</button>
         <button id="rolePermissionsClose" type="button" class="btn secondary">Cerrar</button>
       </div>
       <p id="rolePermissionsMsg" class="form-help" role="status" aria-live="polite"></p>
@@ -417,7 +420,7 @@
         mesero: 'Mesero',
         tecnico_solar: 'Tecnico especializado'
       };
-      const display = isCustomRole(role) ? name : (names[canonicalRoleKey(name)] || name);
+      const display = String(role && role.nombre_visible || '').trim() || (isCustomRole(role) ? name : (names[canonicalRoleKey(name)] || name));
       return isCustomRole(role) ? (display + ' (personalizado)') : display;
     }
 
@@ -552,7 +555,7 @@
 
     function rolNombreById(id, fallback) {
       const role = state.roles.find(function(r) { return Number(r.id) === Number(id); });
-      if (role && role.nombre) return role.nombre;
+      if (role && role.nombre) return roleLabel(role);
       return fallback || 'N/A';
     }
 
@@ -603,7 +606,7 @@
       baseRoles().forEach(function(role) {
         const opt = document.createElement('option');
         opt.value = String(role.id);
-        opt.textContent = role.nombre || ('Rol #' + role.id);
+        opt.textContent = roleLabel(role);
         baseSelect.appendChild(opt);
       });
       if (selectedBase) baseSelect.value = selectedBase;
@@ -626,7 +629,7 @@
             '<button type="button" class="btn custom-role-toggle"></button>' +
           '</div>';
         row.querySelector('strong').textContent = role.nombre || 'Rol personalizado';
-        row.querySelector('small').textContent = (role.descripcion || 'Sin descripcion') + ' Base: ' + ((base && base.nombre) || 'No definida') + '. Estado: ' + (role.estado || 'activo') + '.';
+        row.querySelector('small').textContent = (role.descripcion || 'Sin descripcion') + ' Base: ' + (base ? roleLabel(base) : 'No definida') + '. Estado: ' + (role.estado || 'activo') + '.';
         row.querySelector('.custom-role-edit').onclick = function() {
           state.customRoleEditingID = Number(role.id || 0);
           document.getElementById('customRoleId').value = String(role.id || '');
