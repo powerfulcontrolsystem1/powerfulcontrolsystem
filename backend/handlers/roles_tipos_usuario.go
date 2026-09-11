@@ -299,29 +299,10 @@ func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if r.Method == http.MethodGet {
-			modulos := buildPermissionModuleMatrixForRole(base.Nombre)
-			pageOverrides := map[string]bool{}
-			for _, id := range []int64{base.ID, rol.ID} {
-				moduleItems, err := dbpkg.ListRolPermisosModuloByRolIDEmpresaScope(dbSuper, tenant.EmpresaID, id)
-				if err != nil {
-					writeEmpresaRolPermissionError(w, err)
-					return
-				}
-				for _, item := range moduleItems {
-					for idx := range modulos {
-						if modulos[idx].Modulo == item.Modulo {
-							setPermissionActionOnModuleRow(&modulos[idx], item.Accion, item.Permitido)
-						}
-					}
-				}
-				pageItems, err := dbpkg.ListRolPermisosPaginaByRolIDEmpresaScope(dbSuper, tenant.EmpresaID, id)
-				if err != nil {
-					writeEmpresaRolPermissionError(w, err)
-					return
-				}
-				for _, item := range pageItems {
-					pageOverrides[item.PaginaClave] = item.Permitido
-				}
+			_, modulos, pageOverrides, err := loadEmpresaRolePermissionMatrix(dbSuper, tenant.EmpresaID, rol.ID, "sin_rol")
+			if err != nil {
+				writeEmpresaRolPermissionError(w, err)
+				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"empresa_id": tenant.EmpresaID, "rol_id": rol.ID, "rol_nombre": rol.Nombre,
