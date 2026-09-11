@@ -324,7 +324,12 @@ func EmpresaRolesDeUsuarioHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 			includeInactive := r.URL.Query().Get("include_inactive") == "1"
-			roles, err := dbpkg.GetRolesDeUsuarioCatalogoEmpresa(dbSuper, empresaID, includeInactive)
+			tipoEmpresaID, _, err := resolveTipoEmpresaIDForEmpresa(r.Context(), dbEmp, dbSuper, empresaID)
+			if err != nil {
+				http.Error(w, "No se pudo resolver el tipo de empresa", http.StatusInternalServerError)
+				return
+			}
+			roles, err := dbpkg.GetRolesDeUsuarioCatalogoParaEmpresa(dbSuper, empresaID, tipoEmpresaID, includeInactive)
 			if err != nil {
 				http.Error(w, "No se pudo consultar el catálogo de roles", http.StatusInternalServerError)
 				return
@@ -347,6 +352,7 @@ func EmpresaRolesDeUsuarioHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 				for _, role := range globalRoles {
 					if assigned[role.ID] && dbpkg.IsRolDeUsuarioAsignable(&role) {
+						role.NombreVisible = fmt.Sprintf("%s · %s (ID %d)", role.Nombre, role.TipoEmpresaNombre, role.ID)
 						roles = append(roles, role)
 					}
 				}

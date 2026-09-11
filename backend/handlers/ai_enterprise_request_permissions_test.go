@@ -32,8 +32,13 @@ func enterpriseAIRestrictedSnapshot() empresaPermissionSnapshot {
 		AdminRole: "cajero", EffectiveRole: "cajero", CanAccess: true,
 		AllowedModules: map[string]bool{permModuleInventario: true, permModuleVentas: true, permModuleSeguridad: true},
 		RoleModuleActions: map[string]bool{
-			"inventario:R": true, "inventario:C": false, "ventas:R": true,
-			"ventas:C": false, "ventas:U": false, "finanzas:R": true, "seguridad:R": false,
+			permissionModuleActionKey("inventario", "R"): true,
+			permissionModuleActionKey("inventario", "C"): false,
+			permissionModuleActionKey("ventas", "R"):     true,
+			permissionModuleActionKey("ventas", "C"):     false,
+			permissionModuleActionKey("ventas", "U"):     false,
+			permissionModuleActionKey("finanzas", "R"):   true,
+			permissionModuleActionKey("seguridad", "R"):  false,
 		},
 		AllowedPages: map[string]bool{},
 	}
@@ -89,7 +94,7 @@ func TestEnterpriseAIRequestSnapshotRejectsTenantAndIdentityMismatch(t *testing.
 
 func TestEnterpriseAIChatReadersKeepRestrictedRoleForSharedAdminEmail(t *testing.T) {
 	snapshot := enterpriseAIRestrictedSnapshot()
-	snapshot.RoleModuleActions["inventario:R"] = false
+	snapshot.RoleModuleActions[permissionModuleActionKey("inventario", "R")] = false
 	r := enterpriseAIRestrictedRequest(snapshot)
 	controller := NewEmpresaAIChatController(nil, nil)
 	if _, handled := controller.authorizedDirectDocumentResponse(r, 12, snapshot.AdminEmail, "Genera un reporte de productos"); handled {
@@ -118,7 +123,7 @@ func TestEnterpriseAIAdministrativeReadRequiresRoleActionAndLicense(t *testing.T
 	if empresaAISnapshotAllowsAdministrativeRead(snapshot) {
 		t.Fatal("administrative role name cannot override an explicit security read denial")
 	}
-	snapshot.RoleModuleActions["seguridad:R"] = true
+	snapshot.RoleModuleActions[permissionModuleActionKey("seguridad", "R")] = true
 	if !empresaAISnapshotAllowsAdministrativeRead(snapshot) {
 		t.Fatal("administrative role with company-authorized security read should be allowed")
 	}
@@ -135,7 +140,7 @@ func TestEnterpriseAIAdministrativeReadRequiresRoleActionAndLicense(t *testing.T
 
 func TestEnterpriseAIConfirmationUsesPermissionsOfNewRequest(t *testing.T) {
 	first := enterpriseAIRestrictedSnapshot()
-	first.RoleModuleActions["inventario:C"] = true
+	first.RoleModuleActions[permissionModuleActionKey("inventario", "C")] = true
 	before, err := enterpriseAIExecutionContext(enterpriseAIRestrictedRequest(first), nil, nil, 12, first.AdminEmail)
 	if err != nil || !enterpriseAIRequireTool(before, aipkg.ToolCatalogCreateProduct) {
 		t.Fatalf("initial request should allow the product proposal: %v", err)
