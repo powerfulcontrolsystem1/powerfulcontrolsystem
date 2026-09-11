@@ -963,7 +963,6 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		loginAudit.markAuthenticated(item.RolNombre)
-		warmEmpresaPermissionSnapshot(dbEmp, dbSuper, item)
 	}
 }
 
@@ -1132,7 +1131,6 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeEmpresaUsuarioPublicError(w, http.StatusInternalServerError, "sesion_usuario_error", "La contrasena quedo configurada, pero no fue posible iniciar sesion automaticamente.", "Intenta iniciar sesion manualmente con tu correo y la contrasena creada.", map[string]interface{}{"password_set": true})
 			return
 		}
-		warmEmpresaPermissionSnapshot(dbEmp, dbSuper, item)
 	}
 }
 
@@ -1414,7 +1412,6 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
-		warmEmpresaPermissionSnapshot(dbEmp, dbSuper, item)
 	}
 }
 
@@ -1543,7 +1540,6 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
-		warmEmpresaPermissionSnapshot(dbEmp, dbSuper, item)
 	}
 }
 
@@ -2983,37 +2979,6 @@ func verifyEmpresaUsuarioPassword(password string, item *dbpkg.EmpresaUsuario) b
 	}
 	valid, _ := verifyEmpresaUsuarioPasswordHash(password, item.PasswordSalt, item.PasswordHash)
 	return valid
-}
-
-func warmEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) {
-	if dbEmp == nil || dbSuper == nil || item == nil {
-		return
-	}
-	adminEmail := strings.ToLower(strings.TrimSpace(item.Email))
-	empresaID := item.EmpresaID
-	roleName := normalizePermissionRole(item.RolNombre)
-	if adminEmail == "" || empresaID <= 0 {
-		return
-	}
-	go func() {
-		if roleName != "" && roleName != "sin_rol" {
-			_, _, _ = loadPermissionOverridesByRoleName(dbSuper, roleName)
-			_ = buildPermissionModuleMatrixForRoleDynamic(dbSuper, roleName)
-		}
-		_, _, _ = loadEmpresaPermissionOverrides(dbSuper, empresaID)
-		if _, err := dbpkg.GetLicenciaPermisoPolicyByEmpresa(dbSuper, empresaID); err != nil {
-			log.Printf("[usuarios_empresa] warm licencia policy empresa_id=%d email=%s error=%v", empresaID, redactEmailForLog(adminEmail), err)
-		}
-		if _, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, adminEmail, empresaID); err != nil {
-			log.Printf("[usuarios_empresa] warm admin access empresa_id=%d email=%s error=%v", empresaID, redactEmailForLog(adminEmail), err)
-		}
-	}()
-	go func() {
-		time.Sleep(2 * time.Second)
-		if _, err := getEmpresaPermissionSnapshot(dbEmp, dbSuper, adminEmail, empresaID); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			log.Printf("[usuarios_empresa] warm permission snapshot empresa_id=%d email=%s error=%v", empresaID, redactEmailForLog(adminEmail), err)
-		}
-	}()
 }
 
 func parseEmpresaUsuarioDateTime(raw string) (time.Time, bool) {
