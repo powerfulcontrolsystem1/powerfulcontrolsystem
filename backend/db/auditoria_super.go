@@ -138,6 +138,13 @@ func CreateSuperAuditoriaEvento(dbConn *sql.DB, in SuperAuditoriaEvento) (int64,
 	if err := EnsureSuperAuditoriaSchema(dbConn); err != nil {
 		return 0, err
 	}
+	return InsertSuperAuditoriaEventoPrepared(dbConn, in)
+}
+
+// InsertSuperAuditoriaEventoPrepared inserta sobre el esquema que el arranque
+// ya validó. Se usa en rutas de autenticación para no ejecutar comprobaciones
+// DDL en cada intento de login.
+func InsertSuperAuditoriaEventoPrepared(dbConn *sql.DB, in SuperAuditoriaEvento) (int64, error) {
 	in.PrincipalEmail = strings.ToLower(sanitizeAuditoriaText(strings.TrimSpace(in.PrincipalEmail), 160))
 	in.Modulo = normalizeAuditoriaValue(in.Modulo)
 	if in.Modulo == "" {

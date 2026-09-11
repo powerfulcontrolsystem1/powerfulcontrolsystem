@@ -723,7 +723,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "01e027029eee6f96fc80c4b64fc2fb0bf027b4061d448a803b2c034ced6c17a7"
+      "sha256_lf": "88827c750d7e2a8db6b187f4f63e394765648feef445ff6709fb5086e49d3931"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -804,7 +804,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "0386905ba5695613a08ea720c384ea5d6d9abfa503862055b708c7ed4cb9b4d8"
+      "sha256_lf": "aad70e76ba524bfc528c16da6bcb830b8ff175248cdde0f037ab8816ee00e4a4"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
@@ -858,7 +858,7 @@
       "owner": "Ingeniería backend y QA",
       "reviewed": "2026-09-08",
       "review_due": "2026-12-07",
-      "sha256_lf": "2e852884159937a6d9af5d5d0aa988ed95d3ba6f2e5a15bccf80ddf7cd405cae"
+      "sha256_lf": "49925ea3d0ca69ccda4b6e1dba2dfa460f4a81f23a191d2b7f727ee9df108852"
     },
     {
       "path": "documentos/gobernanza_tecnica/contratos/contrato_centro_soporte.md",
@@ -948,7 +948,7 @@
       "owner": "Ingeniería backend y QA",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "6b73041df6ecd12517a898e885897631b8d36a751d1c74dbcd4a20656f3e9d29"
+      "sha256_lf": "627c97643a4111bb2598634120cdf94cc4ac9995f1d8579f82320abad682da99"
     },
     {
       "path": "documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md",
@@ -1272,7 +1272,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "5f503b98f00d26fe52a3463619cac28fd3e6a524fa9b1f0d335245d8da74e6d7"
+      "sha256_lf": "c7598b8713c8378f6e4b870fdf6edc2c7816b4af48be28bb59c4a3e9df2af100"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",
@@ -1290,7 +1290,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "b6353f0f16402c4ac53d46b25dfc24f4ec2c6719bef83ecd326ef63401433ba0"
+      "sha256_lf": "0d9f6f087abafc177bcba6fab3617d38a8509e0eca68c83b4bc98695ef00dca1"
     },
     {
       "path": "documentos/modulos_empresariales_colombia.md",

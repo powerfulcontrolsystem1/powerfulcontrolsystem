@@ -1458,6 +1458,16 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		if resolveAction != nil {
 			action = normalizePermissionAction(resolveAction(r), action)
 		}
+		authorizationModule := module
+		authorizationAction := action
+		isStationControlOperation := false
+		if module == permModuleControlElectrico {
+			if stationModule, stationAction, ok := resolveControlElectricoStationOperationAuthorization(r); ok {
+				authorizationModule = stationModule
+				authorizationAction = stationAction
+				isStationControlOperation = true
+			}
+		}
 
 		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
 		if adminEmail == "" || adminEmail == "sistema" {
@@ -1510,12 +1520,12 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		role := snapshot.AdminRole
 		isFacturacionPaisDetectado := module == permModuleFacturacion && strings.EqualFold(strings.TrimSpace(r.URL.Path), "/api/empresa/facturacion_electronica/pais_detectado")
 		skipLicenciaModuloCheck := (module == permModuleSeguridad && strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_contexto")) || isFacturacionPaisDetectado
-		if !skipLicenciaModuloCheck && !isModuloPermitidoByLicencia(module, snapshot.AllowedModules) {
+		if !skipLicenciaModuloCheck && !isModuloPermitidoByLicencia(authorizationModule, snapshot.AllowedModules) {
 			http.Error(w, "forbidden: modulo no habilitado por licencia activa", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
-		if !skipLicenciaModuloCheck && len(snapshot.AllowedVerticalModules) > 0 && isEmpresaBusinessVerticalModule(module) && !snapshot.AllowedVerticalModules[normalizeVerticalScopeModule(module)] {
+		if !skipLicenciaModuloCheck && len(snapshot.AllowedVerticalModules) > 0 && isEmpresaBusinessVerticalModule(authorizationModule) && !snapshot.AllowedVerticalModules[normalizeVerticalScopeModule(authorizationModule)] {
 			http.Error(w, "forbidden: vertical no corresponde al tipo de empresa/licencia activa", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
@@ -1531,12 +1541,15 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		if module == permModuleFinanzas && isCajeroFinanzasManualRequest {
 			skipRoleModuloCheck = true
 		}
-		if !skipRoleModuloCheck && !snapshot.RoleModuleActions[permissionModuleActionKey(module, action)] {
+		if !skipRoleModuloCheck && !snapshot.RoleModuleActions[permissionModuleActionKey(authorizationModule, authorizationAction)] {
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
 		pageKey := resolvePermissionPageKeyForRequest(r)
+		if isStationControlOperation {
+			pageKey = ""
+		}
 		// El flujo operativo de estaciones usa el mismo endpoint de carritos para
 		// listar/recuperar sesiones por estacion. En ese caso el control real ya
 		// queda cubierto por el modulo de ventas + el contexto estacion_id, asi
@@ -2387,6 +2400,26 @@ func resolveControlElectricoPermissionAction(r *http.Request) string {
 		return permActionUpdate
 	}
 	return defaultPermissionActionFromMethod(r.Method)
+}
+
+// resolveControlElectricoStationOperationAuthorization separa la operacion
+// cotidiana de una estacion de la administracion del modulo Domotica. Solo las
+// acciones usadas dentro del carrito heredan permisos de ventas; configuracion,
+// programaciones, Raspberry y el resto del endpoint conservan el limite estricto
+// de control_electrico.
+func resolveControlElectricoStationOperationAuthorization(r *http.Request) (string, string, bool) {
+	if r == nil || r.URL == nil || !strings.EqualFold(strings.TrimSpace(r.URL.Path), "/api/empresa/control_electrico") {
+		return "", "", false
+	}
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch {
+	case r.Method == http.MethodGet && action == "estacion_controls":
+		return permModuleVentas, permActionRead, true
+	case r.Method == http.MethodPost && (action == "probar_rele" || action == "temporizador_rele"):
+		return permModuleVentas, permActionUpdate, true
+	default:
+		return "", "", false
+	}
 }
 
 func normalizePermissionRole(raw string) string {

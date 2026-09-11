@@ -181,6 +181,21 @@ No se acepta `otp_code` ni otro segundo factor en el contrato vigente.
 
 Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](../../requisitos/especificacion_y_trazabilidad.md)).
 
+## Auditoría de inicios de sesión
+
+Los accesos por contraseña y por Google OAuth de administradores y usuarios de
+empresa registran un evento en `super_auditoria_eventos` con módulo
+`autenticacion`. Cada evento conserva fecha, empresa cuando aplica, identidad,
+tipo de principal, método de autenticación, rol resuelto, resultado, código HTTP,
+request ID, IP de origen y agente de usuario. Los motivos son categorías
+operativas y nunca copias del cuerpo HTTP, contraseñas, códigos OAuth, tokens ni
+secretos.
+
+La falta de disponibilidad de la bitácora no cambia la respuesta pública ni
+expone detalles internos. La consulta y exportación consolidada se realiza en
+`web/super/auditoria_login.html` mediante `/super/api/auditoria?scope=super_panel`
+y permanece restringida al rol de Super Administrador.
+
 ## Defensa HTTP e IP — 2026-09-06
 
 En el VPS con Nginx directamente expuesto, el borde reemplaza cabeceras IP/host

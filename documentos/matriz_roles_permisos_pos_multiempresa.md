@@ -51,6 +51,8 @@ acción del módulo. No copiar una matriz estática antigua como autorización.
 | Super | Privilegios de plataforma autorizados por sesión y rol persistido; no confiar en rol enviado |
 | admin_empresa y roles operativos | Permisos efectivos publicados por el servidor; la etiqueta del rol no basta |
 | Página visible | Ayuda de navegación; no concede acceso al endpoint |
+| Domótica desde estación | Las actions operativas usan `ventas:R/U`, respetan rango de caja y excluyen `solo_activar`; administrar Domótica conserva `control_electrico` |
+| Auditoría de login | Consulta global exclusiva de Super Administrador; los intentos no dependen de que el usuario logre crear sesión |
 | Licencia | Restringe módulos y límites; no sustituye autorización de usuario |
 | Cambio de roles/matriz fina | Aprobación trazable en rutas definidas; usuarios no exige ese código extra |
 | Nómina fiscal | Lectura/emisión cruzan los permisos de Nómina y Facturación |

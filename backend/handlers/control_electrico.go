@@ -20,6 +20,40 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
+var errControlElectricoActivationOnly = fmt.Errorf("la caja solo puede activar estaciones")
+
+func ensureControlElectricoStationOperationalAccess(dbEmp *sql.DB, empresaID int64, usuario string, estacionID int64) error {
+	policy, err := loadCarritoStationAccessPolicy(dbEmp, empresaID, usuario)
+	if err != nil {
+		return err
+	}
+	return validateControlElectricoStationOperationalPolicy(policy, estacionID)
+}
+
+func validateControlElectricoStationOperationalPolicy(policy carritoStationAccessPolicy, estacionID int64) error {
+	if !policy.Enabled {
+		return nil
+	}
+	if policy.ActivationOnly {
+		return errControlElectricoActivationOnly
+	}
+	if policy.LimitStations && !policy.Stations[estacionID] {
+		return errCarritoStationAccessDenied
+	}
+	return nil
+}
+
+func writeControlElectricoStationAccessError(w http.ResponseWriter, err error) {
+	switch err {
+	case errControlElectricoActivationOnly:
+		http.Error(w, "forbidden: la caja solo puede activar estaciones", http.StatusForbidden)
+	case errCarritoStationAccessDenied:
+		http.Error(w, "forbidden: usuario sin acceso a esta estacion", http.StatusForbidden)
+	default:
+		http.Error(w, "No se pudo validar el acceso a la estacion", http.StatusInternalServerError)
+	}
+}
+
 type controlElectricoCommandPayload struct {
 	EmpresaID      int64  `json:"empresa_id"`
 	EstacionID     int64  `json:"estacion_id"`
@@ -434,6 +468,10 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "estacion_id requerido", http.StatusBadRequest)
 					return
 				}
+				if err := ensureControlElectricoStationOperationalAccess(dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)), estacionID); err != nil {
+					writeControlElectricoStationAccessError(w, err)
+					return
+				}
 				cfg, err := dbpkg.GetEmpresaControlElectricoConfigContext(r.Context(), dbEmp, empresaID, false)
 				if err != nil {
 					log.Printf("[control_electrico] get station config empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
@@ -754,6 +792,14 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 					http.Error(w, "JSON invalido", http.StatusBadRequest)
 					return
 				}
+				if payload.EstacionID <= 0 {
+					http.Error(w, "estacion_id requerido", http.StatusBadRequest)
+					return
+				}
+				if err := ensureControlElectricoStationOperationalAccess(dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)), payload.EstacionID); err != nil {
+					writeControlElectricoStationAccessError(w, err)
+					return
+				}
 				target, err := controlElectricoParseTargetState(payload.Estado)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
@@ -774,6 +820,14 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.Hand
 				}
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.EstacionID <= 0 {
+					http.Error(w, "estacion_id requerido", http.StatusBadRequest)
+					return
+				}
+				if err := ensureControlElectricoStationOperationalAccess(dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)), payload.EstacionID); err != nil {
+					writeControlElectricoStationAccessError(w, err)
 					return
 				}
 				result := controlElectricoStartTimer(dbEmp, empresaID, payload.EstacionID, payload.ReleID, payload.DuracionSegundos, strings.TrimSpace(adminEmailFromRequest(r)), "temporizador_manual")

@@ -2414,6 +2414,18 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualización 2026-09-11 - Domótica operativa y auditoría de login
+
+- `backend/handlers/empresa_permisos.go` distingue las tres actions Domótica que
+  nacen en una estación y las autoriza contra `ventas`, manteniendo el resto del
+  endpoint bajo `control_electrico`.
+- `backend/handlers/control_electrico.go` cruza la estación solicitada con la
+  política de caja/usuario y bloquea cajas `solo_activar`.
+- `backend/handlers/auditoria_login.go` normaliza eventos de accesos locales y
+  Google sin copiar credenciales; persiste en la bitácora super existente.
+- `web/super/auditoria_login.html` reutiliza el visor/exportador de auditoría y
+  fija el filtro `modulo=autenticacion` para el panel Super Administrador.
+
 ## Actualizacion 2026-04-15 (pagina_principal super: cantidad integrada al guardado)
 
 - Frontend:

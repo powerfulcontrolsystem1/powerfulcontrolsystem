@@ -1684,6 +1684,21 @@ la transcripcion permanece bloqueada y debe resolverse fuera de este candidato.
 11. Una entrada GPIO autenticada puede encender/apagar el aparato destino,
     iniciar su temporizador o respetar su agenda; todo ON reserva la cola única
     de la empresa.
+12. Desde el carrito, `estacion_controls`, `probar_rele` y
+    `temporizador_rele` se consideran operación de la estación y usan permisos
+    de ventas. No requieren activar el módulo administrativo Domótica, pero sí
+    respetan el rango visible de la caja; `solo_activar` no puede operar relés.
+
+### Seguimiento de accesos en Super Administrador
+
+1. El login administrativo o de usuario empresarial valida credenciales sin
+   alterar sus respuestas públicas ni revelar si una cuenta ajena existe.
+2. Al finalizar, registra resultado, empresa, identidad, método, rol, request ID,
+   IP y navegador en la bitácora global. El cuerpo del formulario y los tokens
+   quedan excluidos.
+3. Super Administrador abre `Acceso > Auditoría de inicios de sesión`, filtra por
+   fecha, resultado, identidad o empresa y puede correlacionar un fallo mediante
+   request ID o exportarlo en CSV/JSON.
 ### Preflight fiscal antes de pagar una factura Colombia
 
 - Si el pago solicita factura electrónica (manual o automática), el backend
