@@ -136,14 +136,14 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
 			return
 		}
-		if !requireRolesPermisosSchemaReady(w, dbSuper) {
-			return
-		}
 		switch r.Method {
 		case http.MethodGet:
 			rolID, err := parseRequiredInt64Query(r, "rol_id")
 			if err != nil || rolID <= 0 || len(r.URL.Query()["rol_id"]) != 1 {
 				http.Error(w, "rol_id required", http.StatusBadRequest)
+				return
+			}
+			if !requireRolesPermisosSchemaReady(w, dbSuper) {
 				return
 			}
 
@@ -203,6 +203,9 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if !requireRolesPermisosSchemaReady(w, dbSuper) {
+				return
+			}
 
 			if err := dbpkg.ReplaceRolPermisosDeUsuarioConRevision(r.Context(), dbSuper, payload.RolID, payload.Revision, moduleRows, pageRows, adminEmailFromRequest(r)); err != nil {
 				writeEmpresaRolPermissionError(w, err)
@@ -251,9 +254,6 @@ func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "sesion empresarial requerida", http.StatusUnauthorized)
 			return
 		}
-		if !requireRolesPermisosSchemaReady(w, dbSuper) {
-			return
-		}
 		if r.Method != http.MethodGet && r.Method != http.MethodPut {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -264,6 +264,9 @@ func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if r.Method == http.MethodGet {
+			if !requireRolesPermisosSchemaReady(w, dbSuper) {
+				return
+			}
 			state, err := dbpkg.GetEmpresaRolPermisosEstado(r.Context(), dbSuper, tenant.EmpresaID, rolID)
 			if err != nil {
 				writeEmpresaRolPermissionError(w, err)
@@ -311,6 +314,9 @@ func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 		modulos, paginas, err := validateEmpresaRolPermissionPayload(rolID, payload)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if !requireRolesPermisosSchemaReady(w, dbSuper) {
 			return
 		}
 		if err := dbpkg.ReplaceEmpresaRolPermisosDeUsuarioConRevision(r.Context(), dbSuper, tenant.EmpresaID, rolID, payload.Revision, modulos, paginas, tenant.AdminEmail); err != nil {

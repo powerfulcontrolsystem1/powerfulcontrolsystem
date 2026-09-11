@@ -38,8 +38,8 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaCarnetDefaultTemplate` | [backend/db/carnets_empresa.go:271](../../backend/db/carnets_empresa.go#L271) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaCarritosSchema` | [backend/db/carritos_compras.go:316](../../backend/db/carritos_compras.go#L316) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCentrosCostoSchema` | [backend/db/centros_costo.go:135](../../backend/db/centros_costo.go#L135) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureEmpresaAIChatSchema` | [backend/db/chat_inteligencia_artificial.go:336](../../backend/db/chat_inteligencia_artificial.go#L336) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureSuperAIChatSchema` | [backend/db/chat_inteligencia_artificial.go:627](../../backend/db/chat_inteligencia_artificial.go#L627) | DDL / indice / funcion | superadministrador o por confirmar |
+| `EnsureEmpresaAIChatSchema` | [backend/db/chat_inteligencia_artificial.go:303](../../backend/db/chat_inteligencia_artificial.go#L303) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureSuperAIChatSchema` | [backend/db/chat_inteligencia_artificial.go:594](../../backend/db/chat_inteligencia_artificial.go#L594) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureEmpresaChatTareasSchema` | [backend/db/chat_tareas.go:149](../../backend/db/chat_tareas.go#L149) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaCierreFiscalSchema` | [backend/db/cierre_fiscal.go:115](../../backend/db/cierre_fiscal.go#L115) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaClientesSchema` | [backend/db/clientes.go:253](../../backend/db/clientes.go#L253) | DDL / indice / funcion | empresas o por confirmar |
@@ -125,8 +125,8 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaRedSocialInteraccionesSchema` | [backend/db/red_social.go:92](../../backend/db/red_social.go#L92) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaReportesProgramacionSchema` | [backend/db/reportes_programacion.go:41](../../backend/db/reportes_programacion.go#L41) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaReservasHotelSchema` | [backend/db/reservas_hotel.go:89](../../backend/db/reservas_hotel.go#L89) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureRolesPermisosSchema` | [backend/db/roles_permisos_usuario.go:25](../../backend/db/roles_permisos_usuario.go#L25) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureRolesDeUsuarioSchema` | [backend/db/roles_tipos_usuario.go:29](../../backend/db/roles_tipos_usuario.go#L29) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureRolesPermisosSchema` | [backend/db/roles_permisos_usuario.go:29](../../backend/db/roles_permisos_usuario.go#L29) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureRolesDeUsuarioSchema` | [backend/db/roles_tipos_usuario.go:53](../../backend/db/roles_tipos_usuario.go#L53) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureRuntimeDatabaseRole` | [backend/db/runtime_db_role.go:17](../../backend/db/runtime_db_role.go#L17) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureBackupDatabaseRole` | [backend/db/runtime_db_role.go:95](../../backend/db/runtime_db_role.go#L95) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaSensorPuertasSchema` | [backend/db/sensor_puertas.go:77](../../backend/db/sensor_puertas.go#L77) | DDL / indice / funcion | empresas o por confirmar |
