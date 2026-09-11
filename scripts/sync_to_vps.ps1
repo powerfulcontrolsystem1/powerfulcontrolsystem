@@ -5,7 +5,7 @@
 .DESCRIPTION
   Prioriza WSL cuando está disponible y usa fallback nativo en Windows
   (OpenSSH ssh/scp para claves OpenSSH, PuTTY plink/pscp para .ppk)
-  cuando WSL no está instalado o no tiene distribuciones.
+  cuando WSL no está instalado, no tiene distribuciones o no dispone de rsync.
   No programa tareas; se ejecuta manualmente cuando el usuario lo necesite.
   Config opcional: scripts/pcs_deployment.local.ps1 (ver pcs_deployment.local.ps1.example) para
   PcsVpsHost, PcsVpsUser, PcsVpsRemotePath, PcsVpsPort, PcsVpsHostKey, PcsVpsIdentityFile, PcsVpsServerPort, PcsVpsPublicBaseUrl
@@ -177,6 +177,15 @@ function Test-WslReady {
   $wslCode = $LASTEXITCODE
   $distroText = ($distros -join "").Trim()
   return ($wslCode -eq 0 -and -not [string]::IsNullOrWhiteSpace($distroText))
+}
+
+function Test-WslRsyncReady {
+  if (-not (Test-WslReady)) {
+    return $false
+  }
+
+  $null = & wsl bash -lc "command -v rsync >/dev/null 2>&1" 2>$null
+  return ($LASTEXITCODE -eq 0)
 }
 
 function Get-WslUnixPath {
@@ -2283,7 +2292,16 @@ try {
     Write-Host ("[INFO] Bootstrap DB config: DB_DIALECT=" + $dialectDisplay + " DB_EMPRESAS_DSN=" + $empDisplay + " DB_SUPERADMIN_DSN=" + $superDisplay)
   }
 
-  if (-not (Test-WslReady)) {
+  $wslReady = Test-WslReady
+  $wslRsyncReady = $false
+  if ($wslReady) {
+    $wslRsyncReady = Test-WslRsyncReady
+    if (-not $wslRsyncReady) {
+      Write-Warning "WSL está disponible pero no tiene rsync; se usará el transporte nativo de Windows."
+    }
+  }
+
+  if (-not $wslRsyncReady) {
     Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExcludeEvidence $ExcludeEvidenceFromPackage -UseCompression $CompressPackage -LargeTransferWarningMB $LargeTransferWarningMB -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $effectiveBootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -OpenAIApiKey $OpenAIApiKey -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $effectiveRestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
 
     Invoke-RemoteDockerComposeRedeploy -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityPath $IdentityFile -RemotePath $RemotePath -Enabled $effectiveRedeployDockerStack -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -HealthTimeoutSeconds $DockerHealthTimeoutSeconds

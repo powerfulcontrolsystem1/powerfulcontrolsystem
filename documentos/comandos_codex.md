@@ -565,6 +565,12 @@ Modos utiles segun necesidad:
 .\scripts\sync_to_vps.ps1 -CleanupRemoteUnusedFiles:$false
 ```
 
+El transporte WSL se usa únicamente cuando la distribución dispone de
+`rsync`. Si WSL está instalado pero esa dependencia falta, el script informa la
+degradación y usa automáticamente el transporte nativo de Windows
+(OpenSSH/`scp`, o PuTTY para claves `.ppk`) sin omitir el redeploy Docker, las
+comprobaciones de salud ni la limpieza remota configurada.
+
 No mostrar credenciales, llaves ni hosts privados sensibles en respuestas.
 
 ## sync_to_vps2
