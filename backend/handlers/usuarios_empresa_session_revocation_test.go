@@ -15,7 +15,7 @@ func TestEmpresaUsuarioDeactivationRevokesExistingSessions(t *testing.T) {
 		t.Fatalf("read usuarios_empresa.go: %v", err)
 	}
 	text := string(source)
-	revoke := strings.Index(text, "RevokeSessionsByAdminEmail(dbSuper, item.Email)")
+	revoke := strings.Index(text, "revokeEmpresaUsuarioSessions(dbSuper, item)")
 	update := strings.Index(text, "SetEmpresaUsuarioEstado(dbEmp, empresaID, id, estado)")
 	if revoke < 0 {
 		t.Fatal("deactivation must revoke existing sessions")

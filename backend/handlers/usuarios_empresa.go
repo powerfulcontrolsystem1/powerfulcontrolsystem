@@ -311,6 +311,10 @@ func ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper *sql.DB, item *d
 // EmpresaRolesDeUsuarioHandler gestiona roles disponibles y personalizados para una empresa.
 func EmpresaRolesDeUsuarioHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if strings.TrimSpace(r.URL.Query().Get("action")) == "permisos" {
+			EmpresaRolDeUsuarioPermisosHandler(dbSuper).ServeHTTP(w, r)
+			return
+		}
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -322,8 +326,30 @@ func EmpresaRolesDeUsuarioHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			includeInactive := r.URL.Query().Get("include_inactive") == "1"
 			roles, err := dbpkg.GetRolesDeUsuarioCatalogoEmpresa(dbSuper, empresaID, includeInactive)
 			if err != nil {
-				http.Error(w, "failed to query roles_de_usuario: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "No se pudo consultar el catálogo de roles", http.StatusInternalServerError)
 				return
+			}
+			// Keep exact historical global IDs assigned in this company. A
+			// deduplicated alias must not silently replace a user's permission matrix.
+			assigned, err := dbpkg.GetEmpresaUsuarioRoleIDs(dbEmp, empresaID)
+			if err != nil {
+				http.Error(w, "No se pudieron consultar las asignaciones de roles", http.StatusInternalServerError)
+				return
+			}
+			for _, role := range roles {
+				delete(assigned, role.ID)
+			}
+			if len(assigned) > 0 {
+				globalRoles, err := dbpkg.GetRolesDeUsuario(dbSuper, 0, includeInactive)
+				if err != nil {
+					http.Error(w, "No se pudo consultar el catálogo de roles", http.StatusInternalServerError)
+					return
+				}
+				for _, role := range globalRoles {
+					if assigned[role.ID] && dbpkg.IsRolDeUsuarioAsignable(&role) {
+						roles = append(roles, role)
+					}
+				}
 			}
 			w.Header().Set("Content-Type", "application/json")
 			encodeJSONResponse(w, roles)
@@ -578,7 +604,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				// el usuario activo solo tendra que autenticarse de nuevo; nunca queda
 				// una cuenta inactiva con acceso residual.
 				if estado == "inactivo" {
-					if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, item.Email); err != nil {
+					if err := revokeEmpresaUsuarioSessions(dbSuper, item); err != nil {
 						log.Printf("[usuarios_empresa] failed to revoke sessions empresa_id=%d id=%d error=%v", empresaID, id, err)
 						http.Error(w, "No se pudieron revocar las sesiones del usuario", http.StatusInternalServerError)
 						return
@@ -696,6 +722,12 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			resetConfirm := !strings.EqualFold(strings.TrimSpace(existing.Email), strings.TrimSpace(payload.Email))
+			if resetConfirm || existing.RolUsuarioID != payload.RolUsuarioID {
+				if err := revokeEmpresaUsuarioSessions(dbSuper, existing); err != nil {
+					http.Error(w, "No se pudieron revocar las sesiones del usuario", http.StatusInternalServerError)
+					return
+				}
+			}
 			confirmToken := ""
 			confirmExpira := ""
 			if resetConfirm {
@@ -754,6 +786,19 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			id, err := parseInt64Query(r, "id")
 			if err != nil {
 				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			item, err := dbpkg.GetEmpresaUsuarioByID(dbEmp, empresaID, id)
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "Usuario no encontrado", http.StatusNotFound)
+				return
+			}
+			if err != nil {
+				http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
+				return
+			}
+			if err := revokeEmpresaUsuarioSessions(dbSuper, item); err != nil {
+				http.Error(w, "No se pudieron revocar las sesiones del usuario", http.StatusInternalServerError)
 				return
 			}
 			if err := dbpkg.DeleteEmpresaUsuario(dbEmp, empresaID, id); err != nil {
@@ -1935,8 +1980,14 @@ func resolveRolNombreValidoParaEmpresa(ctx context.Context, dbEmp, dbSuper *sql.
 		if nombre == "" {
 			return "", fmt.Errorf("rol sin nombre")
 		}
-		if strings.EqualFold(strings.TrimSpace(rol.Estado), "inactivo") {
-			return "", fmt.Errorf("el rol esta inactivo")
+		if !dbpkg.IsRolDeUsuarioAsignable(rol) {
+			return "", fmt.Errorf("el rol no está activo o no es asignable a usuarios de empresa")
+		}
+		if rol.EmpresaID > 0 {
+			base, err := dbpkg.GetRolDeUsuarioByIDEmpresaScope(dbSuper, empresaID, rol.RolBaseID)
+			if err != nil || base == nil || base.EmpresaID != 0 || !dbpkg.IsRolDeUsuarioAsignable(base) {
+				return "", fmt.Errorf("el rol personalizado no tiene una base global activa y asignable")
+			}
 		}
 		return nombre, nil
 	}
@@ -2769,7 +2820,7 @@ func revokeEmpresaUsuarioSessions(dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) e
 	if item == nil || strings.TrimSpace(item.Email) == "" {
 		return fmt.Errorf("usuario de empresa requerido para revocar sesiones")
 	}
-	if err := dbpkg.RevokeSessionsByAdminEmail(dbSuper, item.Email); err != nil {
+	if err := dbpkg.RevokeEmpresaUsuarioSessions(dbSuper, item.EmpresaID, item.ID, item.Email); err != nil {
 		return err
 	}
 	utils.InvalidateAuthCacheForAdmin(item.Email)
