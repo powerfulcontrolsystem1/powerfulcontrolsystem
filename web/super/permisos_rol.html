@@ -76,7 +76,7 @@
       <section class="pcs-pr-block card">
         <div class="pcs-pr-block-head">
           <h2>2. Panel de administrar empresa — funciones y menú</h2>
-          <p class="form-help">Cada fila es una <strong>función o pantalla</strong> del panel. Puedes anular el acceso aunque el módulo permita la acción base (útil para perfiles restringidos).</p>
+          <p class="form-help">Cada fila controla la <strong>visibilidad de una pantalla</strong> del panel. Para restringir operaciones configura también las acciones del módulo: ocultar una página no sustituye la autorización de su API.</p>
         </div>
         <div id="paginasBox" class="pcs-pr-pages-wrap"></div>
       </section>
@@ -100,7 +100,7 @@
   <script>
     (function () {
       const ACTION_ORDER = ['R', 'C', 'U', 'D', 'A'];
-      const state = { tipos: [], roles: [], modulos: [], paginas: [], accionesEtiqueta: {}, modulosEtiqueta: {}, snapshot: '' };
+      const state = { tipos: [], roles: [], modulos: [], paginas: [], accionesEtiqueta: {}, modulosEtiqueta: {}, snapshot: '', loadedRoleID: 0, loadSequence: 0, loading: false, saving: false, tipoID: '' };
 
       const tipoSelect = document.getElementById('tipo_empresa_id');
       const rolSelect = document.getElementById('rol_id');
@@ -221,7 +221,7 @@
           const mTitle = moduleTitle(modulo);
           const inner = ACTION_ORDER.map(function (a) {
             const checked = boolValue(a === 'R' ? item.read : a === 'C' ? item.create : a === 'U' ? item.update : a === 'D' ? item.delete : item.approve);
-            return '<label class="pcs-pr-ac-label"><input type="checkbox" data-modulo="' + escapeHtml(modulo) + '" data-action="' + a + '"' + (checked ? ' checked' : '') + '> <span class="pcs-pr-ac-key">' + a + '</span> <span class="pcs-pr-ac-txt">' + escapeHtml(actionLabelShort(a)) + '</span></label>';
+            return '<label class="pcs-pr-ac-label"><input type="checkbox" aria-label="' + escapeHtml(actionLabelShort(a) + ' en ' + mTitle) + '" data-modulo="' + escapeHtml(modulo) + '" data-action="' + a + '"' + (checked ? ' checked' : '') + '> <span class="pcs-pr-ac-key">' + a + '</span> <span class="pcs-pr-ac-txt">' + escapeHtml(actionLabelShort(a)) + '</span></label>';
           }).join('');
 
           return (
@@ -286,7 +286,7 @@
               '<td class="pcs-pr-td-title"><strong>' + escapeHtml(tit) + '</strong><div class="pcs-pr-td-sub"><code>' + escapeHtml(pag) + '</code></div></td>' +
               '<td>' + modulesHtml + '</td>' +
               '<td>' + escapeHtml(accionTxt) + (item.always_visible ? ' <span class="pcs-pr-badge">Base</span>' : '') + '</td>' +
-              '<td class="pcs-pr-td-ck"><input type="checkbox" data-page="' + escapeHtml(pag) + '" ' + (boolValue(item.permitido) ? 'checked' : '') + '></td>' +
+              '<td class="pcs-pr-td-ck"><input type="checkbox" aria-label="' + escapeHtml('Mostrar ' + tit) + '" data-page="' + escapeHtml(pag) + '" ' + (boolValue(item.permitido) ? 'checked' : '') + '></td>' +
             '</tr>';
           }).join('');
 
@@ -308,6 +308,9 @@
 
       function applyPageFilter() {
         const q = (prSearch && prSearch.value) ? prSearch.value.trim().toLowerCase() : '';
+        modulosBox.querySelectorAll('.pcs-pr-mod-card').forEach(function (card) {
+          card.hidden = !!q && card.textContent.toLowerCase().indexOf(q) < 0;
+        });
         paginasBox.querySelectorAll('tr.pcs-pr-pag-row').forEach(function (tr) {
           const blob = (tr.getAttribute('data-search-blob') || '').toLowerCase();
           if (!q) { tr.classList.remove('pcs-pr-pag-row--hidden'); return; }
@@ -321,6 +324,7 @@
             det.classList.add('pcs-pr-group--empty');
           } else {
             det.classList.remove('pcs-pr-group--empty');
+            if (q) det.open = true;
           }
         });
       }
@@ -337,7 +341,7 @@
       }
 
       function collectPayload() {
-        const rolID = Number(rolSelect.value || 0);
+        const rolID = state.loadedRoleID;
         const modulos = [];
         if (modulosBox) {
           modulosBox.querySelectorAll('input[type="checkbox"][data-modulo]').forEach(function (input) {
@@ -399,6 +403,7 @@
       }
 
       async function createNewRol() {
+        if (state.saving || state.loading) return;
         const tipoEmpresaID = Number(tipoSelect.value || 0);
         if (!tipoEmpresaID) {
           setMessage('Selecciona un tipo de empresa antes de crear un rol.', true);
@@ -410,7 +415,9 @@
           setMessage('El nombre del rol es obligatorio.', true);
           return;
         }
-        createRolBtn.disabled = true;
+        if (state.snapshot && markDirty() && !window.confirm('Hay permisos sin guardar. ¿Descartar los cambios y crear otro rol?')) return;
+        state.saving = true;
+        createRolBtn.disabled = tipoSelect.disabled = rolSelect.disabled = true;
         try {
           setMessage('Creando rol…', false);
           const res = await fetch('/super/api/roles_de_usuario', {
@@ -433,39 +440,50 @@
         } catch (err) {
           setMessage((err && err.message) || 'No se pudo crear el rol.', true);
         } finally {
-          createRolBtn.disabled = false;
+          state.saving = false;
+          createRolBtn.disabled = tipoSelect.disabled = rolSelect.disabled = false;
         }
       }
 
       async function loadPermisosByRole(rolID) {
+        const sequence = ++state.loadSequence;
+        state.loading = true;
+        state.loadedRoleID = 0;
+        state.snapshot = '';
+        panelPermisos.hidden = true;
+        saveBtn.disabled = true;
+        if (saveBtn2) saveBtn2.disabled = true;
         if (!rolID || rolID < 1) {
-          panelPermisos.hidden = true;
-          saveBtn.disabled = true;
-          if (saveBtn2) saveBtn2.disabled = true;
+          state.loading = false;
           return;
         }
-        const res = await fetch('/super/api/roles_de_usuario/permisos?rol_id=' + encodeURIComponent(rolID), { credentials: 'same-origin' });
-        await ensureOk(res);
-        const data = await res.json();
-        state.modulos = Array.isArray(data.modulos) ? data.modulos : [];
-        state.paginas = Array.isArray(data.paginas) ? data.paginas : [];
-        state.accionesEtiqueta = (data && data.acciones_etiqueta && typeof data.acciones_etiqueta === 'object') ? data.acciones_etiqueta : {};
-        state.modulosEtiqueta = (data && data.modulos_etiqueta && typeof data.modulos_etiqueta === 'object') ? data.modulos_etiqueta : {};
-        renderModulos();
-        buildPaginasTable();
-        state.snapshot = takeSnapshot();
-        if (prDirtyNote) prDirtyNote.hidden = true;
-        panelPermisos.hidden = false;
-        saveBtn.disabled = false;
-        if (saveBtn2) saveBtn2.disabled = false;
-        setMessage('', false);
+        try {
+          const res = await fetch('/super/api/roles_de_usuario/permisos?rol_id=' + encodeURIComponent(rolID), { credentials: 'same-origin' });
+          await ensureOk(res);
+          const data = await res.json();
+          if (sequence !== state.loadSequence || Number(rolSelect.value) !== rolID) return;
+          state.loadedRoleID = rolID;
+          state.modulos = Array.isArray(data.modulos) ? data.modulos : [];
+          state.paginas = Array.isArray(data.paginas) ? data.paginas : [];
+          state.accionesEtiqueta = (data && data.acciones_etiqueta && typeof data.acciones_etiqueta === 'object') ? data.acciones_etiqueta : {};
+          state.modulosEtiqueta = (data && data.modulos_etiqueta && typeof data.modulos_etiqueta === 'object') ? data.modulos_etiqueta : {};
+          renderModulos();
+          buildPaginasTable();
+          state.snapshot = takeSnapshot();
+          if (prDirtyNote) prDirtyNote.hidden = true;
+          panelPermisos.hidden = false;
+          saveBtn.disabled = false;
+          if (saveBtn2) saveBtn2.disabled = false;
+          setMessage('', false);
+        } finally {
+          if (sequence === state.loadSequence) state.loading = false;
+        }
       }
 
       async function savePermisos() {
         const payload = collectPayload();
-        if (!payload.rol_id) {
-          setMessage('Selecciona un rol.', true);
-          return;
+        if (!payload.rol_id || state.loading || payload.rol_id !== Number(rolSelect.value)) {
+          throw new Error('Espera a que terminen de cargar los permisos del rol seleccionado.');
         }
         const res = await fetch('/super/api/roles_de_usuario/permisos', {
           method: 'PUT',
@@ -479,18 +497,25 @@
       function wireSave(btn) {
         if (!btn) return;
         btn.addEventListener('click', async function () {
+          if (state.saving || state.loading || !state.loadedRoleID) return;
+          state.saving = true;
+          tipoSelect.disabled = rolSelect.disabled = createRolBtn.disabled = true;
+          panelPermisos.querySelectorAll('input,button').forEach(function (input) { input.disabled = true; });
           try {
             saveBtn.disabled = true;
             if (saveBtn2) saveBtn2.disabled = true;
             setMessage('Guardando…', false);
             await savePermisos();
-            setMessage('Cambios guardados correctamente.', false);
             await loadPermisosByRole(Number(rolSelect.value || 0));
+            setMessage('Cambios guardados correctamente.', false);
           } catch (err) {
             setMessage((err && err.message) || 'No se pudieron guardar los permisos.', true);
           } finally {
-            saveBtn.disabled = false;
-            if (saveBtn2) saveBtn2.disabled = false;
+            state.saving = false;
+            tipoSelect.disabled = rolSelect.disabled = createRolBtn.disabled = false;
+            panelPermisos.querySelectorAll('input,button').forEach(function (input) { input.disabled = false; });
+            saveBtn.disabled = !state.loadedRoleID;
+            if (saveBtn2) saveBtn2.disabled = !state.loadedRoleID;
           }
         });
       }
@@ -498,6 +523,15 @@
       wireSave(saveBtn2);
 
       tipoSelect.addEventListener('change', async function () {
+        if (state.snapshot && markDirty() && !window.confirm('Hay permisos sin guardar. ¿Descartar los cambios?')) { tipoSelect.value = state.tipoID; return; }
+        state.tipoID = tipoSelect.value;
+        ++state.loadSequence;
+        state.loadedRoleID = 0;
+        state.snapshot = '';
+        panelPermisos.hidden = true;
+        saveBtn.disabled = true;
+        if (saveBtn2) saveBtn2.disabled = true;
+        tipoSelect.disabled = rolSelect.disabled = createRolBtn.disabled = true;
         try {
           setMessage('', false);
           await loadRoles(0);
@@ -506,10 +540,13 @@
           else { panelPermisos.hidden = true; saveBtn.disabled = true; if (saveBtn2) saveBtn2.disabled = true; }
         } catch (err) {
           setMessage(err.message || 'Error cargando roles.', true);
+        } finally {
+          tipoSelect.disabled = rolSelect.disabled = createRolBtn.disabled = false;
         }
       });
 
       rolSelect.addEventListener('change', async function () {
+        if (state.snapshot && markDirty() && !window.confirm('Hay permisos sin guardar. ¿Descartar los cambios?')) { rolSelect.value = String(state.loadedRoleID); return; }
         try {
           setMessage('', false);
           const currentRoleID = Number(rolSelect.value || 0);
@@ -527,6 +564,11 @@
       }
 
       prSearch.addEventListener('input', function () { applyPageFilter(); });
+      window.addEventListener('beforeunload', function (event) {
+        if (!state.snapshot || !markDirty()) return;
+        event.preventDefault();
+        event.returnValue = '';
+      });
 
       document.getElementById('prExpandAll').addEventListener('click', function () {
         document.querySelectorAll('details.pcs-pr-group').forEach(function (d) { d.open = true; });
