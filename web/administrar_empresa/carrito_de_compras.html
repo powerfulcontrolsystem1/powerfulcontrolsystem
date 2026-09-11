@@ -202,6 +202,26 @@
       <div id="scannerPanel" class="card empresa-section mt-10">
         <div class="carrito-scanner-header">
           <h3 class="carrito-scanner-header-title">Buscar producto</h3>
+          <div class="carrito-action-select-wrap carrito-scanner-actions" hidden>
+            <label class="form-label carrito-action-select-label" for="carritoActionSelect">Acción del carrito</label>
+            <div class="carrito-action-select-row">
+              <select id="carritoActionSelect" class="form-input carrito-action-select" aria-label="Seleccionar acción del carrito">
+                <option value="">Selecciona una acción</option>
+                <option value="historial_productos">Historial de productos</option>
+                <option value="carritoBtnDescuentos">☑ Descuentos</option>
+                <option value="carritoBtnCambiarTarifa">☑ Cambiar tarifa</option>
+                <option value="carritoBtnTransferirCuenta">☐ Transferir cuenta</option>
+                <option value="carritoBtnControlElectrico">☐ Domótica</option>
+                <option value="carritoBtnCancelarCarrito">☑ Cancelar carrito</option>
+                <option value="carritoBtnClientes">☑ Clientes</option>
+                <option value="carritoBtnAbonos">☑ Abonos</option>
+                <option value="carritoBtnPagoQR">☐ QR de pago</option>
+                <option value="carritoBtnVehiculo">☑ Vehículo</option>
+                <option value="cupo_credito">☑ Cupo de crédito</option>
+              </select>
+              <button type="button" id="carritoBtnControlElectrico" class="btn secondary carrito-domotica-button" aria-label="Abrir Domótica de esta estación" title="Abrir Domótica de esta estación">⚡ Domótica</button>
+            </div>
+          </div>
           <div id="directSaleFullscreenCard" class="carrito-fullscreen-card" hidden>
             <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
               <span class="carrito-fullscreen-label">Pantalla completa</span>
@@ -482,26 +502,6 @@
       <section id="stationCartActionsCard" class="card empresa-section carrito-actions-card is-hidden mt-12" hidden>
         <div class="empresa-section-header compact" hidden>
           <h3 class="section-heading"></h3>
-        </div>
-        <div class="carrito-action-select-wrap">
-          <label class="form-label carrito-action-select-label" for="carritoActionSelect">Acción del carrito</label>
-          <div class="carrito-action-select-row">
-            <select id="carritoActionSelect" class="form-input carrito-action-select" aria-label="Seleccionar acción del carrito">
-              <option value="">Selecciona una acción</option>
-              <option value="historial_productos">Historial de productos</option>
-              <option value="carritoBtnDescuentos">☑ Descuentos</option>
-              <option value="carritoBtnCambiarTarifa">☑ Cambiar tarifa</option>
-              <option value="carritoBtnTransferirCuenta">☐ Transferir cuenta</option>
-              <option value="carritoBtnControlElectrico">☐ Domótica</option>
-              <option value="carritoBtnCancelarCarrito">☑ Cancelar carrito</option>
-              <option value="carritoBtnClientes">☑ Clientes</option>
-              <option value="carritoBtnAbonos">☑ Abonos</option>
-              <option value="carritoBtnPagoQR">☐ QR de pago</option>
-              <option value="carritoBtnVehiculo">☑ Vehículo</option>
-              <option value="cupo_credito">☑ Cupo de crédito</option>
-            </select>
-            <button type="button" id="carritoBtnControlElectrico" class="btn secondary carrito-domotica-button" aria-label="Abrir Domótica de esta estación" title="Abrir Domótica de esta estación">⚡ Domótica</button>
-          </div>
         </div>
         <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>

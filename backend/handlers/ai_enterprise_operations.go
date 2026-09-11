@@ -7,12 +7,64 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
 	aipkg "github.com/you/pos-backend/ai"
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+type estacionConfigNombre struct {
+	ID     int64  `json:"id"`
+	Nombre string `json:"nombre"`
+}
+
+func parseEstacionesNombresFromPref(valor string) []estacionConfigNombre {
+	valor = strings.TrimSpace(valor)
+	if valor == "" {
+		return nil
+	}
+	raw := valor
+	for i := 0; i < 3; i++ {
+		var next interface{}
+		if err := json.Unmarshal([]byte(raw), &next); err != nil {
+			return nil
+		}
+		if encoded, ok := next.(string); ok {
+			raw = strings.TrimSpace(encoded)
+			continue
+		}
+		body, err := json.Marshal(next)
+		if err != nil {
+			return nil
+		}
+		var cfg struct {
+			Estaciones []struct {
+				ID     interface{} `json:"id"`
+				Nombre string      `json:"nombre"`
+			} `json:"estaciones"`
+		}
+		if err := json.Unmarshal(body, &cfg); err != nil {
+			return nil
+		}
+		out := make([]estacionConfigNombre, 0, len(cfg.Estaciones))
+		for _, station := range cfg.Estaciones {
+			id := int64(0)
+			switch value := station.ID.(type) {
+			case float64:
+				id = int64(value)
+			case string:
+				id, _ = strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+			}
+			if id > 0 {
+				out = append(out, estacionConfigNombre{ID: id, Nombre: strings.TrimSpace(station.Nombre)})
+			}
+		}
+		return out
+	}
+	return nil
+}
 
 func decodeEnterpriseTool(raw string, dst interface{}) error {
 	if len(raw) > 64<<10 {

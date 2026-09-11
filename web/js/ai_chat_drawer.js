@@ -3612,7 +3612,6 @@
     }
     if (method !== 'POST' && method !== 'PUT') return false;
     return endpoint.indexOf('/api/empresa/ia/importar_desde_foto') === 0 ||
-      endpoint.indexOf('/api/empresa/ia_pedidos_estacion/ejecutar') === 0 ||
       endpoint.indexOf('/api/empresa/ia_radio/activar') === 0 ||
       endpoint.indexOf('/api/empresa/productos') === 0 ||
       endpoint.indexOf('/api/empresa/nomina') === 0 ||

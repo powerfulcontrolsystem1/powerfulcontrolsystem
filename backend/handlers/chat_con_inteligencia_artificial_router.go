@@ -22,7 +22,6 @@ func RegisterEmpresaChatIARoutes(dbEmp, dbSuper *sql.DB) {
 	http.HandleFunc("/api/empresa/chat_documentos/exportar", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, DynamicDocumentChatExportHandler(dbEmp, dbSuper)))
 	http.HandleFunc("/api/empresa/chat_documentos/compartir_email", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, DynamicDocumentEmailShareHandler(dbEmp, dbSuper)))
 	http.HandleFunc("/api/empresa/ia/importar_desde_foto", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaIAImportarDesdeFotoHandler(dbEmp)))
-	http.HandleFunc("/api/empresa/ia_pedidos_estacion/ejecutar", WithEmpresaVentasPermissions(dbEmp, dbSuper, ctrl.IaPedidosEstacionEjecutarHandler))
 	http.HandleFunc("/api/empresa/ia_radio/activar", WithEmpresaVentasPermissions(dbEmp, dbSuper, EmpresaIARadioHandler(dbSuper, dbEmp)))
 	// El orquestador empresarial no acepta endpoints ni acciones elegidas por el modelo.
 	// This wrapper establishes only the authenticated company scope. Every tool

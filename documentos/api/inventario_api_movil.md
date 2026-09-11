@@ -2,7 +2,7 @@
 
 Generado por `tools/auditar_api_movil.mjs`. Es un inventario de rutas registradas; no sustituye las pruebas de autorizacion, tenant y negocio.
 
-Total de rutas detectadas: **374**.
+Total de rutas detectadas: **373**.
 
 ## api_general
 
@@ -135,7 +135,6 @@ Total de rutas detectadas: **374**.
 | `/api/empresa/horarios_trabajadores` | `backend/main.go` |
 | `/api/empresa/hotel_tarjetas_acceso` | `backend/main.go` |
 | `/api/empresa/ia_empresarial` | `backend/main.go` |
-| `/api/empresa/ia_pedidos_estacion/ejecutar` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
 | `/api/empresa/ia_radio/activar` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
 | `/api/empresa/ia/importar_desde_foto` | `backend/handlers/chat_con_inteligencia_artificial_router.go` |
 | `/api/empresa/importaciones_costeo` | `backend/main.go` |

@@ -467,10 +467,10 @@ afecte dinero, documentos, licencias o seguridad.
    al usuario y ejecutarse solo despues de confirmar.
 5. El frontend solo permite `OPEN`, `POST` y `PUT` sobre endpoints cerrados; no
    permite `DELETE` ni rutas genericas.
-6. Para `cajero`, las acciones permitidas son pedir/agregar productos a una
-   estacion, mesa, habitacion o venta directa mediante
-   `/api/empresa/ia_pedidos_estacion/ejecutar`, y activar/desactivar la emisora
-   mediante `/api/empresa/ia_radio/activar`.
+6. Las acciones empresariales solicitadas por IA se originan exclusivamente en
+   el chat principal y pasan por herramientas registradas, permisos efectivos y
+   confirmacion; activar/desactivar la emisora usa
+   `/api/empresa/ia_radio/activar`.
 7. Productos manuales usan `/api/empresa/productos` y dependen de permisos de
    inventario; nomina usa `/api/empresa/nomina` y depende de permisos de nomina;
    tarifas de motel/hotel/tiempo usan los endpoints de tarifas bajo permisos de
@@ -489,10 +489,9 @@ afecte dinero, documentos, licencias o seguridad.
 11. Agentes no generales consumen `empresa_agentes_uso_diario.consultas_ligeras`
    ademas del limite normal de modelo/proveedor. Si se supera la cuota, el
    backend responde `empresa_agent_limit_reached` sin llamar al proveedor.
-12. `Pedidos con IA` usa por defecto el agente `ventas`, muestra selector de
-   agente/modelo y solo agrega items al carrito mediante
-   `/api/empresa/ia_pedidos_estacion/ejecutar`, filtrando productos,
-   estaciones y carritos por `empresa_id`.
+12. No existe una estacion especial de pedidos asistidos. Cualquier operacion
+    sobre estaciones o carritos debe salir del chat principal, usar una
+    herramienta empresarial registrada y conservar el filtro por `empresa_id`.
 
 ## Auditoria integral de modulos
 

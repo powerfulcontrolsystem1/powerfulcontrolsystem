@@ -1110,18 +1110,14 @@ liquidaciones + pagos + perfil + configuracion
   - La IA recibe resultados ya calculados por el servidor y cada preparacion queda registrada en `empresa_auditoria_ia_consultas`.
   - Si la IA global/proveedor esta desactivado o la auditoria no esta disponible, el backend no rompe el servidor: los endpoints devuelven estado controlado o contexto degradado.
 
-## Actualizacion 2026-04-24 (estaciones: pedidos con IA y miniaturas movil)
+## Estaciones: miniaturas moviles
 
-- Backend ventas / IA:
-  - `backend/handlers/ia_pedidos_estacion.go` expone `POST /api/empresa/ia_pedidos_estacion/ejecutar` (wrapper `WithEmpresaVentasPermissions`), reutiliza credenciales y limites del chat IA por empresa y agrega items con `CreateCarritoCompraItem` tras activar sesion de carrito de estacion si aplica.
-  - `backend/db/carritos_compras.go` agrega `GetCarritoCompraByCodigo` para resolver `EST-{empresa_id}-{estacion_id}`.
-  - `backend/handlers/chat_con_inteligencia_artificial_router.go` registra la ruta junto al modulo existente de chat.
-- Frontend:
-  - `web/administrar_empresa/estacion_ia_pedidos.html` es la vista embebida (iframe) con textarea, dictado y llamada al endpoint.
-  - `web/administrar_empresa/estaciones.html` y `web/administrar_empresa/configuracion_de_estaciones.html` persisten `ia_pedidos_enabled` y `ia_pedidos_placement` dentro de `estaciones_config`; boton movil alterna clase `estaciones-thumb-mobile` en la rejilla.
-  - `web/estilos.css` define layout compacto en modo miniatura (tres columnas en pantallas <=640px).
-- Flujo resumido:
-  - Usuario habilita estacion IA -> abre estaciones -> escribe «dos cervezas mesa 5» -> backend lista estaciones y productos activos en el prompt -> modelo devuelve JSON -> servidor valida y escribe lineas en el carrito de la estacion 5.
+- `web/administrar_empresa/estaciones.html` permite alternar la clase
+  `estaciones-thumb-mobile` en la rejilla.
+- `web/estilos.css` define el layout compacto de tres columnas en pantallas de
+  hasta 640 px.
+- La inteligencia artificial empresarial se concentra en el chat principal y
+  no agrega tarjetas, iframes ni rutas especiales a la rejilla de estaciones.
 
 ## Actualizacion 2026-04-24 (asesor comercial: invitacion, codigo y comisiones)
 

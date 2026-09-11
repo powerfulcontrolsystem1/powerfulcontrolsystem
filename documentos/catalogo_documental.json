@@ -273,7 +273,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "138ce5f15be87eaf51369f0b3ce220a1d773ebb2caad71218adb19557edf7679"
+      "sha256_lf": "0c9ad07fca26422b45fc1bd8985cd424f955a076fb9d3b894413c7060d378ae1"
     },
     {
       "path": "documentos/api/mobile_api_v1.md",
@@ -417,7 +417,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "68b8e9674efeff513692e7bb934c9cd1ed5f77a50dfbe136ecb31c0f18475a9d"
+      "sha256_lf": "4f39fe56022b025c0b81873604566fe72d5439136db2e1d257edf41a6b82a048"
     },
     {
       "path": "documentos/arquitectura/matriz_rutas_multiempresa.md",
@@ -426,7 +426,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "a90d2b4cc655d09e053589d60ef81b0661b95b17d0a70be50ac012a56e91b97c"
+      "sha256_lf": "55467c9cd1aa57b0f2a50bb7673a8557f394fb5cbf8e0fbd9149c09d714c8339"
     },
     {
       "path": "documentos/arquitectura_modulos_universales.md",
@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "c78f37293a0dc1391301e12e929588214686d7e979c2de77ea9406e4509d0795"
+      "sha256_lf": "a1b14b83c0b57ef407dffd9b5419a770db8086db70d997eca2049a0b53276b60"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -723,7 +723,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "3cc5621a3d9da87e31dd5115abd5df46991dc90972d7939de64d1f7e421a1308"
+      "sha256_lf": "01e027029eee6f96fc80c4b64fc2fb0bf027b4061d448a803b2c034ced6c17a7"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -795,7 +795,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "b61cd3abef161c2fc6f10d7221c499a4e56996c84599b8760191a6af63b664f5"
+      "sha256_lf": "5345efa6d8038ae640e9ce9d2673fd5c300706942ce9dfd848d179cca2cd2a20"
     },
     {
       "path": "documentos/flujos_operativos.md",
@@ -804,7 +804,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "db6a9b3a7658d9bc9eb8dfd32ab6cc28d18017bc124e641d567e505fcf9ff1ca"
+      "sha256_lf": "0386905ba5695613a08ea720c384ea5d6d9abfa503862055b708c7ed4cb9b4d8"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
@@ -1218,7 +1218,7 @@
       "owner": "Ingeniería del módulo",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "a9afcd2e5ebb7c3f299e31b4adce5c81e9821a4300ba455230d3bb37c443419d"
+      "sha256_lf": "8c62c5673d212f6d029fe231c2bca4ce646f38ec83c2e0322ff31d4a5a81b5bf"
     },
     {
       "path": "documentos/importaciones_costeo.md",
@@ -1272,7 +1272,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "0dc554845d980428c3ef414de875dc3bccc37e002945b7477779904d8d5bef54"
+      "sha256_lf": "5f503b98f00d26fe52a3463619cac28fd3e6a524fa9b1f0d335245d8da74e6d7"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",

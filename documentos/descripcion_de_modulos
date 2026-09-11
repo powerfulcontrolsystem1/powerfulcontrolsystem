@@ -2981,12 +2981,6 @@ Autenticacion administrativa sin 2FA
 - Cambio funcional: `web/super/pagina_principal.html` aplica el mismo arranque de tema que otras paginas en iframe (`pcs_theme` / `localStorage`). Para evitar gradientes rosados en temas oscuros, el editor deja de usar `mp-card` y pasa a `pp-main-card` con superficie neutra basada en variables. `web/estilos.css` define `body.super-page` con fondo y texto por variables; corrige el titulo `.super-page .page-header h1` en temas claros (sin texto transparente); unifica `.pp-image-preview-wrap` con mezclas por tema.
 - Impacto operativo: sin cambios de API ni permisos; mejora legibilidad al alternar apariencia. Las paginas super que usan `mp-card` (p. ej. formatos de email) se benefician del mismo bloque de tema claro.
 
-2026-04-24: Estaciones ? pedidos con IA (voz/texto) y miniaturas en movil
-- Modulos afectados: `estaciones`, `carritos`, `ventas`, `chat IA`, `administrar_empresa`
-- Cambio funcional: la configuracion JSON `estaciones_config` admite `ia_pedidos_enabled` y `ia_pedidos_placement` junto a Caja, YouTube y Notas. La pantalla de estaciones muestra una tarjeta especial con iframe a `estacion_ia_pedidos.html` donde el usuario dicta o escribe pedidos; el backend `POST /api/empresa/ia_pedidos_estacion/ejecutar` (permisos de ventas, misma cuota/reglas que el chat IA) interpreta el texto con el modelo disponible y agrega productos al carrito de la estacion (`EST-{empresa_id}-{estacion_id}`), activando sesion si hace falta. En vista movil, un boton `Ver miniaturas` alterna una rejilla de tres columnas con tarjetas mas compactas.
-- Archivos clave: `backend/handlers/ia_pedidos_estacion.go`, `backend/db/carritos_compras.go` (`GetCarritoCompraByCodigo`), `backend/handlers/chat_con_inteligencia_artificial_router.go`, `web/administrar_empresa/estacion_ia_pedidos.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/estilos.css`, `tools/clean_styles_auto.js`, `.vscode/extensions.json`.
-- Impacto operativo: requiere proveedor IA activo, chat empresarial habilitado y productos activos; si el modelo no devuelve JSON valido, no se ejecutan acciones.
-
 2026-04-24: Asesor comercial ? invitaciones, codigos y comisiones por licencias
 - Modulos afectados: `asesor comercial`, `licencias`, `pagos`, `super`, `seleccionar_empresa`
 - Cambio funcional: se elimina la pagina anterior de vendedores y se crea `web/super/asesor_comercial.html` para que super invite administradores registrados como asesores comerciales. Al aceptar por correo, el asesor queda activo con codigo unico, porcentaje de comision y plazo de asociacion por cliente.
@@ -5041,3 +5035,15 @@ resuelve desde el socket y la cadena de proxies confiables. El chat público añ
 un presupuesto por IP que no se reinicia cambiando la cookie, y acota su memoria.
 No cambian permisos, tenant ni tablas. La verificación del artefacto publicado se
 conserva fuera de Git y debe repetirse para cada candidato.
+
+## Estaciones y carrito — revisión 2026-09-11
+
+- La rejilla de estaciones ya no incorpora una superficie propia para ordenar
+  mediante inteligencia artificial. La experiencia IA empresarial se concentra
+  en el chat principal y conserva sus herramientas, permisos y confirmaciones.
+- Cada estacion puede decidir de forma independiente si su tarjeta muestra la
+  fecha/hora de entrada, la fecha/hora de fin tarifario y el nombre del cliente.
+  Las empresas nuevas reciben las tres opciones visibles por defecto.
+- En el carrito, el selector de acciones y el boton Domotica se ubican en el
+  encabezado de busqueda de producto; en movil se reorganizan dentro del mismo
+  bloque sin duplicar controles ni identificadores.

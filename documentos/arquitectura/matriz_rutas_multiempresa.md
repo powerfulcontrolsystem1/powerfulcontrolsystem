@@ -6,8 +6,8 @@ Este inventario detecta registros HTTP bajo `/api/empresa/` y exige que cada uno
 
 ## Resumen
 
-- Rutas empresariales inventariadas: 198.
-- Con wrapper autoritativo detectado: 198.
+- Rutas empresariales inventariadas: 197.
+- Con wrapper autoritativo detectado: 197.
 - Requieren revision manual: 0.
 - Duplicados de ruta detectados: 0.
 
@@ -16,7 +16,7 @@ Este inventario detecta registros HTTP bajo `/api/empresa/` y exige que cada uno
 | Ruta | Archivo | Wrapper detectado | Estado |
 | --- | --- | --- | --- |
 | `/api/empresa/activos_fijos_niif_fiscal` | [backend/main.go:1770](../../backend/main.go#L1770) | `WithEmpresaActivosFijosNIIFPermissions` | protegida |
-| `/api/empresa/ai/enterprise` | [backend/handlers/chat_con_inteligencia_artificial_router.go:30](../../backend/handlers/chat_con_inteligencia_artificial_router.go#L30) | `WithEmpresaAIEnterprisePermissions` | protegida |
+| `/api/empresa/ai/enterprise` | [backend/handlers/chat_con_inteligencia_artificial_router.go:29](../../backend/handlers/chat_con_inteligencia_artificial_router.go#L29) | `WithEmpresaAIEnterprisePermissions` | protegida |
 | `/api/empresa/aiu_construccion` | [backend/main.go:1653](../../backend/main.go#L1653) | `WithEmpresaAIUConstruccionPermissions` | protegida |
 | `/api/empresa/alquileres` | [backend/main.go:1673](../../backend/main.go#L1673) | `WithEmpresaAlquileresPermissions` | protegida |
 | `/api/empresa/asistencia_empleados` | [backend/main.go:1666](../../backend/main.go#L1666) | `WithEmpresaAsistenciaEmpleadosPermissions` | protegida |
@@ -121,8 +121,7 @@ Este inventario detecta registros HTTP bajo `/api/empresa/` y exige que cada uno
 | `/api/empresa/hotel_tarjetas_acceso` | [backend/main.go:1712](../../backend/main.go#L1712) | `WithEmpresaReservasHotelPermissions` | protegida |
 | `/api/empresa/ia/importar_desde_foto` | [backend/handlers/chat_con_inteligencia_artificial_router.go:24](../../backend/handlers/chat_con_inteligencia_artificial_router.go#L24) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/ia_empresarial` | [backend/main.go:1744](../../backend/main.go#L1744) | `WithEmpresaReportesPermissions` | protegida |
-| `/api/empresa/ia_pedidos_estacion/ejecutar` | [backend/handlers/chat_con_inteligencia_artificial_router.go:25](../../backend/handlers/chat_con_inteligencia_artificial_router.go#L25) | `WithEmpresaVentasPermissions` | protegida |
-| `/api/empresa/ia_radio/activar` | [backend/handlers/chat_con_inteligencia_artificial_router.go:26](../../backend/handlers/chat_con_inteligencia_artificial_router.go#L26) | `WithEmpresaVentasPermissions` | protegida |
+| `/api/empresa/ia_radio/activar` | [backend/handlers/chat_con_inteligencia_artificial_router.go:25](../../backend/handlers/chat_con_inteligencia_artificial_router.go#L25) | `WithEmpresaVentasPermissions` | protegida |
 | `/api/empresa/importaciones_costeo` | [backend/main.go:1652](../../backend/main.go#L1652) | `WithEmpresaImportacionesCosteoPermissions` | protegida |
 | `/api/empresa/impresoras` | [backend/main.go:1728](../../backend/main.go#L1728) | `WithEmpresaSeguridadPermissions` | protegida |
 | `/api/empresa/impresoras/agente` | [backend/main.go:1729](../../backend/main.go#L1729) | `WithEmpresaVentasPermissions` | protegida |
