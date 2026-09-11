@@ -31,16 +31,16 @@
     .carrito-document-mode-copy{padding:14px 14px 0;color:var(--muted);font-size:.92rem}
     .carrito-direct-sale-tools{align-items:center;justify-content:flex-end;gap:8px}
     .carrito-direct-sale-tools button[hidden]{display:none!important}
-    .carrito-scanner-header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;padding-right:50px}
+    .carrito-scanner-header{position:relative;display:flex;align-items:center;gap:10px;margin-bottom:8px}
     .carrito-scanner-header-title{margin:0;font-size:.9rem;font-weight:900;color:var(--muted);text-transform:uppercase}
     .carrito-customer-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-    #buscarProductosActions{position:absolute;top:0;right:0;z-index:3;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;min-height:0!important}
-    #buscarProductosActions .btn:not(#directSaleFullscreenBtn){display:none!important}
+    #buscarProductosActions{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-left:auto!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;min-height:0!important}
+    #buscarProductosActions[hidden]{display:none!important}
+    #backToStationsHeaderBtn{min-height:34px!important;height:34px!important;padding:0 10px!important;white-space:nowrap}
     .carrito-fullscreen-card{display:flex;align-items:center;justify-content:center;gap:4px;border:0;border-radius:0;background:transparent;padding:0;color:var(--text);min-height:0}
     .carrito-fullscreen-card[hidden]{display:none!important}
-    .carrito-fullscreen-btn{width:auto!important;min-width:160px!important;height:34px!important;min-height:34px!important;padding:0 10px!important;display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:0}
+    .carrito-fullscreen-btn{width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;padding:0!important;display:inline-flex;align-items:center;justify-content:center;border-radius:0}
     .carrito-fullscreen-btn .cart-btn-icon{font-size:1.25rem;line-height:1}
-    .carrito-fullscreen-label{display:inline!important;font-weight:900}
     .carrito-logo-card{display:grid;gap:8px;justify-items:center;text-align:center;width:100%;min-height:68px;margin:0 0 8px!important;padding:6px;border:1px solid var(--cart-title-border,var(--border));background:var(--cart-title-shade,var(--surface-soft));align-content:center}
     .carrito-logo-card[hidden]{display:none!important}
     .carrito-logo-preview{display:block;max-width:116px;max-height:64px;object-fit:contain}
@@ -95,7 +95,7 @@
     body.carrito-direct-fullscreen #openAIDrawer,
     body.carrito-direct-fullscreen .ai-chat-toggle-button,
     body.carrito-direct-fullscreen .floating-menu{display:none!important}
-    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:flex-end}.carrito-scanner-header{align-items:stretch}.carrito-fullscreen-btn{min-width:38px!important;padding:0!important}}
+    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-customer-header-actions{width:100%;justify-content:flex-end}.carrito-scanner-header{align-items:center;flex-wrap:wrap}.carrito-action-select-wrap{order:3;flex:1 0 100%}.carrito-fullscreen-btn{width:38px!important;min-width:38px!important;padding:0!important}}
   </style>
 </head>
 <body class="super-page form-bg-dark carrito-flat-page admin-subpage" data-auto-estacion-labels="true">
@@ -193,12 +193,6 @@
 
       <div class="carrito-primary-layout">
         <div class="carrito-primary-main">
-      <section id="buscarProductosActions" class="card empresa-section mt-10 carrito-direct-sale-tools" hidden>
-        <div class="form-actions">
-          <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
-        </div>
-      </section>
-
       <div id="scannerPanel" class="card empresa-section mt-10">
         <div class="carrito-scanner-header">
           <h3 class="carrito-scanner-header-title">Buscar producto</h3>
@@ -222,12 +216,14 @@
               <button type="button" id="carritoBtnControlElectrico" class="btn secondary carrito-domotica-button" aria-label="Abrir Domótica de esta estación" title="Abrir Domótica de esta estación">⚡ Domótica</button>
             </div>
           </div>
-          <div id="directSaleFullscreenCard" class="carrito-fullscreen-card" hidden>
-            <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
-              <span class="carrito-fullscreen-label">Pantalla completa</span>
-              <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
-            </button>
-          </div>
+          <section id="buscarProductosActions" class="carrito-direct-sale-tools" hidden>
+            <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar</button>
+            <div id="directSaleFullscreenCard" class="carrito-fullscreen-card" hidden>
+              <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir en pantalla completa">
+                <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
+              </button>
+            </div>
+          </section>
         </div>
         <div class="empresa-section-header" hidden>
           <h3 class="section-heading"></h3>
@@ -2217,7 +2213,7 @@
         mostrar_tarjeta_domotica_carrito: true,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: false,
-        mostrar_tarjeta_vip_cliente: true,
+        mostrar_tarjeta_vip_cliente: false,
         mostrar_boton_descuentos_carrito: true,
         mostrar_boton_cambiar_tarifa_carrito: true,
         mostrar_boton_transferir_cuenta_carrito: false,
@@ -2373,7 +2369,7 @@
           : Boolean(src.mostrar_tarjeta_domotica_carrito),
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : Boolean(src.mostrar_tarjeta_valores_pago),
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : Boolean(src.mostrar_tarjeta_comision),
-        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : Boolean(src.mostrar_tarjeta_vip_cliente),
+        mostrar_tarjeta_vip_cliente: false,
         mostrar_boton_descuentos_carrito: src.mostrar_boton_descuentos_carrito === undefined ? base.mostrar_boton_descuentos_carrito : Boolean(src.mostrar_boton_descuentos_carrito),
         mostrar_boton_cambiar_tarifa_carrito: src.mostrar_boton_cambiar_tarifa_carrito === undefined ? base.mostrar_boton_cambiar_tarifa_carrito : Boolean(src.mostrar_boton_cambiar_tarifa_carrito),
         mostrar_boton_transferir_cuenta_carrito: src.mostrar_boton_transferir_cuenta_carrito === undefined
@@ -6844,7 +6840,7 @@
       ensureCarritoDomoticaPanel();
       renderCarritoAbonosPanel();
       if (vipCard) {
-        const showVipCard = state.stationMode && !state.directSaleMode && stationUI.mostrar_tarjeta_vip_cliente;
+        const showVipCard = false;
         vipCard.classList.toggle('is-hidden', !showVipCard);
         vipCard.hidden = !showVipCard;
         vipCard.style.display = showVipCard ? '' : 'none';
@@ -8025,8 +8021,8 @@
       const stationUI = getCurrentStationCartUIConfig();
       const selected = getSelectedCarrito();
       const focusedSaleMode = state.stationMode || state.directSaleMode;
-      const canUseByFocusedSale = !focusedSaleMode || isCarritoOperativoActivo(selected);
-      const canUse = !!selected && canUseByFocusedSale;
+      const canPrepareFocusedSale = focusedSaleMode && state.empresaID > 0;
+      const canUse = !!selected || canPrepareFocusedSale;
 
       if (focusedSaleMode && (!stationUI.mostrar_tarjeta_lector_codigo || !stationUI.mostrar_lector_codigo_barras)) {
         clearScannerProductResults();
@@ -8063,9 +8059,8 @@
         setScannerMessage('Selecciona un carrito para usar el lector de código de barras.', false);
         return;
       }
-      if (!canUseByFocusedSale) {
-        clearScannerProductResults();
-        setScannerMessage('El carrito está inactivo. Actívalo para agregar productos por escaneo.', true);
+      if (focusedSaleMode && selected && !isCarritoOperativoActivo(selected)) {
+        setScannerMessage('Puedes escribir el código, SKU o nombre. Al agregar, el sistema intentará preparar la estación.', false);
         return;
       }
 
@@ -8222,7 +8217,18 @@
         return;
       }
 
-      const selected = getSelectedCarrito();
+      let selected = getSelectedCarrito();
+      if ((state.stationMode || state.directSaleMode) && (!selected || !isCarritoOperativoActivo(selected))) {
+        setScannerMessage(state.directSaleMode ? 'Preparando la venta directa...' : 'Preparando la estación...', false);
+        try {
+          if (state.directSaleMode) await ensureDirectSaleCarritoLifecycle();
+          else await ensureStationCarritoLifecycle();
+          selected = getSelectedCarrito();
+        } catch (err) {
+          setScannerMessage(err.message || 'No se pudo preparar el carrito para agregar productos.', true);
+          return;
+        }
+      }
       if (!selected) {
         setScannerMessage('Selecciona un carrito antes de agregar productos.', true);
         return;
@@ -10888,10 +10894,10 @@
       }
       const vipCard = document.getElementById('stationVipAccessCard');
       const stationUI = getCurrentStationCartUIConfig();
-      if (vipCard && state.stationMode && stationUI.mostrar_tarjeta_vip_cliente) {
-        vipCard.classList.remove('is-hidden');
-        vipCard.hidden = false;
-        vipCard.style.display = '';
+      if (vipCard) {
+        vipCard.classList.add('is-hidden');
+        vipCard.hidden = true;
+        vipCard.style.display = 'none';
       }
       const commissionCard = document.getElementById('stationWorkerCommissionCard');
       if (commissionCard && state.stationMode && stationUI.mostrar_comision && stationUI.mostrar_tarjeta_comision) {
@@ -11409,7 +11415,7 @@
       const icon = btn.querySelector('.cart-btn-icon');
       if (icon) icon.textContent = active ? '↙' : '⛶';
       btn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa';
-      btn.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Abrir venta directa en pantalla completa');
+      btn.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Abrir en pantalla completa');
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
       document.body.classList.toggle('carrito-direct-fullscreen', active);
     }

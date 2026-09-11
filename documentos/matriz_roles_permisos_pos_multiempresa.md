@@ -32,6 +32,11 @@ usuario. El modo `solo_activar` permite únicamente leer el tablero y ejecutar
 `action=activar_estacion`; no habilita cobros ni sustituye el rol `portero` para
 ocultar las demás páginas del menú.
 
+Activacion del carrito de estacion: `action=activar_estacion` acepta
+`ventas:A` para el rol Portería y `ventas:C` para quien inicia una venta
+operativa. La alternativa se limita a esa ruta/acción; no concede pago, cierre,
+configuración, acceso a otra caja ni mutaciones adicionales.
+
 - Se sustituye el documento acumulado por una entrada temática actual; el detalle previo se conserva como antecedente con enlace explícito.
 - El recorrido lleva a fuentes de implementación y contratos; la clasificación documental no certifica pruebas ni revisa cada afirmación histórica como vigente.
 

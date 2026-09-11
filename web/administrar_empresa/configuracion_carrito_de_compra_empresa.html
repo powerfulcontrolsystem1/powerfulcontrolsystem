@@ -350,8 +350,8 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
-              <input id="carritoCfgTarjetaVip" type="checkbox" checked>
-              Activar tarjeta de acceso cliente VIP
+              <input id="carritoCfgTarjetaVip" type="checkbox" disabled>
+              Acceso cliente VIP desactivado globalmente
             </label>
           </div>
           <div class="form-col">
@@ -893,7 +893,7 @@
         abrir_domotica_al_entrar_estacion: false,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: false,
-        mostrar_tarjeta_vip_cliente: true,
+        mostrar_tarjeta_vip_cliente: false,
         mostrar_boton_descuentos_carrito: true,
         mostrar_boton_cambiar_tarifa_carrito: true,
         mostrar_boton_transferir_cuenta_carrito: false,
@@ -1003,7 +1003,7 @@
           : !!src.abrir_domotica_al_entrar_estacion,
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : !!src.mostrar_tarjeta_valores_pago,
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : !!src.mostrar_tarjeta_comision,
-        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : !!src.mostrar_tarjeta_vip_cliente,
+        mostrar_tarjeta_vip_cliente: false,
         mostrar_boton_descuentos_carrito: src.mostrar_boton_descuentos_carrito === undefined ? base.mostrar_boton_descuentos_carrito : !!src.mostrar_boton_descuentos_carrito,
         mostrar_boton_cambiar_tarifa_carrito: src.mostrar_boton_cambiar_tarifa_carrito === undefined ? base.mostrar_boton_cambiar_tarifa_carrito : !!src.mostrar_boton_cambiar_tarifa_carrito,
         mostrar_boton_transferir_cuenta_carrito: src.mostrar_boton_transferir_cuenta_carrito === undefined
@@ -1563,7 +1563,7 @@
           mostrar_tarjeta_acciones_carrito: document.getElementById('carritoCfgTarjetaAcciones').checked,
           mostrar_tarjeta_valores_pago: document.getElementById('carritoCfgTarjetaValoresPago').checked,
           mostrar_tarjeta_comision: document.getElementById('carritoCfgTarjetaComision').checked,
-          mostrar_tarjeta_vip_cliente: document.getElementById('carritoCfgTarjetaVip').checked,
+          mostrar_tarjeta_vip_cliente: false,
           mostrar_control_electrico_carrito: document.getElementById('carritoCfgControlElectrico').checked,
           mostrar_tarjeta_domotica_carrito: document.getElementById('carritoCfgTarjetaDomotica').checked,
           abrir_domotica_al_entrar_estacion: document.getElementById('carritoCfgAbrirDomoticaEstaciones').checked,
