@@ -14,6 +14,77 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
+func TestEmpresaAdministrativeRolePostgresSeparateDatabases(t *testing.T) {
+	dsn := os.Getenv("PCS_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("PCS_TEST_POSTGRES_DSN is not configured")
+	}
+	admin, err := sql.Open(dbpkg.PostgresCompatDriverName(), dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stem := fmt.Sprintf("permissions_split_%d", time.Now().UnixNano())
+	t.Cleanup(func() { admin.Close() })
+	connect := func(suffix string) *sql.DB {
+		t.Helper()
+		schema := stem + suffix
+		if _, err := admin.Exec("CREATE SCHEMA " + schema); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if _, err := admin.Exec("DROP SCHEMA " + schema + " CASCADE"); err != nil {
+				t.Errorf("clean split fixture: %v", err)
+			}
+		})
+		u, err := url.Parse(dsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+		q := u.Query()
+		q.Set("search_path", schema)
+		u.RawQuery = q.Encode()
+		conn, err := sql.Open(dbpkg.PostgresCompatDriverName(), u.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { conn.Close() })
+		return conn
+	}
+	emp, super := connect("_emp"), connect("_super")
+	exec := func(conn *sql.DB, query string) {
+		t.Helper()
+		if _, err := conn.Exec(query); err != nil {
+			t.Fatal(err)
+		}
+	}
+	exec(emp, `CREATE TABLE empresas (id BIGINT PRIMARY KEY, empresa_id BIGINT, tipo_id BIGINT, estado TEXT)`)
+	exec(emp, `INSERT INTO empresas VALUES (101,101,10,'activo'),(202,202,20,'activo')`)
+	exec(super, `CREATE TABLE roles_de_usuario (id BIGINT PRIMARY KEY, empresa_id BIGINT DEFAULT 0, tipo_empresa_id BIGINT DEFAULT 0, nombre TEXT, estado TEXT DEFAULT 'activo')`)
+	if err := dbpkg.EnsureRolesPermisosSchema(super); err != nil {
+		t.Fatal(err)
+	}
+	exec(super, `INSERT INTO roles_de_usuario (id,tipo_empresa_id,nombre) VALUES (1,0,'admin_empresa'),(11,10,'Administrador'),(12,20,'Admin-Empresa')`)
+	exec(super, `INSERT INTO roles_de_usuario_permisos (rol_id,modulo,accion,permitido) VALUES (1,'ventas','C',0),(1,'inventario','C',0),(11,'ventas','C',0),(12,'inventario','C',0)`)
+	_, rowsA, _, err := loadEmpresaRolePermissionMatrixForDatabases(emp, super, 101, 0, "admin_empresa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, rowsB, _, err := loadEmpresaRolePermissionMatrixForDatabases(emp, super, 202, 0, "admin_empresa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if findPermissionModuleRowForTest(t, rowsA, permModuleVentas).Create || !findPermissionModuleRowForTest(t, rowsA, permModuleInventario).Create || !findPermissionModuleRowForTest(t, rowsB, permModuleVentas).Create || findPermissionModuleRowForTest(t, rowsB, permModuleInventario).Create {
+		t.Fatal("split database authorization ignored administrative aliases or mixed company types")
+	}
+	exec(super, `INSERT INTO roles_de_usuario (id,tipo_empresa_id,nombre) VALUES (13,10,'Administrador de Empresa')`)
+	if _, _, _, err := loadEmpresaRolePermissionMatrixForDatabases(emp, super, 101, 0, "admin_empresa"); err == nil {
+		t.Fatal("equivalent active administrative aliases must be reported as ambiguous")
+	}
+	if _, _, _, err := loadEmpresaRolePermissionMatrixForDatabases(super, emp, 202, 0, "admin_empresa"); err == nil {
+		t.Fatal("swapped authorization stores must fail closed")
+	}
+}
+
 func TestEmpresaPermissionRolesPostgresIsolationAndRevocation(t *testing.T) {
 	dsn := os.Getenv("PCS_TEST_POSTGRES_DSN")
 	if dsn == "" {

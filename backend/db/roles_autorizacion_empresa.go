@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"strings"
 )
 
 // ResolveRolDeUsuarioIDByNombreEmpresaScope selects the administrative template
@@ -12,20 +11,23 @@ import (
 // A missing applicable template returns zero so the caller may use its standard
 // administrative policy. An inactive or ambiguous applicable template is an
 // authorization error, never a reason to discard its restrictions.
-func ResolveRolDeUsuarioIDByNombreEmpresaScope(dbConn *sql.DB, empresaID int64, nombreRol string) (int64, error) {
-	nombreRol = strings.ToLower(strings.TrimSpace(nombreRol))
-	if dbConn == nil || empresaID <= 0 || nombreRol == "" {
+func ResolveRolDeUsuarioIDByNombreEmpresaScope(dbEmp, dbSuper *sql.DB, empresaID int64, nombreRol string) (int64, error) {
+	nombreRol = normalizeRolCatalogKey(nombreRol)
+	if dbEmp == nil || dbSuper == nil || empresaID <= 0 || nombreRol == "" {
 		return 0, fmt.Errorf("contexto de plantilla de rol no disponible")
 	}
 	var tipoID int64
-	if err := queryRowSQLCompat(dbConn, `SELECT COALESCE(tipo_id, 0) FROM empresas
+	if err := queryRowSQLCompat(dbEmp, `SELECT COALESCE(tipo_id, 0) FROM empresas
 		WHERE COALESCE(empresa_id, id) = ? AND lower(trim(COALESCE(estado, 'activo'))) = 'activo'`, empresaID).Scan(&tipoID); err != nil {
 		return 0, err
 	}
-	rows, err := dbConn.Query(`SELECT id, COALESCE(tipo_empresa_id, 0), lower(trim(COALESCE(estado, '')))
+	// Normalize names with the same alias rules as the assignment catalog. The
+	// query is limited to the two applicable types; it never loads other types
+	// and does not perform a query per candidate or per permission.
+	rows, err := dbSuper.Query(`SELECT id, COALESCE(tipo_empresa_id, 0), COALESCE(nombre, ''), lower(trim(COALESCE(estado, '')))
 		FROM roles_de_usuario WHERE COALESCE(empresa_id, 0) = 0
-		AND lower(trim(nombre)) = ? AND COALESCE(tipo_empresa_id, 0) IN (0, ?)
-		ORDER BY CASE WHEN COALESCE(tipo_empresa_id, 0) = ? THEN 0 ELSE 1 END, id`, nombreRol, tipoID, tipoID)
+		AND COALESCE(tipo_empresa_id, 0) IN (0, ?)
+		ORDER BY CASE WHEN COALESCE(tipo_empresa_id, 0) = ? THEN 0 ELSE 1 END, id`, tipoID, tipoID)
 	if err != nil {
 		return 0, err
 	}
@@ -34,9 +36,12 @@ func ResolveRolDeUsuarioIDByNombreEmpresaScope(dbConn *sql.DB, empresaID int64, 
 	var applicable, active int
 	for rows.Next() {
 		var id, candidateType int64
-		var state string
-		if err := rows.Scan(&id, &candidateType, &state); err != nil {
+		var name, state string
+		if err := rows.Scan(&id, &candidateType, &name, &state); err != nil {
 			return 0, err
+		}
+		if normalizeRolCatalogKey(name) != nombreRol {
+			continue
 		}
 		if applicable == 0 {
 			selectedType = candidateType

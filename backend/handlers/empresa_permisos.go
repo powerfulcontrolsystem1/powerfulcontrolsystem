@@ -4103,7 +4103,7 @@ func loadEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, em
 	}()
 	go func() {
 		defer wg.Done()
-		role, moduleRows, rolePages, roleErr = loadEmpresaRolePermissionMatrix(dbSuper, empresaID, roleID, fallbackRole, rolePageOverrides)
+		role, moduleRows, rolePages, roleErr = loadEmpresaRolePermissionMatrixForDatabases(dbEmp, dbSuper, empresaID, roleID, fallbackRole, rolePageOverrides)
 	}()
 	go func() {
 		defer wg.Done()
@@ -4167,6 +4167,12 @@ func loadEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, em
 }
 
 func loadEmpresaRolePermissionMatrix(dbSuper *sql.DB, empresaID, roleID int64, fallbackRole string, pageOverridesOutput ...map[string]bool) (string, []permissionModuleMatrixRow, map[string]bool, error) {
+	return loadEmpresaRolePermissionMatrixForDatabases(dbSuper, dbSuper, empresaID, roleID, fallbackRole, pageOverridesOutput...)
+}
+
+// Runtime keeps operational company data separate from the platform role store.
+// The single-database wrapper above is retained for isolated fixtures only.
+func loadEmpresaRolePermissionMatrixForDatabases(dbEmp, dbSuper *sql.DB, empresaID, roleID int64, fallbackRole string, pageOverridesOutput ...map[string]bool) (string, []permissionModuleMatrixRow, map[string]bool, error) {
 	role := normalizePermissionRole(fallbackRole)
 	var ids []int64
 	custom := false
@@ -4199,7 +4205,7 @@ func loadEmpresaRolePermissionMatrix(dbSuper *sql.DB, empresaID, roleID int64, f
 		}
 		ids = append(ids, assigned.ID)
 	} else if dbSuper != nil && role != "super_administrador" && isKnownPermissionRole(role) {
-		id, err := dbpkg.ResolveRolDeUsuarioIDByNombreEmpresaScope(dbSuper, empresaID, role)
+		id, err := dbpkg.ResolveRolDeUsuarioIDByNombreEmpresaScope(dbEmp, dbSuper, empresaID, role)
 		if err != nil {
 			return "", nil, nil, err
 		}
