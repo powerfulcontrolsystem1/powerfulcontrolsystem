@@ -526,6 +526,12 @@ func CreateEmpresaRolDeUsuario(dbConn *sql.DB, empresaID int64, nombre, descripc
 
 // UpdateEmpresaRolDeUsuario actualiza un rol personalizado de una empresa.
 func UpdateEmpresaRolDeUsuario(dbConn *sql.DB, empresaID, rolID int64, nombre, descripcion string, rolBaseID int64) error {
+	return UpdateEmpresaRolDeUsuarioConBaseEsperada(dbConn, empresaID, rolID, nombre, descripcion, rolBaseID, nil)
+}
+
+// UpdateEmpresaRolDeUsuarioConBaseEsperada evita restaurar una base revocada
+// desde un formulario antiguo. Sin precondición sólo permite editar metadatos.
+func UpdateEmpresaRolDeUsuarioConBaseEsperada(dbConn *sql.DB, empresaID, rolID int64, nombre, descripcion string, rolBaseID int64, expectedRolBaseID *int64) error {
 	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return err
 	}
@@ -533,16 +539,6 @@ func UpdateEmpresaRolDeUsuario(dbConn *sql.DB, empresaID, rolID int64, nombre, d
 	descripcion = strings.TrimSpace(descripcion)
 	if empresaID <= 0 || rolID <= 0 || nombre == "" || rolBaseID <= 0 {
 		return errors.New("empresa_id, rol_id, nombre y rol_base_id son obligatorios")
-	}
-	if _, err := GetRolDeUsuarioEmpresaByID(dbConn, empresaID, rolID); err != nil {
-		return err
-	}
-	base, err := GetRolDeUsuarioByIDEmpresaScope(dbConn, empresaID, rolBaseID)
-	if err != nil {
-		return err
-	}
-	if base.EmpresaID != 0 || !IsRolDeUsuarioAsignable(base) {
-		return errors.New("el rol base debe ser global, activo y empresarial")
 	}
 	if !IsRolDeUsuarioAsignable(&RolDeUsuario{Nombre: nombre, Estado: "activo"}) {
 		return errors.New("el nombre esta reservado para un rol de plataforma")
@@ -554,6 +550,24 @@ func UpdateEmpresaRolDeUsuario(dbConn *sql.DB, empresaID, rolID int64, nombre, d
 	defer tx.Rollback()
 	if err := lockEmpresaRoleCatalog(tx, empresaID, nombre, rolID); err != nil {
 		return err
+	}
+	var currentBaseID int64
+	if err := tx.QueryRow(`SELECT COALESCE(rol_base_id, 0) FROM roles_de_usuario WHERE id = ? AND empresa_id = ? FOR UPDATE`, rolID, empresaID).Scan(&currentBaseID); err != nil {
+		return err
+	}
+	if expectedRolBaseID == nil {
+		if currentBaseID != rolBaseID {
+			return ErrRolPermisosRevisionRequired
+		}
+	} else if currentBaseID != *expectedRolBaseID {
+		return ErrRolPermisosRevisionConflict
+	}
+	var base RolDeUsuario
+	if err := tx.QueryRow(`SELECT id, COALESCE(nombre, ''), COALESCE(estado, 'activo') FROM roles_de_usuario WHERE id = ? AND COALESCE(empresa_id, 0) = 0 FOR SHARE`, rolBaseID).Scan(&base.ID, &base.Nombre, &base.Estado); err != nil {
+		return err
+	}
+	if !IsRolDeUsuarioAsignable(&base) {
+		return errors.New("el rol base debe ser global, activo y empresarial")
 	}
 	res, err := tx.Exec(`UPDATE roles_de_usuario
 		SET nombre = ?, descripcion = ?, rol_base_id = ?, fecha_actualizacion = CURRENT_TIMESTAMP

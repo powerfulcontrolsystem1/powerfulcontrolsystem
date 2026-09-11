@@ -419,3 +419,95 @@ func TestGlobalRolesPostgresPermissionReplacementIsAtomic(t *testing.T) {
 		t.Fatal("global module grant persisted despite failing page replacement")
 	}
 }
+
+func TestEmpresaRolesPostgresBaseUpdateRejectsStaleEditors(t *testing.T) {
+	conn := empresaRolesTestDB(t)
+	elevated, err := CreateRolDeUsuario(conn, 1, "supervisor", "", "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	restricted, err := CreateRolDeUsuario(conn, 1, "cajero", "", "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, err := CreateEmpresaRolDeUsuario(conn, 71001, "Base revision QA", "", elevated, "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := UpdateEmpresaRolDeUsuarioConBaseEsperada(conn, 71001, role, "Base revision QA", "Revoked supervisor", restricted, &elevated); err != nil {
+		t.Fatal(err)
+	}
+	if err := UpdateEmpresaRolDeUsuarioConBaseEsperada(conn, 71001, role, "Stale editor", "Only changing description", elevated, &elevated); !errors.Is(err, ErrRolPermisosRevisionConflict) {
+		t.Fatalf("old metadata form restored revoked base: %v", err)
+	}
+	if err := UpdateEmpresaRolDeUsuarioConBaseEsperada(conn, 71001, role, "No precondition", "", elevated, nil); !errors.Is(err, ErrRolPermisosRevisionRequired) {
+		t.Fatalf("base change without expected ID accepted: %v", err)
+	}
+	if err := UpdateEmpresaRolDeUsuarioConBaseEsperada(conn, 71001, role, "Metadata safely updated", "", restricted, nil); err != nil {
+		t.Fatalf("metadata-only edit failed: %v", err)
+	}
+	state, err := GetRolDeUsuarioEmpresaByID(conn, 71001, role)
+	if err != nil || state.RolBaseID != restricted || state.Nombre != "Metadata safely updated" {
+		t.Fatal("base revocation or metadata-only update was lost")
+	}
+	if err := UpdateEmpresaRolDeUsuarioConBaseEsperada(conn, 71002, role, "Foreign update", "", elevated, &restricted); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("foreign role metadata update accepted: %v", err)
+	}
+	if err := SetRolDeUsuarioEstado(conn, elevated, "inactivo"); err != nil {
+		t.Fatal(err)
+	}
+	if err := UpdateEmpresaRolDeUsuarioConBaseEsperada(conn, 71001, role, "Inactive base", "", elevated, &restricted); err == nil {
+		t.Fatal("inactive base accepted after locking current role")
+	}
+}
+
+func TestGlobalRolesPostgresRevisionRejectsStaleRevocationAndCustomRoles(t *testing.T) {
+	conn := empresaRolesTestDB(t)
+	ctx := context.Background()
+	base, err := CreateRolDeUsuario(conn, 1, "cajero", "", "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	custom, err := CreateEmpresaRolDeUsuario(conn, 71001, "Global boundary QA", "", base, "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	initial, err := GetRolPermisosEstado(ctx, conn, base)
+	if err != nil || len(initial.Revision) != 64 {
+		t.Fatal("global revision unavailable")
+	}
+	if err := ReplaceRolPermisosDeUsuarioConRevision(ctx, conn, base, "", nil, nil, "qa"); !errors.Is(err, ErrRolPermisosRevisionRequired) {
+		t.Fatal("global replacement without revision accepted")
+	}
+	grant := []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: true}}
+	if err := ReplaceRolPermisosDeUsuarioConRevision(ctx, conn, base, initial.Revision, grant, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	editor, err := GetRolPermisosEstado(ctx, conn, base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deny := []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: false}}
+	if err := ReplaceRolPermisosDeUsuarioConRevision(ctx, conn, base, editor.Revision, deny, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceRolPermisosDeUsuarioConRevision(ctx, conn, base, editor.Revision, grant, nil, "qa"); !errors.Is(err, ErrRolPermisosRevisionConflict) {
+		t.Fatalf("stale Super editor restored global grant: %v", err)
+	}
+	after, err := GetRolPermisosEstado(ctx, conn, base)
+	if err != nil || len(after.Modulos) != 1 || after.Modulos[0].Permitido {
+		t.Fatal("global revocation was overwritten")
+	}
+	if _, err := GetRolPermisosEstado(ctx, conn, custom); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatal("global editor exposed a custom role without its inheritance context")
+	}
+	if err := ReplaceRolPermisosDeUsuarioConRevision(ctx, conn, custom, after.Revision, grant, nil, "qa"); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatal("global editor bypassed custom role revision and inheritance")
+	}
+	if err := UpdateRolDeUsuario(conn, base, 1, "Caja renombrada QA", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceRolPermisosDeUsuarioConRevision(ctx, conn, base, after.Revision, grant, nil, "qa"); !errors.Is(err, ErrRolPermisosRevisionConflict) {
+		t.Fatal("global base-name policy change was not included in revision")
+	}
+}
