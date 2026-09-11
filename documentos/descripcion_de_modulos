@@ -2,6 +2,21 @@
 
 Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
 
+2026-09-11: Carrito operativo accesible, navegación compacta y retiro global del botón VIP.
+- Módulos afectados: `carritos`, `estaciones`, `ventas`, `permisos` y
+  `configuracion_empresarial`.
+- La búsqueda rápida por código de barras, SKU o nombre permanece editable
+  mientras el carrito de estación se prepara; al agregar, el frontend intenta
+  completar su ciclo de activación antes de enviar el item.
+- `action=activar_estacion` admite el permiso especial `ventas:A` de Portería o
+  el permiso operativo `ventas:C` de vendedores/recepción. No amplía cobro,
+  cierre, configuración ni acceso a estaciones fuera de la caja asignada.
+- El encabezado de búsqueda muestra `Regresar` únicamente en modo estación y
+  conserva pantalla completa como icono accesible en la esquina derecha.
+- `mostrar_tarjeta_vip_cliente` queda forzado a `false` en runtime, plantillas y
+  editores de configuración: ningún carrito empresarial muestra el botón de
+  generación de código VIP.
+
 2026-09-06: Capacidad de colas multiempresa.
 - Modulos afectados: `impresoras`, `productos`, `carritos_compra`,
   `facturacion_electronica`, `super_administrador`, `pcs-worker`,
@@ -3020,9 +3035,9 @@ Autenticacion administrativa sin 2FA
 - Modulos afectados: `portal_publico`
 - Cambio funcional: se agrega un chat IA público al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (módulos, planes/precios, novedades y contratación). No ejecuta acciones del sistema ni muestra información sensible. Incluye limitación de uso de 10 consultas por usuario cada 5 minutos y mensaje de espera/WhatsApp/email al superar el límite. El super administrador puede activar/desactivar este chat desde `Configuración lógica del chat con IA`.
 
-2026-04-25: Pedidos VIP públicos por estación (cliente móvil con código temporal)
+2026-04-25: Pedidos VIP públicos por estación (cliente móvil con código temporal; interfaz de generación retirada globalmente el 2026-09-11)
 - Modulos afectados: `carritos`, `productos`, `estaciones`, `portal_publico`
-- Cambio funcional: desde el carrito de estación (panel empresa) se puede generar un **código VIP temporal** para el cliente. El cliente entra a `productos_estacion_clientes_publico.html`, digita el código y ve todos los productos activos como botones. Al pedir, el producto se agrega automáticamente al carrito de la estación con una nota opcional. El acceso queda deshabilitado automáticamente cuando el carrito se paga (códigos inactivados en backend).
+- Antecedente: el carrito de estación permitía generar un **código VIP temporal** para el cliente. El botón y su tarjeta ya no se exponen en ningún carrito; los contratos históricos permanecen documentados únicamente para trazabilidad y compatibilidad de datos existentes.
 - Endpoints: `PUT /api/empresa/carritos_compraaction=generar_codigo_vip&id=...` (protegido) y `GET/POST /api/public/estacion_vip` (público, basado en código).
 - Impacto operativo: no se permiten operaciones destructivas; el acceso público queda acotado por un token aleatorio y caducable.
 

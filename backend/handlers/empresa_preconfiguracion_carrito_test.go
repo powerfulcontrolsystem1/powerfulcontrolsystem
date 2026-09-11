@@ -36,7 +36,6 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 		"mostrar_control_electrico_carrito",
 		"mostrar_tarjeta_domotica_carrito",
 		"mostrar_tarjeta_valores_pago",
-		"mostrar_tarjeta_vip_cliente",
 		"mostrar_boton_descuentos_carrito",
 		"mostrar_boton_cambiar_tarifa_carrito",
 		"mostrar_boton_control_electrico_carrito",
@@ -67,6 +66,7 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 		"mostrar_alerta_tiempo_carrito",
 		"alerta_tiempo_activa_default",
 		"mostrar_qr_factura_electronica",
+		"mostrar_tarjeta_vip_cliente",
 	}
 	for _, key := range wantFalse {
 		if got, _ := cfg[key].(bool); got {

@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "a1b14b83c0b57ef407dffd9b5419a770db8086db70d997eca2049a0b53276b60"
+      "sha256_lf": "da81f8e22849688665f171756f7876be4507d6cd76fd47cc40e691488a0feb1c"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -723,7 +723,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "88827c750d7e2a8db6b187f4f63e394765648feef445ff6709fb5086e49d3931"
+      "sha256_lf": "5847b4fd9d981bb6918850dfe3952d49e2f78cb00d0c8364b12b81cb364bc37f"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -804,7 +804,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "aad70e76ba524bfc528c16da6bcb830b8ff175248cdde0f037ab8816ee00e4a4"
+      "sha256_lf": "ad30dd5d1d7e8b55cbe0f818e4970efcecb5b3de3f65f0861fabbc9c2853a638"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
@@ -1290,7 +1290,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "0d9f6f087abafc177bcba6fab3617d38a8509e0eca68c83b4bc98695ef00dca1"
+      "sha256_lf": "b5cf6c5b895e5c9d35e23ab6a57f5e5cb40574c95830468076d3e58670908b9b"
     },
     {
       "path": "documentos/modulos_empresariales_colombia.md",

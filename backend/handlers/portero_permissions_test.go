@@ -80,6 +80,36 @@ func TestPorteroCarritoRestrictions(t *testing.T) {
 	}
 }
 
+func TestActivarEstacionAceptaAprobacionOCreacionSinAmpliarOtrasAcciones(t *testing.T) {
+	approveOnly := map[string]bool{
+		permissionModuleActionKey(permModuleVentas, permActionApprove): true,
+	}
+	createOnly := map[string]bool{
+		permissionModuleActionKey(permModuleVentas, permActionCreate): true,
+	}
+	readOnly := map[string]bool{
+		permissionModuleActionKey(permModuleVentas, permActionRead): true,
+	}
+
+	for name, actions := range map[string]map[string]bool{
+		"portero con aprobar": approveOnly,
+		"operador con crear":  createOnly,
+	} {
+		if !roleModuleActionsAllowRequest(actions, permModuleVentas, permActionApprove, "/api/empresa/carritos_compra", "activar_estacion") {
+			t.Fatalf("%s debe poder activar una estacion", name)
+		}
+	}
+	if roleModuleActionsAllowRequest(readOnly, permModuleVentas, permActionApprove, "/api/empresa/carritos_compra", "activar_estacion") {
+		t.Fatal("ventas:R no debe permitir activar estaciones")
+	}
+	if roleModuleActionsAllowRequest(createOnly, permModuleVentas, permActionApprove, "/api/empresa/carritos_compra", "pagar_estacion") {
+		t.Fatal("la alternativa ventas:C no debe aplicarse a pagos")
+	}
+	if roleModuleActionsAllowRequest(createOnly, permModuleVentas, permActionApprove, "/api/empresa/configuracion", "activar_estacion") {
+		t.Fatal("la alternativa ventas:C no debe aplicarse fuera del endpoint de carritos")
+	}
+}
+
 func TestContadorRoleOnlyAllowsFinanceAndTaxesRead(t *testing.T) {
 	if got := normalizePermissionRole("contador"); got != "contador" {
 		t.Fatalf("expected contador to stay as contador, got %q", got)

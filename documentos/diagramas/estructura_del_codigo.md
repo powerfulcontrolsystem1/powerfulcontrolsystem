@@ -2,6 +2,20 @@
 
 Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
 
+## Actualizacion 2026-09-11 - Carrito operativo y acceso de estación
+
+`estaciones.html` -> carrito unificado -> búsqueda editable por código/SKU/nombre
+-> preparación de la sesión -> autorización `ventas:A` (Portería) o `ventas:C`
+(operación de venta) -> item del mismo `empresa_id` y estación autorizada.
+
+- `carrito_de_compras.html` mantiene editables los campos de búsqueda durante la
+  preparación y agrupa `Regresar` con el icono de pantalla completa en la esquina
+  superior derecha.
+- `empresa_permisos.go` acepta la alternativa `ventas:C` solo para
+  `action=activar_estacion`; las demás acciones conservan su permiso original.
+- La tarjeta de código VIP se fuerza oculta en runtime y su check aparece
+  deshabilitado en las configuraciones del carrito y de estaciones.
+
 ## Actualizacion 2026-09-06 - Reserva durable y captura offline
 
 Venta con fuente inmutable -> bloquear configuracion de la empresa ->

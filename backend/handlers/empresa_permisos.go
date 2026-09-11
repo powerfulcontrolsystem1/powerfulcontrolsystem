@@ -1541,7 +1541,7 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		if module == permModuleFinanzas && isCajeroFinanzasManualRequest {
 			skipRoleModuloCheck = true
 		}
-		if !skipRoleModuloCheck && !snapshot.RoleModuleActions[permissionModuleActionKey(authorizationModule, authorizationAction)] {
+		if !skipRoleModuloCheck && !roleModuleActionsAllowRequest(snapshot.RoleModuleActions, authorizationModule, authorizationAction, requestPath, r.URL.Query().Get("action")) {
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
@@ -2063,6 +2063,22 @@ func resolveVentasPermissionAction(r *http.Request) string {
 		return permActionUpdate
 	}
 	return defaultPermissionActionFromMethod(r.Method)
+}
+
+func roleModuleActionsAllowRequest(actions map[string]bool, module, action, requestPath, requestAction string) bool {
+	if actions[permissionModuleActionKey(module, action)] {
+		return true
+	}
+	// Activar una estación tiene dos significados válidos y acotados: el
+	// portero la habilita con Ventas:A, mientras que un vendedor o recepcionista
+	// inicia una nueva venta con Ventas:C. Aceptar C únicamente en esta acción
+	// evita exigir privilegios de aprobación para operar el carrito sin ampliar
+	// los permisos de cobro, cierre, configuración ni otras mutaciones.
+	return module == permModuleVentas &&
+		action == permActionApprove &&
+		strings.EqualFold(strings.TrimSpace(requestPath), "/api/empresa/carritos_compra") &&
+		strings.EqualFold(strings.TrimSpace(requestAction), "activar_estacion") &&
+		actions[permissionModuleActionKey(permModuleVentas, permActionCreate)]
 }
 
 func resolveInventarioPermissionAction(r *http.Request) string {

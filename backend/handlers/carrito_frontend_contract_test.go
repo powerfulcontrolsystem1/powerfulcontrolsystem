@@ -50,3 +50,42 @@ func TestDirectSaleInitialLoadIncludesLegacyCartBeforeCreatingCanonicalCart(t *t
 		t.Fatal("direct sale lifecycle must preserve the legacy cart reconciliation path")
 	}
 }
+
+func TestCarritoStationSearchNavigationAndGlobalVIPRetirementContract(t *testing.T) {
+	cartPath := filepath.Join("..", "..", "web", "administrar_empresa", "carrito_de_compras.html")
+	raw, err := os.ReadFile(cartPath)
+	if err != nil {
+		t.Fatalf("read carrito frontend: %v", err)
+	}
+	source := string(raw)
+	for _, required := range []string{
+		`id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar</button>`,
+		`aria-label="Abrir en pantalla completa"`,
+		`const canPrepareFocusedSale = focusedSaleMode && state.empresaID > 0;`,
+		`const canUse = !!selected || canPrepareFocusedSale;`,
+		`const showVipCard = false;`,
+		`mostrar_tarjeta_vip_cliente: false,`,
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("carrito operational contract must keep %q", required)
+		}
+	}
+	if strings.Contains(source, `<span class="carrito-fullscreen-label">`) {
+		t.Fatal("fullscreen control must render only its icon")
+	}
+
+	for _, page := range []string{
+		filepath.Join("..", "..", "web", "administrar_empresa", "configuracion_carrito_de_compra_empresa.html"),
+		filepath.Join("..", "..", "web", "administrar_empresa", "configuracion_de_estaciones.html"),
+	} {
+		pageRaw, readErr := os.ReadFile(page)
+		if readErr != nil {
+			t.Fatalf("read %s: %v", page, readErr)
+		}
+		pageSource := string(pageRaw)
+		if !strings.Contains(pageSource, `id="carritoCfgTarjetaVip" type="checkbox" disabled`) ||
+			!strings.Contains(pageSource, `mostrar_tarjeta_vip_cliente: false,`) {
+			t.Fatalf("%s must keep VIP cart access globally disabled", page)
+		}
+	}
+}

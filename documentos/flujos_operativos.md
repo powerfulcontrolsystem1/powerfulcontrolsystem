@@ -1138,6 +1138,7 @@ afecte dinero, documentos, licencias o seguridad.
 3. Si el check de primer clic esta activo, el primer clic solo activa; el segundo
    entra al carrito.
 4. El carrito de estacion comparte UI y reglas con venta directa.
+
 5. La apariencia del carrito de estacion tambien depende de `carrito-flat-page`:
    fondo mas oscuro que tarjetas, sin sombras, con botones de accion visibles
    como botones.
@@ -1146,6 +1147,18 @@ afecte dinero, documentos, licencias o seguridad.
    los impuestos del carrito.
 7. Pruebas: dos sesiones/usuarios, estado compartido, abrir carrito correcto,
    contraste visual y ausencia de relieves.
+
+### Preparacion y navegación del carrito de estación
+
+1. Al abrir una estación, la búsqueda por código de barras, SKU o nombre queda
+   editable mientras se crea, recupera o activa el carrito asociado.
+2. Al agregar un producto, el frontend completa primero el ciclo de la estación;
+   Portería usa `ventas:A` solo para activar y un operador de venta usa
+   `ventas:C`. El backend conserva el alcance de caja y `empresa_id`.
+3. El botón `Regresar` vuelve al tablero solo cuando el contexto proviene de una
+   estación. Pantalla completa se presenta como icono con nombre accesible.
+4. La generación de códigos VIP no se muestra en carritos de ninguna empresa y
+   tampoco puede reactivarse desde los editores empresariales.
 
 ## Pagar e imprimir
 
