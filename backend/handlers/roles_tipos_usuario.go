@@ -36,6 +36,9 @@ func RolesDeUsuarioHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
 			return
 		}
+		if !requireRolesPermisosSchemaReady(w, dbSuper) {
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			tipoEmpresaID, err := parseOptionalInt64Query(r, "tipo_empresa_id")
@@ -131,6 +134,9 @@ func RolesDeUsuarioHandler(dbSuper *sql.DB) http.HandlerFunc {
 func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
+		if !requireRolesPermisosSchemaReady(w, dbSuper) {
 			return
 		}
 		switch r.Method {
@@ -245,6 +251,9 @@ func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "sesion empresarial requerida", http.StatusUnauthorized)
 			return
 		}
+		if !requireRolesPermisosSchemaReady(w, dbSuper) {
+			return
+		}
 		if r.Method != http.MethodGet && r.Method != http.MethodPut {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -311,6 +320,14 @@ func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 		invalidateEmpresaPermissionCacheForEmpresa(tenant.EmpresaID)
 		w.WriteHeader(http.StatusNoContent)
 	}
+}
+
+func requireRolesPermisosSchemaReady(w http.ResponseWriter, dbSuper *sql.DB) bool {
+	if err := dbpkg.RolesPermisosSchemaReady(dbSuper); err != nil {
+		http.Error(w, "el esquema migrado de roles y permisos no esta disponible", http.StatusInternalServerError)
+		return false
+	}
+	return true
 }
 
 func writeEmpresaRolPermissionError(w http.ResponseWriter, err error) {
