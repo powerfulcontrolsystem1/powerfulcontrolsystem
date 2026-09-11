@@ -14,6 +14,18 @@ func TestNormalizeRolCatalogKeyCajaDeduplicaComoCajero(t *testing.T) {
 	}
 }
 
+func TestNormalizeRolCatalogPreservesDifferentOperationalCapabilities(t *testing.T) {
+	if normalizeRolCatalogKey("tecnico") == normalizeRolCatalogKey("tecnico_solar") {
+		t.Fatal("generic and solar technician must remain distinct roles")
+	}
+	if normalizeRolCatalogKey("bodega") != "responsable_bodega" {
+		t.Fatal("warehouse alias must match the authorization engine")
+	}
+	if normalizeRolCatalogKey("responsable_bodega") == normalizeRolCatalogKey("jefe_bodega") {
+		t.Fatal("warehouse responsibility roles must preserve distinct IDs")
+	}
+}
+
 func TestEmpresaRolAsignableRejectsPlatformAndInactive(t *testing.T) {
 	for _, nombre := range []string{"super_administrador", "Super Administrador", "superadmin", "super", "administrador_total"} {
 		if IsRolDeUsuarioAsignable(&RolDeUsuario{Nombre: nombre, Estado: "activo"}) {
