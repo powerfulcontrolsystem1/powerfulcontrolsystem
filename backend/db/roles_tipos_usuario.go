@@ -15,6 +15,7 @@ type RolDeUsuario struct {
 	TipoEmpresaID      int64  `json:"tipo_empresa_id"`
 	TipoEmpresaNombre  string `json:"tipo_empresa_nombre,omitempty"`
 	Nombre             string `json:"nombre"`
+	NombreVisible      string `json:"nombre_visible,omitempty"`
 	Descripcion        string `json:"descripcion,omitempty"`
 	Origen             string `json:"origen,omitempty"`
 	RolBaseID          int64  `json:"rol_base_id,omitempty"`
@@ -312,6 +313,109 @@ func GetRolesDeUsuarioCatalogoEmpresa(dbConn *sql.DB, empresaID int64, incluirIn
 		out = append(out, item)
 	}
 	return out, nil
+}
+
+// GetRolesDeUsuarioCatalogoParaEmpresa selecciona variantes para el tipo real de
+// empresa sin sustituir permisos por la antigüedad del ID. NombreVisible es sólo
+// presentación: nombre, tipo e ID conservan su significado persistido.
+func GetRolesDeUsuarioCatalogoParaEmpresa(dbConn *sql.DB, empresaID, tipoEmpresaID int64, incluirInactivos ...bool) ([]RolDeUsuario, error) {
+	if empresaID <= 0 || tipoEmpresaID < 0 {
+		return nil, errors.New("empresa_id y tipo_empresa_id invalidos")
+	}
+	includeInactive := len(incluirInactivos) > 0 && incluirInactivos[0]
+	globales, err := GetRolesDeUsuario(dbConn, 0, true)
+	if err != nil {
+		return nil, err
+	}
+	propios, err := GetRolesDeUsuarioEmpresa(dbConn, empresaID, includeInactive)
+	if err != nil {
+		return nil, err
+	}
+	out := selectRolesGlobalesParaTipo(globales, tipoEmpresaID, includeInactive)
+	bases := make(map[int64]RolDeUsuario, len(globales))
+	for _, rol := range globales {
+		bases[rol.ID] = rol
+	}
+	for _, rol := range propios {
+		base, exists := bases[rol.RolBaseID]
+		rol.Asignable = IsRolDeUsuarioAsignable(&rol) && exists && IsRolDeUsuarioAsignable(&base)
+		rol.NombreVisible = rol.Nombre
+		out = append(out, rol)
+	}
+	return out, nil
+}
+
+func selectRolesGlobalesParaTipo(roles []RolDeUsuario, tipoEmpresaID int64, incluirInactivos bool) []RolDeUsuario {
+	groups := map[string][]RolDeUsuario{}
+	for _, rol := range roles {
+		if rol.EmpresaID != 0 || !IsRolDeUsuarioAsignable(&RolDeUsuario{Nombre: rol.Nombre, Estado: "activo"}) {
+			continue
+		}
+		key := normalizeRolCatalogKey(rol.Nombre)
+		if key == "" {
+			continue
+		}
+		groups[key] = append(groups[key], rol)
+	}
+	keys := make([]string, 0, len(groups))
+	for key := range groups {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	out := []RolDeUsuario{}
+	for _, key := range keys {
+		candidates := []RolDeUsuario{}
+		for _, rol := range groups[key] {
+			if IsRolDeUsuarioAsignable(&rol) {
+				candidates = append(candidates, rol)
+			}
+		}
+		if len(candidates) == 0 && incluirInactivos {
+			candidates = groups[key]
+		}
+		rank := func(rol RolDeUsuario) int {
+			if tipoEmpresaID > 0 && rol.TipoEmpresaID == tipoEmpresaID {
+				return 0
+			}
+			if rol.TipoEmpresaID == 0 {
+				return 1
+			}
+			return 2
+		}
+		bestRank := 3
+		for _, rol := range candidates {
+			if value := rank(rol); value < bestRank {
+				bestRank = value
+			}
+		}
+		selected := []RolDeUsuario{}
+		for _, rol := range candidates {
+			if rank(rol) == bestRank {
+				selected = append(selected, rol)
+			}
+		}
+		sort.SliceStable(selected, func(i, j int) bool {
+			if selected[i].TipoEmpresaNombre != selected[j].TipoEmpresaNombre {
+				return selected[i].TipoEmpresaNombre < selected[j].TipoEmpresaNombre
+			}
+			return selected[i].ID < selected[j].ID
+		})
+		for _, rol := range selected {
+			rol.Asignable = IsRolDeUsuarioAsignable(&rol)
+			rol.NombreVisible = rol.Nombre
+			if bestRank == 2 || len(selected) > 1 {
+				tipo := strings.TrimSpace(rol.TipoEmpresaNombre)
+				if rol.TipoEmpresaID == 0 {
+					tipo = "Global"
+				} else if tipo == "" {
+					tipo = "Tipo " + strconv.FormatInt(rol.TipoEmpresaID, 10)
+				}
+				rol.NombreVisible += " — " + tipo + " (ID " + strconv.FormatInt(rol.ID, 10) + ")"
+			}
+			out = append(out, rol)
+		}
+	}
+	return out
 }
 
 // GetRolesDeUsuarioEmpresa lista los roles personalizados de una empresa.

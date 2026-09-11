@@ -26,6 +26,46 @@ func TestNormalizeRolCatalogPreservesDifferentOperationalCapabilities(t *testing
 	}
 }
 
+func TestRolesCatalogPrefersCompanyTypeWithoutChangingPermissionIDs(t *testing.T) {
+	roles := []RolDeUsuario{
+		{ID: 1, TipoEmpresaID: 1, TipoEmpresaNombre: "Motel", Nombre: "Cajero", Estado: "activo"},
+		{ID: 90, TipoEmpresaID: 2, TipoEmpresaNombre: "Taller", Nombre: "Caja", Estado: "activo"},
+		{ID: 91, TipoEmpresaID: 0, Nombre: "Cajero", Estado: "activo"},
+	}
+	selected := selectRolesGlobalesParaTipo(roles, 2, false)
+	if len(selected) != 1 || selected[0].ID != 90 || selected[0].TipoEmpresaID != 2 || selected[0].Nombre != "Caja" {
+		t.Fatalf("type-specific role ID or metadata replaced: %+v", selected)
+	}
+	selected = selectRolesGlobalesParaTipo(roles, 3, false)
+	if len(selected) != 1 || selected[0].ID != 91 {
+		t.Fatalf("real universal role not preferred: %+v", selected)
+	}
+	selected = selectRolesGlobalesParaTipo(roles[:2], 3, false)
+	if len(selected) != 2 || selected[0].NombreVisible == selected[1].NombreVisible {
+		t.Fatalf("foreign matrices were collapsed without explicit choice: %+v", selected)
+	}
+}
+
+func TestRolesCatalogPreservesDuplicateIDsAndRejectsInactivePreference(t *testing.T) {
+	roles := []RolDeUsuario{
+		{ID: 10, TipoEmpresaID: 2, TipoEmpresaNombre: "Taller", Nombre: "Cajero", Estado: "inactivo"},
+		{ID: 11, TipoEmpresaID: 0, Nombre: "Cajero", Estado: "activo"},
+		{ID: 12, TipoEmpresaID: 2, TipoEmpresaNombre: "Taller", Nombre: "Supervisor", Estado: "activo"},
+		{ID: 13, TipoEmpresaID: 2, TipoEmpresaNombre: "Taller", Nombre: "supervisor_sucursal", Estado: "activo"},
+	}
+	selected := selectRolesGlobalesParaTipo(roles, 2, true)
+	ids := map[int64]RolDeUsuario{}
+	for _, rol := range selected {
+		ids[rol.ID] = rol
+	}
+	if len(ids) != 3 || ids[11].ID != 11 || ids[12].ID != 12 || ids[13].ID != 13 {
+		t.Fatalf("active universal or distinct local matrix lost: %+v", selected)
+	}
+	if ids[12].NombreVisible == ids[13].NombreVisible {
+		t.Fatal("local duplicate variants need explicit names")
+	}
+}
+
 func TestEmpresaRolAsignableRejectsPlatformAndInactive(t *testing.T) {
 	for _, nombre := range []string{"super_administrador", "Super Administrador", "superadmin", "super", "administrador_total"} {
 		if IsRolDeUsuarioAsignable(&RolDeUsuario{Nombre: nombre, Estado: "activo"}) {

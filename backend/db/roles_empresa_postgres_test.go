@@ -243,3 +243,41 @@ func TestEmpresaRolesPostgresBatchOverridesPreserveOrderAndTenant(t *testing.T) 
 		t.Fatal("inactive role in batch accepted")
 	}
 }
+
+func TestEmpresaRolesPostgresCatalogUsesCompanyTypeMatrix(t *testing.T) {
+	conn := empresaRolesTestDB(t)
+	if _, err := conn.Exec(`INSERT INTO tipos_de_empresas VALUES(2,'Taller')`); err != nil {
+		t.Fatal(err)
+	}
+	first, err := CreateRolDeUsuario(conn, 1, "Cajero", "", "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	local, err := CreateRolDeUsuario(conn, 2, "Caja", "", "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceRolPermisosDeUsuario(conn, first, []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: true}}, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceRolPermisosDeUsuario(conn, local, []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: false}}, nil, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	roles, err := GetRolesDeUsuarioCatalogoParaEmpresa(conn, 71001, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(roles) != 1 || roles[0].ID != local {
+		t.Fatalf("catalog chose different vertical matrix: %+v", roles)
+	}
+	items, err := ListRolPermisosModuloByRolIDEmpresaScope(conn, 71001, roles[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].Permitido {
+		t.Fatal("catalog implicitly granted permissions from an older foreign role")
+	}
+	if got, err := GetRolDeUsuarioByIDEmpresaScope(conn, 71001, first); err != nil || got.ID != first {
+		t.Fatal("historical assigned IDs must remain addressable")
+	}
+}
