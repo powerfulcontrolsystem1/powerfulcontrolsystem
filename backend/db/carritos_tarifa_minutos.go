@@ -43,6 +43,8 @@ type CarritoTarifaPorMinutosResumen struct {
 	EstacionID           int64   `json:"estacion_id"`
 	Aplicada             bool    `json:"aplicada"`
 	DiaSemana            int     `json:"dia_semana"`
+	DiaSemanaDesde       int     `json:"dia_semana_desde"`
+	DiaSemanaHasta       int     `json:"dia_semana_hasta"`
 	MinutosConsumidos    float64 `json:"minutos_consumidos"`
 	MinutosFacturables   float64 `json:"minutos_facturables"`
 	MinutosTolerancia    int     `json:"minutos_tolerancia"`
@@ -51,6 +53,7 @@ type CarritoTarifaPorMinutosResumen struct {
 	BloquesExtra         int     `json:"bloques_extra"`
 	ValorBase            float64 `json:"valor_base"`
 	ValorExtra           float64 `json:"valor_extra"`
+	CobrarPorFraccion    bool    `json:"cobrar_por_fraccion"`
 	MontoTarifa          float64 `json:"monto_tarifa"`
 	Moneda               string  `json:"moneda"`
 	FechaInicioTarifa    string  `json:"fecha_inicio_tarifa"`
@@ -329,6 +332,9 @@ func refreshCarritoTotalConTarifaPorMinutosTx(tx *sql.Tx, empresaID, carritoID i
 	if normalizeCarritoTarifaTiempoTipo(snapshot.TarifaTiempoTipo) == "dia" {
 		return calc, nil
 	}
+	if normalizeCarritoTarifaTiempoTipo(snapshot.TarifaTiempoTipo) == "sin_tarifa" {
+		return calc, nil
+	}
 
 	estadoRegistro := strings.TrimSpace(strings.ToLower(snapshot.Estado))
 	estadoCarrito := strings.TrimSpace(strings.ToLower(snapshot.EstadoCarrito))
@@ -462,6 +468,9 @@ func RefreshCarritoTotalConTarifasTiempo(dbConn *sql.DB, empresaID, carritoID in
 		}
 		return result, nil
 	}
+	if tipo == "sin_tarifa" {
+		return result, nil
+	}
 	minuteCalc, err := RefreshCarritoTotalConTarifaPorMinutos(dbConn, empresaID, carritoID, fechaCorte)
 	if err != nil {
 		return nil, err
@@ -530,9 +539,6 @@ func ResolveCarritoTarifaPorMinutosResumen(dbConn *sql.DB, item CarritoCompra, f
 	if item.EmpresaID <= 0 || item.ID <= 0 {
 		return nil, nil
 	}
-	if normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo) == "dia" {
-		return nil, nil
-	}
 	estadoRegistro := strings.TrimSpace(strings.ToLower(item.Estado))
 	estadoCarrito := strings.TrimSpace(strings.ToLower(item.EstadoCarrito))
 	if estadoRegistro == "" {
@@ -541,7 +547,9 @@ func ResolveCarritoTarifaPorMinutosResumen(dbConn *sql.DB, item CarritoCompra, f
 	if estadoCarrito == "" {
 		estadoCarrito = "abierto"
 	}
-	if estadoRegistro != "activo" || estadoCarrito != "abierto" || strings.TrimSpace(item.PagadoEn) != "" {
+	activo := estadoRegistro == "activo" && estadoCarrito == "abierto" && strings.TrimSpace(item.PagadoEn) == ""
+	tipoTiempo := normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo)
+	if activo && (tipoTiempo == "dia" || tipoTiempo == "sin_tarifa") {
 		return nil, nil
 	}
 	if fechaCorte.IsZero() {
@@ -551,13 +559,10 @@ func ResolveCarritoTarifaPorMinutosResumen(dbConn *sql.DB, item CarritoCompra, f
 	if estacionID <= 0 {
 		return nil, nil
 	}
-	activadoAt, err := parseTarifaPorDiaDateTime(item.ActivadoEn)
-	if err != nil {
-		return nil, nil
-	}
 	diaSemana := DayOfWeekISO(fechaCorte)
 	var tarifa *EmpresaTarifaPorMinutos
-	if normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo) == "minutos" && item.TarifaTiempoID > 0 {
+	var err error
+	if activo && tipoTiempo == "minutos" && item.TarifaTiempoID > 0 {
 		tarifa, err = GetEmpresaTarifaPorMinutosByID(dbConn, item.EmpresaID, item.TarifaTiempoID)
 		if err == nil && tarifa != nil && (!strings.EqualFold(strings.TrimSpace(tarifa.Estado), "activo") || tarifa.EstacionID != estacionID) {
 			tarifa = nil
@@ -567,6 +572,28 @@ func ResolveCarritoTarifaPorMinutosResumen(dbConn *sql.DB, item CarritoCompra, f
 	}
 	if err != nil || tarifa == nil {
 		return nil, err
+	}
+	resumen := &CarritoTarifaPorMinutosResumen{
+		TarifaID:          tarifa.ID,
+		EstacionID:        estacionID,
+		Aplicada:          false,
+		DiaSemana:         diaSemana,
+		DiaSemanaDesde:    tarifa.DiaSemanaDesde,
+		DiaSemanaHasta:    tarifa.DiaSemanaHasta,
+		MinutosBase:       tarifa.MinutosBase,
+		MinutosExtra:      tarifa.MinutosExtra,
+		ValorBase:         round2(tarifa.ValorBase),
+		ValorExtra:        round2(tarifa.ValorExtra),
+		CobrarPorFraccion: tarifa.CobrarPorFraccion,
+		Moneda:            normalizeTarifaMoneda(tarifa.Moneda),
+		TotalActual:       round2(item.Total),
+	}
+	if !activo {
+		return resumen, nil
+	}
+	activadoAt, err := parseTarifaPorDiaDateTime(item.ActivadoEn)
+	if err != nil {
+		return resumen, nil
 	}
 	cfg, err := GetEmpresaTarifaPorMinutosConfiguracion(dbConn, item.EmpresaID)
 	if err != nil {
@@ -582,6 +609,8 @@ func ResolveCarritoTarifaPorMinutosResumen(dbConn *sql.DB, item CarritoCompra, f
 		EstacionID:           estacionID,
 		Aplicada:             true,
 		DiaSemana:            diaSemana,
+		DiaSemanaDesde:       tarifa.DiaSemanaDesde,
+		DiaSemanaHasta:       tarifa.DiaSemanaHasta,
 		MinutosConsumidos:    detalle.MinutosConsumidos,
 		MinutosFacturables:   detalle.MinutosFacturables,
 		MinutosTolerancia:    detalle.MinutosTolerancia,
@@ -590,6 +619,7 @@ func ResolveCarritoTarifaPorMinutosResumen(dbConn *sql.DB, item CarritoCompra, f
 		BloquesExtra:         detalle.BloquesExtra,
 		ValorBase:            round2(tarifa.ValorBase),
 		ValorExtra:           round2(tarifa.ValorExtra),
+		CobrarPorFraccion:    tarifa.CobrarPorFraccion,
 		MontoTarifa:          detalle.MontoTotal,
 		Moneda:               detalle.Moneda,
 		FechaInicioTarifa:    activadoAt.Format("2006-01-02 15:04:05"),

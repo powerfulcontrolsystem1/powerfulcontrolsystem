@@ -1011,8 +1011,8 @@ afecte dinero, documentos, licencias o seguridad.
 
 1. El usuario entra a caja desde `Corte de Caja` o desde la estacion Caja.
 2. La empresa puede configurar varias cajas fisicas en
-   `estaciones_config.cajas_config`, cada una con codigo, nombre, descripcion y
-   estado activo. La estacion Caja muestra esos nombres, por ejemplo
+   `estaciones_config.cajas_config`, cada una con codigo, nombre, descripcion,
+   estado activo, estaciones visibles y modo `operar` o `solo_activar`. La estacion Caja muestra esos nombres, por ejemplo
    `CAJA-1 - FRUTERA`.
 3. El login operativo de cajeros usa la caja asignada al computador; la
    asignacion se administra desde Configuracion > Impresoras y caja, sin pedir
@@ -1273,24 +1273,35 @@ la transcripcion permanece bloqueada y debe resolverse fuera de este candidato.
    exportar/imprimir, ocultar cajero o fecha desde la configuracion y confirmar
    que no aparece en el reporte impreso.
 
-## Cajeros simultaneos y estaciones asignadas
+## Cajas simultaneas y estaciones asignadas
 
 1. El administrador crea los usuarios de la empresa en
    `Administrar usuarios`.
-2. En la seccion `Acceso a estaciones por cajero` activa el control y elige el
-   usuario cajero.
-3. Marca por check las estaciones que ese usuario puede ver y operar. Si el
+2. En `Configuracion de estaciones > Cajas fisicas` crea cada caja, activa
+   `Limitar`, escribe rangos como `1-5,8` y selecciona `Operar y cobrar` o
+   `Solo activar`.
+3. En la seccion `Acceso a estaciones por caja y usuario` activa el control,
+   elige el usuario y le asigna una caja. Varios usuarios pueden compartir la
+   misma caja y varias cajas pueden operar en simultaneo.
+4. Marca por check restricciones adicionales del usuario. El acceso efectivo
+   es la interseccion entre estaciones de la caja y estaciones del usuario. Si el
    check `Ver estacion Caja y corte de turno` queda apagado, la tarjeta Caja no
    se muestra para ese usuario.
-4. El tablero de estaciones filtra la vista por usuario autenticado. Los
+5. El tablero de estaciones filtra la vista por usuario autenticado. Los
    endpoints de carritos e items validan la misma regla en backend, por lo que
    editar URL, cache o consola no permite operar estaciones no asignadas.
-5. La estacion Caja, los totales de caja, caja abierta y reporte de turno se
+6. La estacion Caja, los totales de caja, caja abierta y reporte de turno se
    mantienen independientes por `usuario_creador`; varios cajeros pueden operar
    la misma empresa al mismo tiempo con reportes separados.
-6. Pruebas: dos usuarios cajeros en la misma empresa, estaciones diferentes,
+7. La caja `solo_activar` muestra exclusivamente sus estaciones y permite solo
+   consultar el tablero y ejecutar `PUT action=activar_estacion`; backend bloquea
+   totales, carrito, items, abonos, pagos, edición y borrado aunque se manipule la
+   URL. Se recomienda asignarla a un usuario con rol `portero` para que el menu
+   completo conserve el mismo limite.
+8. Pruebas: dos usuarios cajeros en la misma empresa, estaciones diferentes,
    estados visibles compartidos, bloqueo 403 al intentar abrir/agregar/pagar una
-   estacion no asignada y corte de turno independiente.
+   estacion no asignada, corte independiente y una tercera caja de porteria que
+   activa una estacion pero recibe 403 al intentar cobrarla.
 
 ## Rol portero
 
@@ -1305,6 +1316,9 @@ la transcripcion permanece bloqueada y debe resolverse fuera de este candidato.
 5. Pruebas: usuario operativo con rol `portero`, entrar por `login_usuario`,
    confirmar menu con solo Estaciones, activar una estacion, intentar abrir
    carrito/items/pagar por URL o consola y recibir 403.
+6. Si el portero tiene una `caja_codigo` asignada, el tablero también aplica la
+   lista de estaciones de esa caja; el tratamiento especial del rol nunca omite
+   el filtro por usuario/caja.
 
 ## Rol Servicio de limpieza
 

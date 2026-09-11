@@ -523,6 +523,7 @@
               <label class="form-label" for="carritoTarifaModo">Tipo de tarifa</label>
               <select id="carritoTarifaModo" class="form-input">
                 <option value="auto">Automática</option>
+                <option value="sin_tarifa">Sin tarifa de tiempo</option>
                 <option value="minutos">Motel por tiempo</option>
                 <option value="dia">Hotel por día</option>
               </select>
@@ -647,7 +648,7 @@
           </label>
           <label id="toggleStationWorkerCommissionWrap" class="form-help inline-check">
             <input type="checkbox" id="toggleStationWorkerCommission">
-            Mostrar lavador
+            Mostrar comisionista
           </label>
         </div>
       </section>
@@ -873,11 +874,11 @@
 
       <section id="stationWorkerCommissionCard" class="card empresa-section carrito-worker-card is-hidden mt-12" hidden>
         <div class="empresa-section-header compact">
-          <h3 class="section-heading">Lavador</h3>
+          <h3 class="section-heading">Comisionista</h3>
         </div>
         <div class="form-col">
-          <label class="form-label" for="commissionWorker">Lavador (comision)</label>
-          <input id="commissionWorker" class="form-input" placeholder="Ej: lavador1@empresa.com" list="usuariosEmpresaComisionList">
+          <label class="form-label" for="commissionWorker">Comisionista</label>
+          <input id="commissionWorker" class="form-input" placeholder="Seleccione una persona de la empresa" list="usuariosEmpresaComisionList">
           <datalist id="usuariosEmpresaComisionList"></datalist>
           <div id="commissionConfigHint" class="form-help mt-6">Configuración de comisiones: cargando...</div>
         </div>
@@ -1039,10 +1040,12 @@
       scannerSearchToken: 0,
       stationID: 0,
       stationName: '',
+      stationCashCode: '',
       empresaGeneralConfig: null,
       empresaAvanzadaConfig: null,
       empresaPermissionsContext: null,
       stationConfig: null,
+      lastCommissionistByStation: {},
       scannerSearchModeOverride: '',
       tarifaMinutosConfig: null,
       stationCartUI: null,
@@ -1096,7 +1099,8 @@
         habilitarComisiones: false,
         porcentajeComision: 0,
         filtroServicio: 'lavado',
-        aplicarAutomaticamente: true
+        aplicarAutomaticamente: true,
+        incluirProductos: false
       },
       usuariosEmpresa: [],
       activeCashRegisters: [],
@@ -1676,8 +1680,15 @@
     function getSelectedCashRegister() {
       const select = document.getElementById('activeCashRegister');
       const id = Number((select && select.value) || state.selectedCashRegisterID || 0);
-      return (Array.isArray(state.activeCashRegisters) ? state.activeCashRegisters : []).find(function(item) {
+      const rows = Array.isArray(state.activeCashRegisters) ? state.activeCashRegisters : [];
+      const selected = rows.find(function(item) {
         return Number(item.id || 0) === id;
+      }) || null;
+      const preferredCode = normalizeCashCode(state.stationCashCode);
+      if (!preferredCode) return selected;
+      if (selected && normalizeCashCode(selected.caja_codigo) === preferredCode) return selected;
+      return rows.find(function(item) {
+        return normalizeCashCode(item.caja_codigo) === preferredCode;
       }) || null;
     }
 
@@ -1704,12 +1715,15 @@
         select.appendChild(new Option(cashRegisterLabel(caja), String(caja.id || 0)));
       });
       const selectedLoginCaja = getSelectedLoginCaja();
+      const stationCajaRow = normalizeCashCode(state.stationCashCode)
+        ? rows.find(function(x) { return normalizeCashCode(x.caja_codigo) === normalizeCashCode(state.stationCashCode); })
+        : null;
       const loginCajaRow = selectedLoginCaja && selectedLoginCaja.codigo
         ? rows.find(function(x) { return normalizeCashCode(x.caja_codigo) === selectedLoginCaja.codigo; })
         : null;
       const chosen = rows.some(function(x) { return Number(x.id || 0) === previous; })
         ? previous
-        : (loginCajaRow ? Number(loginCajaRow.id || 0) : Number(rows[0].id || 0));
+        : (stationCajaRow ? Number(stationCajaRow.id || 0) : (loginCajaRow ? Number(loginCajaRow.id || 0) : Number(rows[0].id || 0)));
       select.value = String(chosen || '');
       state.selectedCashRegisterID = chosen;
       if (hint) {
@@ -1751,6 +1765,8 @@
     }
 
     function defaultPaymentCashRegisterCode() {
+      const stationCode = normalizeCashCode(state.stationCashCode);
+      if (stationCode) return stationCode;
       const selectedLoginCaja = getSelectedLoginCaja();
       if (selectedLoginCaja && selectedLoginCaja.codigo) return selectedLoginCaja.codigo;
       const cajas = activeCajasConfig();
@@ -2495,6 +2511,12 @@
             id: Number((current && current.id) || (idx + 1)),
             nombre: normalize(current && current.nombre) || (labels.singular + ' ' + (idx + 1)),
             mostrar_total: current && current.mostrar_total === undefined ? true : Boolean(current && current.mostrar_total),
+            mesero_asignado: normalize(current && current.mesero_asignado),
+            mesero_asignado_id: Math.max(0, Number(current && current.mesero_asignado_id || 0)),
+            comisionista_asignado: normalize(current && (current.comisionista_asignado || current.usuario_lavador)),
+            comisionista_asignado_id: Math.max(0, Number(current && (current.comisionista_asignado_id || current.usuario_lavador_id) || 0)),
+            mostrar_comisionista: !current || current.mostrar_comisionista === undefined ? true : Boolean(current.mostrar_comisionista),
+            conservar_ultimo_comisionista: Boolean(current && current.conservar_ultimo_comisionista),
             carrito: normalizeStationCarritoConfig(current && (current.carrito || current.carrito_ui))
           };
         }),
@@ -2586,9 +2608,23 @@
           return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
         }) : null;
         state.stationConfig = normalizeStationConfig(parseStationConfigValue(pref && pref.valor));
+        state.lastCommissionistByStation = {};
+        if (Array.isArray(prefs)) {
+          prefs.forEach(function(item) {
+            if (!item || String(item.clave || '') !== 'carrito.comisionista_ultimo') return;
+            const stationID = Number(item.estacion_id || 0);
+            const value = normalize(item.valor);
+            if (stationID > 0 && value) state.lastCommissionistByStation[stationID] = value;
+          });
+        }
         loadScannerSearchModePref(prefs);
+        const stationCommission = getStationConfigRecord(state.empresaID, state.stationID);
+        if (state.stationMode && stationCommission && stationCommission.mostrar_comisionista !== false) {
+          state.optionalSections.showWorkerCommission = true;
+        }
       } catch (_) {
         state.stationConfig = normalizeStationConfig({});
+        state.lastCommissionistByStation = {};
         state.scannerSearchModeOverride = '';
       }
       if (window.PCSEstacionLabels && typeof window.PCSEstacionLabels.apply === 'function') {
@@ -2635,6 +2671,44 @@
       return state.stationConfig.estaciones.find(function(item) {
         return Number(item && item.id) === Number(estacionID);
       }) || null;
+    }
+
+    function currentStationCommissionistConfig() {
+      const station = getStationConfigRecord(state.empresaID, state.stationID);
+      if (!station) {
+        return { mostrar: true, conservar: false, valor: '' };
+      }
+      const remembered = station.conservar_ultimo_comisionista
+        ? normalize(state.lastCommissionistByStation[state.stationID])
+        : '';
+      return {
+        mostrar: station.mostrar_comisionista !== false,
+        conservar: Boolean(station.conservar_ultimo_comisionista),
+        valor: remembered || normalize(station.comisionista_asignado)
+      };
+    }
+
+    async function rememberCurrentStationCommissionist() {
+      if (!state.empresaID || !state.stationID) return;
+      const config = currentStationCommissionistConfig();
+      const input = document.getElementById('commissionWorker');
+      const value = normalize(input && input.value);
+      if (!config.mostrar || !config.conservar || !value) return;
+      await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          estacion_id: Number(state.stationID),
+          clave: 'carrito.comisionista_ultimo',
+          valor: value,
+          estado: 'activo',
+          observaciones: 'ultimo comisionista elegido para la estacion'
+        })
+      }).then(async function(response) {
+        if (!response.ok) throw new Error(await response.text());
+        state.lastCommissionistByStation[state.stationID] = value;
+      });
     }
 
     function getCurrentStationCartUIConfig() {
@@ -2938,7 +3012,8 @@
       const workerWrap = document.getElementById('toggleStationWorkerCommissionWrap');
       const focusedSaleMode = state.stationMode || state.directSaleMode;
       const canShowCheckout = Boolean(ui && ui.mostrar_tarjeta_cobro_estados);
-      const canShowWorker = Boolean(ui && ui.mostrar_comision && ui.mostrar_tarjeta_comision);
+      const stationCommission = currentStationCommissionistConfig();
+      const canShowWorker = Boolean(ui && ui.mostrar_comision && ui.mostrar_tarjeta_comision && stationCommission.mostrar);
       const showControls = focusedSaleMode && Boolean(carrito) && (canShowCheckout || canShowWorker);
       if (controls) {
         controls.classList.toggle('is-hidden', !showControls);
@@ -3888,7 +3963,8 @@
       const filtro = normalize(state.commissionConfig.filtroServicio) || 'sin filtro';
       hintEl.textContent =
         'Estado: ' + (enabled ? 'habilitada' : 'deshabilitada') +
-        ' | Porcentaje: ' + pct + '% | Filtro: ' + filtro;
+        ' | Porcentaje: ' + pct + '% | Base: ' + (state.commissionConfig.incluirProductos ? 'servicios y productos' : 'solo servicios') +
+        ' | Filtro: ' + filtro;
     }
 
     async function loadCommissionConfig(renderAfterLoad) {
@@ -3913,6 +3989,7 @@
         state.commissionConfig.porcentajeComision = Math.max(0, Math.min(100, Number((cfg && cfg.porcentaje_comision) || 0)));
         state.commissionConfig.filtroServicio = normalize((cfg && cfg.filtro_servicio) || 'lavado').toLowerCase();
         state.commissionConfig.aplicarAutomaticamente = cfg && cfg.aplicar_automaticamente !== false;
+        state.commissionConfig.incluirProductos = Boolean(cfg && cfg.incluir_productos);
         if (renderAfterLoad !== false) renderCommissionConfigHint();
       } catch (_) {
         state.commissionConfig.loaded = false;
@@ -5779,7 +5856,7 @@
       if (comision && Number(comision.porcentaje_comision || 0) > 0) {
         rows.push({
           label: 'Comisión de lavado (costo laboral fiscal, no cobrada al cliente)',
-          value: Number(comision.porcentaje_comision || 0).toFixed(2) + '% - ' + normalize(comision.usuario_lavador || 'lavador asignado')
+          value: Number(comision.porcentaje_comision || 0).toFixed(2) + '% - ' + normalize(comision.usuario_comisionista || comision.usuario_lavador || 'comisionista asignado')
         });
       }
       return rows;
@@ -6809,6 +6886,7 @@
       const devolucionEl = document.getElementById('devolucionMonto');
       const commissionWorkerEl = document.getElementById('commissionWorker');
       const operativa = getOperativaPermisos();
+      const stationCommission = currentStationCommissionistConfig();
 
       const showDiscountControls = Boolean(stationUI.mostrar_descuentos || state.optionalSections.showDiscounts);
       if (!showDiscountControls) {
@@ -6823,20 +6901,22 @@
         state.stationTip.aplicar = false;
         if (applyTipEl) applyTipEl.checked = false;
       }
-      if ((!stationUI.mostrar_comision || !state.optionalSections.showWorkerCommission) && commissionWorkerEl) {
+      if ((!stationUI.mostrar_comision || !stationCommission.mostrar || !state.optionalSections.showWorkerCommission) && commissionWorkerEl) {
         commissionWorkerEl.value = '';
+      } else if (commissionWorkerEl && !normalize(commissionWorkerEl.value) && stationCommission.valor) {
+        commissionWorkerEl.value = stationCommission.valor;
       }
 
       setFieldColumnVisibility('discountType', showDiscountControls);
       setFieldColumnVisibility('discountValue', showDiscountControls);
       setFieldColumnVisibility('discountCode', showDiscountControls);
       setFieldColumnVisibility('applyTipCheckbox', stationUI.mostrar_propina);
-      setFieldColumnVisibility('commissionWorker', stationUI.mostrar_comision && state.optionalSections.showWorkerCommission);
+      setFieldColumnVisibility('commissionWorker', stationUI.mostrar_comision && stationCommission.mostrar && state.optionalSections.showWorkerCommission);
       setFieldColumnVisibility('paymentMethod', stationUI.mostrar_tarjetas_pago);
       setFieldColumnVisibility('activeCashRegister', true);
       setFieldColumnVisibility('paymentReference', stationUI.mostrar_tarjetas_pago);
       if (commissionCard) {
-        const showCommissionCard = stationUI.mostrar_comision && stationUI.mostrar_tarjeta_comision && state.optionalSections.showWorkerCommission;
+        const showCommissionCard = stationUI.mostrar_comision && stationUI.mostrar_tarjeta_comision && stationCommission.mostrar && state.optionalSections.showWorkerCommission;
         commissionCard.classList.toggle('is-hidden', !showCommissionCard);
         commissionCard.hidden = !showCommissionCard;
         commissionCard.style.display = showCommissionCard ? '' : 'none';
@@ -6852,7 +6932,7 @@
       paymentReferenceEl.disabled = !selectedActive || !stationUI.mostrar_tarjetas_pago;
       devolucionEl.disabled = !selectedActive;
       if (commissionWorkerEl) {
-        commissionWorkerEl.disabled = !selectedActive || !operativa.habilitar_comisiones || !stationUI.mostrar_comision || !state.optionalSections.showWorkerCommission;
+        commissionWorkerEl.disabled = !selectedActive || !operativa.habilitar_comisiones || !stationUI.mostrar_comision || !stationCommission.mostrar || !state.optionalSections.showWorkerCommission;
       }
 
       renderTipConfigHint();
@@ -7241,8 +7321,8 @@
             total_pagado: pay.totalPagarFinal,
             aplicar_propina: pay.tipApplied,
             modo_documento_venta: documentMode,
-            usuario_lavador: state.optionalSections.showWorkerCommission ? normalize(document.getElementById('commissionWorker').value) : '',
-            usuario_lavador_id: state.optionalSections.showWorkerCommission ? usuarioEmpresaIDPorEntrada(document.getElementById('commissionWorker').value) : 0,
+            usuario_comisionista: state.optionalSections.showWorkerCommission ? normalize(document.getElementById('commissionWorker').value) : '',
+            usuario_comisionista_id: state.optionalSections.showWorkerCommission ? usuarioEmpresaIDPorEntrada(document.getElementById('commissionWorker').value) : 0,
             cierre_caja_id: Number(cashForPayment.id || 0),
             caja_codigo: normalizeCashCode(cashForPayment.caja_codigo),
             caja_turno: normalize(cashForPayment.turno) || 'general',
@@ -7267,7 +7347,7 @@
           successMsg += ' Aviso propina: ' + normalize(payResp.propina.warning) + '.';
         }
         if (payResp && payResp.comision && Number(payResp.comision.monto_comision || 0) > 0) {
-          successMsg += ' Comision registrada: ' + formatAmount(payResp.comision.monto_comision, selected.moneda) + ' para ' + normalize(payResp.comision.usuario_lavador || 'lavador asignado') + '.';
+          successMsg += ' Comisión registrada: ' + formatAmount(payResp.comision.monto_comision, selected.moneda) + ' para ' + normalize(payResp.comision.usuario_comisionista || payResp.comision.usuario_lavador || 'comisionista asignado') + '.';
         }
         if (payResp && payResp.comision && normalize(payResp.comision.warning)) {
           successMsg += ' Aviso comision: ' + normalize(payResp.comision.warning) + '.';
@@ -9829,10 +9909,10 @@
       const selected = getSelectedCarrito();
       if (!select || !selected) return;
       select.innerHTML = '';
-      if (mode === 'auto') {
+      if (mode === 'auto' || mode === 'sin_tarifa') {
         select.disabled = true;
-        select.appendChild(new Option('La tarifa se calculará automáticamente', '0'));
-        setCarritoTarifaMessage('Modo automático activo para esta estación.', false);
+        select.appendChild(new Option(mode === 'sin_tarifa' ? 'No se aplicará tarifa de tiempo' : 'La tarifa se calculará automáticamente', '0'));
+        setCarritoTarifaMessage(mode === 'sin_tarifa' ? 'Este carrito funcionará sin tarifa de tiempo.' : 'Modo automático activo para esta estación.', false);
         return;
       }
       select.disabled = false;
@@ -9871,7 +9951,7 @@
         return;
       }
       const currentType = normalize(selected.tarifa_tiempo_tipo) || 'auto';
-      modeEl.value = currentType === 'dia' || currentType === 'hotel' ? 'dia' : (currentType === 'minutos' || currentType === 'motel' ? 'minutos' : 'auto');
+      modeEl.value = currentType === 'dia' || currentType === 'hotel' ? 'dia' : (currentType === 'minutos' || currentType === 'motel' ? 'minutos' : (currentType === 'sin_tarifa' ? 'sin_tarifa' : 'auto'));
       panel.hidden = false;
       panel.classList.remove('is-hidden');
       panel.style.display = '';
@@ -10183,8 +10263,8 @@
         return;
       }
       const tipoTarifa = normalize(modeEl.value) || 'auto';
-      const tarifaID = tipoTarifa === 'auto' ? 0 : Number(select.value || 0);
-      if (tipoTarifa !== 'auto' && tarifaID <= 0) {
+      const tarifaID = tipoTarifa === 'auto' || tipoTarifa === 'sin_tarifa' ? 0 : Number(select.value || 0);
+      if (tipoTarifa !== 'auto' && tipoTarifa !== 'sin_tarifa' && tarifaID <= 0) {
         setCarritoTarifaMessage('Selecciona una tarifa válida.', true);
         return;
       }
@@ -12315,6 +12395,11 @@
         if (id === 'paymentMethod') {
           state.paymentAmountsManual = false;
         }
+        if (id === 'commissionWorker') {
+          rememberCurrentStationCommissionist().catch(function(err) {
+            console.warn('No se pudo recordar el comisionista de la estación:', err);
+          });
+        }
         const selected = getSelectedCarrito();
         if (!selected) return;
         renderStationPaymentPanel(selected);
@@ -12480,6 +12565,8 @@
       const directSaleMode = normalize(getQueryParam('modo') || '').toLowerCase() === 'venta_directa';
       const stationID = Number(getQueryParam('estacion_id') || getQueryParam('station_id') || 0);
       const stationName = normalize(getQueryParam('estacion_nombre') || getQueryParam('station_name') || '');
+      const stationCashCode = normalizeCashCode(getQueryParam('caja_codigo') || '');
+      const openTariffPanel = getQueryParam('abrir_cambio_tarifa') === '1';
       if (!empresaID) {
         document.getElementById('carritosList').textContent = 'empresa_id requerido en la URL';
         document.getElementById('addCarritoBtn').disabled = true;
@@ -12491,6 +12578,7 @@
       state.stationMode = !directSaleMode && (stationID > 0 || !!carritoCode);
       state.stationID = stationID;
       state.stationName = stationName;
+      state.stationCashCode = stationCashCode;
       if (carritoID > 0) {
         state.selectedCarritoID = carritoID;
       } else if (carritoCode) {
@@ -12553,6 +12641,9 @@
         }
         state.initialDataLoading = false;
         renderStationPaymentPanel(getSelectedCarrito());
+        if (openTariffPanel && state.stationMode) {
+          openCarritoTarifaPanel();
+        }
         updateOfflineFloatingNotice();
         if (isOfflineBillingEnabled()) {
           syncOfflineSalesQueue();

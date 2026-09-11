@@ -68,10 +68,14 @@ func EmpresaComisionesServicioHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "liquidacion_nomina_id invalido", http.StatusBadRequest)
 					return
 				}
+				usuarioComisionista := strings.TrimSpace(r.URL.Query().Get("usuario_comisionista"))
+				if usuarioComisionista == "" {
+					usuarioComisionista = strings.TrimSpace(r.URL.Query().Get("usuario_lavador"))
+				}
 				report, err := dbpkg.GetEmpresaComisionesServicioReporte(dbEmp, empresaID, dbpkg.EmpresaComisionServicioMovimientoFilter{
 					Desde:               strings.TrimSpace(r.URL.Query().Get("desde")),
 					Hasta:               strings.TrimSpace(r.URL.Query().Get("hasta")),
-					UsuarioLavador:      strings.TrimSpace(r.URL.Query().Get("usuario_lavador")),
+					UsuarioLavador:      usuarioComisionista,
 					RolOperacion:        strings.TrimSpace(r.URL.Query().Get("rol_operacion")),
 					ServicioFiltro:      strings.TrimSpace(r.URL.Query().Get("servicio_filtro")),
 					OrigenMovimiento:    strings.TrimSpace(r.URL.Query().Get("origen")),
@@ -102,10 +106,14 @@ func EmpresaComisionesServicioHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "liquidacion_nomina_id invalido", http.StatusBadRequest)
 					return
 				}
+				usuarioComisionista := strings.TrimSpace(r.URL.Query().Get("usuario_comisionista"))
+				if usuarioComisionista == "" {
+					usuarioComisionista = strings.TrimSpace(r.URL.Query().Get("usuario_lavador"))
+				}
 				rows, err := dbpkg.ListEmpresaComisionServicioMovimientos(dbEmp, empresaID, dbpkg.EmpresaComisionServicioMovimientoFilter{
 					Desde:               strings.TrimSpace(r.URL.Query().Get("desde")),
 					Hasta:               strings.TrimSpace(r.URL.Query().Get("hasta")),
-					UsuarioLavador:      strings.TrimSpace(r.URL.Query().Get("usuario_lavador")),
+					UsuarioLavador:      usuarioComisionista,
 					RolOperacion:        strings.TrimSpace(r.URL.Query().Get("rol_operacion")),
 					ServicioFiltro:      strings.TrimSpace(r.URL.Query().Get("servicio_filtro")),
 					OrigenMovimiento:    strings.TrimSpace(r.URL.Query().Get("origen")),
@@ -136,6 +144,7 @@ func EmpresaComisionesServicioHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 
 				aliases := dbpkg.BuildEmpresaComisionServicioAliases(
+					strings.TrimSpace(r.URL.Query().Get("usuario_comisionista")),
 					strings.TrimSpace(r.URL.Query().Get("usuario_lavador")),
 					strings.TrimSpace(r.URL.Query().Get("empleado_codigo")),
 					strings.TrimSpace(r.URL.Query().Get("empleado_documento")),
@@ -189,23 +198,25 @@ func EmpresaComisionesServicioHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 			case "ajuste_manual":
 				var payload struct {
-					EmpresaID         int64   `json:"empresa_id"`
-					CarritoID         int64   `json:"carrito_id"`
-					CarritoItemID     int64   `json:"carrito_item_id"`
-					ServicioID        int64   `json:"servicio_id"`
-					ServicioCodigo    string  `json:"servicio_codigo"`
-					ServicioNombre    string  `json:"servicio_nombre"`
-					ServicioCategoria string  `json:"servicio_categoria"`
-					UsuarioLavador    string  `json:"usuario_lavador"`
-					UsuarioLavadorID  int64   `json:"usuario_lavador_id"`
-					RolOperacion      string  `json:"rol_operacion"`
-					VentaReferencia   string  `json:"venta_referencia"`
-					Moneda            string  `json:"moneda"`
-					BaseServicio      float64 `json:"base_servicio"`
-					MontoAjuste       float64 `json:"monto_ajuste"`
-					MontoComision     float64 `json:"monto_comision"`
-					Motivo            string  `json:"motivo"`
-					ReferenciaAjuste  string  `json:"referencia_ajuste"`
+					EmpresaID             int64   `json:"empresa_id"`
+					CarritoID             int64   `json:"carrito_id"`
+					CarritoItemID         int64   `json:"carrito_item_id"`
+					ServicioID            int64   `json:"servicio_id"`
+					ServicioCodigo        string  `json:"servicio_codigo"`
+					ServicioNombre        string  `json:"servicio_nombre"`
+					ServicioCategoria     string  `json:"servicio_categoria"`
+					UsuarioLavador        string  `json:"usuario_lavador"`
+					UsuarioLavadorID      int64   `json:"usuario_lavador_id"`
+					UsuarioComisionista   string  `json:"usuario_comisionista"`
+					UsuarioComisionistaID int64   `json:"usuario_comisionista_id"`
+					RolOperacion          string  `json:"rol_operacion"`
+					VentaReferencia       string  `json:"venta_referencia"`
+					Moneda                string  `json:"moneda"`
+					BaseServicio          float64 `json:"base_servicio"`
+					MontoAjuste           float64 `json:"monto_ajuste"`
+					MontoComision         float64 `json:"monto_comision"`
+					Motivo                string  `json:"motivo"`
+					ReferenciaAjuste      string  `json:"referencia_ajuste"`
 				}
 				if r.Body != nil {
 					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -240,6 +251,12 @@ func EmpresaComisionesServicioHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 
 				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
+				usuarioComisionista := strings.TrimSpace(payload.UsuarioComisionista)
+				usuarioComisionistaID := payload.UsuarioComisionistaID
+				if usuarioComisionista == "" {
+					usuarioComisionista = strings.TrimSpace(payload.UsuarioLavador)
+					usuarioComisionistaID = payload.UsuarioLavadorID
+				}
 				mov := dbpkg.EmpresaComisionServicioMovimiento{
 					EmpresaID:          payload.EmpresaID,
 					CarritoID:          payload.CarritoID,
@@ -249,8 +266,8 @@ func EmpresaComisionesServicioHandler(dbEmp *sql.DB) http.HandlerFunc {
 					ServicioNombre:     strings.TrimSpace(payload.ServicioNombre),
 					ServicioCategoria:  strings.TrimSpace(payload.ServicioCategoria),
 					UsuarioOrigen:      usuarioOperacion,
-					UsuarioLavador:     strings.TrimSpace(payload.UsuarioLavador),
-					UsuarioLavadorID:   payload.UsuarioLavadorID,
+					UsuarioLavador:     usuarioComisionista,
+					UsuarioLavadorID:   usuarioComisionistaID,
 					RolOperacion:       strings.TrimSpace(payload.RolOperacion),
 					VentaReferencia:    strings.TrimSpace(payload.VentaReferencia),
 					Moneda:             strings.TrimSpace(payload.Moneda),

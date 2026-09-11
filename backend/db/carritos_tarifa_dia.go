@@ -27,6 +27,9 @@ type CarritoTarifaPorDiaCalculo struct {
 	SubtotalFinal  float64 `json:"subtotal_final"`
 	TotalFinal     float64 `json:"total_final"`
 	ServicioNombre string  `json:"servicio_nombre"`
+	NombreTarifa   string  `json:"nombre_tarifa"`
+	PersonasDesde  int     `json:"personas_desde"`
+	PersonasHasta  int     `json:"personas_hasta"`
 }
 
 type carritoTarifaPorDiaSnapshot struct {
@@ -67,11 +70,14 @@ func getEmpresaTarifaPorDiaAplicableTx(tx *sql.Tx, empresaID, estacionID int64) 
 	row := tx.QueryRow(`SELECT
 		id,
 		empresa_id,
+		COALESCE(nombre_tarifa, ''),
 		estacion_id,
 		COALESCE(estacion_codigo, ''),
 		COALESCE(estacion_nombre, ''),
 		COALESCE(servicio_nombre, 'hospedaje'),
 		COALESCE(valor_dia, 0),
+		COALESCE(personas_desde, 1),
+		COALESCE(personas_hasta, 0),
 		COALESCE(hora_check_in, '15:00'),
 		COALESCE(hora_check_out, '12:00'),
 		COALESCE(moneda, 'COP'),
@@ -198,6 +204,9 @@ func refreshCarritoTotalConTarifaPorDiaTx(tx *sql.Tx, empresaID, carritoID int64
 		return calc, nil
 	}
 	if normalizeCarritoTarifaTiempoTipo(snapshot.TarifaTiempoTipo) == "minutos" {
+		return calc, nil
+	}
+	if normalizeCarritoTarifaTiempoTipo(snapshot.TarifaTiempoTipo) == "sin_tarifa" {
 		return calc, nil
 	}
 
@@ -356,9 +365,6 @@ func ResolveCarritoTarifaPorDiaResumen(dbConn *sql.DB, item CarritoCompra, fecha
 	if item.EmpresaID <= 0 || item.ID <= 0 {
 		return nil, nil
 	}
-	if normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo) == "minutos" {
-		return nil, nil
-	}
 	estadoRegistro := strings.TrimSpace(strings.ToLower(item.Estado))
 	estadoCarrito := strings.TrimSpace(strings.ToLower(item.EstadoCarrito))
 	if estadoRegistro == "" {
@@ -367,7 +373,9 @@ func ResolveCarritoTarifaPorDiaResumen(dbConn *sql.DB, item CarritoCompra, fecha
 	if estadoCarrito == "" {
 		estadoCarrito = "abierto"
 	}
-	if estadoRegistro != "activo" || estadoCarrito != "abierto" || strings.TrimSpace(item.PagadoEn) != "" {
+	activo := estadoRegistro == "activo" && estadoCarrito == "abierto" && strings.TrimSpace(item.PagadoEn) == ""
+	tipoTiempo := normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo)
+	if activo && (tipoTiempo == "minutos" || tipoTiempo == "sin_tarifa") {
 		return nil, nil
 	}
 	if fechaCorte.IsZero() {
@@ -378,13 +386,9 @@ func ResolveCarritoTarifaPorDiaResumen(dbConn *sql.DB, item CarritoCompra, fecha
 	if estacionID <= 0 {
 		return nil, nil
 	}
-	activadoAt, err := parseTarifaPorDiaDateTime(item.ActivadoEn)
-	if err != nil {
-		return nil, nil
-	}
-
 	var tarifa *EmpresaTarifaPorDia
-	if normalizeCarritoTarifaTiempoTipo(item.TarifaTiempoTipo) == "dia" && item.TarifaTiempoID > 0 {
+	var err error
+	if activo && tipoTiempo == "dia" && item.TarifaTiempoID > 0 {
 		tarifa, err = GetEmpresaTarifaPorDiaByID(dbConn, item.EmpresaID, item.TarifaTiempoID)
 		if err == nil && tarifa != nil && (!strings.EqualFold(strings.TrimSpace(tarifa.Estado), "activo") || tarifa.EstacionID != estacionID) {
 			tarifa = nil
@@ -394,6 +398,20 @@ func ResolveCarritoTarifaPorDiaResumen(dbConn *sql.DB, item CarritoCompra, fecha
 	}
 	if err != nil || tarifa == nil {
 		return nil, err
+	}
+	if !activo {
+		return &CarritoTarifaPorDiaCalculo{
+			EmpresaID: item.EmpresaID, CarritoID: item.ID, EstacionID: estacionID,
+			TarifaID: tarifa.ID, Aplicada: false, ValorDia: round2(tarifa.ValorDia),
+			Moneda: normalizeTarifaPorDiaMoneda(tarifa.Moneda), HoraCheckIn: tarifa.HoraCheckIn,
+			HoraCheckOut: tarifa.HoraCheckOut, ServicioNombre: strings.TrimSpace(tarifa.ServicioNombre),
+			NombreTarifa: strings.TrimSpace(tarifa.NombreTarifa), PersonasDesde: tarifa.PersonasDesde,
+			PersonasHasta: tarifa.PersonasHasta,
+		}, nil
+	}
+	activadoAt, err := parseTarifaPorDiaDateTime(item.ActivadoEn)
+	if err != nil {
+		return nil, nil
 	}
 	detalle := CalcularDetalleTarifaPorDia(*tarifa, activadoAt, fechaCorte)
 	return &CarritoTarifaPorDiaCalculo{
@@ -415,5 +433,8 @@ func ResolveCarritoTarifaPorDiaResumen(dbConn *sql.DB, item CarritoCompra, fecha
 		SubtotalFinal:  round2(item.Subtotal),
 		TotalFinal:     round2(item.Total),
 		ServicioNombre: strings.TrimSpace(tarifa.ServicioNombre),
+		NombreTarifa:   strings.TrimSpace(tarifa.NombreTarifa),
+		PersonasDesde:  tarifa.PersonasDesde,
+		PersonasHasta:  tarifa.PersonasHasta,
 	}, nil
 }

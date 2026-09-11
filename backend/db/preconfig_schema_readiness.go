@@ -160,7 +160,7 @@ func EmpresaConfiguracionOperativaSchemaReady(dbConn *sql.DB) error {
 // EmpresaComisionesServicioSchemaReady valida las tablas de comisiones sin DDL.
 func EmpresaComisionesServicioSchemaReady(dbConn *sql.DB) error {
 	checks := []schemaReadinessCheck{
-		{"configuracion", `SELECT id, empresa_id FROM empresa_comisiones_servicio_configuracion WHERE 1=0`},
+		{"configuracion", `SELECT id, empresa_id, incluir_productos FROM empresa_comisiones_servicio_configuracion WHERE 1=0`},
 		{"escalas", `SELECT id, empresa_id FROM empresa_comisiones_servicio_escalas WHERE 1=0`},
 		{"movimientos", `SELECT id, empresa_id FROM empresa_comisiones_servicio_movimientos WHERE 1=0`},
 	}

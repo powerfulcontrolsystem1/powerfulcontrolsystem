@@ -24,6 +24,7 @@ const (
 	ToolSalesInspectStation       = "sales.inspect_station"
 	ToolSalesAddStationProduct    = "sales.add_station_product"
 	ToolReportsGenerate           = "reports.generate"
+	ToolTariffsConfigureMinutes   = "tariffs.configure_minutes_station"
 )
 
 // ExecutionContext is server-derived and must never be populated from model output.
@@ -85,6 +86,11 @@ func Registry() map[string]ToolDefinition {
 		ToolSalesInspectStation:    {Name: ToolSalesInspectStation, Description: "Busca cuentas abiertas de habitaciones, mesas o estaciones y productos de venta.", RiskLevel: "read", RequiredPermissions: []string{"ventas:R"}, TenantScope: "current_company", Confirmation: "none", Module: "ventas", TimeoutSeconds: 10},
 		ToolSalesAddStationProduct: {Name: ToolSalesAddStationProduct, Description: "Propone agregar un producto a una cuenta abierta; requiere confirmación.", RiskLevel: "medium", RequiredPermissions: []string{"ventas:R", "ventas:C"}, TenantScope: "current_company", Confirmation: "required", Idempotency: "required", Module: "ventas", TimeoutSeconds: 20, Rollback: "transactional_before_commit"},
 		ToolReportsGenerate:        {Name: ToolReportsGenerate, Description: "Genera un reporte empresarial con datos reales, periodo y enlaces de descarga.", RiskLevel: "read", RequiredPermissions: []string{"reportes:R"}, TenantScope: "current_company", Confirmation: "none", Module: "reportes", TimeoutSeconds: 20},
+		ToolTariffsConfigureMinutes: {
+			Name: ToolTariffsConfigureMinutes, Description: "Prepara una propuesta para configurar tarifas por minutos con reglas por dia de semana.",
+			RiskLevel: "medium", RequiredPermissions: []string{"ventas:U"}, TenantScope: "current_company", Confirmation: "required", Idempotency: "required",
+			TimeoutSeconds: 20, RateLimitPerMinute: 6, AuditCategory: "ai_tariff_configuration", Rollback: "transactional_before_commit", Module: "ventas", EnabledByDefault: false,
+		},
 		ToolHotelInspectRoomStation: {
 			Name:        ToolHotelInspectRoomStation,
 			Description: "Consulta la configuracion y tarifas actuales de una estacion hotelera.",
@@ -149,6 +155,23 @@ func ResponsesToolDefinitions(ctx ExecutionContext) []map[string]interface{} {
 	add(ToolSalesInspectStation, map[string]interface{}{"q": map[string]interface{}{"type": "string", "maxLength": 160}}, []string{"q"})
 	add(ToolSalesAddStationProduct, map[string]interface{}{"estacion_id": map[string]interface{}{"type": "integer", "minimum": 1}, "producto_id": map[string]interface{}{"type": "integer", "minimum": 1}, "cantidad": map[string]interface{}{"type": "integer", "minimum": 1, "maximum": 99}}, []string{"estacion_id", "producto_id", "cantidad"})
 	add(ToolReportsGenerate, map[string]interface{}{"dataset": map[string]interface{}{"type": "string", "enum": []string{"ventas", "productos", "inventario", "compras", "resultados", "caja"}}, "desde": map[string]interface{}{"type": "string", "description": "Fecha YYYY-MM-DD"}, "hasta": map[string]interface{}{"type": "string", "description": "Fecha YYYY-MM-DD"}}, []string{"dataset", "desde", "hasta"})
+	add(ToolTariffsConfigureMinutes, map[string]interface{}{
+		"estacion_id":          map[string]interface{}{"type": "integer", "minimum": 1},
+		"nombre_estacion":      map[string]interface{}{"type": "string", "maxLength": 120},
+		"conservar_existentes": map[string]interface{}{"type": "boolean"},
+		"tarifas": map[string]interface{}{"type": "array", "minItems": 1, "maxItems": 14, "items": map[string]interface{}{"type": "object", "additionalProperties": false, "properties": map[string]interface{}{
+			"dia_semana_desde": map[string]interface{}{"type": "integer", "minimum": 1, "maximum": 7}, "dia_semana_hasta": map[string]interface{}{"type": "integer", "minimum": 1, "maximum": 7},
+			"minutos_base": map[string]interface{}{"type": "integer", "minimum": 1}, "valor_base": map[string]interface{}{"type": "number", "exclusiveMinimum": 0},
+			"minutos_extra": map[string]interface{}{"type": "integer", "minimum": 0}, "valor_extra": map[string]interface{}{"type": "number", "minimum": 0},
+			"cobrar_por_fraccion": map[string]interface{}{"type": "boolean"}, "prioridad": map[string]interface{}{"type": "integer", "minimum": 1},
+		}, "required": []string{"dia_semana_desde", "dia_semana_hasta", "minutos_base", "valor_base", "minutos_extra", "valor_extra", "cobrar_por_fraccion", "prioridad"}}},
+	}, []string{"estacion_id", "nombre_estacion", "conservar_existentes", "tarifas"})
+	add(ToolHotelConfigureRoomStation, map[string]interface{}{
+		"estacion_id": map[string]interface{}{"type": "integer", "minimum": 1}, "nombre_habitacion": map[string]interface{}{"type": "string", "maxLength": 120},
+		"moneda": map[string]interface{}{"type": "string", "enum": []string{"COP", "USD", "EUR"}}, "hora_check_in": map[string]interface{}{"type": "string", "description": "Hora HH:MM"}, "hora_check_out": map[string]interface{}{"type": "string", "description": "Hora HH:MM"},
+		"activa": map[string]interface{}{"type": "boolean"}, "conservar_configuracion": map[string]interface{}{"type": "boolean"},
+		"tarifas": map[string]interface{}{"type": "array", "minItems": 1, "maxItems": 12, "items": map[string]interface{}{"type": "object", "additionalProperties": false, "properties": map[string]interface{}{"personas": map[string]interface{}{"type": "integer", "minimum": 1}, "valor": map[string]interface{}{"type": "number", "exclusiveMinimum": 0}}, "required": []string{"personas", "valor"}}},
+	}, []string{"estacion_id", "nombre_habitacion", "moneda", "hora_check_in", "hora_check_out", "activa", "conservar_configuracion", "tarifas"})
 	if def, ok := registry[ToolCatalogSearchProducts]; ok && ToolAllowed(def, ctx.Permissions) {
 		tools = append(tools, map[string]interface{}{"type": "function", "name": ToolCatalogSearchProducts, "description": def.Description, "strict": true, "parameters": map[string]interface{}{"type": "object", "additionalProperties": false, "properties": map[string]interface{}{"q": map[string]interface{}{"type": "string", "maxLength": 160}}, "required": []string{"q"}}})
 	}

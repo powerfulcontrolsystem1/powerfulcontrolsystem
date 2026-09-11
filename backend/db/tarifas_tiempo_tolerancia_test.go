@@ -4,14 +4,15 @@ import "testing"
 
 func TestCalcularDetalleTarifaPorMinutosRespetaMargenTolerancia(t *testing.T) {
 	tarifa := EmpresaTarifaPorMinutos{
-		ID:           1,
-		EmpresaID:    7,
-		EstacionID:   101,
-		MinutosBase:  120,
-		ValorBase:    100000,
-		MinutosExtra: 60,
-		ValorExtra:   50000,
-		Moneda:       "COP",
+		ID:                1,
+		EmpresaID:         7,
+		EstacionID:        101,
+		MinutosBase:       120,
+		ValorBase:         100000,
+		MinutosExtra:      60,
+		ValorExtra:        50000,
+		CobrarPorFraccion: true,
+		Moneda:            "COP",
 	}
 	cfg := defaultEmpresaTarifaPorMinutosConfiguracion(7)
 	cfg.MargenToleranciaEntradaMinutos = 10
@@ -33,6 +34,33 @@ func TestCalcularDetalleTarifaPorMinutosRespetaMargenTolerancia(t *testing.T) {
 	}
 	if fuera.MontoTotal != 150000 {
 		t.Fatalf("monto fuera de tolerancia = %.2f, want 150000", fuera.MontoTotal)
+	}
+}
+
+func TestCalcularDetalleTarifaPorMinutosDistingueFraccionYBloqueCompleto(t *testing.T) {
+	base := EmpresaTarifaPorMinutos{
+		ID: 1, EmpresaID: 7, EstacionID: 102,
+		MinutosBase: 60, ValorBase: 30000,
+		MinutosExtra: 15, ValorExtra: 7500, Moneda: "COP",
+	}
+	cfg := defaultEmpresaTarifaPorMinutosConfiguracion(7)
+
+	fraccion := base
+	fraccion.CobrarPorFraccion = true
+	got := CalcularDetalleTarifaPorMinutos(fraccion, 61, cfg)
+	if got.BloquesExtra != 1 || got.MontoTotal != 37500 {
+		t.Fatalf("61 minutos con cobro por fraccion = bloques %d total %.2f; want 1 y 37500", got.BloquesExtra, got.MontoTotal)
+	}
+
+	bloqueCompleto := base
+	bloqueCompleto.CobrarPorFraccion = false
+	got = CalcularDetalleTarifaPorMinutos(bloqueCompleto, 74, cfg)
+	if got.BloquesExtra != 0 || got.MontoTotal != 30000 {
+		t.Fatalf("74 minutos sin fraccion = bloques %d total %.2f; want 0 y 30000", got.BloquesExtra, got.MontoTotal)
+	}
+	got = CalcularDetalleTarifaPorMinutos(bloqueCompleto, 75, cfg)
+	if got.BloquesExtra != 1 || got.MontoTotal != 37500 {
+		t.Fatalf("75 minutos sin fraccion = bloques %d total %.2f; want 1 y 37500", got.BloquesExtra, got.MontoTotal)
 	}
 }
 

@@ -1364,7 +1364,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, estacion_id, estacion_codigo, estacion_nombre
   - dia_semana_desde, dia_semana_hasta
   - minutos_base, valor_base
-  - minutos_extra, valor_extra
+  - minutos_extra, valor_extra, cobrar_por_fraccion
   - moneda, prioridad
 - empresa_tarifas_por_minutos_configuracion:
   - empresa_id (UNIQUE)
@@ -1376,10 +1376,25 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 ### Tabla de tarifas por dia por estacion
 - empresa_tarifas_por_dia:
   - empresa_id, estacion_id, estacion_codigo, estacion_nombre
-  - servicio_nombre, valor_dia
+  - nombre_tarifa, servicio_nombre, valor_dia
+  - personas_desde, personas_hasta
   - hora_check_in, hora_check_out
   - moneda, prioridad
   - aplicar_automaticamente (0/1)
+
+La seleccion aplicada a una sesion vive en `carritos_compras.tarifa_tiempo_tipo`
+(`minutos`, `dia`, `sin_tarifa` o `auto`) y `tarifa_tiempo_id`. En nuevas
+sesiones de motel/hotel se fija la regla resuelta al check-in; el cambio manual
+recalcula el total sin sobrescribir `activado_en`. La configuracion flexible
+`empresa_estacion_prefs.estaciones_config` conserva por estacion
+`tipo_operacion`, `funciona_como_caja` y `caja_codigo`.
+
+La misma preferencia global conserva `cajas_config[]` con `codigo`, `nombre`,
+`descripcion`, `bodega_id`, `activa`, `limitar_estaciones`, `estaciones[]` y
+`modo_estaciones` (`operar` o `solo_activar`).
+`acceso_estaciones_cajeros.usuarios[email].caja_codigo` vincula al usuario con
+una caja. La autorización efectiva intersecta las estaciones del usuario y la
+caja y siempre se resuelve bajo el `empresa_id` autenticado. No requiere DDL.
 
 ### Tabla de codigos de descuento por empresa
 - codigos_de_descuento:
@@ -1427,6 +1442,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - habilitar_comisiones, porcentaje_comision
   - filtro_servicio (ej. `lavado`)
   - aplicar_automaticamente
+  - incluir_productos (0/1): apagado calcula solo lineas `servicio`; encendido suma tambien lineas `producto` del mismo carrito.
 - empresa_comisiones_servicio_escalas:
   - empresa_id
   - rol_operacion, servicio_filtro
@@ -1435,6 +1451,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, carrito_id, carrito_item_id
   - servicio_id, servicio_codigo, servicio_nombre, servicio_categoria
   - usuario_origen, usuario_origen_id, usuario_lavador, usuario_lavador_id, rol_operacion, escala_id
+  - `usuario_lavador*` es el nombre fisico historico; el contrato vigente lo expone tambien como `usuario_comisionista*`.
   - `usuario_origen_id` y `usuario_lavador_id` enlazan con `users.id` dentro de la misma empresa; el texto se conserva como etiqueta historica.
   - venta_referencia, moneda
   - base_servicio, porcentaje_comision, monto_comision_bruto, tope_comision_aplicado, monto_comision
@@ -1444,6 +1461,11 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - liquidacion_nomina_id, periodo_liquidacion_desde, periodo_liquidacion_hasta
   - liquidado_en, liquidado_por
   - fecha_movimiento
+
+### Personal por estacion para propinas y comisiones
+- `empresa_estacion_prefs`, fila global `estacion_id=0`, `clave='estaciones_config'`, conserva por estacion `mesero_asignado(_id)`, `comisionista_asignado(_id)`, `mostrar_comisionista` y `conservar_ultimo_comisionista`.
+- Cuando se activa conservar, `empresa_estacion_prefs` guarda `clave='carrito.comisionista_ultimo'` bajo el `estacion_id` concreto. El backend vuelve a validar que el usuario pertenezca al mismo `empresa_id` antes del pago.
+- La migracion `20260910-001-comisiones-productos-v1` agrega `incluir_productos`; solo `pcs-migrate` aplica este DDL.
 
 ### Tablas de configuracion operativa de cobro por empresa, rol y contexto operativo
 - empresa_configuracion_operativa:
