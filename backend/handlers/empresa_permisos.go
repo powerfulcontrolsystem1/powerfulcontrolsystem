@@ -4062,7 +4062,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	if adminEmail == "" || empresaID <= 0 || dbEmp == nil || dbSuper == nil {
 		return empresaPermissionSnapshot{}, sql.ErrNoRows
 	}
-	admin, err := dbpkg.GetAdminByEmail(dbSuper, adminEmail)
+	admin, err := dbpkg.GetAdminAuthorizationIdentity(dbSuper, adminEmail)
 	if err != nil {
 		return empresaPermissionSnapshot{}, err
 	}
@@ -4189,7 +4189,7 @@ func loadEmpresaRolePermissionMatrix(dbSuper *sql.DB, empresaID, roleID int64, f
 			role = normalizePermissionRole(base.Nombre)
 			ids = append(ids, base.ID)
 		}
-		if role == "super_administrador" || !isKnownPermissionRole(role) {
+		if role == "super_administrador" || role == "administrador_total" || role == "" || role == "sin_rol" {
 			return "", nil, nil, sql.ErrNoRows
 		}
 		ids = append(ids, assigned.ID)
@@ -4204,12 +4204,12 @@ func loadEmpresaRolePermissionMatrix(dbSuper *sql.DB, empresaID, roleID int64, f
 	}
 	rows := restrictPermissionModuleRowsForOperationalRole(role, buildPermissionModuleMatrixForRole(role))
 	pageOverrides := map[string]bool{}
-	for _, id := range ids {
-		modules, err := dbpkg.ListRolPermisosModuloByRolIDEmpresaScope(dbSuper, empresaID, id)
+	if len(ids) > 0 {
+		modules, err := dbpkg.ListRolesPermisosModuloByRolIDEmpresaScope(dbSuper, empresaID, ids)
 		if err != nil {
 			return "", nil, nil, err
 		}
-		pages, err := dbpkg.ListRolPermisosPaginaByRolIDEmpresaScope(dbSuper, empresaID, id)
+		pages, err := dbpkg.ListRolesPermisosPaginaByRolIDEmpresaScope(dbSuper, empresaID, ids)
 		if err != nil {
 			return "", nil, nil, err
 		}
@@ -4228,6 +4228,7 @@ func loadEmpresaRolePermissionMatrix(dbSuper *sql.DB, empresaID, roleID int64, f
 			pageOverrides[page.PaginaClave] = page.Permitido
 		}
 	}
+
 	pages := buildPermissionPagesMapFromModuleRows(rows, pageOverrides)
 	if !custom {
 		pages = restrictPermissionPagesForOperationalRole(role, pages)

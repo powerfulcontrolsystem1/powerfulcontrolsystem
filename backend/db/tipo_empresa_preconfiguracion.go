@@ -475,8 +475,8 @@ func GetTipoEmpresaPreconfiguracionByTipoID(dbConn *sql.DB, tipoEmpresaID int64)
 	if tipoEmpresaID <= 0 {
 		return nil, nil
 	}
-	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
-		return nil, err
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
 	}
 	row := queryRowSQLCompat(dbConn, `SELECT
 		p.id, p.tipo_empresa_id, COALESCE(t.nombre, ''), COALESCE(p.enabled, 0),

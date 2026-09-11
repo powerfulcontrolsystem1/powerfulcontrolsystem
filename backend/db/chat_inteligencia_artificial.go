@@ -8,48 +8,15 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/you/pos-backend/internal/platform/valueutil"
 )
 
-var (
-	canAdminAccessEmpresaIACacheMu  sync.Mutex
-	canAdminAccessEmpresaIACache    = map[string]cachedAdminEmpresaAccessIA{}
-	canAdminAccessEmpresaIACacheTTL = 60 * time.Second
-)
-
-func InvalidateCanAdminAccessEmpresaIACache(empresaID int64, adminEmail string) {
-	adminEmail = strings.TrimSpace(strings.ToLower(adminEmail))
-	if empresaID <= 0 || adminEmail == "" {
-		return
-	}
-	cacheKey := fmt.Sprintf("%d|%s", empresaID, adminEmail)
-	canAdminAccessEmpresaIACacheMu.Lock()
-	delete(canAdminAccessEmpresaIACache, cacheKey)
-	canAdminAccessEmpresaIACacheMu.Unlock()
-}
-
-func InvalidateCanAdminAccessEmpresaIAAdminCache(adminEmail string) {
-	adminEmail = strings.TrimSpace(strings.ToLower(adminEmail))
-	if adminEmail == "" {
-		return
-	}
-	suffix := "|" + adminEmail
-	canAdminAccessEmpresaIACacheMu.Lock()
-	for key := range canAdminAccessEmpresaIACache {
-		if strings.HasSuffix(key, suffix) {
-			delete(canAdminAccessEmpresaIACache, key)
-		}
-	}
-	canAdminAccessEmpresaIACacheMu.Unlock()
-}
-
-type cachedAdminEmpresaAccessIA struct {
-	Allowed  bool
-	LoadedAt time.Time
-}
+// Compatibility hooks for mutation callers. Authorization is read from durable
+// state on each request, so there is no process-local access cache to invalidate.
+func InvalidateCanAdminAccessEmpresaIACache(_ int64, _ string) {}
+func InvalidateCanAdminAccessEmpresaIAAdminCache(_ string)     {}
 
 // GetEmpresaAIUsoDiarioOpenAITokensGlobal retorna el consumo del día (consultas/tokens) agregado
 // para todas las empresas en el proveedor indicado (ej: "openai").
@@ -948,104 +915,105 @@ func UpsertSuperAIModeloPreferido(dbConn *sql.DB, adminEmail, modelID, usuarioCr
 	return err
 }
 
-// CanAdminAccessEmpresaIA valida acceso del admin a empresa_id.
-// Super administrador puede acceder a cualquier empresa.
-func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaID int64) (bool, error) {
-	adminEmail = strings.TrimSpace(strings.ToLower(adminEmail))
-	if empresaID <= 0 {
-		return false, nil
+// GetAdminAuthorizationIdentity reads only the current administrative identity.
+// It never resolves an operational users row or reuses cached roles/activation.
+func GetAdminAuthorizationIdentity(dbConn *sql.DB, email string) (*Admin, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if dbConn == nil || email == "" {
+		return nil, sql.ErrNoRows
 	}
-	if adminEmail == "" {
-		return false, nil
-	}
-	cacheKey := fmt.Sprintf("%d|%s", empresaID, adminEmail)
-	canAdminAccessEmpresaIACacheMu.Lock()
-	if cached, ok := canAdminAccessEmpresaIACache[cacheKey]; ok && time.Since(cached.LoadedAt) < canAdminAccessEmpresaIACacheTTL {
-		canAdminAccessEmpresaIACacheMu.Unlock()
-		return cached.Allowed, nil
-	}
-	canAdminAccessEmpresaIACacheMu.Unlock()
-
-	if dbSuper != nil {
-		if adm, err := GetAdminByEmail(dbSuper, adminEmail); err == nil {
-			if strings.EqualFold(strings.TrimSpace(adm.Role), "super_administrador") {
-				canAdminAccessEmpresaIACacheMu.Lock()
-				canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
-				canAdminAccessEmpresaIACacheMu.Unlock()
-				return true, nil
-			}
-		}
-	}
-
-	var creador string
-	err := dbEmp.QueryRow(`SELECT COALESCE(usuario_creador, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&creador)
+	var admin Admin
+	err := queryRowSQLCompat(dbConn, `SELECT id, email, COALESCE(role, ''), COALESCE(usuario_creador, ''), COALESCE(estado, '')
+		FROM administradores WHERE lower(trim(email)) = ? AND lower(trim(COALESCE(estado, ''))) = 'activo' ORDER BY id LIMIT 1`, email).
+		Scan(&admin.ID, &admin.Email, &admin.Role, &admin.UsuarioCreador, &admin.Estado)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			canAdminAccessEmpresaIACacheMu.Lock()
-			canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: false, LoadedAt: time.Now()}
-			canAdminAccessEmpresaIACacheMu.Unlock()
-			return false, nil
-		}
+		return nil, err
+	}
+	return &admin, nil
+}
+
+// CanAdminAccessEmpresaIA validates current administrative membership in an active
+// tenant. Being recorded as a past sharer is audit history, not a membership.
+func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaID int64) (bool, error) {
+	adminEmail = strings.ToLower(strings.TrimSpace(adminEmail))
+	if empresaID <= 0 || adminEmail == "" {
+		return false, nil
+	}
+	if dbEmp == nil || dbSuper == nil {
+		return false, fmt.Errorf("authorization database unavailable")
+	}
+	admin, err := GetAdminAuthorizationIdentity(dbSuper, adminEmail)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
 		return false, err
 	}
-	creador = strings.TrimSpace(strings.ToLower(creador))
-	if creador != "" && creador == adminEmail {
-		canAdminAccessEmpresaIACacheMu.Lock()
-		canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
-		canAdminAccessEmpresaIACacheMu.Unlock()
+	var creator string
+	err = queryRowSQLCompat(dbEmp, `SELECT COALESCE(usuario_creador, '') FROM empresas
+		WHERE COALESCE(empresa_id, id) = ? AND lower(trim(COALESCE(estado, 'activo'))) = 'activo' LIMIT 1`, empresaID).Scan(&creator)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	creator = strings.ToLower(strings.TrimSpace(creator))
+	if strings.EqualFold(strings.TrimSpace(admin.Role), "super_administrador") || (creator != "" && creator == adminEmail) {
 		return true, nil
 	}
-	if dbSuper != nil {
-		principalEmail, err := ResolveAdminPrincipalEmail(dbSuper, adminEmail)
+	principal, err := resolveCurrentAdminPrincipal(dbSuper, admin)
+	if err != nil {
+		return false, err
+	}
+	if creator != "" && principal == creator {
+		return true, nil
+	}
+	if creator != "" {
+		var delegated bool
+		err := queryRowSQLCompat(dbSuper, `SELECT EXISTS(SELECT 1 FROM admin_principal_delegaciones d
+			JOIN administradores p ON lower(trim(p.email)) = lower(trim(d.principal_email))
+			WHERE lower(trim(d.admin_email)) = ? AND lower(trim(d.principal_email)) = ?
+			AND lower(trim(COALESCE(d.estado, 'pendiente'))) = 'activo' AND COALESCE(d.fecha_revocada, '') = ''
+			AND lower(trim(COALESCE(p.estado, ''))) = 'activo')`, adminEmail, creator).Scan(&delegated)
 		if err != nil {
 			return false, err
 		}
-		principalEmail = strings.TrimSpace(strings.ToLower(principalEmail))
-		if principalEmail != "" && principalEmail != adminEmail && creador != "" && creador == principalEmail {
-			canAdminAccessEmpresaIACacheMu.Lock()
-			canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
-			canAdminAccessEmpresaIACacheMu.Unlock()
-			return true, nil
-		}
-		if creador != "" {
-			delegatedPrincipals, err := ListActiveAdminPrincipalDelegacionPrincipals(dbSuper, adminEmail)
-			if err != nil {
-				return false, err
-			}
-			for _, delegatedPrincipal := range delegatedPrincipals {
-				if creador == strings.TrimSpace(strings.ToLower(delegatedPrincipal)) {
-					canAdminAccessEmpresaIACacheMu.Lock()
-					canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
-					canAdminAccessEmpresaIACacheMu.Unlock()
-					return true, nil
-				}
-			}
-		}
-		access, err := GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresaID, adminEmail)
-		if err != nil {
-			return false, err
-		}
-		if access != nil {
-			canAdminAccessEmpresaIACacheMu.Lock()
-			canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
-			canAdminAccessEmpresaIACacheMu.Unlock()
-			return true, nil
-		}
-		sharedBy, err := HasActiveAdminEmpresaCompartidaAccesoBySharer(dbSuper, empresaID, adminEmail)
-		if err != nil {
-			return false, err
-		}
-		if sharedBy {
-			canAdminAccessEmpresaIACacheMu.Lock()
-			canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
-			canAdminAccessEmpresaIACacheMu.Unlock()
+		if delegated {
 			return true, nil
 		}
 	}
-	canAdminAccessEmpresaIACacheMu.Lock()
-	canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: false, LoadedAt: time.Now()}
-	canAdminAccessEmpresaIACacheMu.Unlock()
-	return false, nil
+	access, err := GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresaID, adminEmail)
+	if err != nil {
+		return false, err
+	}
+	return access != nil, nil
+}
+
+// A broken, inactive or cyclic creator chain cannot grant a portfolio. The
+// explicit delegation/share checks may still authorize an independent grant.
+func resolveCurrentAdminPrincipal(dbSuper *sql.DB, admin *Admin) (string, error) {
+	visited := map[string]bool{}
+	for depth := 0; admin != nil && depth < 32; depth++ {
+		email := strings.ToLower(strings.TrimSpace(admin.Email))
+		if visited[email] {
+			return "", nil
+		}
+		visited[email] = true
+		creator := strings.ToLower(strings.TrimSpace(admin.UsuarioCreador))
+		if creator == "" || creator == email {
+			return email, nil
+		}
+		var err error
+		admin, err = GetAdminAuthorizationIdentity(dbSuper, creator)
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		if err != nil {
+			return "", err
+		}
+	}
+	return "", nil
 }
 
 // GetEmpresaAIUsoDiario obtiene el uso diario para un modelo.

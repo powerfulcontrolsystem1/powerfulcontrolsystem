@@ -63,9 +63,10 @@ func TestEmpresaPermissionRolesPostgresIsolationAndRevocation(t *testing.T) {
 		`CREATE TABLE licencias (id BIGINT PRIMARY KEY, empresa_id BIGINT, nombre TEXT, modulos_habilitados TEXT, super_rol_habilitado INT, activo INT, fecha_inicio TEXT, fecha_fin TEXT)`,
 		`CREATE TABLE empresa_licencias_adicionales (id BIGINT PRIMARY KEY, empresa_id BIGINT, licencia_id BIGINT, activo INT, fecha_inicio TEXT, fecha_fin TEXT)`,
 		`CREATE TABLE users (id BIGINT PRIMARY KEY, empresa_id BIGINT, email TEXT, name TEXT, documento_identidad TEXT, rol_usuario_id BIGINT, role TEXT, foto_url TEXT, control_aseo_estaciones INT, email_confirmado INT, email_confirm_token TEXT, email_confirm_expira TEXT, email_confirmado_en TEXT, acepta_contrato INT, contrato_version_aceptada INT, fecha_acepta_contrato TEXT, fecha_creacion TEXT, fecha_actualizacion TEXT, usuario_creador TEXT, estado TEXT DEFAULT 'activo', observaciones TEXT)`,
-		`INSERT INTO roles_de_usuario (id,nombre) VALUES (1,'vendedor'),(2,'super_administrador')`,
+		`INSERT INTO roles_de_usuario (id,nombre) VALUES (1,'vendedor'),(2,'super_administrador'),(3,'mesero'),(4,'rol_futuro')`,
 		`INSERT INTO roles_de_usuario (id,nombre,empresa_id,rol_base_id,origen) VALUES (11,'Ventas ampliadas',101,1,'empresa'),(12,'Ventas ampliadas',202,1,'empresa'),(13,'Base inválida',101,2,'empresa')`,
 		`INSERT INTO roles_de_usuario_permisos (rol_id,modulo,accion,permitido) VALUES (11,'inventario','R',1),(11,'inventario','C',1),(11,'ventas','C',0)`,
+		`INSERT INTO roles_de_usuario_permisos (rol_id,modulo,accion,permitido) VALUES (3,'ventas','R',1),(3,'ventas','C',1),(3,'ventas','U',1),(3,'clientes','R',1),(3,'clientes','C',1),(3,'inventario','R',1),(3,'facturacion','R',1)`,
 		`INSERT INTO roles_de_usuario_paginas_permisos (rol_id,pagina_clave,permitido) VALUES (11,'linkEstaciones',0)`,
 		`INSERT INTO empresas (id,empresa_id) VALUES (101,101),(202,202)`,
 		`INSERT INTO licencias (id,empresa_id,nombre,modulos_habilitados,super_rol_habilitado,activo) VALUES (101,101,'QA','ventas,inventario,clientes,seguridad',1,1),(202,202,'QA','ventas,inventario,clientes,seguridad',1,1)`,
@@ -99,6 +100,25 @@ func TestEmpresaPermissionRolesPostgresIsolationAndRevocation(t *testing.T) {
 	}
 	if _, _, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 13, "admin_empresa"); err == nil {
 		t.Fatal("custom role inherited super administrator")
+	}
+	_, meseroRows, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 3, "admin_empresa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	meseroVentas := findPermissionModuleRowForTest(t, meseroRows, permModuleVentas)
+	if !meseroVentas.Read || !meseroVentas.Create || !meseroVentas.Update || meseroVentas.Delete || meseroVentas.Approve {
+		t.Fatal("catalogued mesero must receive only its persisted grants")
+	}
+	_, futureRows, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 4, "admin_empresa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range futureRows {
+		for _, allowed := range row.Acciones {
+			if allowed {
+				t.Fatal("new role without grants must default deny")
+			}
+		}
 	}
 
 	exec(`UPDATE roles_de_usuario_permisos SET permitido=0 WHERE rol_id=11 AND modulo='inventario' AND accion='C'`)
