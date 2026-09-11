@@ -126,6 +126,35 @@ func isActivationOnlyPolicyRestricted(policy carritoStationAccessPolicy, method,
 	return !(method == http.MethodPut && strings.EqualFold(strings.TrimSpace(action), "activar_estacion"))
 }
 
+func enforceActivationOnlyCarritoRequest(w http.ResponseWriter, dbEmp *sql.DB, r *http.Request, action string) bool {
+	denied, err := isActivationOnlyRestrictedCarritoRequest(dbEmp, r, action)
+	if err != nil {
+		http.Error(w, "No se pudo validar el modo operativo de la caja", http.StatusInternalServerError)
+		return true
+	}
+	if denied {
+		http.Error(w, "forbidden: esta caja solo puede ver y activar estaciones", http.StatusForbidden)
+		return true
+	}
+	return false
+}
+
+func carritoMontoEfectivoParaCaja(metodoPago string, pagosMixtos []carritoPagoMixtoNormalizado, totalEsperado float64) float64 {
+	if metodoPago == "efectivo" {
+		return totalEsperado
+	}
+	if metodoPago != "mixto" {
+		return 0
+	}
+	monto := 0.0
+	for _, tramo := range pagosMixtos {
+		if tramo.Metodo == "efectivo" {
+			monto += tramo.Monto
+		}
+	}
+	return monto
+}
+
 // EmpresaCarritosCompraHandler gestiona CRUD de carritos por empresa.
 type carritoCancellationMetricOptions struct {
 	eventoOperacion     string
@@ -156,13 +185,7 @@ func recordCarritoCancellationMetric(dbEmp *sql.DB, carrito, actualizado *dbpkg.
 func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
-		activationOnlyDenied, activationOnlyErr := isActivationOnlyRestrictedCarritoRequest(dbEmp, r, action)
-		if activationOnlyErr != nil {
-			http.Error(w, "No se pudo validar el modo operativo de la caja", http.StatusInternalServerError)
-			return
-		}
-		if activationOnlyDenied {
-			http.Error(w, "forbidden: esta caja solo puede ver y activar estaciones", http.StatusForbidden)
+		if enforceActivationOnlyCarritoRequest(w, dbEmp, r, action) {
 			return
 		}
 		switch r.Method {
@@ -1327,59 +1350,16 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if usuarioOperacionItem, errUsuario := dbpkg.ResolveEmpresaUsuarioByReference(dbEmp, empresaID, usuarioOperacion); errUsuario == nil && usuarioOperacionItem != nil {
 					usuarioOperacionID = usuarioOperacionItem.ID
 				}
-				estacionID, _, _ := dbpkg.ResolveCarritoStationIdentity(carrito)
-				staffCfg, errStaff := loadCarritoStationStaffConfig(dbEmp, empresaID, estacionID)
+				paymentStaff, errStaff := resolveCarritoPaymentStaff(
+					dbEmp, empresaID, carrito, montoPropina, propinaModo, permisosOperativos.HabilitarComisiones,
+					payload.UsuarioComisionistaID, payload.UsuarioComisionista, payload.UsuarioLavador,
+				)
 				if errStaff != nil {
-					log.Printf("[carritos] cargar personal estacion empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, errStaff)
-					http.Error(w, "No se pudo validar el personal asignado a la estacion", http.StatusInternalServerError)
+					writeCarritoPaymentStaffError(w, empresaID, id, errStaff)
 					return
 				}
-				var meseroOperacion *dbpkg.EmpresaUsuario
-				if montoPropina > 0 && propinaModo == dbpkg.EmpresaPropinaModoPorUsuario {
-					meseroOperacion, errStaff = resolveCarritoStaffUser(dbEmp, empresaID, staffCfg.MeseroID, staffCfg.Mesero)
-					if errStaff != nil && !errors.Is(errStaff, sql.ErrNoRows) {
-						http.Error(w, "No se pudo validar el mesero asignado", http.StatusInternalServerError)
-						return
-					}
-					if errors.Is(errStaff, sql.ErrNoRows) && (staffCfg.Mesero != "" || staffCfg.MeseroID > 0) {
-						http.Error(w, "El mesero asignado no pertenece a esta empresa o esta inactivo", http.StatusBadRequest)
-						return
-					}
-				}
-				comisionistaReferencia := strings.TrimSpace(payload.UsuarioComisionista)
-				if comisionistaReferencia == "" {
-					comisionistaReferencia = strings.TrimSpace(payload.UsuarioLavador)
-				}
-				comisionistaID := payload.UsuarioComisionistaID
-				if !staffCfg.MostrarComisionista || comisionistaReferencia == "" {
-					comisionistaReferencia = staffCfg.Comisionista
-					comisionistaID = staffCfg.ComisionistaID
-				}
-				var comisionistaOperacion *dbpkg.EmpresaUsuario
-				var comisionCfg *dbpkg.EmpresaComisionesServicioConfiguracion
-				if permisosOperativos.HabilitarComisiones {
-					var errComisionCfg error
-					comisionCfg, errComisionCfg = dbpkg.GetEmpresaComisionesServicioConfiguracion(dbEmp, empresaID)
-					if errComisionCfg != nil {
-						http.Error(w, "No se pudo validar la configuracion de comisiones", http.StatusInternalServerError)
-						return
-					}
-				}
-				if permisosOperativos.HabilitarComisiones && comisionCfg != nil && comisionCfg.HabilitarComisiones && comisionCfg.AplicarAutomaticamente {
-					comisionistaOperacion, errStaff = resolveCarritoStaffUser(dbEmp, empresaID, comisionistaID, comisionistaReferencia)
-					if errStaff != nil && !errors.Is(errStaff, sql.ErrNoRows) {
-						http.Error(w, "No se pudo validar el comisionista", http.StatusInternalServerError)
-						return
-					}
-					if errors.Is(errStaff, sql.ErrNoRows) && (comisionistaReferencia != "" || comisionistaID > 0) {
-						http.Error(w, "El comisionista seleccionado no pertenece a esta empresa o esta inactivo", http.StatusBadRequest)
-						return
-					}
-					if comisionistaOperacion != nil {
-						comisionistaReferencia = strings.TrimSpace(comisionistaOperacion.Email)
-						comisionistaID = comisionistaOperacion.ID
-					}
-				}
+				meseroOperacion := paymentStaff.Mesero
+				comisionistaReferencia := paymentStaff.ComisionistaReferencia
 				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbiertaUsuarioContext(r.Context(), dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
 				if errCierreCaja != nil {
 					if errors.Is(errCierreCaja, sql.ErrNoRows) {
@@ -1390,16 +1370,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo validar la caja abierta para este pago", http.StatusInternalServerError)
 					return
 				}
-				montoEfectivoCaja := 0.0
-				if metodoPago == "efectivo" {
-					montoEfectivoCaja = totalEsperadoConPropina
-				} else if metodoPago == "mixto" {
-					for _, tramo := range pagosMixtos {
-						if tramo.Metodo == "efectivo" {
-							montoEfectivoCaja += tramo.Monto
-						}
-					}
-				}
+				montoEfectivoCaja := carritoMontoEfectivoParaCaja(metodoPago, pagosMixtos, totalEsperadoConPropina)
 
 				totalPagadoCarrito := roundMoneyCarritoForMoneda(totalPagado+abonosAplicados, carrito.Moneda)
 				documentIntent, errPago := dbpkg.PayCarritoStationSessionWithDocumentIntent(
@@ -1520,16 +1491,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						comisionResultado = result
 					}
 				}
-				if staffCfg.MostrarComisionista && staffCfg.ConservarUltimoComisionista && estacionID > 0 && comisionistaOperacion != nil {
-					_, errRemember := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
-						EmpresaID: empresaID, EstacionID: estacionID, Clave: "carrito.comisionista_ultimo",
-						Valor: strings.TrimSpace(comisionistaOperacion.Email), UsuarioCreador: usuarioOperacion,
-						Estado: "activo", Observaciones: "ultimo comisionista elegido para la estacion",
-					})
-					if errRemember != nil {
-						log.Printf("[carritos] recordar comisionista empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, errRemember)
-					}
-				}
+				rememberCarritoStationCommissionist(dbEmp, empresaID, paymentStaff, usuarioOperacion)
 				if comisionResultado.Aplicada && comisionResultado.MontoComision > 0 {
 					registrarEventoContableNoBloqueante(dbEmp, r, "comisiones", dbpkg.EmpresaEventoContable{
 						EmpresaID:       empresaID,
@@ -3092,6 +3054,101 @@ func resolveCarritoStaffUser(dbEmp *sql.DB, empresaID, configuredID int64, refer
 		return nil, sql.ErrNoRows
 	}
 	return user, nil
+}
+
+type carritoPaymentStaff struct {
+	StationID              int64
+	Config                 carritoStationStaffConfig
+	Mesero                 *dbpkg.EmpresaUsuario
+	Comisionista           *dbpkg.EmpresaUsuario
+	ComisionistaReferencia string
+}
+
+type carritoPaymentStaffError struct {
+	Status  int
+	Message string
+	Cause   error
+}
+
+func (e *carritoPaymentStaffError) Error() string {
+	if e == nil {
+		return ""
+	}
+	return e.Message
+}
+
+func resolveCarritoPaymentStaff(dbEmp *sql.DB, empresaID int64, carrito *dbpkg.CarritoCompra, montoPropina float64, propinaModo string, habilitarComisiones bool, comisionistaID int64, comisionistaReferencia, comisionistaLegacy string) (carritoPaymentStaff, error) {
+	result := carritoPaymentStaff{}
+	result.StationID, _, _ = dbpkg.ResolveCarritoStationIdentity(carrito)
+	staffCfg, err := loadCarritoStationStaffConfig(dbEmp, empresaID, result.StationID)
+	if err != nil {
+		return result, &carritoPaymentStaffError{Status: http.StatusInternalServerError, Message: "No se pudo validar el personal asignado a la estacion", Cause: err}
+	}
+	result.Config = staffCfg
+	if montoPropina > 0 && propinaModo == dbpkg.EmpresaPropinaModoPorUsuario {
+		result.Mesero, err = resolveCarritoStaffUser(dbEmp, empresaID, staffCfg.MeseroID, staffCfg.Mesero)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return result, &carritoPaymentStaffError{Status: http.StatusInternalServerError, Message: "No se pudo validar el mesero asignado", Cause: err}
+		}
+		if errors.Is(err, sql.ErrNoRows) && (staffCfg.Mesero != "" || staffCfg.MeseroID > 0) {
+			return result, &carritoPaymentStaffError{Status: http.StatusBadRequest, Message: "El mesero asignado no pertenece a esta empresa o esta inactivo", Cause: err}
+		}
+	}
+	result.ComisionistaReferencia = strings.TrimSpace(comisionistaReferencia)
+	if result.ComisionistaReferencia == "" {
+		result.ComisionistaReferencia = strings.TrimSpace(comisionistaLegacy)
+	}
+	if !staffCfg.MostrarComisionista || result.ComisionistaReferencia == "" {
+		result.ComisionistaReferencia = staffCfg.Comisionista
+		comisionistaID = staffCfg.ComisionistaID
+	}
+	if !habilitarComisiones {
+		return result, nil
+	}
+	commissionCfg, err := dbpkg.GetEmpresaComisionesServicioConfiguracion(dbEmp, empresaID)
+	if err != nil {
+		return result, &carritoPaymentStaffError{Status: http.StatusInternalServerError, Message: "No se pudo validar la configuracion de comisiones", Cause: err}
+	}
+	if commissionCfg == nil || !commissionCfg.HabilitarComisiones || !commissionCfg.AplicarAutomaticamente {
+		return result, nil
+	}
+	result.Comisionista, err = resolveCarritoStaffUser(dbEmp, empresaID, comisionistaID, result.ComisionistaReferencia)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return result, &carritoPaymentStaffError{Status: http.StatusInternalServerError, Message: "No se pudo validar el comisionista", Cause: err}
+	}
+	if errors.Is(err, sql.ErrNoRows) && (result.ComisionistaReferencia != "" || comisionistaID > 0) {
+		return result, &carritoPaymentStaffError{Status: http.StatusBadRequest, Message: "El comisionista seleccionado no pertenece a esta empresa o esta inactivo", Cause: err}
+	}
+	if result.Comisionista != nil {
+		result.ComisionistaReferencia = strings.TrimSpace(result.Comisionista.Email)
+	}
+	return result, nil
+}
+
+func writeCarritoPaymentStaffError(w http.ResponseWriter, empresaID, carritoID int64, err error) {
+	var validationErr *carritoPaymentStaffError
+	if errors.As(err, &validationErr) {
+		if validationErr.Cause != nil {
+			log.Printf("[carritos] validar personal empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, validationErr.Cause)
+		}
+		http.Error(w, validationErr.Message, validationErr.Status)
+		return
+	}
+	http.Error(w, "No se pudo validar el personal asignado a la estacion", http.StatusInternalServerError)
+}
+
+func rememberCarritoStationCommissionist(dbEmp *sql.DB, empresaID int64, staff carritoPaymentStaff, usuarioOperacion string) {
+	if !staff.Config.MostrarComisionista || !staff.Config.ConservarUltimoComisionista || staff.StationID <= 0 || staff.Comisionista == nil {
+		return
+	}
+	_, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID: empresaID, EstacionID: staff.StationID, Clave: "carrito.comisionista_ultimo",
+		Valor: strings.TrimSpace(staff.Comisionista.Email), UsuarioCreador: usuarioOperacion,
+		Estado: "activo", Observaciones: "ultimo comisionista elegido para la estacion",
+	})
+	if err != nil {
+		log.Printf("[carritos] recordar comisionista empresa_id=%d estacion_id=%d error: %v", empresaID, staff.StationID, err)
+	}
 }
 
 func ensureCarritoStationCajaAccess(dbEmp *sql.DB, empresaID int64, usuario string) error {

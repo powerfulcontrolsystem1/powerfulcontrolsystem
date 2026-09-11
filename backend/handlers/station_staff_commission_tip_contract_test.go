@@ -43,7 +43,7 @@ func TestPaymentUsesServerScopedStationStaff(t *testing.T) {
 	source := string(raw)
 	for _, marker := range []string{
 		"loadCarritoStationStaffConfig", "ResolveEmpresaUsuarioByReference", "meseroOperacion",
-		"comisionistaOperacion", "carrito.comisionista_ultimo", "empresaID, estacionID",
+		"resolveCarritoPaymentStaff", "paymentStaff.ComisionistaReferencia", "rememberCarritoStationCommissionist",
 	} {
 		if !strings.Contains(source, marker) {
 			t.Fatalf("payment station staff contract is missing %q", marker)
