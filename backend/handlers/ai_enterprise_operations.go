@@ -95,11 +95,53 @@ func empresaAIExplanationOnly(question string) bool {
 	return false
 }
 
-func (c *EmpresaAIChatController) authorizedDirectDocumentResponse(empresaID int64, user, question string) (string, bool) {
+// All IA readers and tools must retain the identity validated by the wrapper.
+// An email can identify both an administrator and a restricted company user.
+func empresaAIRequestPermissionSnapshot(r *http.Request, dbEmp, dbSuper *sql.DB, user string, empresaID int64) (empresaPermissionSnapshot, error) {
+	tenant, ok := TenantContextFromRequest(r)
+	user = strings.ToLower(strings.TrimSpace(user))
+	if !ok || empresaID <= 0 || tenant.EmpresaID != empresaID || user == "" || !strings.EqualFold(strings.TrimSpace(tenant.AdminEmail), user) {
+		return empresaPermissionSnapshot{}, sql.ErrNoRows
+	}
+	return getEmpresaPermissionSnapshotForRequest(r, dbEmp, dbSuper, user, empresaID)
+}
+
+func empresaAISnapshotAllowsAdministrativeRead(snapshot empresaPermissionSnapshot) bool {
+	allowed, _ := empresaPermissionSnapshotAllowsAdditionalModule(snapshot, permModuleSeguridad, permActionRead, "")
+	return allowed && empresaAIAdministrativeDBReadRole(snapshot.EffectiveRole)
+}
+
+func (c *EmpresaAIChatController) authorizedAdministrativeReadRole(r *http.Request, empresaID int64, user string) (bool, string, error) {
+	snapshot, err := empresaAIRequestPermissionSnapshot(r, c.dbEmp, c.dbSuper, user, empresaID)
+	if err != nil {
+		return false, "", err
+	}
+	return empresaAISnapshotAllowsAdministrativeRead(snapshot), snapshot.EffectiveRole, nil
+}
+
+func (c *EmpresaAIChatController) authorizedAdminDBDirectResponse(r *http.Request, empresaID int64, user, question string) (string, bool, error) {
+	if !empresaAIWantsUserSummaryQuestion(foldEmpresaAICommandText(question)) {
+		return "", false, nil
+	}
+	allowed, role, err := c.authorizedAdministrativeReadRole(r, empresaID, user)
+	if err != nil {
+		return "", true, fmt.Errorf("no se pudo validar el permiso administrativo para consulta IA")
+	}
+	if !allowed {
+		return "No puedo mostrar conteos administrativos de usuarios con este perfil. Se requiere un rol administrativo con permiso de lectura de seguridad en la empresa activa.", true, nil
+	}
+	users, err := dbpkg.GetEmpresaUsuarios(c.dbEmp, empresaID, true)
+	if err != nil {
+		return "", true, fmt.Errorf("no se pudo consultar usuarios de la empresa")
+	}
+	return formatEmpresaAIUsuariosResumen(empresaID, role, users), true, nil
+}
+
+func (c *EmpresaAIChatController) authorizedDirectDocumentResponse(r *http.Request, empresaID int64, user, question string) (string, bool) {
 	if empresaAIExplanationOnly(question) {
 		return "", false
 	}
-	snapshot, err := getEmpresaPermissionSnapshot(c.dbEmp, c.dbSuper, user, empresaID)
+	snapshot, err := empresaAIRequestPermissionSnapshot(r, c.dbEmp, c.dbSuper, user, empresaID)
 	if err != nil {
 		return "", false
 	}
@@ -139,8 +181,8 @@ func empresaAIGuidance(snapshot empresaPermissionSnapshot) string {
 
 // Legacy context includes finance, customers and sales together. Restrict that
 // aggregate to users entitled to every included domain; other roles use tools.
-func (c *EmpresaAIChatController) roleScopedChatContext(empresaID int64, question, user, page, model string) (string, error) {
-	snapshot, err := getEmpresaPermissionSnapshot(c.dbEmp, c.dbSuper, user, empresaID)
+func (c *EmpresaAIChatController) roleScopedChatContext(r *http.Request, empresaID int64, question, user, page, model string) (string, error) {
+	snapshot, err := empresaAIRequestPermissionSnapshot(r, c.dbEmp, c.dbSuper, user, empresaID)
 	if err != nil || !snapshot.CanAccess {
 		return "", fmt.Errorf("contexto no autorizado")
 	}
@@ -151,7 +193,7 @@ func (c *EmpresaAIChatController) roleScopedChatContext(empresaID int64, questio
 		all = all && ok
 	}
 	if all {
-		opts := c.contextoPreguntaOptionsForAccount(empresaID, user, model)
+		opts := c.contextoPreguntaOptions(model)
 		// Arbitrary configuration/JSON tables may contain secrets or personal
 		// memory despite having empresa_id. Business tools provide other domains.
 		opts.DBQueryAllowedTables = map[string]bool{"productos": true, "categorias_productos": true, "bodegas": true, "inventario_existencias": true, "carritos_compras": true, "carrito_compra_items": true, "empresa_finanzas_movimientos": true}

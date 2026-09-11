@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -137,7 +138,7 @@ func enterpriseAIAgentModeEnabled() bool {
 }
 
 func enterpriseAIExecutionContext(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, user string) (aipkg.ExecutionContext, error) {
-	snapshot, err := getEmpresaPermissionSnapshot(dbEmp, dbSuper, user, empresaID)
+	snapshot, err := empresaAIRequestPermissionSnapshot(r, dbEmp, dbSuper, user, empresaID)
 	if err != nil || !snapshot.CanAccess {
 		return aipkg.ExecutionContext{}, sql.ErrNoRows
 	}
@@ -153,13 +154,22 @@ func enterpriseAIExecutionContext(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 	if mode == "" {
 		mode = aipkg.ModeAssisted
 	}
+	return aipkg.ExecutionContext{UserID: user, EmpresaID: empresaID, Role: role, Permissions: enterpriseAIPermissionsFromSnapshot(snapshot), ConversationID: conversationID, RequestID: requestID, Mode: mode, AuthorizedScope: []string{"current_company"}, MaxOperations: 1}, nil
+}
+
+func enterpriseAIPermissionsFromSnapshot(snapshot empresaPermissionSnapshot) []string {
 	permissions := make([]string, 0, len(snapshot.RoleModuleActions))
 	for permission, allowed := range snapshot.RoleModuleActions {
-		if allowed && isModuloPermitidoByLicencia(strings.SplitN(permission, ":", 2)[0], snapshot.AllowedModules) {
+		module, action, valid := strings.Cut(permission, ":")
+		if !allowed || !valid {
+			continue
+		}
+		if permitted, _ := empresaPermissionSnapshotAllowsAdditionalModule(snapshot, module, action, ""); permitted {
 			permissions = append(permissions, permission)
 		}
 	}
-	return aipkg.ExecutionContext{UserID: user, EmpresaID: empresaID, Role: role, Permissions: permissions, ConversationID: conversationID, RequestID: requestID, Mode: mode, AuthorizedScope: []string{"current_company"}, MaxOperations: 1}, nil
+	sort.Strings(permissions)
+	return permissions
 }
 
 func enterpriseAIRequireTool(ctx aipkg.ExecutionContext, toolName string) bool {
