@@ -1215,12 +1215,22 @@ func paginaPrincipalRequireSuperAdmin(w http.ResponseWriter, r *http.Request, db
 		http.Error(w, "unauthenticated", http.StatusUnauthorized)
 		return "", false
 	}
-	admin, err := dbpkg.GetAdminByEmail(dbSuper, strings.TrimSpace(session.AdminEmail))
+	// Ambas identidades usan la misma cookie. Un correo coincidente nunca
+	// convierte una sesión operativa empresarial en una sesión administrativa.
+	if !strings.EqualFold(strings.TrimSpace(session.PrincipalType), "admin") || session.EmpresaID != 0 {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return "", false
+	}
+	admin, err := dbpkg.GetAdminAuthorizationIdentity(dbSuper, strings.TrimSpace(session.AdminEmail))
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "unauthenticated", http.StatusUnauthorized)
+		return "", false
+	}
 	if err != nil {
 		http.Error(w, "failed to resolve admin session", http.StatusInternalServerError)
 		return "", false
 	}
-	if admin == nil {
+	if admin == nil || (session.PrincipalID > 0 && session.PrincipalID != admin.ID) {
 		http.Error(w, "unauthenticated", http.StatusUnauthorized)
 		return "", false
 	}
