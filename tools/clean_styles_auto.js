@@ -15,7 +15,6 @@ const filesToClean = [
   "web/administrar_empresa/configuracion_de_estaciones.html",
   "web/administrar_empresa/creditos.html",
   "web/administrar_empresa/estaciones.html",
-  "web/administrar_empresa/estacion_ia_pedidos.html",
   "web/administrar_empresa/facturacion_electronica.html",
   "web/administrar_empresa/facturas_electronicas.html",
   "web/administrar_empresa/finanzas.html",

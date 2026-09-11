@@ -194,7 +194,7 @@ siendo una capa de entrada/salida separada; el modelo principal devuelve texto.
 ## Agente PCS permanente
 
 La experiencia empresarial no muestra selector ni interruptor de agente. El
-servidor fuerza `agente_pcs` para chat, adjuntos, Centro IA y Pedidos IA. El
+servidor fuerza `agente_pcs` para chat, adjuntos y Centro IA. El
 agente identifica el módulo según la intención y el contexto autorizado; no
 recibe `empresa_id`, rol, permiso ni confirmación desde el modelo como campos de
 autoridad.

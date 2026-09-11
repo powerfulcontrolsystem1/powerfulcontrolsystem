@@ -165,8 +165,8 @@ Actualizacion 2026-06-18 (limites agentes por empresa)
 - Nueva tabla en base empresarial: `empresa_agentes_uso_diario`, con
   `empresa_id`, `fecha_uso`, `segundos_usados`, `consultas_avanzadas` y
   `consultas_ligeras`. Permite controlar el consumo diario de `agente_internet`,
-  agentes del Chat IA empresarial, Centro IA empresarial, Pedidos con IA y
-  futuros agentes empresariales por empresa.
+  agentes del Chat IA empresarial, Centro IA empresarial y futuros agentes
+  empresariales por empresa.
 - Configuracion global super:
   - `agentes.empresa.limite_segundos_diarios` default `120`.
   - `agentes.empresa.limite_consultas_avanzadas_diarias` default `5`.
@@ -2689,3 +2689,12 @@ reconciliación operativa explícita.
   solo para ventas pagadas activas con clave no vacia.
 - Los eventos historicos sin clave permanecen intactos y fuera del indice; no
   se eliminan, anulan ni reasignan asientos durante la migracion.
+
+## 2026-09-11 - Visibilidad individual en tarjetas de estaciones
+
+- No se agregan tablas ni columnas fisicas. Se reutiliza
+  `empresa_estacion_prefs` con `estacion_id=0` y `clave='estaciones_config'`.
+- Cada elemento de `estaciones_config.estaciones[]` admite
+  `mostrar_fecha_hora_inicio`, `mostrar_fecha_hora_fin_tarifa` y
+  `mostrar_cliente_nombre`. La interfaz normaliza valores ausentes como visibles
+  y los guarda siempre dentro de la empresa autenticada.

@@ -3221,7 +3221,6 @@ func isCajeroCartAuxiliaryAPIRequest(role, requestPath string) bool {
 		"/api/empresa/chat_con_inteligencia_artificial/consultar_con_adjunto",
 		"/api/empresa/chat_con_inteligencia_artificial/consultar_stream",
 		"/api/empresa/chat_con_inteligencia_artificial/historial",
-		"/api/empresa/ia_pedidos_estacion/ejecutar",
 		"/api/empresa/ia_radio/activar":
 		return true
 	default:

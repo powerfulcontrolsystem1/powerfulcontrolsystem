@@ -280,7 +280,6 @@
         visible.caja_enabled = false;
         visible.youtube_enabled = false;
         visible.notas_enabled = false;
-        visible.ia_pedidos_enabled = false;
         visible.camaras_enabled = false;
       }
       return visible;
@@ -372,6 +371,7 @@
           nombre: nombre || (labels.singular + ' ' + (i + 1)),
           mostrar_fecha_hora_inicio: current.mostrar_fecha_hora_inicio === undefined ? true : toBool(current.mostrar_fecha_hora_inicio),
           mostrar_fecha_hora_fin_tarifa: current.mostrar_fecha_hora_fin_tarifa === undefined ? true : toBool(current.mostrar_fecha_hora_fin_tarifa),
+          mostrar_cliente_nombre: current.mostrar_cliente_nombre === undefined ? true : toBool(current.mostrar_cliente_nombre),
           mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total),
           tipo_operacion: normalizeStationOperationType(current.tipo_operacion || current.operacion_tipo),
           descripcion: String(current.descripcion || current.informacion || '').trim(),
@@ -409,9 +409,6 @@
       const notas_repeat_minutes = normalizeNotesRepeatMinutes(cfg && (cfg.notas_repeat_minutes !== undefined ? cfg.notas_repeat_minutes : cfg.notasRepeatMinutes));
       const notas_beep_enabled = cfg && (cfg.notas_beep_enabled !== undefined ? cfg.notas_beep_enabled : cfg.notasBeepEnabled);
       const notas_blink_enabled = cfg && (cfg.notas_blink_enabled !== undefined ? cfg.notas_blink_enabled : cfg.notasBlinkEnabled);
-      const iaPedidosEnabledRaw = (cfg && (cfg.ia_pedidos_enabled !== undefined ? cfg.ia_pedidos_enabled : cfg.iaPedidosEnabled)) || false;
-      const ia_pedidos_enabled = toBool(iaPedidosEnabledRaw);
-      const ia_pedidos_placement = normalizeSpecialPlacement(cfg && (cfg.ia_pedidos_placement !== undefined ? cfg.ia_pedidos_placement : cfg.iaPedidosPlacement));
       const camarasEnabledRaw = (cfg && (cfg.camaras_enabled !== undefined ? cfg.camaras_enabled : cfg.camarasEnabled)) || false;
       const camaras_enabled = toBool(camarasEnabledRaw);
       const camaras_placement = normalizeSpecialPlacement(cfg && (cfg.camaras_placement !== undefined ? cfg.camaras_placement : cfg.camarasPlacement));
@@ -437,8 +434,6 @@
         notas_repeat_minutes,
         notas_beep_enabled: notas_beep_enabled === undefined ? true : toBool(notas_beep_enabled),
         notas_blink_enabled: notas_blink_enabled === undefined ? true : toBool(notas_blink_enabled),
-        ia_pedidos_enabled,
-        ia_pedidos_placement,
         camaras_enabled,
         camaras_placement,
         carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global)),
@@ -809,7 +804,7 @@
       const grid = document.getElementById('estacionesGrid');
       if (!grid || !grid.classList.contains('station-size-auto_text')) return;
       const cards = Array.from(grid.querySelectorAll(
-        '.portal-card, .youtube-station-card, .notas-station-card, .ia-pedidos-station-card'
+        '.portal-card, .youtube-station-card, .notas-station-card'
       )).filter(function(card) {
         return card && card.offsetParent !== null;
       });
@@ -1282,7 +1277,7 @@
     const inicio = activo && cfg.mostrar_fecha_hora_inicio !== false ? formatStationEntryDateTime(data && data.activadoEn) : '';
     const fin = activo && cfg.mostrar_fecha_hora_fin_tarifa !== false ? resolveFinLabel(data) : '';
     const total = activo && cfg.mostrar_total !== false ? formatMoney(data && typeof data.total !== 'undefined' ? data.total : 0) : '';
-    const cliente = activo && state.stationCardUI.mostrar_cliente_nombre !== false ? String((data && data.clienteNombre) || '').trim() : '';
+    const cliente = activo && cfg.mostrar_cliente_nombre !== false && state.stationCardUI.mostrar_cliente_nombre !== false ? String((data && data.clienteNombre) || '').trim() : '';
     const tarifaResumen = state.stationCardUI.mostrar_tarifa_resumen !== false ? buildTarifaResumen(data, cfg) : '';
     const horaExtra = activo && state.stationCardUI.mostrar_hora_extra !== false ? buildHoraExtraLabel(data) : '';
     const duracionActiva = activo ? formatStationActiveDuration(data && data.activadoEn) : '';
@@ -1691,23 +1686,6 @@
         params.set('compact', '1');
       }
       return '/administrar_empresa/youtube_station_browser.html?' + params.toString();
-    }
-
-    function buildIAPedidosStationURL() {
-      const params = new URLSearchParams();
-      if (empresaId) params.set('empresa_id', String(empresaId));
-      return '/administrar_empresa/estacion_ia_pedidos.html?' + params.toString();
-    }
-
-    function generateIAPedidosCardHtml() {
-      const src = sanitize(buildIAPedidosStationURL());
-      return '<article class="portal-card station-card-inactive ia-pedidos-station-card" id="iaPedidosStationCard" data-special-station="ia_pedidos" aria-label="Pedidos con IA">' +
-        '<div class="ia-pedidos-station-head">' +
-          '<h3>Pedidos con IA</h3>' +
-          '<p>Escribe o dicta pedidos del tipo: «dos cervezas para la mesa 5» o «agregar agua a la estación 2».</p>' +
-        '</div>' +
-        '<iframe class="ia-pedidos-station-frame" src="' + src + '" title="Pedidos con inteligencia artificial" loading="lazy" tabindex="-1"></iframe>' +
-      '</article>';
     }
 
     function generateCajaCardHtml() {
@@ -2351,7 +2329,7 @@
       const grid = document.getElementById('estacionesGrid');
       const labels = normalizeStationLabels(baseConfig);
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
-        if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled) && !(cfg && cfg.notas_enabled) && !(cfg && cfg.ia_pedidos_enabled) && !(cfg && cfg.camaras_enabled)) {
+        if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled) && !(cfg && cfg.notas_enabled) && !(cfg && cfg.camaras_enabled)) {
           grid.innerHTML = '<p class="form-help">No hay ' + sanitize(labels.pluralLower) + ' configuradas. Ve a Configuración de ' + sanitize(labels.pluralLower) + ' para crearlas.</p>';
           applyStationLabelsToDOM(cfg, grid);
           return;
@@ -2369,7 +2347,6 @@
       pushSpecial(cfg && cfg.caja_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.caja_enabled, () => generateCajaCardHtml());
       pushSpecial(cfg && cfg.youtube_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.youtube_enabled, () => generateYouTubeCardHtml(cfg));
       pushSpecial(cfg && cfg.notas_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.notas_enabled, () => generateNotasCardHtml(cfg));
-      pushSpecial(cfg && cfg.ia_pedidos_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.ia_pedidos_enabled, () => generateIAPedidosCardHtml());
       pushSpecial(cfg && cfg.camaras_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.camaras_enabled, () => generateCamarasCardsHtml());
 
       html += beforeSpecial.join('');
@@ -2742,14 +2719,6 @@
         });
       }
 
-      const iaPedidosCard = document.getElementById('iaPedidosStationCard');
-      if (iaPedidosCard) {
-        iaPedidosCard.addEventListener('click', ev => {
-          if (ev.target && ev.target.closest && ev.target.closest('iframe')) {
-            ev.stopPropagation();
-          }
-        });
-      }
     }
 
     function wireEstacionesMobileThumbToggle() {
