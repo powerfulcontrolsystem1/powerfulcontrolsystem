@@ -2492,6 +2492,11 @@ func permissionRoleDescription(role string) string {
 }
 
 func roleAllowsModuleAction(role, module, action string) bool {
+	// New catalog roles start with no implicit grants, including personal
+	// modules. Persisted permissions for their exact role ID are applied later.
+	if !isKnownPermissionRole(role) {
+		return false
+	}
 	if role == "super_administrador" {
 		return true
 	}

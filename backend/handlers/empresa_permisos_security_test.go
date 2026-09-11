@@ -15,6 +15,21 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
+func TestNewRoleDefaultsDenyEveryModuleIncludingVida(t *testing.T) {
+	for _, role := range []string{"rol_futuro", "mesero", "", "sin_rol"} {
+		for _, row := range buildPermissionModuleMatrixForRole(role) {
+			for action, allowed := range row.Acciones {
+				if allowed {
+					t.Fatalf("unconfigured role %q implicitly received %s:%s", role, row.Modulo, action)
+				}
+			}
+		}
+	}
+	if !roleAllowsModuleAction("vendedor", permModuleVida, permActionRead) {
+		t.Fatal("known role defaults should retain their existing personal module policy")
+	}
+}
+
 func TestOperationalPermissionsNeverRestoreDeniedActions(t *testing.T) {
 	for _, role := range []string{"cajero", "portero", "contador", "empresario", "servicio_limpieza", "tecnico_solar", "jefe_bodega", "responsable_bodega", "recursos_humanos"} {
 		t.Run(role, func(t *testing.T) {
