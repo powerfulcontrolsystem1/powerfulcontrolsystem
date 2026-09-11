@@ -121,6 +121,46 @@ func TestEmpresaPermissionRolesPostgresIsolationAndRevocation(t *testing.T) {
 		}
 	}
 
+	// Administrative sessions have no assigned tenant role ID. Their template
+	// must still respect the company's type instead of a same-name foreign row.
+	exec(`INSERT INTO tipos_de_empresas (id,nombre) VALUES (10,'QA A'),(20,'QA B')`)
+	exec(`UPDATE empresas SET tipo_id=CASE WHEN empresa_id=101 THEN 10 ELSE 20 END`)
+	exec(`INSERT INTO roles_de_usuario (id,nombre,tipo_empresa_id) VALUES (30,'admin_empresa',0),(31,'admin_empresa',10),(32,'admin_empresa',20)`)
+	exec(`INSERT INTO roles_de_usuario_permisos (rol_id,modulo,accion,permitido) VALUES (30,'ventas','C',0),(30,'inventario','C',0),(31,'ventas','C',0),(32,'inventario','C',0)`)
+	_, adminA, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 0, "admin_empresa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, adminB, _, err := loadEmpresaRolePermissionMatrix(conn, 202, 0, "admin_empresa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if findPermissionModuleRowForTest(t, adminA, permModuleVentas).Create || !findPermissionModuleRowForTest(t, adminA, permModuleInventario).Create || !findPermissionModuleRowForTest(t, adminB, permModuleVentas).Create || findPermissionModuleRowForTest(t, adminB, permModuleInventario).Create {
+		t.Fatal("administrative template mixed company types or discarded a denial")
+	}
+	exec(`INSERT INTO roles_de_usuario (id,nombre,tipo_empresa_id) VALUES (33,'admin_empresa',10)`)
+	if _, _, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 0, "admin_empresa"); err == nil {
+		t.Fatal("ambiguous administrative templates must not select an arbitrary ID")
+	}
+	exec(`UPDATE roles_de_usuario SET estado='inactivo' WHERE id IN (31,33)`)
+	if _, _, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 0, "admin_empresa"); err == nil {
+		t.Fatal("inactive typed template must not restore unrestricted defaults or universal grants")
+	}
+	exec(`UPDATE empresas SET tipo_id=0`)
+	_, universalAdmin, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 0, "admin_empresa")
+	if err != nil || findPermissionModuleRowForTest(t, universalAdmin, permModuleVentas).Create || findPermissionModuleRowForTest(t, universalAdmin, permModuleInventario).Create {
+		t.Fatalf("universal template restrictions were lost: %v", err)
+	}
+	exec(`INSERT INTO roles_de_usuario (id,nombre,tipo_empresa_id) VALUES (34,'supervisor_sucursal',20)`)
+	exec(`INSERT INTO roles_de_usuario_permisos (rol_id,modulo,accion,permitido) VALUES (34,'ventas','R',0)`)
+	_, defaultSupervisor, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 0, "supervisor_sucursal")
+	if err != nil || !findPermissionModuleRowForTest(t, defaultSupervisor, permModuleVentas).Read {
+		t.Fatalf("missing template should preserve known standard policy: %v", err)
+	}
+	if _, _, _, err := loadEmpresaRolePermissionMatrix(conn, 999, 0, "admin_empresa"); err == nil {
+		t.Fatal("missing company must not be treated as a missing optional template")
+	}
+
 	exec(`UPDATE roles_de_usuario_permisos SET permitido=0 WHERE rol_id=11 AND modulo='inventario' AND accion='C'`)
 	_, revoked, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 11, "admin_empresa")
 	if err != nil {

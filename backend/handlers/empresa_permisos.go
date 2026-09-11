@@ -4199,15 +4199,15 @@ func loadEmpresaRolePermissionMatrix(dbSuper *sql.DB, empresaID, roleID int64, f
 		}
 		ids = append(ids, assigned.ID)
 	} else if dbSuper != nil && role != "super_administrador" && isKnownPermissionRole(role) {
-		id, err := dbpkg.ResolveRolDeUsuarioIDByNombre(dbSuper, role)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		id, err := dbpkg.ResolveRolDeUsuarioIDByNombreEmpresaScope(dbSuper, empresaID, role)
+		if err != nil {
 			return "", nil, nil, err
 		}
-		if err == nil {
+		if id > 0 {
 			ids = append(ids, id)
 		}
 	}
-	rows := restrictPermissionModuleRowsForOperationalRole(role, buildPermissionModuleMatrixForRole(role))
+	rows := buildRolPermissionEditorModuleRows(role, nil)
 	pageOverrides := map[string]bool{}
 	if len(ids) > 0 {
 		modules, err := dbpkg.ListRolesPermisosModuloByRolIDEmpresaScope(dbSuper, empresaID, ids)
@@ -4218,17 +4218,7 @@ func loadEmpresaRolePermissionMatrix(dbSuper *sql.DB, empresaID, roleID int64, f
 		if err != nil {
 			return "", nil, nil, err
 		}
-		for _, item := range modules {
-			for idx := range rows {
-				if rows[idx].Modulo == item.Modulo {
-					setPermissionActionOnModuleRow(&rows[idx], item.Accion, item.Permitido)
-					if rows[idx].deniedActions == nil {
-						rows[idx].deniedActions = map[string]bool{}
-					}
-					rows[idx].deniedActions[item.Accion] = !item.Permitido
-				}
-			}
-		}
+		rows = buildRolPermissionEditorModuleRows(role, modules)
 		for _, page := range pages {
 			pageOverrides[page.PaginaClave] = page.Permitido
 		}
