@@ -25,6 +25,32 @@ func TestEmpresaRolPermissionHandlerRequiresValidatedTenant(t *testing.T) {
 	}
 }
 
+func TestSuperRoleEditorOperationalDefaultsRequireExplicitGrants(t *testing.T) {
+	find := func(rows []permissionModuleMatrixRow, module, action string) bool {
+		for _, row := range rows {
+			if row.Modulo == module {
+				return row.Acciones[action]
+			}
+		}
+		t.Fatalf("missing module %s", module)
+		return false
+	}
+	defaults := buildRolPermissionEditorModuleRows("cajero", nil)
+	if find(defaults, "seguridad", "R") || find(defaults, "ventas", "D") {
+		t.Fatal("editor silently expanded cashier operational defaults")
+	}
+	if !find(defaults, "ventas", "R") || !find(defaults, "inventario", "R") {
+		t.Fatal("cashier operational reads were lost")
+	}
+	configured := buildRolPermissionEditorModuleRows("cajero", []dbpkg.RolPermisoModulo{{Modulo: "seguridad", Accion: "R", Permitido: true}, {Modulo: "ventas", Accion: "C", Permitido: false}})
+	if !find(configured, "seguridad", "R") || find(configured, "ventas", "C") {
+		t.Fatal("explicit administrator grant or denial was ignored")
+	}
+	if find(configured, "ventas", "D") {
+		t.Fatal("saving an unrelated explicit grant expanded delete")
+	}
+}
+
 func TestEmpresaRoleEditorPostgresRoundTripPreservesInheritedDenials(t *testing.T) {
 	dsn := os.Getenv("PCS_TEST_POSTGRES_DSN")
 	if dsn == "" {

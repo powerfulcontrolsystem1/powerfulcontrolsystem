@@ -70,8 +70,8 @@ func GetRolDeUsuarioByID(dbConn *sql.DB, id int64) (*RolDeUsuario, error) {
 }
 
 func getRolDeUsuarioByIDScoped(dbConn *sql.DB, id, empresaID int64, onlyEmpresa bool) (*RolDeUsuario, error) {
-	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
-		return nil, err
+	if dbConn == nil {
+		return nil, errors.New("conexion de roles no disponible")
 	}
 	q := `SELECT
 		r.id,
@@ -214,18 +214,134 @@ func ListRolPermisosPaginaByRolID(dbConn *sql.DB, rolID int64) ([]RolPermisoPagi
 
 // ListRolPermisosModuloByRolIDEmpresaScope lee únicamente roles globales o propios.
 func ListRolPermisosModuloByRolIDEmpresaScope(dbConn *sql.DB, empresaID, rolID int64) ([]RolPermisoModulo, error) {
-	if _, err := GetRolDeUsuarioByIDEmpresaScope(dbConn, empresaID, rolID); err != nil {
-		return nil, err
-	}
-	return ListRolPermisosModuloByRolID(dbConn, rolID)
+	return ListRolesPermisosModuloByRolIDEmpresaScope(dbConn, empresaID, []int64{rolID})
 }
 
 // ListRolPermisosPaginaByRolIDEmpresaScope aplica el mismo alcance a las páginas.
 func ListRolPermisosPaginaByRolIDEmpresaScope(dbConn *sql.DB, empresaID, rolID int64) ([]RolPermisoPagina, error) {
-	if _, err := GetRolDeUsuarioByIDEmpresaScope(dbConn, empresaID, rolID); err != nil {
+	return ListRolesPermisosPaginaByRolIDEmpresaScope(dbConn, empresaID, []int64{rolID})
+}
+
+// ListRolesPermisosModuloByRolIDEmpresaScope carga la cadena de herencia en una
+// consulta. LEFT JOIN distingue un rol sin reglas de un ID ajeno o inactivo.
+// La salida respeta el orden de rolIDs para que el personalizado prevalezca.
+func ListRolesPermisosModuloByRolIDEmpresaScope(dbConn *sql.DB, empresaID int64, rolIDs []int64) ([]RolPermisoModulo, error) {
+	clause, args, ids, err := rolesPermissionScope(empresaID, rolIDs)
+	if err != nil {
 		return nil, err
 	}
-	return ListRolPermisosPaginaByRolID(dbConn, rolID)
+	if len(ids) == 0 {
+		return []RolPermisoModulo{}, nil
+	}
+	if dbConn == nil {
+		return nil, errors.New("conexion de permisos no disponible")
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT r.id, COALESCE(p.modulo, ''), COALESCE(p.accion, ''), COALESCE(p.permitido, 1)
+		FROM roles_de_usuario r
+		LEFT JOIN roles_de_usuario_permisos p ON p.rol_id = r.id AND COALESCE(p.estado, 'activo') = 'activo'
+		WHERE `+clause+` ORDER BY p.modulo, p.accion`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	byRole := map[int64][]RolPermisoModulo{}
+	for rows.Next() {
+		var item RolPermisoModulo
+		var allowed int
+		if err := rows.Scan(&item.RolID, &item.Modulo, &item.Accion, &allowed); err != nil {
+			return nil, err
+		}
+		if _, seen := byRole[item.RolID]; !seen {
+			byRole[item.RolID] = nil
+		}
+		item.Modulo, item.Accion = strings.ToLower(strings.TrimSpace(item.Modulo)), strings.ToUpper(strings.TrimSpace(item.Accion))
+		item.Permitido = allowed != 0
+		if item.Modulo != "" && isValidPermisoAccion(item.Accion) {
+			byRole[item.RolID] = append(byRole[item.RolID], item)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(byRole) != len(ids) {
+		return nil, sql.ErrNoRows
+	}
+	out := []RolPermisoModulo{}
+	for _, id := range ids {
+		out = append(out, byRole[id]...)
+	}
+	return out, nil
+}
+
+// ListRolesPermisosPaginaByRolIDEmpresaScope aplica el mismo alcance y orden a páginas.
+func ListRolesPermisosPaginaByRolIDEmpresaScope(dbConn *sql.DB, empresaID int64, rolIDs []int64) ([]RolPermisoPagina, error) {
+	clause, args, ids, err := rolesPermissionScope(empresaID, rolIDs)
+	if err != nil {
+		return nil, err
+	}
+	if len(ids) == 0 {
+		return []RolPermisoPagina{}, nil
+	}
+	if dbConn == nil {
+		return nil, errors.New("conexion de permisos no disponible")
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT r.id, COALESCE(p.pagina_clave, ''), COALESCE(p.permitido, 1)
+		FROM roles_de_usuario r
+		LEFT JOIN roles_de_usuario_paginas_permisos p ON p.rol_id = r.id AND COALESCE(p.estado, 'activo') = 'activo'
+		WHERE `+clause+` ORDER BY p.pagina_clave`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	byRole := map[int64][]RolPermisoPagina{}
+	for rows.Next() {
+		var item RolPermisoPagina
+		var allowed int
+		if err := rows.Scan(&item.RolID, &item.PaginaClave, &allowed); err != nil {
+			return nil, err
+		}
+		if _, seen := byRole[item.RolID]; !seen {
+			byRole[item.RolID] = nil
+		}
+		item.PaginaClave, item.Permitido = strings.TrimSpace(item.PaginaClave), allowed != 0
+		if item.PaginaClave != "" {
+			byRole[item.RolID] = append(byRole[item.RolID], item)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(byRole) != len(ids) {
+		return nil, sql.ErrNoRows
+	}
+	out := []RolPermisoPagina{}
+	for _, id := range ids {
+		out = append(out, byRole[id]...)
+	}
+	return out, nil
+}
+
+func rolesPermissionScope(empresaID int64, input []int64) (string, []interface{}, []int64, error) {
+	if empresaID <= 0 {
+		return "", nil, nil, sql.ErrNoRows
+	}
+	ids := []int64{}
+	seen := map[int64]bool{}
+	placeholders := []string{}
+	args := []interface{}{empresaID}
+	for _, id := range input {
+		if id <= 0 {
+			return "", nil, nil, sql.ErrNoRows
+		}
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		ids = append(ids, id)
+		args = append(args, id)
+		placeholders = append(placeholders, "?")
+	}
+	return `COALESCE(r.empresa_id, 0) IN (0, ?) AND COALESCE(r.estado, 'activo') = 'activo' AND r.id IN (` + strings.Join(placeholders, ",") + `)`, args, ids, nil
 }
 
 // ReplaceEmpresaRolPermisosDeUsuario nunca modifica roles globales ni de otro tenant.

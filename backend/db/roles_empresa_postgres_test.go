@@ -188,3 +188,58 @@ func TestEmpresaRolesPostgresMissingPermissionTablesFailClosed(t *testing.T) {
 		t.Fatal("missing enterprise pages silently ignored")
 	}
 }
+
+func TestEmpresaRolesPostgresBatchOverridesPreserveOrderAndTenant(t *testing.T) {
+	conn := empresaRolesTestDB(t)
+	base, err := CreateRolDeUsuario(conn, 1, "cajero", "", "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, err := CreateEmpresaRolDeUsuario(conn, 71001, "Batch QA", "", base, "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := CreateEmpresaRolDeUsuario(conn, 71002, "Batch QA", "", base, "qa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceRolPermisosDeUsuario(conn, base, []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: true}}, []RolPermisoPagina{{PaginaClave: "linkEstaciones", Permitido: true}}, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReplaceEmpresaRolPermisosDeUsuario(conn, 71001, role, []RolPermisoModulo{{Modulo: "ventas", Accion: "C", Permitido: false}}, []RolPermisoPagina{{PaginaClave: "linkEstaciones", Permitido: false}}, "qa"); err != nil {
+		t.Fatal(err)
+	}
+	for _, ids := range [][]int64{{base, role}, {role, base}, {base, base, role}} {
+		m, err := ListRolesPermisosModuloByRolIDEmpresaScope(conn, 71001, ids)
+		if err != nil {
+			t.Fatal(err)
+		}
+		p, err := ListRolesPermisosPaginaByRolIDEmpresaScope(conn, 71001, ids)
+		if err != nil {
+			t.Fatal(err)
+		}
+		first, last := ids[0], ids[len(ids)-1]
+		if len(m) != 2 || len(p) != 2 || m[0].RolID != first || p[0].RolID != first || m[1].RolID != last || p[1].RolID != last {
+			t.Fatalf("batch did not preserve inheritance order: modules=%v pages=%v", m, p)
+		}
+		if m[1].Permitido != (last == base) || p[1].Permitido != (last == base) {
+			t.Fatal("batch changed explicit deny/grant")
+		}
+	}
+	if m, err := ListRolesPermisosModuloByRolIDEmpresaScope(conn, 71001, []int64{base, other}); !errors.Is(err, sql.ErrNoRows) || m != nil {
+		t.Fatal("mixed valid/foreign chain exposed permissions")
+	}
+	if p, err := ListRolesPermisosPaginaByRolIDEmpresaScope(conn, 71001, []int64{base, other}); !errors.Is(err, sql.ErrNoRows) || p != nil {
+		t.Fatal("mixed valid/foreign chain exposed pages")
+	}
+	m, err := ListRolesPermisosModuloByRolIDEmpresaScope(conn, 71002, []int64{other})
+	if err != nil || len(m) != 0 {
+		t.Fatal("valid role without overrides must remain an empty matrix")
+	}
+	if err := SetEmpresaRolDeUsuarioEstado(conn, 71001, role, "inactivo"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ListRolesPermisosModuloByRolIDEmpresaScope(conn, 71001, []int64{base, role}); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatal("inactive role in batch accepted")
+	}
+}

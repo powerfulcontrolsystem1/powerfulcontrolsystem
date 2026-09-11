@@ -155,24 +155,12 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			modulos := buildPermissionModuleMatrixForRole(rol.Nombre)
 			moduleItems, err := dbpkg.ListRolPermisosModuloByRolID(dbSuper, rol.ID)
 			if err != nil {
 				http.Error(w, "failed to load modulo permisos: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			moduleOverrides := make(map[string]bool, len(moduleItems))
-			for _, item := range moduleItems {
-				moduleOverrides[permissionModuleActionKey(item.Modulo, item.Accion)] = item.Permitido
-			}
-			for idx := range modulos {
-				row := &modulos[idx]
-				for _, action := range permissionActionsCatalogOrdered {
-					if permitido, ok := moduleOverrides[permissionModuleActionKey(row.Modulo, action)]; ok {
-						setPermissionActionOnModuleRow(row, action, permitido)
-					}
-				}
-			}
+			modulos := buildRolPermissionEditorModuleRows(rol.Nombre, moduleItems)
 
 			pageItems, err := dbpkg.ListRolPermisosPaginaByRolID(dbSuper, rol.ID)
 			if err != nil {
@@ -260,6 +248,24 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+// La matriz inicial del editor conserva las restricciones operativas; sólo una
+// regla persistida explícita puede ampliar esos permisos.
+func buildRolPermissionEditorModuleRows(role string, overrides []dbpkg.RolPermisoModulo) []permissionModuleMatrixRow {
+	rows := restrictPermissionModuleRowsForOperationalRole(role, buildPermissionModuleMatrixForRole(role))
+	byKey := make(map[string]bool, len(overrides))
+	for _, item := range overrides {
+		byKey[permissionModuleActionKey(item.Modulo, item.Accion)] = item.Permitido
+	}
+	for idx := range rows {
+		for _, action := range permissionActionsCatalogOrdered {
+			if allowed, ok := byKey[permissionModuleActionKey(rows[idx].Modulo, action)]; ok {
+				setPermissionActionOnModuleRow(&rows[idx], action, allowed)
+			}
+		}
+	}
+	return rows
 }
 
 // EmpresaRolDeUsuarioPermisosHandler se invoca desde el wrapper de seguridad
