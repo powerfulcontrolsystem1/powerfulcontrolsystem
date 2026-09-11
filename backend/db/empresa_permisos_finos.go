@@ -80,9 +80,6 @@ func ListEmpresaPermisosModuloByEmpresaID(dbConn *sql.DB, empresaID int64) ([]Em
 
 	rows, err := dbConn.Query(q, empresaID)
 	if err != nil {
-		if isMissingTableError(err) {
-			return []EmpresaPermisoModulo{}, nil
-		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -118,9 +115,6 @@ func ListEmpresaPermisosPaginaByEmpresaID(dbConn *sql.DB, empresaID int64) ([]Em
 
 	rows, err := dbConn.Query(q, empresaID)
 	if err != nil {
-		if isMissingTableError(err) {
-			return []EmpresaPermisoPagina{}, nil
-		}
 		return nil, err
 	}
 	defer rows.Close()

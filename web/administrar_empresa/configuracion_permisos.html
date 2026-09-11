@@ -56,14 +56,17 @@
         <div class="empresa-section-header">
           <div>
             <h2 class="empresa-title" style="font-size:1.15rem;">Control fino por empresa</h2>
-            <p class="form-help">Estas reglas son el techo de la empresa: si aquí se desactiva una acción o una página, ningún rol puede usarla aunque el rol la tenga permitida.</p>
+            <p class="form-help">Estas reglas limitan las acciones de toda la empresa. La visibilidad de páginas organiza el menú; configura las acciones del módulo para restringir operaciones de su API. Los permisos de cada rol personalizado se editan en Administrar usuarios.</p>
           </div>
           <div class="empresa-inline-actions">
-            <button id="btnEnableAllEmpresaPerms" class="btn secondary" type="button">Activar todo</button>
-            <button id="btnSaveEmpresaPerms" class="btn primary" type="button">Guardar techo empresa</button>
+            <button id="btnEnableAllEmpresaPerms" class="btn secondary" type="button" disabled>Activar todo</button>
+            <button id="btnSaveEmpresaPerms" class="btn primary" type="button" disabled>Guardar techo empresa</button>
           </div>
         </div>
 
+        <label class="form-label" for="empresaPermisosSearch">Buscar módulo o página</label>
+        <input id="empresaPermisosSearch" class="form-input" type="search" placeholder="Nombre, grupo o módulo" autocomplete="off">
+        <p id="empresaPermisosCount" class="form-help" role="status" aria-live="polite"></p>
         <div class="table-wrap">
           <table class="table" id="empresaPermisosModulesTable">
             <thead>
@@ -87,13 +90,13 @@
         </div>
       </section>
 
-      <div id="permisosMsg" class="form-help" ></div>
+      <div id="permisosMsg" class="form-help" role="status" aria-live="polite"></div>
     </section>
   </div>
 
   <script>
     (function(){
-      var empresaPermisosState = { modulos: [], paginas: [], accionesEtiqueta: {}, modulosEtiqueta: {} };
+      var empresaPermisosState = { modulos: [], paginas: [], accionesEtiqueta: {}, modulosEtiqueta: {}, loaded: false, busy: false, canEdit: false, snapshot: '' };
       var actionMap = [
         ['R', 'read', 'Leer'],
         ['C', 'create', 'Crear'],
@@ -131,6 +134,20 @@
         box.className = isError ? 'error' : 'form-help';
       }
       function boolChip(value){ return value ? 'Sí' : 'No'; }
+      function updateControls(){
+        var disabled = !empresaPermisosState.loaded || empresaPermisosState.busy || !empresaPermisosState.canEdit;
+        document.getElementById('btnSaveEmpresaPerms').disabled = disabled;
+        document.getElementById('btnEnableAllEmpresaPerms').disabled = disabled;
+        document.getElementById('btnReloadPermisos').disabled = empresaPermisosState.busy;
+        document.querySelectorAll('input[data-empresa-mod-index],input[data-empresa-page-index]').forEach(function(input){ input.disabled = disabled; });
+      }
+      function filterEmpresaPermisos(){
+        var query = document.getElementById('empresaPermisosSearch').value.trim().toLocaleLowerCase('es');
+        var rows = document.querySelectorAll('#empresaPermisosModulesBody tr[data-mod-index],#empresaPermisosPagesBody tr[data-page-index]');
+        var visible = 0;
+        rows.forEach(function(row){ row.hidden = !!query && row.textContent.toLocaleLowerCase('es').indexOf(query) < 0; if (!row.hidden) visible += 1; });
+        document.getElementById('empresaPermisosCount').textContent = visible + ' de ' + rows.length + ' reglas visibles';
+      }
       function labelMódulo(modulo){ return (empresaPermisosState.modulosEtiqueta && empresaPermisosState.modulosEtiqueta[modulo]) || modulo || '-'; }
       function labelModuloPagina(item){
         var modules = Array.isArray(item && item.any_modules) ? item.any_modules.map(function(mod){ return String(mod || '').trim(); }).filter(Boolean) : [];
@@ -170,7 +187,7 @@
                 '<td>' + escapeHtml(labelMódulo(item.modulo)) + '<br><code>' + escapeHtml(item.modulo || '') + '</code></td>' +
                 actionMap.map(function(pair){
                   var action = pair[0], prop = pair[1];
-                  return '<td><label class="mode-switch-row" style="justify-content:center;"><input type="checkbox" data-empresa-mod-index="' + idx + '" data-empresa-action="' + action + '"' + (item[prop] ? ' checked' : '') + '><span class="sr-only">' + escapeHtml(pair[2]) + '</span></label></td>';
+                  return '<td><label class="mode-switch-row" style="justify-content:center;"><input type="checkbox" aria-label="' + escapeHtml(pair[2] + ' en ' + labelMódulo(item.modulo)) + '" data-empresa-mod-index="' + idx + '" data-empresa-action="' + action + '"' + (item[prop] ? ' checked' : '') + '><span class="sr-only">' + escapeHtml(pair[2]) + '</span></label></td>';
                 }).join('') +
               '</tr>';
             }).join('');
@@ -186,11 +203,13 @@
                 '<td>' + escapeHtml(item.titulo || item.pagina_clave || '-') + '<br><code>' + escapeHtml(item.pagina_clave || '') + '</code></td>' +
                 '<td>' + escapeHtml(item.grupo || '-') + '</td>' +
                 '<td>' + labelModuloPagina(item) + '</td>' +
-                '<td><label class="mode-switch-row" style="justify-content:center;"><input type="checkbox" data-empresa-page-index="' + idx + '"' + (item.permitido ? ' checked' : '') + '><span class="sr-only">Visible</span></label></td>' +
+                '<td><label class="mode-switch-row" style="justify-content:center;"><input type="checkbox" aria-label="' + escapeHtml('Mostrar ' + (item.titulo || item.pagina_clave)) + '" data-empresa-page-index="' + idx + '"' + (item.permitido ? ' checked' : '') + '><span class="sr-only">Visible</span></label></td>' +
               '</tr>';
             }).join('');
           }
         }
+        updateControls();
+        filterEmpresaPermisos();
       }
       function bindEmpresaPermisosEvents(){
         document.getElementById('empresaPermisosModulesBody')?.addEventListener('change', function(ev){
@@ -208,11 +227,13 @@
           if (empresaPermisosState.paginas[idx]) empresaPermisosState.paginas[idx].permitido = input.checked;
         });
         document.getElementById('btnEnableAllEmpresaPerms')?.addEventListener('click', function(){
+          if (!empresaPermisosState.loaded || empresaPermisosState.busy || !empresaPermisosState.canEdit) return;
           empresaPermisosState.modulos.forEach(function(item){ item.read = item.create = item.update = item.delete = item.approve = true; });
           empresaPermisosState.paginas.forEach(function(item){ item.permitido = true; });
           renderEmpresaPermisos();
         });
         document.getElementById('btnSaveEmpresaPerms')?.addEventListener('click', saveEmpresaPermisos);
+        document.getElementById('empresaPermisosSearch').addEventListener('input', filterEmpresaPermisos);
       }
       async function loadEmpresaPermisos(empresaId){
         var res = await fetch('/api/empresa/permisos_empresa?empresa_id=' + encodeURIComponent(String(empresaId)), { credentials: 'same-origin' });
@@ -238,12 +259,15 @@
         return { empresa_id: empresaId, permisos_modulo: permisosMódulo, permisos_pagina: permisosPagina };
       }
       async function saveEmpresaPermisos(){
+        if (!empresaPermisosState.loaded || empresaPermisosState.busy || !empresaPermisosState.canEdit) return;
         var empresaId = resolveEmpresaId();
         if (!empresaId) {
           setMessage('empresa_id es obligatorio para guardar permisos.', true);
           return;
         }
         setMessage('Guardando techo fino de empresa...', false);
+        empresaPermisosState.busy = true;
+        updateControls();
         try {
           var approvalCode = 'empresa-permisos-' + Date.now();
           var res = await fetch('/api/empresa/permisos_empresa?empresa_id=' + encodeURIComponent(String(empresaId)), {
@@ -258,10 +282,13 @@
             body: JSON.stringify(buildEmpresaPermisosPayload(empresaId))
           });
           if (!res.ok) throw new Error(await res.text() || ('HTTP ' + res.status));
-          await loadPermisos();
+          empresaPermisosState.snapshot = JSON.stringify(buildEmpresaPermisosPayload(empresaId));
           setMessage('Techo fino de empresa guardado y aplicado.', false);
         } catch (err) {
           setMessage('No se pudo guardar techo fino: ' + (err && err.message ? err.message : err), true);
+        } finally {
+          empresaPermisosState.busy = false;
+          updateControls();
         }
       }
       function fillModules(data){
@@ -311,12 +338,16 @@
         } catch (_) {}
       }
       async function loadPermisos(){
+        if (empresaPermisosState.busy) return;
         var empresaId = resolveEmpresaId();
         if (!empresaId) {
           setMessage('empresa_id es obligatorio para consultar permisos.', true);
           return;
         }
         setMessage('Cargando permisos...', false);
+        empresaPermisosState.busy = true;
+        empresaPermisosState.loaded = false;
+        updateControls();
         try {
           await loadEmpresaNombre(empresaId);
           var res = await fetch('/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(String(empresaId)) + '&include_matrix=1', { credentials: 'same-origin' });
@@ -326,13 +357,27 @@
           fillContext(data);
           fillModules(data);
           fillRolesMatrix(data);
+          empresaPermisosState.canEdit = (data.modulos || []).some(function(modulo){ return modulo.modulo === 'seguridad' && modulo.update; });
           await loadEmpresaPermisos(empresaId);
-          setMessage('Permisos cargados correctamente.', false);
+          empresaPermisosState.loaded = true;
+          empresaPermisosState.snapshot = JSON.stringify(buildEmpresaPermisosPayload(empresaId));
+          setMessage(empresaPermisosState.canEdit ? 'Permisos cargados correctamente.' : 'Permisos cargados en modo consulta. Tu perfil no permite modificar la configuración de seguridad.', false);
         } catch (err) {
           setMessage('No se pudo cargar permisos: ' + (err && err.message ? err.message : err), true);
+        } finally {
+          empresaPermisosState.busy = false;
+          updateControls();
         }
       }
-      document.getElementById('btnReloadPermisos')?.addEventListener('click', loadPermisos);
+      function hasUnsavedChanges(){ return empresaPermisosState.loaded && empresaPermisosState.snapshot !== JSON.stringify(buildEmpresaPermisosPayload(resolveEmpresaId())); }
+      document.getElementById('btnReloadPermisos')?.addEventListener('click', function(){
+        if (hasUnsavedChanges() && !window.confirm('Hay permisos sin guardar. ¿Descartar los cambios y actualizar?')) return;
+        loadPermisos();
+      });
+      window.addEventListener('beforeunload', function(event){
+        if (!hasUnsavedChanges()) return;
+        event.preventDefault(); event.returnValue = '';
+      });
       bindEmpresaPermisosEvents();
       loadPermisos();
     })();

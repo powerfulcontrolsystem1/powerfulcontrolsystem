@@ -16,6 +16,27 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 - La tarjeta de código VIP se fuerza oculta en runtime y su check aparece
   deshabilitado en las configuraciones del carrito y de estaciones.
 
+## Resolución de roles y permisos empresariales
+
+La sesión operativa aporta usuario y empresa; el wrapper obtiene su asignación
+actual y compone base global, ajustes del perfil y límites empresariales.
+`TenantContext` y el snapshot de la petición se propagan a handlers e IA.
+La identidad administrativa homónima no sustituye al usuario operativo.
+
+```mermaid
+flowchart LR
+  S[Sesión validada] --> U[Usuario y empresa activos]
+  U --> R[Rol asignado y base global]
+  R --> P[Ajustes del perfil por ID]
+  P --> L[Licencia y límites de empresa]
+  L --> T[TenantContext y snapshot de petición]
+  T --> A[API y confirmación IA]
+  T --> M[Menú y páginas visibles]
+```
+
+El [contrato de autorización](../gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md)
+enlaza implementaciones, editor, pruebas y reglas de revocación.
+
 ## Actualizacion 2026-09-06 - Reserva durable y captura offline
 
 Venta con fuente inmutable -> bloquear configuracion de la empresa ->

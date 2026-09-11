@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -14,15 +15,38 @@ type RolDeUsuario struct {
 	TipoEmpresaID      int64  `json:"tipo_empresa_id"`
 	TipoEmpresaNombre  string `json:"tipo_empresa_nombre,omitempty"`
 	Nombre             string `json:"nombre"`
+	NombreVisible      string `json:"nombre_visible,omitempty"`
 	Descripcion        string `json:"descripcion,omitempty"`
 	Origen             string `json:"origen,omitempty"`
 	RolBaseID          int64  `json:"rol_base_id,omitempty"`
 	Personalizado      bool   `json:"personalizado,omitempty"`
+	Asignable          bool   `json:"asignable"`
 	FechaCreacion      string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador     string `json:"usuario_creador,omitempty"`
 	Estado             string `json:"estado,omitempty"`
 	Observaciones      string `json:"observaciones,omitempty"`
+}
+
+// RolesDeUsuarioSchemaReady verifica el catálogo migrado sin DDL en peticiones.
+func RolesDeUsuarioSchemaReady(dbConn *sql.DB) error {
+	return requireSchemaReadiness(dbConn, "catalogo de roles", []schemaReadinessCheck{
+		{"roles", `SELECT id, tipo_empresa_id, empresa_id, nombre, origen, rol_base_id, estado FROM roles_de_usuario WHERE 1=0`},
+		{"tipos", `SELECT id, nombre FROM tipos_de_empresas WHERE 1=0`},
+	})
+}
+
+// IsRolDeUsuarioAsignable impide convertir un rol de plataforma en usuario empresarial.
+// En roles propios también debe verificarse el rol base con alcance empresarial.
+func IsRolDeUsuarioAsignable(rol *RolDeUsuario) bool {
+	if rol == nil || !strings.EqualFold(strings.TrimSpace(rol.Estado), "activo") {
+		return false
+	}
+	switch normalizeRolCatalogKey(rol.Nombre) {
+	case "super", "superadmin", "super_admin", "superadministrador", "super_administrador", "administrador_total", "admin_total", "admin_full", "full_admin":
+		return false
+	}
+	return true
 }
 
 // EnsureRolesDeUsuarioSchema crea/migra la tabla base de roles por tipo de empresa.
@@ -85,7 +109,7 @@ func EnsureRolesDeUsuarioSchema(dbConn *sql.DB) error {
 
 // CreateRolDeUsuario crea un rol de usuario para un tipo de empresa.
 func CreateRolDeUsuario(dbConn *sql.DB, tipoEmpresaID int64, nombre, descripcion, usuarioCreador string) (int64, error) {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return 0, err
 	}
 	nombre = strings.TrimSpace(nombre)
@@ -110,7 +134,7 @@ func CreateRolDeUsuario(dbConn *sql.DB, tipoEmpresaID int64, nombre, descripcion
 
 // UpsertRolDeUsuarioByTipoNombre crea o reactiva un rol por tipo de empresa y nombre.
 func UpsertRolDeUsuarioByTipoNombre(dbConn *sql.DB, tipoEmpresaID int64, nombre, descripcion, usuarioCreador string) (int64, bool, error) {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return 0, false, err
 	}
 	nombre = strings.TrimSpace(nombre)
@@ -146,7 +170,7 @@ func UpsertRolDeUsuarioByTipoNombre(dbConn *sql.DB, tipoEmpresaID int64, nombre,
 
 // GetRolesDeUsuario obtiene roles de usuario, con filtro opcional por tipo de empresa.
 func GetRolesDeUsuario(dbConn *sql.DB, tipoEmpresaID int64, incluirInactivos bool) ([]RolDeUsuario, error) {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	query := `SELECT
@@ -204,9 +228,10 @@ func GetRolesDeUsuario(dbConn *sql.DB, tipoEmpresaID int64, incluirInactivos boo
 			return nil, err
 		}
 		item.Personalizado = item.EmpresaID > 0 || strings.EqualFold(strings.TrimSpace(item.Origen), "empresa")
+		item.Asignable = IsRolDeUsuarioAsignable(&item)
 		out = append(out, item)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // GetRolesDeUsuarioCatalogoGlobal obtiene un catalogo unico de roles para asignacion
@@ -267,14 +292,135 @@ func GetRolesDeUsuarioCatalogoEmpresa(dbConn *sql.DB, empresaID int64, incluirIn
 		return nil, err
 	}
 	out := make([]RolDeUsuario, 0, len(globales)+len(personalizados))
-	out = append(out, globales...)
-	out = append(out, personalizados...)
+	bases := make(map[int64]RolDeUsuario, len(globales))
+	if len(personalizados) > 0 {
+		allBases, err := GetRolesDeUsuario(dbConn, 0, true)
+		if err != nil {
+			return nil, err
+		}
+		for _, base := range allBases {
+			bases[base.ID] = base
+		}
+	}
+	for _, item := range globales {
+		if IsRolDeUsuarioAsignable(&RolDeUsuario{Nombre: item.Nombre, Estado: "activo"}) {
+			out = append(out, item)
+		}
+	}
+	for _, item := range personalizados {
+		base, exists := bases[item.RolBaseID]
+		item.Asignable = IsRolDeUsuarioAsignable(&item) && exists && IsRolDeUsuarioAsignable(&base)
+		out = append(out, item)
+	}
 	return out, nil
+}
+
+// GetRolesDeUsuarioCatalogoParaEmpresa selecciona variantes para el tipo real de
+// empresa sin sustituir permisos por la antigüedad del ID. NombreVisible es sólo
+// presentación: nombre, tipo e ID conservan su significado persistido.
+func GetRolesDeUsuarioCatalogoParaEmpresa(dbConn *sql.DB, empresaID, tipoEmpresaID int64, incluirInactivos ...bool) ([]RolDeUsuario, error) {
+	if empresaID <= 0 || tipoEmpresaID < 0 {
+		return nil, errors.New("empresa_id y tipo_empresa_id invalidos")
+	}
+	includeInactive := len(incluirInactivos) > 0 && incluirInactivos[0]
+	globales, err := GetRolesDeUsuario(dbConn, 0, true)
+	if err != nil {
+		return nil, err
+	}
+	propios, err := GetRolesDeUsuarioEmpresa(dbConn, empresaID, includeInactive)
+	if err != nil {
+		return nil, err
+	}
+	out := selectRolesGlobalesParaTipo(globales, tipoEmpresaID, includeInactive)
+	bases := make(map[int64]RolDeUsuario, len(globales))
+	for _, rol := range globales {
+		bases[rol.ID] = rol
+	}
+	for _, rol := range propios {
+		base, exists := bases[rol.RolBaseID]
+		rol.Asignable = IsRolDeUsuarioAsignable(&rol) && exists && IsRolDeUsuarioAsignable(&base)
+		rol.NombreVisible = rol.Nombre
+		out = append(out, rol)
+	}
+	return out, nil
+}
+
+func selectRolesGlobalesParaTipo(roles []RolDeUsuario, tipoEmpresaID int64, incluirInactivos bool) []RolDeUsuario {
+	groups := map[string][]RolDeUsuario{}
+	for _, rol := range roles {
+		if rol.EmpresaID != 0 || !IsRolDeUsuarioAsignable(&RolDeUsuario{Nombre: rol.Nombre, Estado: "activo"}) {
+			continue
+		}
+		key := normalizeRolCatalogKey(rol.Nombre)
+		if key == "" {
+			continue
+		}
+		groups[key] = append(groups[key], rol)
+	}
+	keys := make([]string, 0, len(groups))
+	for key := range groups {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	out := []RolDeUsuario{}
+	for _, key := range keys {
+		candidates := []RolDeUsuario{}
+		for _, rol := range groups[key] {
+			if IsRolDeUsuarioAsignable(&rol) {
+				candidates = append(candidates, rol)
+			}
+		}
+		if len(candidates) == 0 && incluirInactivos {
+			candidates = groups[key]
+		}
+		rank := func(rol RolDeUsuario) int {
+			if tipoEmpresaID > 0 && rol.TipoEmpresaID == tipoEmpresaID {
+				return 0
+			}
+			if rol.TipoEmpresaID == 0 {
+				return 1
+			}
+			return 2
+		}
+		bestRank := 3
+		for _, rol := range candidates {
+			if value := rank(rol); value < bestRank {
+				bestRank = value
+			}
+		}
+		selected := []RolDeUsuario{}
+		for _, rol := range candidates {
+			if rank(rol) == bestRank {
+				selected = append(selected, rol)
+			}
+		}
+		sort.SliceStable(selected, func(i, j int) bool {
+			if selected[i].TipoEmpresaNombre != selected[j].TipoEmpresaNombre {
+				return selected[i].TipoEmpresaNombre < selected[j].TipoEmpresaNombre
+			}
+			return selected[i].ID < selected[j].ID
+		})
+		for _, rol := range selected {
+			rol.Asignable = IsRolDeUsuarioAsignable(&rol)
+			rol.NombreVisible = rol.Nombre
+			if bestRank == 2 || len(selected) > 1 {
+				tipo := strings.TrimSpace(rol.TipoEmpresaNombre)
+				if rol.TipoEmpresaID == 0 {
+					tipo = "Global"
+				} else if tipo == "" {
+					tipo = "Tipo " + strconv.FormatInt(rol.TipoEmpresaID, 10)
+				}
+				rol.NombreVisible += " — " + tipo + " (ID " + strconv.FormatInt(rol.ID, 10) + ")"
+			}
+			out = append(out, rol)
+		}
+	}
+	return out
 }
 
 // GetRolesDeUsuarioEmpresa lista los roles personalizados de una empresa.
 func GetRolesDeUsuarioEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivos bool) ([]RolDeUsuario, error) {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
 	if empresaID <= 0 {
@@ -328,6 +474,7 @@ func GetRolesDeUsuarioEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivos 
 		}
 		item.Origen = "empresa"
 		item.Personalizado = true
+		item.Asignable = IsRolDeUsuarioAsignable(&item)
 		out = append(out, item)
 	}
 	return out, rows.Err()
@@ -335,7 +482,7 @@ func GetRolesDeUsuarioEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivos 
 
 // CreateEmpresaRolDeUsuario crea un rol personalizado para una empresa.
 func CreateEmpresaRolDeUsuario(dbConn *sql.DB, empresaID int64, nombre, descripcion string, rolBaseID int64, usuarioCreador string) (int64, error) {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return 0, err
 	}
 	empresaID = normalizePositiveInt64(empresaID)
@@ -349,23 +496,43 @@ func CreateEmpresaRolDeUsuario(dbConn *sql.DB, empresaID int64, nombre, descripc
 	if err != nil {
 		return 0, err
 	}
-	if base.EmpresaID > 0 {
-		return 0, errors.New("el rol base debe ser un rol global")
+	if base.EmpresaID != 0 || !IsRolDeUsuarioAsignable(base) {
+		return 0, errors.New("el rol base debe ser global, activo y empresarial")
 	}
-	if exists, err := roleNameExistsForEmpresa(dbConn, empresaID, nombre, 0); err != nil {
+	if !IsRolDeUsuarioAsignable(&RolDeUsuario{Nombre: nombre, Estado: "activo"}) {
+		return 0, errors.New("el nombre esta reservado para un rol de plataforma")
+	}
+	tx, err := dbConn.Begin()
+	if err != nil {
 		return 0, err
-	} else if exists {
-		return 0, errors.New("ya existe un rol personalizado con ese nombre en esta empresa")
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO roles_de_usuario (
+	defer tx.Rollback()
+	if err := lockEmpresaRoleCatalog(tx, empresaID, nombre, 0); err != nil {
+		return 0, err
+	}
+	var id int64
+	err = tx.QueryRow(`INSERT INTO roles_de_usuario (
 		tipo_empresa_id, empresa_id, nombre, descripcion, origen, rol_base_id, usuario_creador, estado, fecha_creacion, fecha_actualizacion
-	) VALUES (0, ?, ?, ?, 'empresa', ?, ?, 'activo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-		empresaID, nombre, descripcion, rolBaseID, usuarioCreador)
+	) VALUES (0, ?, ?, ?, 'empresa', ?, ?, 'activo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id`,
+		empresaID, nombre, descripcion, rolBaseID, usuarioCreador).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 // UpdateEmpresaRolDeUsuario actualiza un rol personalizado de una empresa.
 func UpdateEmpresaRolDeUsuario(dbConn *sql.DB, empresaID, rolID int64, nombre, descripcion string, rolBaseID int64) error {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	return UpdateEmpresaRolDeUsuarioConBaseEsperada(dbConn, empresaID, rolID, nombre, descripcion, rolBaseID, nil)
+}
+
+// UpdateEmpresaRolDeUsuarioConBaseEsperada evita restaurar una base revocada
+// desde un formulario antiguo. Sin precondición sólo permite editar metadatos.
+func UpdateEmpresaRolDeUsuarioConBaseEsperada(dbConn *sql.DB, empresaID, rolID int64, nombre, descripcion string, rolBaseID int64, expectedRolBaseID *int64) error {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return err
 	}
 	nombre = strings.TrimSpace(nombre)
@@ -373,22 +540,36 @@ func UpdateEmpresaRolDeUsuario(dbConn *sql.DB, empresaID, rolID int64, nombre, d
 	if empresaID <= 0 || rolID <= 0 || nombre == "" || rolBaseID <= 0 {
 		return errors.New("empresa_id, rol_id, nombre y rol_base_id son obligatorios")
 	}
-	if _, err := GetRolDeUsuarioEmpresaByID(dbConn, empresaID, rolID); err != nil {
-		return err
+	if !IsRolDeUsuarioAsignable(&RolDeUsuario{Nombre: nombre, Estado: "activo"}) {
+		return errors.New("el nombre esta reservado para un rol de plataforma")
 	}
-	base, err := GetRolDeUsuarioByIDEmpresaScope(dbConn, empresaID, rolBaseID)
+	tx, err := dbConn.Begin()
 	if err != nil {
 		return err
 	}
-	if base.EmpresaID > 0 {
-		return errors.New("el rol base debe ser un rol global")
-	}
-	if exists, err := roleNameExistsForEmpresa(dbConn, empresaID, nombre, rolID); err != nil {
+	defer tx.Rollback()
+	if err := lockEmpresaRoleCatalog(tx, empresaID, nombre, rolID); err != nil {
 		return err
-	} else if exists {
-		return errors.New("ya existe un rol personalizado con ese nombre en esta empresa")
 	}
-	res, err := execSQLCompat(dbConn, `UPDATE roles_de_usuario
+	var currentBaseID int64
+	if err := tx.QueryRow(`SELECT COALESCE(rol_base_id, 0) FROM roles_de_usuario WHERE id = ? AND empresa_id = ? FOR UPDATE`, rolID, empresaID).Scan(&currentBaseID); err != nil {
+		return err
+	}
+	if expectedRolBaseID == nil {
+		if currentBaseID != rolBaseID {
+			return ErrRolPermisosRevisionRequired
+		}
+	} else if currentBaseID != *expectedRolBaseID {
+		return ErrRolPermisosRevisionConflict
+	}
+	var base RolDeUsuario
+	if err := tx.QueryRow(`SELECT id, COALESCE(nombre, ''), COALESCE(estado, 'activo') FROM roles_de_usuario WHERE id = ? AND COALESCE(empresa_id, 0) = 0 FOR SHARE`, rolBaseID).Scan(&base.ID, &base.Nombre, &base.Estado); err != nil {
+		return err
+	}
+	if !IsRolDeUsuarioAsignable(&base) {
+		return errors.New("el rol base debe ser global, activo y empresarial")
+	}
+	res, err := tx.Exec(`UPDATE roles_de_usuario
 		SET nombre = ?, descripcion = ?, rol_base_id = ?, fecha_actualizacion = CURRENT_TIMESTAMP
 		WHERE id = ? AND COALESCE(empresa_id, 0) = ?`, nombre, descripcion, rolBaseID, rolID, empresaID)
 	if err != nil {
@@ -397,17 +578,36 @@ func UpdateEmpresaRolDeUsuario(dbConn *sql.DB, empresaID, rolID int64, nombre, d
 	if affected, err := res.RowsAffected(); err == nil && affected == 0 {
 		return sql.ErrNoRows
 	}
+	return tx.Commit()
+}
+
+// La exclusión por empresa evita duplicados por reintentos concurrentes sin
+// bloquear catálogos de otros tenants ni modificar migraciones históricas.
+func lockEmpresaRoleCatalog(tx *sql.Tx, empresaID int64, nombre string, excludeID int64) error {
+	if _, err := tx.Exec(`SELECT pg_advisory_xact_lock(hashtextextended(?, 0))`, "pcs_roles_empresa:"+strconv.FormatInt(empresaID, 10)); err != nil {
+		return err
+	}
+	var exists bool
+	if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM roles_de_usuario WHERE empresa_id = ? AND lower(trim(nombre)) = lower(trim(?)) AND id <> ?)`, empresaID, nombre, excludeID).Scan(&exists); err != nil {
+		return err
+	}
+	if exists {
+		return errors.New("ya existe un rol personalizado con ese nombre en esta empresa")
+	}
 	return nil
 }
 
 // SetEmpresaRolDeUsuarioEstado activa/desactiva un rol personalizado de una empresa.
 func SetEmpresaRolDeUsuarioEstado(dbConn *sql.DB, empresaID, rolID int64, estado string) error {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	if empresaID <= 0 || rolID <= 0 {
+		return sql.ErrNoRows
+	}
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return err
 	}
 	estado = strings.ToLower(strings.TrimSpace(estado))
-	if estado != "activo" {
-		estado = "inactivo"
+	if estado != "activo" && estado != "inactivo" {
+		return errors.New("estado de rol invalido")
 	}
 	res, err := execSQLCompat(dbConn, `UPDATE roles_de_usuario
 		SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP
@@ -423,7 +623,10 @@ func SetEmpresaRolDeUsuarioEstado(dbConn *sql.DB, empresaID, rolID int64, estado
 
 // GetRolDeUsuarioEmpresaByID valida que un rol pertenezca a la empresa.
 func GetRolDeUsuarioEmpresaByID(dbConn *sql.DB, empresaID, rolID int64) (*RolDeUsuario, error) {
-	rol, err := GetRolDeUsuarioByID(dbConn, rolID)
+	if empresaID <= 0 || rolID <= 0 {
+		return nil, sql.ErrNoRows
+	}
+	rol, err := getRolDeUsuarioByIDScoped(dbConn, rolID, empresaID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -437,7 +640,10 @@ func GetRolDeUsuarioEmpresaByID(dbConn *sql.DB, empresaID, rolID int64) (*RolDeU
 
 // GetRolDeUsuarioByIDEmpresaScope permite roles globales o roles propios de la empresa.
 func GetRolDeUsuarioByIDEmpresaScope(dbConn *sql.DB, empresaID, rolID int64) (*RolDeUsuario, error) {
-	rol, err := GetRolDeUsuarioByID(dbConn, rolID)
+	if empresaID <= 0 || rolID <= 0 {
+		return nil, sql.ErrNoRows
+	}
+	rol, err := getRolDeUsuarioByIDScoped(dbConn, rolID, empresaID, false)
 	if err != nil {
 		return nil, err
 	}
@@ -505,12 +711,11 @@ func normalizeRolCatalogKey(nombre string) string {
 		"limpieza":                 "servicio_limpieza",
 		"aseadora":                 "servicio_limpieza",
 		"jefe_de_bodega":           "jefe_bodega",
-		"bodega":                   "jefe_bodega",
-		"bodeguero":                "jefe_bodega",
+		"bodega":                   "responsable_bodega",
+		"bodeguero":                "responsable_bodega",
 		"recursos_humanos":         "recursos_humanos",
 		"talento_humano":           "recursos_humanos",
 		"rrhh":                     "recursos_humanos",
-		"tecnico":                  "tecnico_solar",
 		"tecnico_solar":            "tecnico_solar",
 		"dueno":                    "empresario",
 		"dueño":                    "empresario",
@@ -531,7 +736,7 @@ func preferredRolCatalogDisplayRank(key, nombre string) int {
 
 // UpdateRolDeUsuario actualiza un rol de usuario.
 func UpdateRolDeUsuario(dbConn *sql.DB, id, tipoEmpresaID int64, nombre, descripcion string) error {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return err
 	}
 	nombre = strings.TrimSpace(nombre)
@@ -570,7 +775,7 @@ func roleNameExistsForTipo(dbConn *sql.DB, tipoEmpresaID int64, nombre string, e
 
 // DeleteRolDeUsuario elimina un rol de usuario.
 func DeleteRolDeUsuario(dbConn *sql.DB, id int64) error {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return err
 	}
 	_, err := execSQLCompat(dbConn, `DELETE FROM roles_de_usuario WHERE id = ?`, id)
@@ -579,7 +784,7 @@ func DeleteRolDeUsuario(dbConn *sql.DB, id int64) error {
 
 // SetRolDeUsuarioEstado activa/desactiva un rol de usuario.
 func SetRolDeUsuarioEstado(dbConn *sql.DB, id int64, estado string) error {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return err
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE roles_de_usuario SET estado = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?`, estado, id)

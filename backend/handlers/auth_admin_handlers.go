@@ -1535,7 +1535,6 @@ func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpre
 	if loginAudit != nil {
 		loginAudit.markAuthenticated(item.RolNombre)
 	}
-	warmEmpresaPermissionSnapshot(dbEmpresas, dbSuper, item)
 	http.Redirect(w, r, sessionResult.RedirectURL, http.StatusFound)
 }
 

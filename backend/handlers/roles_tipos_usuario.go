@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,6 +25,7 @@ type rolPermisoPaginaPayload struct {
 
 type rolPermisosUpsertPayload struct {
 	RolID          int64                     `json:"rol_id"`
+	Revision       string                    `json:"revision"`
 	PermisosModulo []rolPermisoModuloPayload `json:"permisos_modulo"`
 	PermisosPagina []rolPermisoPaginaPayload `json:"permisos_pagina"`
 }
@@ -32,6 +34,9 @@ type rolPermisosUpsertPayload struct {
 func RolesDeUsuarioHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
+			return
+		}
+		if !requireRolesPermisosSchemaReady(w, dbSuper) {
 			return
 		}
 		switch r.Method {
@@ -131,60 +136,32 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if _, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper); !ok {
 			return
 		}
-		if err := dbpkg.RolesPermisosSchemaReady(dbSuper); err != nil {
-			http.Error(w, "el esquema migrado de permisos por rol no esta disponible", http.StatusInternalServerError)
-			return
-		}
-
 		switch r.Method {
 		case http.MethodGet:
 			rolID, err := parseRequiredInt64Query(r, "rol_id")
-			if err != nil || rolID <= 0 {
+			if err != nil || rolID <= 0 || len(r.URL.Query()["rol_id"]) != 1 {
 				http.Error(w, "rol_id required", http.StatusBadRequest)
 				return
 			}
-
-			rol, err := dbpkg.GetRolDeUsuarioByID(dbSuper, rolID)
-			if err != nil {
-				if errors.Is(err, sql.ErrNoRows) {
-					http.Error(w, "rol no encontrado", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "failed to load rol: "+err.Error(), http.StatusInternalServerError)
+			if !requireRolesPermisosSchemaReady(w, dbSuper) {
 				return
 			}
 
-			modulos := buildPermissionModuleMatrixForRole(rol.Nombre)
-			moduleItems, err := dbpkg.ListRolPermisosModuloByRolID(dbSuper, rol.ID)
+			state, err := dbpkg.GetRolPermisosEstado(r.Context(), dbSuper, rolID)
 			if err != nil {
-				http.Error(w, "failed to load modulo permisos: "+err.Error(), http.StatusInternalServerError)
+				writeEmpresaRolPermissionError(w, err)
 				return
 			}
-			moduleOverrides := make(map[string]bool, len(moduleItems))
-			for _, item := range moduleItems {
-				moduleOverrides[permissionModuleActionKey(item.Modulo, item.Accion)] = item.Permitido
-			}
-			for idx := range modulos {
-				row := &modulos[idx]
-				for _, action := range permissionActionsCatalogOrdered {
-					if permitido, ok := moduleOverrides[permissionModuleActionKey(row.Modulo, action)]; ok {
-						setPermissionActionOnModuleRow(row, action, permitido)
-					}
-				}
-			}
-
-			pageItems, err := dbpkg.ListRolPermisosPaginaByRolID(dbSuper, rol.ID)
-			if err != nil {
-				http.Error(w, "failed to load page permisos: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			pageOverrides := make(map[string]bool, len(pageItems))
-			for _, item := range pageItems {
+			rol := state.Rol
+			modulos := buildRolPermissionEditorModuleRows(rol.Nombre, state.Modulos)
+			pageOverrides := make(map[string]bool, len(state.Paginas))
+			for _, item := range state.Paginas {
 				pageOverrides[strings.TrimSpace(item.PaginaClave)] = item.Permitido
 			}
 			paginas := buildPermissionPagesCatalogFromModuleRows(modulos, pageOverrides)
 
 			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"revision":          state.Revision,
 				"rol_id":            rol.ID,
 				"rol_nombre":        rol.Nombre,
 				"tipo_empresa_id":   rol.TipoEmpresaID,
@@ -199,51 +176,39 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			var payload rolPermisosUpsertPayload
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+			if err := decoder.Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-
-			if payload.RolID <= 0 {
-				if qID, err := parseOptionalInt64Query(r, "rol_id"); err == nil && qID > 0 {
-					payload.RolID = qID
-				}
+			var extra interface{}
+			qID, queryErr := parseOptionalInt64Query(r, "rol_id")
+			if err := decoder.Decode(&extra); err != io.EOF || queryErr != nil || len(r.URL.Query()["rol_id"]) > 1 || (qID > 0 && payload.RolID > 0 && qID != payload.RolID) {
+				http.Error(w, "payload o rol_id inconsistente", http.StatusBadRequest)
+				return
+			}
+			if payload.RolID <= 0 && qID > 0 {
+				payload.RolID = qID
 			}
 			if payload.RolID <= 0 {
 				http.Error(w, "rol_id required", http.StatusBadRequest)
 				return
 			}
-
-			if _, err := dbpkg.GetRolDeUsuarioByID(dbSuper, payload.RolID); err != nil {
-				if errors.Is(err, sql.ErrNoRows) {
-					http.Error(w, "rol no encontrado", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "failed to load rol: "+err.Error(), http.StatusInternalServerError)
+			if strings.TrimSpace(payload.Revision) == "" {
+				writeEmpresaRolPermissionError(w, dbpkg.ErrRolPermisosRevisionRequired)
+				return
+			}
+			moduleRows, pageRows, err := validateEmpresaRolPermissionPayload(payload.RolID, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if !requireRolesPermisosSchemaReady(w, dbSuper) {
 				return
 			}
 
-			moduleRows := make([]dbpkg.RolPermisoModulo, 0, len(payload.PermisosModulo))
-			for _, item := range payload.PermisosModulo {
-				moduleRows = append(moduleRows, dbpkg.RolPermisoModulo{
-					RolID:     payload.RolID,
-					Modulo:    strings.ToLower(strings.TrimSpace(item.Modulo)),
-					Accion:    strings.ToUpper(strings.TrimSpace(item.Accion)),
-					Permitido: item.Permitido,
-				})
-			}
-
-			pageRows := make([]dbpkg.RolPermisoPagina, 0, len(payload.PermisosPagina))
-			for _, item := range payload.PermisosPagina {
-				pageRows = append(pageRows, dbpkg.RolPermisoPagina{
-					RolID:       payload.RolID,
-					PaginaClave: strings.TrimSpace(item.PaginaClave),
-					Permitido:   item.Permitido,
-				})
-			}
-
-			if err := dbpkg.ReplaceRolPermisosDeUsuario(dbSuper, payload.RolID, moduleRows, pageRows, adminEmailFromRequest(r)); err != nil {
-				http.Error(w, "failed to save permisos: "+err.Error(), http.StatusInternalServerError)
+			if err := dbpkg.ReplaceRolPermisosDeUsuarioConRevision(r.Context(), dbSuper, payload.RolID, payload.Revision, moduleRows, pageRows, adminEmailFromRequest(r)); err != nil {
+				writeEmpresaRolPermissionError(w, err)
 				return
 			}
 
@@ -255,6 +220,174 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+// La matriz inicial del editor conserva las restricciones operativas; sólo una
+// regla persistida explícita puede ampliar esos permisos.
+func buildRolPermissionEditorModuleRows(role string, overrides []dbpkg.RolPermisoModulo) []permissionModuleMatrixRow {
+	role = normalizePermissionRole(role)
+	rows := restrictPermissionModuleRowsForOperationalRole(role, buildPermissionModuleMatrixForRole(role))
+	byKey := make(map[string]bool, len(overrides))
+	for _, item := range overrides {
+		byKey[permissionModuleActionKey(item.Modulo, item.Accion)] = item.Permitido
+	}
+	for idx := range rows {
+		for _, action := range permissionActionsCatalogOrdered {
+			if allowed, ok := byKey[permissionModuleActionKey(rows[idx].Modulo, action)]; ok {
+				setPermissionActionOnModuleRow(&rows[idx], action, allowed)
+				if rows[idx].deniedActions == nil {
+					rows[idx].deniedActions = map[string]bool{}
+				}
+				rows[idx].deniedActions[action] = !allowed
+			}
+		}
+	}
+	return rows
+}
+
+// EmpresaRolDeUsuarioPermisosHandler se invoca desde el wrapper de seguridad
+// empresarial. El tenant validado es la autoridad y el ID sólo selecciona un rol propio.
+func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenant, ok := TenantContextFromRequest(r)
+		if !ok || strings.TrimSpace(tenant.AdminEmail) == "" {
+			http.Error(w, "sesion empresarial requerida", http.StatusUnauthorized)
+			return
+		}
+		if r.Method != http.MethodGet && r.Method != http.MethodPut {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		rolID, err := parseRequiredInt64Query(r, "rol_id")
+		if err != nil || rolID <= 0 || len(r.URL.Query()["rol_id"]) != 1 {
+			http.Error(w, "rol_id invalido", http.StatusBadRequest)
+			return
+		}
+		if r.Method == http.MethodGet {
+			if !requireRolesPermisosSchemaReady(w, dbSuper) {
+				return
+			}
+			state, err := dbpkg.GetEmpresaRolPermisosEstado(r.Context(), dbSuper, tenant.EmpresaID, rolID)
+			if err != nil {
+				writeEmpresaRolPermissionError(w, err)
+				return
+			}
+			inherited := buildRolPermissionEditorModuleRows(state.Base.Nombre, state.ModulosBase)
+			combined := append(append([]dbpkg.RolPermisoModulo{}, state.ModulosBase...), state.Modulos...)
+			modulos := buildRolPermissionEditorModuleRows(state.Base.Nombre, combined)
+			inheritedPages, ownPages := map[string]bool{}, map[string]bool{}
+			for _, item := range state.PaginasBase {
+				inheritedPages[item.PaginaClave] = item.Permitido
+				ownPages[item.PaginaClave] = item.Permitido
+			}
+			for _, item := range state.Paginas {
+				ownPages[item.PaginaClave] = item.Permitido
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"empresa_id": tenant.EmpresaID, "rol_id": state.Rol.ID, "rol_nombre": state.Rol.Nombre,
+				"rol_base_id": state.Base.ID, "rol_base_nombre": state.Base.Nombre,
+				"revision": state.Revision, "permisos_modulo": state.Modulos, "permisos_pagina": state.Paginas,
+				"acciones_catalogo": append([]string{}, permissionActionsCatalogOrdered...),
+				"acciones_etiqueta": PermissionActionDisplayNameMap(),
+				"modulos_catalogo":  append([]string{}, permissionModulesCatalogOrdered...),
+				"modulos_etiqueta":  PermissionModuleDisplayNameMap(),
+				"modulos":           modulos, "paginas": buildPermissionPagesCatalogFromModuleRows(modulos, ownPages),
+				"modulos_heredados": inherited, "paginas_heredadas": buildPermissionPagesCatalogFromModuleRows(inherited, inheritedPages),
+			})
+			return
+		}
+		var payload rolPermisosUpsertPayload
+		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+		if err := decoder.Decode(&payload); err != nil {
+			http.Error(w, "matriz de permisos invalida", http.StatusBadRequest)
+			return
+		}
+		var extra interface{}
+		if err := decoder.Decode(&extra); err != io.EOF || (payload.RolID != 0 && payload.RolID != rolID) {
+			http.Error(w, "payload o rol_id inconsistente", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(payload.Revision) == "" {
+			writeEmpresaRolPermissionError(w, dbpkg.ErrRolPermisosRevisionRequired)
+			return
+		}
+		modulos, paginas, err := validateEmpresaRolPermissionPayload(rolID, payload)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if !requireRolesPermisosSchemaReady(w, dbSuper) {
+			return
+		}
+		if err := dbpkg.ReplaceEmpresaRolPermisosDeUsuarioConRevision(r.Context(), dbSuper, tenant.EmpresaID, rolID, payload.Revision, modulos, paginas, tenant.AdminEmail); err != nil {
+			writeEmpresaRolPermissionError(w, err)
+			return
+		}
+		invalidateEmpresaPermissionCacheForEmpresa(tenant.EmpresaID)
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func requireRolesPermisosSchemaReady(w http.ResponseWriter, dbSuper *sql.DB) bool {
+	if err := dbpkg.RolesPermisosSchemaReady(dbSuper); err != nil {
+		http.Error(w, "el esquema migrado de roles y permisos no esta disponible", http.StatusInternalServerError)
+		return false
+	}
+	return true
+}
+
+func writeEmpresaRolPermissionError(w http.ResponseWriter, err error) {
+	if errors.Is(err, dbpkg.ErrRolPermisosRevisionRequired) {
+		http.Error(w, "debe cargar la revision actual antes de guardar permisos", http.StatusPreconditionRequired)
+		return
+	}
+	if errors.Is(err, dbpkg.ErrRolPermisosRevisionConflict) {
+		http.Error(w, "los permisos propios o heredados cambiaron; recargue antes de guardar", http.StatusConflict)
+		return
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "rol no encontrado o no disponible", http.StatusNotFound)
+		return
+	}
+	http.Error(w, "no se pudo procesar la matriz de permisos", http.StatusInternalServerError)
+}
+
+func validateEmpresaRolPermissionPayload(rolID int64, payload rolPermisosUpsertPayload) ([]dbpkg.RolPermisoModulo, []dbpkg.RolPermisoPagina, error) {
+	if rolID <= 0 || payload.PermisosModulo == nil || payload.PermisosPagina == nil {
+		return nil, nil, errors.New("debe enviar permisos_modulo y permisos_pagina como listas")
+	}
+	modules, actions, pages := map[string]bool{}, map[string]bool{}, map[string]bool{}
+	for _, key := range permissionModulesCatalogOrdered {
+		modules[key] = true
+	}
+	for _, key := range permissionActionsCatalogOrdered {
+		actions[key] = true
+	}
+	for _, rule := range permissionPagesCatalogOrdered {
+		pages[rule.PaginaClave] = true
+	}
+	seen := map[string]bool{}
+	modulos := make([]dbpkg.RolPermisoModulo, 0, len(payload.PermisosModulo))
+	for _, item := range payload.PermisosModulo {
+		modulo, accion := strings.ToLower(strings.TrimSpace(item.Modulo)), strings.ToUpper(strings.TrimSpace(item.Accion))
+		key := "m:" + modulo + ":" + accion
+		if !modules[modulo] || !actions[accion] || seen[key] {
+			return nil, nil, errors.New("modulo o accion invalida o repetida")
+		}
+		seen[key] = true
+		modulos = append(modulos, dbpkg.RolPermisoModulo{RolID: rolID, Modulo: modulo, Accion: accion, Permitido: item.Permitido})
+	}
+	paginas := make([]dbpkg.RolPermisoPagina, 0, len(payload.PermisosPagina))
+	for _, item := range payload.PermisosPagina {
+		pagina := strings.TrimSpace(item.PaginaClave)
+		key := "p:" + pagina
+		if !pages[pagina] || seen[key] {
+			return nil, nil, errors.New("pagina invalida o repetida")
+		}
+		seen[key] = true
+		paginas = append(paginas, dbpkg.RolPermisoPagina{RolID: rolID, PaginaClave: pagina, Permitido: item.Permitido})
+	}
+	return modulos, paginas, nil
 }
 
 func parseRequiredInt64Query(r *http.Request, key string) (int64, error) {

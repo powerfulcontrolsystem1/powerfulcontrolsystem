@@ -65,9 +65,11 @@ afecte dinero, documentos, licencias o seguridad.
 5. Para desactivar un rol propio, usar `Desactivar` en la misma tarjeta. El rol
    no desaparece del historial, pero deja de estar disponible para nuevas
    asignaciones activas.
-6. La autorizacion efectiva usa el rol base global. Esto evita que un nombre
-   libre sin matriz conocida abra permisos por accidente y mantiene el alcance
-   por `empresa_id`.
+6. Abrir `Permisos` en el perfil propio para ajustar acciones por módulo y
+   páginas. La autorización conserva el ID, hereda la base global y aplica la
+   matriz propia; la licencia y el techo empresarial siguen limitando acceso.
+   Buscar o filtrar no elimina las filas ocultas al guardar. El cambio exige
+   `seguridad:U` y aprobación trazable en el wrapper.
 7. Un rol personalizado de otra empresa no puede asignarse ni resolverse en la
    empresa actual; el backend lo rechaza aunque se manipule la URL o el payload.
 
