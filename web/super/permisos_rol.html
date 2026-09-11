@@ -57,6 +57,7 @@
         <button type="button" class="btn secondary" id="prCollapseAll">Plegar grupos</button>
         <span class="pcs-pr-divider" aria-hidden="true"></span>
         <button type="button" class="btn add" id="saveBtn" disabled>Guardar cambios</button>
+        <button type="button" class="btn secondary" id="reloadBtn" disabled>Recargar permisos</button>
       </div>
     </div>
 
@@ -100,12 +101,13 @@
   <script>
     (function () {
       const ACTION_ORDER = ['R', 'C', 'U', 'D', 'A'];
-      const state = { tipos: [], roles: [], modulos: [], paginas: [], accionesEtiqueta: {}, modulosEtiqueta: {}, snapshot: '', loadedRoleID: 0, loadSequence: 0, loading: false, saving: false, tipoID: '' };
+      const state = { tipos: [], roles: [], modulos: [], paginas: [], accionesEtiqueta: {}, modulosEtiqueta: {}, snapshot: '', revision: '', refreshRequired: false, loadedRoleID: 0, loadSequence: 0, loadController: null, loading: false, saving: false, tipoID: '' };
 
       const tipoSelect = document.getElementById('tipo_empresa_id');
       const rolSelect = document.getElementById('rol_id');
       const saveBtn = document.getElementById('saveBtn');
       const saveBtn2 = document.getElementById('saveBtn2');
+      const reloadBtn = document.getElementById('reloadBtn');
       const msg = document.getElementById('msg');
       const panelPermisos = document.getElementById('panelPermisos');
       const modulosBox = document.getElementById('modulosBox');
@@ -125,7 +127,35 @@
       async function ensureOk(res) {
         if (res.ok) return;
         const text = await res.text();
-        throw new Error(text || ('HTTP ' + res.status));
+        let message = text || ('HTTP ' + res.status);
+        try { const data = JSON.parse(text); message = data.error || data.message || message; } catch (_) {}
+        const error = new Error(message);
+        error.status = res.status;
+        throw error;
+      }
+
+      async function requestPermisos(url, options, controller) {
+        controller = controller || new AbortController();
+        let timedOut = false;
+        const timer = setTimeout(function () { timedOut = true; controller.abort(); }, 30000);
+        try {
+          const res = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}, { signal: controller.signal }));
+          await ensureOk(res);
+          const text = await res.text();
+          return text ? JSON.parse(text) : {};
+        } catch (error) {
+          if (timedOut) throw new Error('La solicitud superó los 30 segundos.');
+          throw error;
+        } finally { clearTimeout(timer); }
+      }
+
+      function updatePermissionControls() {
+        const busy = state.loading || state.saving;
+        saveBtn.disabled = busy || !state.loadedRoleID || !state.revision || state.refreshRequired;
+        if (saveBtn2) saveBtn2.disabled = saveBtn.disabled;
+        reloadBtn.disabled = busy || !Number(rolSelect.value);
+        panelPermisos.querySelectorAll('input,button').forEach(function (input) { input.disabled = busy; });
+        if (saveBtn2) saveBtn2.disabled = saveBtn.disabled;
       }
 
       function boolValue(v) { return !!v; }
@@ -361,7 +391,7 @@
             });
           });
         }
-        return { rol_id: rolID, permisos_modulo: modulos, permisos_pagina: paginas };
+        return { rol_id: rolID, revision: state.revision, permisos_modulo: modulos, permisos_pagina: paginas };
       }
 
       async function loadTipos() {
@@ -442,27 +472,36 @@
         } finally {
           state.saving = false;
           createRolBtn.disabled = tipoSelect.disabled = rolSelect.disabled = false;
+          updatePermissionControls();
         }
       }
 
-      async function loadPermisosByRole(rolID) {
+      async function loadPermisosByRole(rolID, preserveDraft) {
+        if (state.loadController) state.loadController.abort();
         const sequence = ++state.loadSequence;
+        const controller = new AbortController();
+        state.loadController = controller;
         state.loading = true;
-        state.loadedRoleID = 0;
-        state.snapshot = '';
-        panelPermisos.hidden = true;
-        saveBtn.disabled = true;
-        if (saveBtn2) saveBtn2.disabled = true;
+        if (!preserveDraft || state.loadedRoleID !== rolID) {
+          state.loadedRoleID = 0;
+          state.snapshot = '';
+          state.revision = '';
+          panelPermisos.hidden = true;
+        }
+        updatePermissionControls();
         if (!rolID || rolID < 1) {
           state.loading = false;
+          state.loadController = null;
+          updatePermissionControls();
           return;
         }
         try {
-          const res = await fetch('/super/api/roles_de_usuario/permisos?rol_id=' + encodeURIComponent(rolID), { credentials: 'same-origin' });
-          await ensureOk(res);
-          const data = await res.json();
+          const data = await requestPermisos('/super/api/roles_de_usuario/permisos?rol_id=' + encodeURIComponent(rolID), {}, controller);
           if (sequence !== state.loadSequence || Number(rolSelect.value) !== rolID) return;
+          if (Number(data.rol_id) !== rolID || typeof data.revision !== 'string' || !data.revision) throw new Error('La API no devolvió la revisión del rol solicitado. Recarga antes de editar.');
           state.loadedRoleID = rolID;
+          state.revision = data.revision;
+          state.refreshRequired = false;
           state.modulos = Array.isArray(data.modulos) ? data.modulos : [];
           state.paginas = Array.isArray(data.paginas) ? data.paginas : [];
           state.accionesEtiqueta = (data && data.acciones_etiqueta && typeof data.acciones_etiqueta === 'object') ? data.acciones_etiqueta : {};
@@ -472,65 +511,86 @@
           state.snapshot = takeSnapshot();
           if (prDirtyNote) prDirtyNote.hidden = true;
           panelPermisos.hidden = false;
-          saveBtn.disabled = false;
-          if (saveBtn2) saveBtn2.disabled = false;
           setMessage('', false);
+          return true;
         } catch (err) {
           // A failed obsolete request must not reach a caller that would hide
           // the newer role matrix or replace its status with an unrelated error.
           if (sequence !== state.loadSequence || Number(rolSelect.value) !== rolID) return;
+          state.refreshRequired = true;
           throw err;
         } finally {
-          if (sequence === state.loadSequence) state.loading = false;
+          if (sequence === state.loadSequence) { state.loading = false; state.loadController = null; updatePermissionControls(); }
         }
       }
 
       async function savePermisos() {
         const payload = collectPayload();
-        if (!payload.rol_id || state.loading || payload.rol_id !== Number(rolSelect.value)) {
+        if (!payload.rol_id || !payload.revision || state.refreshRequired || state.loading || payload.rol_id !== Number(rolSelect.value)) {
           throw new Error('Espera a que terminen de cargar los permisos del rol seleccionado.');
         }
-        const res = await fetch('/super/api/roles_de_usuario/permisos', {
+        await requestPermisos('/super/api/roles_de_usuario/permisos', {
           method: 'PUT',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        await ensureOk(res);
       }
 
       function wireSave(btn) {
         if (!btn) return;
         btn.addEventListener('click', async function () {
-          if (state.saving || state.loading || !state.loadedRoleID) return;
+          if (btn.disabled || state.refreshRequired || state.saving || state.loading || !state.loadedRoleID) return;
           state.saving = true;
           tipoSelect.disabled = rolSelect.disabled = createRolBtn.disabled = true;
-          panelPermisos.querySelectorAll('input,button').forEach(function (input) { input.disabled = true; });
+          updatePermissionControls();
+          let confirmed = false;
           try {
-            saveBtn.disabled = true;
-            if (saveBtn2) saveBtn2.disabled = true;
             setMessage('Guardando…', false);
             await savePermisos();
-            await loadPermisosByRole(Number(rolSelect.value || 0));
+            confirmed = true;
+            state.snapshot = takeSnapshot();
+            state.refreshRequired = true;
+            if (prDirtyNote) prDirtyNote.hidden = true;
+            await loadPermisosByRole(Number(rolSelect.value || 0), true);
             setMessage('Cambios guardados correctamente.', false);
           } catch (err) {
-            setMessage((err && err.message) || 'No se pudieron guardar los permisos.', true);
+            if (confirmed) {
+              state.refreshRequired = true;
+              setMessage('El guardado se confirmó, pero no se pudo cargar la nueva revisión. Recarga antes de volver a guardar.', true);
+            } else if (err.status === 409 || err.status === 428) {
+              state.refreshRequired = true;
+              setMessage('El rol cambió desde la carga. Tu borrador se conserva. Recarga la versión vigente antes de guardar; se pedirá confirmar antes de descartarlo.', true);
+            } else if (!err.status || err.status >= 500) {
+              state.refreshRequired = true;
+              setMessage((err.message || 'La conexión falló.') + ' El resultado del guardado es incierto. El borrador se conserva; recarga para comprobar el estado antes de enviar de nuevo.', true);
+            } else setMessage((err.message || 'No se pudieron guardar los permisos.') + ' El borrador se conserva.', true);
           } finally {
             state.saving = false;
             tipoSelect.disabled = rolSelect.disabled = createRolBtn.disabled = false;
-            panelPermisos.querySelectorAll('input,button').forEach(function (input) { input.disabled = false; });
-            saveBtn.disabled = !state.loadedRoleID;
-            if (saveBtn2) saveBtn2.disabled = !state.loadedRoleID;
+            updatePermissionControls();
           }
         });
       }
       wireSave(saveBtn);
       wireSave(saveBtn2);
 
+      reloadBtn.addEventListener('click', async function () {
+        if (reloadBtn.disabled || state.saving || state.loading) return;
+        if (state.snapshot && markDirty() && !window.confirm('Hay un borrador sin guardar. ¿Descartarlo y cargar la versión vigente del rol?')) return;
+        try {
+          const loaded = await loadPermisosByRole(Number(rolSelect.value || 0), true);
+          if (loaded) setMessage('Permisos recargados con la revisión vigente.', false);
+        } catch (err) {
+          setMessage((err.message || 'No se pudieron recargar los permisos.') + ' El borrador se conserva.', true);
+        }
+      });
+
       tipoSelect.addEventListener('change', async function () {
         if (state.snapshot && markDirty() && !window.confirm('Hay permisos sin guardar. ¿Descartar los cambios?')) { tipoSelect.value = state.tipoID; return; }
         state.tipoID = tipoSelect.value;
         ++state.loadSequence;
+        if (state.loadController) state.loadController.abort();
         state.loadedRoleID = 0;
         state.snapshot = '';
         panelPermisos.hidden = true;

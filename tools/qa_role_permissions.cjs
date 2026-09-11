@@ -78,7 +78,7 @@ function fakeElement() {
   return {
     listeners, hidden: false, disabled: false, value: '', dataset: {}, textContent: '', innerHTML: '',
     addEventListener(name, callback) { listeners[name] = callback; },
-    querySelectorAll() { return []; }, querySelector() { return null; }, scrollIntoView() {}, appendChild() {}, classList: { add() {}, remove() {} },
+    querySelectorAll() { return []; }, querySelector() { return null; }, scrollIntoView() {}, focus() {}, appendChild() {}, classList: { add() {}, remove() {} },
     matches(selector) { return selector === 'select[data-role-module]' && this.dataset.roleModule !== undefined || selector === 'select[data-role-page]' && this.dataset.rolePage !== undefined; }
   };
 }
@@ -270,13 +270,167 @@ async function invalidContractChecks(mode) {
   assert.equal(get('rolePermissionsSave').disabled, true, mode + ': tenant mismatch or missing revision fails closed');
   assert.match(get('rolePermissionsMsg').textContent, mode === 'badTenant' ? /no corresponde/ : /API no devolvió/);
 }
+async function customRoleBaseChecks() {
+  const html = fs.readFileSync(path.join(webRoot, htmlPaths[0]), 'utf8');
+  const functions = ['setCustomRoleMessage', 'resetCustomRoleForm', 'fillCustomRoleForm', 'customRolePayload', 'ensureOk'].map(name => {
+    const match = html.match(new RegExp('    (?:async )?function ' + name + '\\([^]*?(?=\\n    (?:async )?function |\\n    document\\.)'));
+    assert.ok(match, name + ' found');
+    return match[0];
+  }).join('\n');
+  const handlers = html.slice(html.indexOf("    document.getElementById('customRoleSave').addEventListener"), html.indexOf("    document.getElementById('customRoleCancel').addEventListener"));
+  const elements = new Map(), requests = [];
+  const get = id => { if (!elements.has(id)) elements.set(id, fakeElement()); return elements.get(id); };
+  const role = { id: 7, rol_base_id: 1, nombre: 'Cajero de auditoría', descripcion: 'Original' };
+  const state = { empresaID: 12, roles: [structuredClone(role)] };
+  const flags = { confirm: true, failRead: false };
+  const context = vm.createContext({
+    state, document: { getElementById: get }, confirm: () => flags.confirm, renderRoleEditor() {},
+    loadRoles: async () => { if (flags.failRead) throw new Error('Lectura interrumpida'); state.roles = [structuredClone(role)]; },
+    fetch: async (url, options) => {
+      const input = JSON.parse(options.body); requests.push({ url, input });
+      const conflict = input.expected_rol_base_id !== role.rol_base_id;
+      if (!conflict) Object.assign(role, input);
+      return { ok: !conflict, status: conflict ? 409 : 204, text: async () => conflict ? JSON.stringify({ error: 'Base obsoleta' }) : '' };
+    }
+  });
+  vm.runInContext(functions + '\n' + handlers, context);
+  context.fillCustomRoleForm(state.roles[0]);
+  get('customRoleDescription').value = 'Descripción editada por A';
+  role.rol_base_id = 2;
+  state.roles[0].rol_base_id = 2;
+  await get('customRoleSave').listeners.click();
+  assert.equal(requests.at(-1).input.expected_rol_base_id, 1, 'expected base is captured when editing starts, not read from a refreshed catalog');
+  assert.equal(role.rol_base_id, 2, 'editing only the description cannot restore an old base chosen by another administrator');
+  assert.equal(get('customRoleDescription').value, 'Descripción editada por A', 'base conflict preserves the metadata draft');
+  assert.equal(get('customRoleSave').disabled, true);
+  await get('customRoleSave').listeners.click();
+  assert.equal(requests.length, 1, 'stale metadata cannot be resubmitted');
+  flags.confirm = false;
+  await get('customRoleReload').listeners.click();
+  assert.equal(get('customRoleBase').value, '1', 'declining reload keeps the draft base');
+  flags.confirm = true; flags.failRead = true;
+  await get('customRoleReload').listeners.click();
+  assert.equal(get('customRoleDescription').value, 'Descripción editada por A', 'failed metadata reload preserves the draft');
+  flags.failRead = false;
+  await get('customRoleReload').listeners.click();
+  assert.equal(get('customRoleBase').value, '2');
+  get('customRoleBase').value = '3';
+  await get('customRoleSave').listeners.click();
+  assert.equal(requests.at(-1).input.expected_rol_base_id, 2, 'intentional base change compares the freshly loaded base');
+  assert.equal(requests.at(-1).input.rol_base_id, 3);
+  assert.equal(role.rol_base_id, 3);
+  assert.equal(Object.hasOwn(context.customRolePayload(0), 'expected_rol_base_id'), false, 'creation has no prior base revision');
+}
+function superHarness() {
+  const elements = new Map(), requests = [], timers = new Map();
+  const get = id => { if (!elements.has(id)) elements.set(id, fakeElement()); return elements.get(id); };
+  let timerID = 0;
+  const role = matrix(1);
+  const flags = { status: 0, holdSave: false, failRead: false, confirm: true };
+  const inputs = { modules: [], pages: [] };
+  for (const [id, kind] of [['modulosBox', 'modules'], ['paginasBox', 'pages']]) {
+    let html = '';
+    Object.defineProperty(get(id), 'innerHTML', {
+      get: () => html,
+      set: value => {
+        html = value;
+        inputs[kind] = Array.from(value.matchAll(/<input\b[^>]*>/g), match => {
+          const attrs = Object.fromEntries(Array.from(match[0].matchAll(/([\w-]+)="([^"]*)"/g), attr => [attr[1], attr[2]]));
+          const input = fakeElement();
+          input.checked = /\schecked(?:\s|>)/.test(match[0]);
+          input.getAttribute = name => attrs[name];
+          return input;
+        });
+      }
+    });
+    get(id).querySelectorAll = selector => selector.startsWith('input[') ? inputs[kind] : [];
+  }
+  get('panelPermisos').querySelectorAll = () => [...inputs.modules, ...inputs.pages, get('saveBtn2')];
+  const response = (status, data) => ({ ok: status < 400, status, json: async () => structuredClone(data), text: async () => status === 204 ? '' : JSON.stringify(data) });
+  const context = vm.createContext({
+    URLSearchParams, AbortController,
+    setTimeout(callback, ms) { const id = ++timerID; timers.set(id, { callback, ms }); return id; }, clearTimeout(id) { timers.delete(id); },
+    window: { location: { search: '?rol_id=1' }, confirm: () => flags.confirm, addEventListener() {} },
+    document: { getElementById: get, createElement: fakeElement, querySelectorAll: () => [] },
+    fetch: async (url, options = {}) => {
+      requests.push({ url, options });
+      if (url.endsWith('/tipos_empresas')) return response(200, []);
+      if (url.endsWith('/roles_de_usuario')) return response(200, roleFixture);
+      if (options.method === 'PUT') {
+        if (flags.holdSave) return new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true }));
+        if (flags.status) return response(flags.status, { error: 'Revisión no disponible' });
+        const input = JSON.parse(options.body);
+        if (!input.revision) return response(428, { error: 'Revisión requerida' });
+        if (input.revision !== role.revision) return response(409, { error: 'Revisión obsoleta' });
+        applyDefinition(role, input);
+        return response(204);
+      }
+      if (flags.failRead) throw new Error('Lectura interrumpida');
+      return response(200, role);
+    }
+  });
+  const scripts = Array.from(fs.readFileSync(path.join(webRoot, 'super/permisos_rol.html'), 'utf8').matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi));
+  vm.runInContext(scripts[1][1], context);
+  const change = (module, action, checked) => {
+    const input = inputs.modules.find(item => item.getAttribute('data-modulo') === module && item.getAttribute('data-action') === action);
+    assert.ok(input, 'rendered action exists'); input.checked = checked; input.listeners.change(); return input;
+  };
+  return { get, flags, role, change, timers, requests, flush: () => new Promise(resolve => setImmediate(resolve)), puts: () => requests.filter(req => req.options.method === 'PUT') };
+}
+async function superRevisionChecks(mode) {
+  const { get, flags, role, change, timers, flush, puts } = superHarness();
+  await flush();
+  const edited = change('ventas', 'D', true);
+  assert.equal(get('prDirtyNote').hidden, false);
+  if (mode === '409') {
+    applyDefinition(role, { permisos_modulo: [{ modulo: 'ventas', accion: 'R', permitido: false }], permisos_pagina: [] });
+  } else if (mode === '428' || mode === '500') flags.status = Number(mode);
+  else if (mode === 'timeout') flags.holdSave = true;
+  else if (mode === 'confirmation_failed') flags.failRead = true;
+  const saving = get('saveBtn').listeners.click();
+  await flush();
+  if (mode === 'timeout') {
+    const timeout = Array.from(timers.values()).find(timer => timer.ms === 30000);
+    assert.ok(timeout, 'Super writes have a 30 second timeout'); timeout.callback();
+  }
+  await saving;
+  assert.equal(JSON.parse(puts()[0].options.body).revision, 'fixture-1', 'Super sends the loaded version, not the current server version');
+  assert.equal(get('panelPermisos').hidden, false, 'conflict or confirmation failure keeps the matrix visible');
+  assert.equal(edited.checked, true, 'failed write preserves the edited decision');
+  assert.equal(get('saveBtn').disabled, true);
+  assert.equal(get('saveBtn2').disabled, true, 'both save controls enforce the revision boundary');
+  assert.match(get('msg').textContent, mode === '409' || mode === '428' ? /borrador se conserva/ : mode === 'confirmation_failed' ? /guardado se confirmó/ : /resultado del guardado es incierto/);
+  await get('saveBtn2').listeners.click();
+  assert.equal(puts().length, 1, 'Super never retries an ambiguous/stale write');
+  flags.confirm = false;
+  if (mode !== 'confirmation_failed') {
+    await get('reloadBtn').listeners.click();
+    assert.equal(get('prDirtyNote').hidden, false, 'declining reload preserves the draft');
+  }
+  flags.confirm = true; flags.failRead = true;
+  await get('reloadBtn').listeners.click();
+  assert.equal(edited.checked, true, 'failed refresh preserves the draft decision');
+  assert.equal(get('saveBtn').disabled, true);
+  flags.failRead = false; flags.status = 0; flags.holdSave = false;
+  await get('reloadBtn').listeners.click();
+  assert.equal(get('saveBtn').disabled, false, 'successful explicit refresh obtains a writable current version');
+  const expectedRevision = role.revision;
+  change('ventas', 'D', mode !== 'confirmation_failed');
+  await get('saveBtn').listeners.click();
+  const payload = JSON.parse(puts().at(-1).options.body);
+  assert.equal(payload.revision, expectedRevision);
+  assert.equal(payload.permisos_modulo.length, modules.length * actions.length, 'Super sends its complete global template');
+  if (mode === '409') assert.ok(payload.permisos_modulo.some(item => item.modulo === 'ventas' && item.accion === 'R' && !item.permitido), 'the concurrent denial survives reload and subsequent edit');
+  assert.match(get('msg').textContent, /guardados correctamente/);
+  assert.equal(timers.size, 0);
+}
 async function superRaceChecks(firstOutcome) {
   const elements = new Map(), requests = [];
   const get = id => { if (!elements.has(id)) elements.set(id, fakeElement()); return elements.get(id); };
   let releaseFirst;
   const first = new Promise(resolve => { releaseFirst = resolve; });
   const context = vm.createContext({
-    URLSearchParams, window: { location: { search: '?rol_id=7' }, confirm: () => true, addEventListener() {} },
+    URLSearchParams, AbortController, setTimeout, clearTimeout, window: { location: { search: '?rol_id=7' }, confirm: () => true, addEventListener() {} },
     document: { getElementById: get, createElement: fakeElement, querySelectorAll: () => [] },
     fetch: async (url, options = {}) => {
       requests.push({ url, options });
@@ -369,12 +523,10 @@ async function serve() {
           if (!matrices.has(id)) matrices.set(id, matrix(id));
           if (req.method === 'PUT') {
             const current = matrices.get(id);
-            if (url.searchParams.get('action') === 'permisos') {
-              if (!data.revision) { send({ error: 'Recarga para obtener la revisión' }, 428); return; }
-              if (data.revision !== current.revision) { send({ error: 'Otro administrador cambió el rol o su base' }, 409); return; }
-              applyDefinition(current, data);
-              res.writeHead(204, { 'Cache-Control': 'no-store' }); res.end();
-            } else { apply(current, data); send({ ok: true }); }
+            if (!data.revision) { send({ error: 'Recarga para obtener la revisión' }, 428); return; }
+            if (data.revision !== current.revision) { send({ error: 'Otro administrador cambió el rol o su base' }, 409); return; }
+            applyDefinition(current, data);
+            res.writeHead(204, { 'Cache-Control': 'no-store' }); res.end();
           } else send(matrices.get(id));
           return;
         }
@@ -405,8 +557,10 @@ async function serve() {
   for (const status of [409, 428]) await conflictChecks(status);
   for (const mode of ['timeout', 'server_error', 'confirmation_failed']) await uncertainSaveChecks(mode);
   for (const mode of ['badTenant', 'missingRevision']) await invalidContractChecks(mode);
+  await customRoleBaseChecks();
+  for (const mode of ['409', '428', '500', 'timeout', 'confirmation_failed']) await superRevisionChecks(mode);
   for (const outcome of ['success', 'http_error', 'network_error']) await superRaceChecks(outcome);
   superFilterChecks();
-  process.stdout.write('PASS: sintaxis, catálogo por ID/tipo, herencia explícita y overrides dispersos, revisión/409/428, borrador conservado, timeout30s sin duplicación, tenant/consulta, aborto de carga y respuestas super fuera de orden.\n');
+  process.stdout.write('PASS: sintaxis, catálogo por ID/tipo, herencia explícita y overrides dispersos, CAS empresa/Super/base, borradores y recarga explícita, timeout30s sin duplicación, tenant/consulta, aborto de carga, filtro íntegro y respuestas fuera de orden.\n');
   if (process.argv.includes('--serve')) await serve();
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });

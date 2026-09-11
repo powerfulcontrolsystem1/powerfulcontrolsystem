@@ -105,7 +105,7 @@
       return '<details open data-role-permission-search="' + escape(blob) + '"><summary>' + escape(title) + '</summary><div class="role-permissions-actions">' + actions.map(function (action) {
         const label = actionLabels[action[0]] || action[2];
         const base = inheritedModules.get(item.modulo);
-        return '<label><span>' + escape(label) + '</span><select data-role-module="' + index + '" data-role-action="' + action[0] + '" aria-label="' + escape(label + ' en ' + title) + '">' + choices(state.moduleOverrides, item.modulo + ':' + action[0], base && base[action[1]]) + '</select><small>Vigente al cargar: ' + (item[action[1]] ? 'permitido' : 'denegado') + '</small></label>';
+        return '<label><span>' + escape(label) + '</span><select class="form-input" data-role-module="' + index + '" data-role-action="' + action[0] + '" aria-label="' + escape(label + ' en ' + title) + '">' + choices(state.moduleOverrides, item.modulo + ':' + action[0], base && base[action[1]]) + '</select><small>Vigente al cargar: ' + (item[action[1]] ? 'permitido' : 'denegado') + '</small></label>';
       }).join('') + '</div></details>';
     }).join('');
     const groups = new Map();
@@ -120,7 +120,7 @@
         const title = page.titulo || page.pagina_clave;
         const moduleTitle = (Array.isArray(page.any_modules) && page.any_modules.length ? page.any_modules : [page.modulo]).filter(Boolean).map(function (mod) { return moduleLabels[mod] || mod; }).join(', ');
         const blob = normalize([entry[0], title, page.pagina_clave, moduleTitle].join(' '));
-        return '<label class="role-permissions-page" data-role-permission-search="' + escape(blob) + '"><span>' + escape(title) + '<small>' + escape(moduleTitle) + ' · Vigente al cargar: ' + (page.permitido ? 'visible' : 'oculta') + '</small></span><select data-role-page="' + row.index + '" aria-label="' + escape('Visibilidad de ' + title) + '">' + choices(state.pageOverrides, page.pagina_clave, inheritedPages.get(page.pagina_clave)) + '</select></label>';
+        return '<label class="role-permissions-page" data-role-permission-search="' + escape(blob) + '"><span>' + escape(title) + '<small>' + escape(moduleTitle) + ' · Vigente al cargar: ' + (page.permitido ? 'visible' : 'oculta') + '</small></span><select class="form-input" data-role-page="' + row.index + '" aria-label="' + escape('Visibilidad de ' + title) + '">' + choices(state.pageOverrides, page.pagina_clave, inheritedPages.get(page.pagina_clave)) + '</select></label>';
       }).join('') + '</details>';
     }).join('');
     content.innerHTML = '<h3>Acciones por módulo</h3>' + modules + '<h3>Visibilidad de páginas</h3>' + pages + '<p id="rolePermissionsEmpty" class="form-help" hidden>No hay coincidencias para esta búsqueda.</p>';

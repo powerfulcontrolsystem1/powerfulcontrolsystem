@@ -216,6 +216,7 @@
         </label>
         <div class="form-actions" style="margin:0;">
           <button type="button" id="customRoleSave" class="btn">Guardar rol</button>
+          <button type="button" id="customRoleReload" class="btn secondary" disabled>Recargar rol</button>
           <button type="button" id="customRoleCancel" class="btn secondary">Cancelar</button>
         </div>
       </div>
@@ -301,7 +302,9 @@
       highlightUserID: 0,
       highlightUserEmail: '',
       currentUserPhotoURL: '',
-      customRoleEditingID: 0
+      customRoleEditingID: 0,
+      customRoleOriginalBaseID: 0,
+      customRoleRefreshRequired: false
     };
 
     function getQueryParam(name) {
@@ -589,12 +592,44 @@
 
     function resetCustomRoleForm() {
       state.customRoleEditingID = 0;
+      state.customRoleOriginalBaseID = 0;
+      state.customRoleRefreshRequired = false;
       document.getElementById('customRoleId').value = '';
       document.getElementById('customRoleName').value = '';
       document.getElementById('customRoleDescription').value = '';
       document.getElementById('customRoleBase').value = '';
       document.getElementById('customRoleSave').textContent = 'Guardar rol';
+      document.getElementById('customRoleSave').disabled = false;
+      document.getElementById('customRoleReload').disabled = true;
       setCustomRoleMessage('', false);
+    }
+
+    function fillCustomRoleForm(role) {
+      state.customRoleEditingID = Number(role.id || 0);
+      state.customRoleOriginalBaseID = Number(role.rol_base_id || 0);
+      state.customRoleRefreshRequired = false;
+      document.getElementById('customRoleId').value = String(role.id || '');
+      document.getElementById('customRoleName').value = role.nombre || '';
+      document.getElementById('customRoleDescription').value = role.descripcion || '';
+      document.getElementById('customRoleBase').value = String(role.rol_base_id || '');
+      document.getElementById('customRoleSave').textContent = 'Actualizar rol';
+      document.getElementById('customRoleSave').disabled = false;
+      document.getElementById('customRoleReload').disabled = false;
+      setCustomRoleMessage('', false);
+      document.getElementById('customRoleName').focus();
+    }
+
+    function customRolePayload(id) {
+      const payload = {
+        nombre: document.getElementById('customRoleName').value.trim(),
+        descripcion: document.getElementById('customRoleDescription').value.trim(),
+        rol_base_id: Number(document.getElementById('customRoleBase').value || 0),
+        aprobado_por: 'administrador_empresa',
+        codigo_aprobacion: 'roles_empresa',
+        motivo_aprobacion: id ? 'Actualizacion de rol personalizado de empresa' : 'Creacion de rol personalizado de empresa'
+      };
+      if (id) payload.expected_rol_base_id = state.customRoleOriginalBaseID;
+      return payload;
     }
 
     function renderCustomRolesPanel() {
@@ -631,14 +666,7 @@
         row.querySelector('strong').textContent = role.nombre || 'Rol personalizado';
         row.querySelector('small').textContent = (role.descripcion || 'Sin descripcion') + ' Base: ' + (base ? roleLabel(base) : 'No definida') + '. Estado: ' + (role.estado || 'activo') + '.';
         row.querySelector('.custom-role-edit').onclick = function() {
-          state.customRoleEditingID = Number(role.id || 0);
-          document.getElementById('customRoleId').value = String(role.id || '');
-          document.getElementById('customRoleName').value = role.nombre || '';
-          document.getElementById('customRoleDescription').value = role.descripcion || '';
-          document.getElementById('customRoleBase').value = String(role.rol_base_id || '');
-          document.getElementById('customRoleSave').textContent = 'Actualizar rol';
-          setCustomRoleMessage('', false);
-          document.getElementById('customRoleName').focus();
+          fillCustomRoleForm(role);
         };
         const isActive = !role.estado || role.estado === 'activo';
         const permissionsButton = row.querySelector('.custom-role-permissions');
@@ -1305,21 +1333,15 @@
 
     document.getElementById('customRoleSave').addEventListener('click', async function() {
       const button = document.getElementById('customRoleSave');
-      if (button.disabled) return;
+      if (button.disabled || state.customRoleRefreshRequired) return;
       const id = Number(document.getElementById('customRoleId').value || state.customRoleEditingID || 0);
-      const payload = {
-        nombre: document.getElementById('customRoleName').value.trim(),
-        descripcion: document.getElementById('customRoleDescription').value.trim(),
-        rol_base_id: Number(document.getElementById('customRoleBase').value || 0),
-        aprobado_por: 'administrador_empresa',
-        codigo_aprobacion: 'roles_empresa',
-        motivo_aprobacion: id ? 'Actualizacion de rol personalizado de empresa' : 'Creacion de rol personalizado de empresa'
-      };
+      const payload = customRolePayload(id);
       if (!payload.nombre || !payload.rol_base_id) {
         setCustomRoleMessage('Nombre del rol y rol base son obligatorios', true);
         return;
       }
       button.disabled = true;
+      document.getElementById('customRoleReload').disabled = true;
       try {
         const url = '/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID) + (id ? ('&id=' + encodeURIComponent(id)) : '');
         const res = await fetch(url, {
@@ -1333,9 +1355,35 @@
         renderRoleEditor();
         setCustomRoleMessage(id ? 'Rol personalizado actualizado' : 'Rol personalizado creado', false);
       } catch (err) {
-        setCustomRoleMessage(err.message || 'No se pudo guardar el rol personalizado', true);
+        if (err.status === 409 || err.status === 428) {
+          state.customRoleRefreshRequired = true;
+          setCustomRoleMessage('El rol cambió desde que abriste la edición. El borrador se conserva. Usa Recargar rol para revisar la base vigente antes de guardar de nuevo.', true);
+        } else setCustomRoleMessage(err.message || 'No se pudo guardar el rol personalizado', true);
       } finally {
-        button.disabled = false;
+        button.disabled = state.customRoleRefreshRequired;
+        document.getElementById('customRoleReload').disabled = !state.customRoleEditingID;
+      }
+    });
+
+    document.getElementById('customRoleReload').addEventListener('click', async function() {
+      const button = document.getElementById('customRoleReload');
+      const id = state.customRoleEditingID;
+      if (button.disabled || !id || !confirm('Se descartará el borrador al cargar la versión vigente del rol. ¿Continuar?')) return;
+      button.disabled = true;
+      document.getElementById('customRoleSave').disabled = true;
+      try {
+        await loadRoles();
+        if (state.customRoleEditingID !== id) return;
+        const role = state.roles.find(function(item) { return Number(item.id) === id; });
+        if (!role) throw new Error('El rol ya no está disponible.');
+        fillCustomRoleForm(role);
+        setCustomRoleMessage('Rol recargado con la base vigente.', false);
+      } catch (err) {
+        state.customRoleRefreshRequired = true;
+        setCustomRoleMessage((err.message || 'No se pudo recargar el rol.') + ' El borrador se conserva.', true);
+      } finally {
+        button.disabled = !state.customRoleEditingID;
+        document.getElementById('customRoleSave').disabled = state.customRoleRefreshRequired;
       }
     });
 
