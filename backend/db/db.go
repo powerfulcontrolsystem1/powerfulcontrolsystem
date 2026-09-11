@@ -1104,22 +1104,12 @@ func mergeLicenciaModules(base string, extra ...string) string {
 	return strings.Join(out, ",")
 }
 
-// GetLicenciaPermisoPolicyByEmpresa resuelve la licencia activa vigente para permisos de una empresa.
+// GetLicenciaPermisoPolicyByEmpresa consulta la licencia vigente en cada decisión.
+// Una revocación en otra réplica o conexión no puede reutilizar permisos cacheados.
 func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*LicenciaPermisoPolicy, error) {
 	if dbConn == nil || empresaID <= 0 {
-		return nil, nil
+		return nil, errors.New("conexion y empresa_id son obligatorios para resolver la licencia")
 	}
-
-	licenciaPermisoPolicyCacheMu.Lock()
-	if cached, ok := licenciaPermisoPolicyCache[empresaID]; ok && time.Since(cached.LoadedAt) < licenciaPermisoPolicyCacheTTL {
-		licenciaPermisoPolicyCacheMu.Unlock()
-		if cached.Policy == nil {
-			return nil, nil
-		}
-		copyPolicy := *cached.Policy
-		return &copyPolicy, nil
-	}
-	licenciaPermisoPolicyCacheMu.Unlock()
 
 	query := `SELECT id,
 		COALESCE(nombre, ''),
@@ -1157,33 +1147,36 @@ func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*Licenc
 	var superRolRaw int
 	if err := row.Scan(&item.LicenciaID, &item.Nombre, &item.ModulosHabilitados, &superRolRaw); err != nil {
 		if err == sql.ErrNoRows {
-			licenciaPermisoPolicyCacheMu.Lock()
-			licenciaPermisoPolicyCache[empresaID] = cachedLicenciaPermisoPolicy{Policy: nil, LoadedAt: time.Now()}
-			licenciaPermisoPolicyCacheMu.Unlock()
-			return nil, nil
-		}
-		if isMissingTableError(err) || isMissingColumnError(err) {
-			licenciaPermisoPolicyCacheMu.Lock()
-			licenciaPermisoPolicyCache[empresaID] = cachedLicenciaPermisoPolicy{Policy: nil, LoadedAt: time.Now()}
-			licenciaPermisoPolicyCacheMu.Unlock()
 			return nil, nil
 		}
 		return nil, err
 	}
 	item.SuperRolHabilitado = superRolRaw == 1
-	addons, addonsErr := ListEmpresaLicenciasAdicionales(dbConn, empresaID, false)
-	if addonsErr == nil && strings.TrimSpace(item.ModulosHabilitados) != "" {
-		extraModules := make([]string, 0, len(addons))
-		for _, addon := range addons {
-			if strings.TrimSpace(addon.ModulosHab) != "" {
-				extraModules = append(extraModules, addon.ModulosHab)
-			}
-		}
-		item.ModulosHabilitados = mergeLicenciaModules(item.ModulosHabilitados, extraModules...)
+	// La lectura de autorización no usa ListEmpresaLicenciasAdicionales porque
+	// esa función operativa ejecuta Ensure*. Aquí sólo leemos esquema migrado.
+	addons, err := querySQLCompat(dbConn, `SELECT COALESCE(l.modulos_habilitados, '')
+		FROM empresa_licencias_adicionales a
+		JOIN licencias l ON l.id = a.licencia_id AND COALESCE(l.empresa_id, 0) IN (0, a.empresa_id)
+		WHERE a.empresa_id = ? AND COALESCE(a.activo, 1) = 1 AND COALESCE(l.activo, 1) = 1
+		AND `+postgresLicenciaDatePredicate("a.fecha_inicio", "<=")+`
+		AND `+postgresLicenciaDatePredicate("a.fecha_fin", ">=")+`
+		ORDER BY a.id`, empresaID)
+	if err != nil {
+		return nil, err
 	}
-	licenciaPermisoPolicyCacheMu.Lock()
-	licenciaPermisoPolicyCache[empresaID] = cachedLicenciaPermisoPolicy{Policy: &item, LoadedAt: time.Now()}
-	licenciaPermisoPolicyCacheMu.Unlock()
+	defer addons.Close()
+	extraModules := []string{}
+	for addons.Next() {
+		var modules string
+		if err := addons.Scan(&modules); err != nil {
+			return nil, err
+		}
+		extraModules = append(extraModules, modules)
+	}
+	if err := addons.Err(); err != nil {
+		return nil, err
+	}
+	item.ModulosHabilitados = mergeLicenciaModules(item.ModulosHabilitados, extraModules...)
 	copyPolicy := item
 	return &copyPolicy, nil
 }

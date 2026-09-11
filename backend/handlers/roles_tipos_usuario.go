@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -213,6 +214,10 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "rol_id required", http.StatusBadRequest)
 				return
 			}
+			if _, _, err := validateEmpresaRolPermissionPayload(payload.RolID, payload); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 
 			if _, err := dbpkg.GetRolDeUsuarioByID(dbSuper, payload.RolID); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
@@ -255,6 +260,149 @@ func RolesDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+// EmpresaRolDeUsuarioPermisosHandler se invoca desde el wrapper de seguridad
+// empresarial. El tenant validado es la autoridad y el ID sólo selecciona un rol propio.
+func EmpresaRolDeUsuarioPermisosHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenant, ok := TenantContextFromRequest(r)
+		if !ok || strings.TrimSpace(tenant.AdminEmail) == "" {
+			http.Error(w, "sesion empresarial requerida", http.StatusUnauthorized)
+			return
+		}
+		if r.Method != http.MethodGet && r.Method != http.MethodPut {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		rolID, err := parseRequiredInt64Query(r, "rol_id")
+		if err != nil || rolID <= 0 || len(r.URL.Query()["rol_id"]) != 1 {
+			http.Error(w, "rol_id invalido", http.StatusBadRequest)
+			return
+		}
+		rol, err := dbpkg.GetRolDeUsuarioEmpresaByID(dbSuper, tenant.EmpresaID, rolID)
+		if err != nil {
+			writeEmpresaRolPermissionError(w, err)
+			return
+		}
+		base, err := dbpkg.GetRolDeUsuarioByIDEmpresaScope(dbSuper, tenant.EmpresaID, rol.RolBaseID)
+		if err != nil {
+			writeEmpresaRolPermissionError(w, err)
+			return
+		}
+		if !dbpkg.IsRolDeUsuarioAsignable(rol) || base.EmpresaID != 0 || !dbpkg.IsRolDeUsuarioAsignable(base) {
+			http.Error(w, "el rol y su base deben estar activos y ser empresariales", http.StatusConflict)
+			return
+		}
+		if err := dbpkg.RolesPermisosSchemaReady(dbSuper); err != nil {
+			writeEmpresaRolPermissionError(w, err)
+			return
+		}
+		if r.Method == http.MethodGet {
+			modulos := buildPermissionModuleMatrixForRole(base.Nombre)
+			pageOverrides := map[string]bool{}
+			for _, id := range []int64{base.ID, rol.ID} {
+				moduleItems, err := dbpkg.ListRolPermisosModuloByRolIDEmpresaScope(dbSuper, tenant.EmpresaID, id)
+				if err != nil {
+					writeEmpresaRolPermissionError(w, err)
+					return
+				}
+				for _, item := range moduleItems {
+					for idx := range modulos {
+						if modulos[idx].Modulo == item.Modulo {
+							setPermissionActionOnModuleRow(&modulos[idx], item.Accion, item.Permitido)
+						}
+					}
+				}
+				pageItems, err := dbpkg.ListRolPermisosPaginaByRolIDEmpresaScope(dbSuper, tenant.EmpresaID, id)
+				if err != nil {
+					writeEmpresaRolPermissionError(w, err)
+					return
+				}
+				for _, item := range pageItems {
+					pageOverrides[item.PaginaClave] = item.Permitido
+				}
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"empresa_id": tenant.EmpresaID, "rol_id": rol.ID, "rol_nombre": rol.Nombre,
+				"rol_base_id": base.ID, "rol_base_nombre": base.Nombre,
+				"acciones_catalogo": append([]string{}, permissionActionsCatalogOrdered...),
+				"acciones_etiqueta": PermissionActionDisplayNameMap(),
+				"modulos_catalogo":  append([]string{}, permissionModulesCatalogOrdered...),
+				"modulos_etiqueta":  PermissionModuleDisplayNameMap(),
+				"modulos":           modulos, "paginas": buildPermissionPagesCatalogFromModuleRows(modulos, pageOverrides),
+			})
+			return
+		}
+		var payload rolPermisosUpsertPayload
+		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+		if err := decoder.Decode(&payload); err != nil {
+			http.Error(w, "matriz de permisos invalida", http.StatusBadRequest)
+			return
+		}
+		var extra interface{}
+		if err := decoder.Decode(&extra); err != io.EOF || (payload.RolID != 0 && payload.RolID != rolID) {
+			http.Error(w, "payload o rol_id inconsistente", http.StatusBadRequest)
+			return
+		}
+		modulos, paginas, err := validateEmpresaRolPermissionPayload(rolID, payload)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := dbpkg.ReplaceEmpresaRolPermisosDeUsuario(dbSuper, tenant.EmpresaID, rolID, modulos, paginas, tenant.AdminEmail); err != nil {
+			writeEmpresaRolPermissionError(w, err)
+			return
+		}
+		invalidateEmpresaPermissionCacheForEmpresa(tenant.EmpresaID)
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func writeEmpresaRolPermissionError(w http.ResponseWriter, err error) {
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "rol personalizado no encontrado", http.StatusNotFound)
+		return
+	}
+	http.Error(w, "no se pudo procesar la matriz de permisos", http.StatusInternalServerError)
+}
+
+func validateEmpresaRolPermissionPayload(rolID int64, payload rolPermisosUpsertPayload) ([]dbpkg.RolPermisoModulo, []dbpkg.RolPermisoPagina, error) {
+	if rolID <= 0 || payload.PermisosModulo == nil || payload.PermisosPagina == nil {
+		return nil, nil, errors.New("debe enviar permisos_modulo y permisos_pagina como listas")
+	}
+	modules, actions, pages := map[string]bool{}, map[string]bool{}, map[string]bool{}
+	for _, key := range permissionModulesCatalogOrdered {
+		modules[key] = true
+	}
+	for _, key := range permissionActionsCatalogOrdered {
+		actions[key] = true
+	}
+	for _, rule := range permissionPagesCatalogOrdered {
+		pages[rule.PaginaClave] = true
+	}
+	seen := map[string]bool{}
+	modulos := make([]dbpkg.RolPermisoModulo, 0, len(payload.PermisosModulo))
+	for _, item := range payload.PermisosModulo {
+		modulo, accion := strings.ToLower(strings.TrimSpace(item.Modulo)), strings.ToUpper(strings.TrimSpace(item.Accion))
+		key := "m:" + modulo + ":" + accion
+		if !modules[modulo] || !actions[accion] || seen[key] {
+			return nil, nil, errors.New("modulo o accion invalida o repetida")
+		}
+		seen[key] = true
+		modulos = append(modulos, dbpkg.RolPermisoModulo{RolID: rolID, Modulo: modulo, Accion: accion, Permitido: item.Permitido})
+	}
+	paginas := make([]dbpkg.RolPermisoPagina, 0, len(payload.PermisosPagina))
+	for _, item := range payload.PermisosPagina {
+		pagina := strings.TrimSpace(item.PaginaClave)
+		key := "p:" + pagina
+		if !pages[pagina] || seen[key] {
+			return nil, nil, errors.New("pagina invalida o repetida")
+		}
+		seen[key] = true
+		paginas = append(paginas, dbpkg.RolPermisoPagina{RolID: rolID, PaginaClave: pagina, Permitido: item.Permitido})
+	}
+	return modulos, paginas, nil
 }
 
 func parseRequiredInt64Query(r *http.Request, key string) (int64, error) {

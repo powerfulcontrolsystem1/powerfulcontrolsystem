@@ -66,10 +66,14 @@ func EnsureRolesPermisosSchema(dbConn *sql.DB) error {
 
 // GetRolDeUsuarioByID retorna un rol por id.
 func GetRolDeUsuarioByID(dbConn *sql.DB, id int64) (*RolDeUsuario, error) {
-	if err := EnsureRolesDeUsuarioSchema(dbConn); err != nil {
+	return getRolDeUsuarioByIDScoped(dbConn, id, 0, false)
+}
+
+func getRolDeUsuarioByIDScoped(dbConn *sql.DB, id, empresaID int64, onlyEmpresa bool) (*RolDeUsuario, error) {
+	if err := RolesDeUsuarioSchemaReady(dbConn); err != nil {
 		return nil, err
 	}
-	const q = `SELECT
+	q := `SELECT
 		r.id,
 		COALESCE(r.empresa_id, 0),
 		r.tipo_empresa_id,
@@ -85,11 +89,20 @@ func GetRolDeUsuarioByID(dbConn *sql.DB, id int64) (*RolDeUsuario, error) {
 		COALESCE(r.observaciones, '')
 	FROM roles_de_usuario r
 	LEFT JOIN tipos_de_empresas t ON t.id = r.tipo_empresa_id
-	WHERE r.id = ?
-	LIMIT 1`
+	WHERE r.id = ?`
+	args := []interface{}{id}
+	if empresaID > 0 {
+		if onlyEmpresa {
+			q += ` AND r.empresa_id = ?`
+		} else {
+			q += ` AND COALESCE(r.empresa_id, 0) IN (0, ?)`
+		}
+		args = append(args, empresaID)
+	}
+	q += ` LIMIT 1`
 
 	item := &RolDeUsuario{}
-	err := queryRowSQLCompat(dbConn, q, id).Scan(
+	err := queryRowSQLCompat(dbConn, q, args...).Scan(
 		&item.ID,
 		&item.EmpresaID,
 		&item.TipoEmpresaID,
@@ -108,6 +121,7 @@ func GetRolDeUsuarioByID(dbConn *sql.DB, id int64) (*RolDeUsuario, error) {
 		return nil, err
 	}
 	item.Personalizado = item.EmpresaID > 0 || strings.EqualFold(strings.TrimSpace(item.Origen), "empresa")
+	item.Asignable = IsRolDeUsuarioAsignable(item)
 	return item, nil
 }
 
@@ -142,9 +156,6 @@ func ListRolPermisosModuloByRolID(dbConn *sql.DB, rolID int64) ([]RolPermisoModu
 
 	rows, err := dbConn.Query(q, rolID)
 	if err != nil {
-		if isMissingTableError(err) {
-			return []RolPermisoModulo{}, nil
-		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -164,7 +175,7 @@ func ListRolPermisosModuloByRolID(dbConn *sql.DB, rolID int64) ([]RolPermisoModu
 		}
 		out = append(out, item)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // ListRolPermisosPaginaByRolID lista permisos por pagina para un rol.
@@ -180,9 +191,6 @@ func ListRolPermisosPaginaByRolID(dbConn *sql.DB, rolID int64) ([]RolPermisoPagi
 
 	rows, err := dbConn.Query(q, rolID)
 	if err != nil {
-		if isMissingTableError(err) {
-			return []RolPermisoPagina{}, nil
-		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -201,20 +209,54 @@ func ListRolPermisosPaginaByRolID(dbConn *sql.DB, rolID int64) ([]RolPermisoPagi
 		}
 		out = append(out, item)
 	}
-	return out, nil
+	return out, rows.Err()
+}
+
+// ListRolPermisosModuloByRolIDEmpresaScope lee únicamente roles globales o propios.
+func ListRolPermisosModuloByRolIDEmpresaScope(dbConn *sql.DB, empresaID, rolID int64) ([]RolPermisoModulo, error) {
+	if _, err := GetRolDeUsuarioByIDEmpresaScope(dbConn, empresaID, rolID); err != nil {
+		return nil, err
+	}
+	return ListRolPermisosModuloByRolID(dbConn, rolID)
+}
+
+// ListRolPermisosPaginaByRolIDEmpresaScope aplica el mismo alcance a las páginas.
+func ListRolPermisosPaginaByRolIDEmpresaScope(dbConn *sql.DB, empresaID, rolID int64) ([]RolPermisoPagina, error) {
+	if _, err := GetRolDeUsuarioByIDEmpresaScope(dbConn, empresaID, rolID); err != nil {
+		return nil, err
+	}
+	return ListRolPermisosPaginaByRolID(dbConn, rolID)
+}
+
+// ReplaceEmpresaRolPermisosDeUsuario nunca modifica roles globales ni de otro tenant.
+func ReplaceEmpresaRolPermisosDeUsuario(dbConn *sql.DB, empresaID, rolID int64, modulos []RolPermisoModulo, paginas []RolPermisoPagina, usuario string) error {
+	if empresaID <= 0 {
+		return sql.ErrNoRows
+	}
+	return replaceRolPermisosDeUsuario(dbConn, empresaID, rolID, modulos, paginas, usuario)
 }
 
 // ReplaceRolPermisosDeUsuario reemplaza en bloque los permisos por modulo y pagina de un rol.
 func ReplaceRolPermisosDeUsuario(dbConn *sql.DB, rolID int64, permisosModulo []RolPermisoModulo, permisosPagina []RolPermisoPagina, usuarioCreador string) error {
+	return replaceRolPermisosDeUsuario(dbConn, 0, rolID, permisosModulo, permisosPagina, usuarioCreador)
+}
+
+func replaceRolPermisosDeUsuario(dbConn *sql.DB, empresaID, rolID int64, permisosModulo []RolPermisoModulo, permisosPagina []RolPermisoPagina, usuarioCreador string) error {
+	if rolID <= 0 {
+		return sql.ErrNoRows
+	}
+	if err := validateRolPermisosInput(rolID, permisosModulo, permisosPagina); err != nil {
+		return err
+	}
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-		}
-	}()
+	defer tx.Rollback()
+	var lockedID int64
+	if err = tx.QueryRow(`SELECT id FROM roles_de_usuario WHERE id = ? AND (? = 0 OR empresa_id = ?) AND COALESCE(estado, 'activo') = 'activo' FOR UPDATE`, rolID, empresaID, empresaID).Scan(&lockedID); err != nil {
+		return err
+	}
 
 	if _, err = tx.Exec(`DELETE FROM roles_de_usuario_permisos WHERE rol_id = ?`, rolID); err != nil {
 		return err
@@ -257,6 +299,25 @@ func ReplaceRolPermisosDeUsuario(dbConn *sql.DB, rolID int64, permisosModulo []R
 	return nil
 }
 
+func validateRolPermisosInput(rolID int64, modulos []RolPermisoModulo, paginas []RolPermisoPagina) error {
+	seen := make(map[string]bool, len(modulos)+len(paginas))
+	for _, item := range modulos {
+		key := "m:" + strings.ToLower(strings.TrimSpace(item.Modulo)) + ":" + strings.ToUpper(strings.TrimSpace(item.Accion))
+		if (item.RolID != 0 && item.RolID != rolID) || strings.TrimSpace(item.Modulo) == "" || !isValidPermisoAccion(item.Accion) || seen[key] {
+			return errors.New("permiso de modulo invalido o repetido")
+		}
+		seen[key] = true
+	}
+	for _, item := range paginas {
+		key := "p:" + strings.TrimSpace(item.PaginaClave)
+		if (item.RolID != 0 && item.RolID != rolID) || strings.TrimSpace(item.PaginaClave) == "" || seen[key] {
+			return errors.New("permiso de pagina invalido o repetido")
+		}
+		seen[key] = true
+	}
+	return nil
+}
+
 // LookupRolPermisoModuloByRoleName busca override de modulo/accion por nombre de rol.
 func LookupRolPermisoModuloByRoleName(dbConn *sql.DB, nombreRol, modulo, accion string) (bool, bool, error) {
 	rolID, err := ResolveRolDeUsuarioIDByNombre(dbConn, nombreRol)
@@ -283,7 +344,7 @@ func LookupRolPermisoModuloByRolID(dbConn *sql.DB, rolID int64, modulo, accion s
 	var permitidoInt int64
 	err := dbConn.QueryRow(q, rolID, modulo, accion).Scan(&permitidoInt)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) || isMissingTableError(err) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return false, false, nil
 		}
 		return false, false, err
@@ -316,7 +377,7 @@ func LookupRolPermisoPaginaByRolID(dbConn *sql.DB, rolID int64, paginaClave stri
 	var permitidoInt int64
 	err := dbConn.QueryRow(q, rolID, paginaClave).Scan(&permitidoInt)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) || isMissingTableError(err) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return false, false, nil
 		}
 		return false, false, err
