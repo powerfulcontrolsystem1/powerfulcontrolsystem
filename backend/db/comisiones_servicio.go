@@ -1558,10 +1558,6 @@ func listComisionServicioItemsFromCarrito(dbConn *sql.DB, empresaID, carritoID i
 		hasServicios = false
 	}
 
-	tipoFilter := "AND lower(COALESCE(i.tipo_item, 'producto')) = 'servicio'"
-	if incluirProductos {
-		tipoFilter = "AND lower(COALESCE(i.tipo_item, 'producto')) IN ('servicio', 'producto')"
-	}
 	query := `SELECT
 		i.id,
 		CASE WHEN lower(COALESCE(i.tipo_item, 'producto')) = 'servicio' THEN COALESCE(i.referencia_id, 0) ELSE 0 END,
@@ -1576,7 +1572,8 @@ func listComisionServicioItemsFromCarrito(dbConn *sql.DB, empresaID, carritoID i
 	WHERE i.empresa_id = ?
 		AND i.carrito_id = ?
 		AND COALESCE(i.estado, 'activo') = 'activo'
-		` + tipoFilter + `
+		AND (lower(COALESCE(i.tipo_item, 'producto')) = 'servicio'
+			OR (? AND lower(COALESCE(i.tipo_item, 'producto')) = 'producto'))
 	ORDER BY i.id ASC`
 	if hasServicios {
 		query = `SELECT
@@ -1595,11 +1592,12 @@ func listComisionServicioItemsFromCarrito(dbConn *sql.DB, empresaID, carritoID i
 		WHERE i.empresa_id = ?
 			AND i.carrito_id = ?
 			AND COALESCE(i.estado, 'activo') = 'activo'
-			` + tipoFilter + `
+			AND (lower(COALESCE(i.tipo_item, 'producto')) = 'servicio'
+				OR (? AND lower(COALESCE(i.tipo_item, 'producto')) = 'producto'))
 		ORDER BY i.id ASC`
 	}
 
-	rows, err := dbConn.Query(query, empresaID, carritoID)
+	rows, err := dbConn.Query(query, empresaID, carritoID, incluirProductos)
 	if err != nil {
 		return nil, err
 	}
