@@ -1520,7 +1520,7 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			strings.TrimSpace(r.URL.Query().Get("estacion_id")) != "" {
 			pageKey = ""
 		}
-		if pageKey != "" && isCajeroCartAuxiliaryAPIRequest(effectiveRole, requestPath) {
+		if pageKey != "" && isCajeroCartAuxiliaryAPIRequest(effectiveRole, requestPath, r.Method) {
 			pageKey = ""
 		}
 		if pageKey != "" && module == permModuleFinanzas && isCajeroFinanzasManualRequest {
@@ -3221,16 +3221,20 @@ func isAllowedPageForOperationalRole(role, pageKey string) bool {
 	}
 }
 
-func isCajeroCartAuxiliaryAPIRequest(role, requestPath string) bool {
+func isCajeroCartAuxiliaryAPIRequest(role, requestPath, method string) bool {
 	if normalizePermissionRole(role) != "cajero" {
 		return false
 	}
 	switch strings.ToLower(strings.TrimSpace(requestPath)) {
+	case "/api/empresa/codigos_de_descuento":
+		// POS needs to consult and validate existing discounts. Creating,
+		// changing or deleting their configuration still requires page access.
+		method = strings.ToUpper(strings.TrimSpace(method))
+		return method == http.MethodGet || method == http.MethodHead
 	case "/api/empresa/clientes",
 		"/api/empresa/productos",
 		"/api/empresa/servicios",
 		"/api/empresa/recetas_productos",
-		"/api/empresa/codigos_de_descuento",
 		"/api/empresa/propinas",
 		"/api/empresa/comisiones",
 		"/api/empresa/chat_con_inteligencia_artificial/modelos",
@@ -4170,6 +4174,21 @@ func loadEmpresaRolePermissionMatrix(dbSuper *sql.DB, empresaID, roleID int64, f
 	return loadEmpresaRolePermissionMatrixForDatabases(dbSuper, dbSuper, empresaID, roleID, fallbackRole, pageOverridesOutput...)
 }
 
+// Taking orders does not implicitly authorize price or discount configuration.
+// Explicit persisted page grants may override these role defaults; company and
+// license ceilings continue to apply afterward.
+func roleDefaultPageOverrides(role string) map[string]bool {
+	if normalizePermissionRole(role) == "mesero" {
+		return map[string]bool{
+			"linkTarifasPorMinutos": false,
+			"linkTarifasPorDia":     false,
+			"linkTarifasMotel":      false,
+			"linkCodigosDescuento":  false,
+		}
+	}
+	return map[string]bool{}
+}
+
 // Runtime keeps operational company data separate from the platform role store.
 // The single-database wrapper above is retained for isolated fixtures only.
 func loadEmpresaRolePermissionMatrixForDatabases(dbEmp, dbSuper *sql.DB, empresaID, roleID int64, fallbackRole string, pageOverridesOutput ...map[string]bool) (string, []permissionModuleMatrixRow, map[string]bool, error) {
@@ -4214,7 +4233,7 @@ func loadEmpresaRolePermissionMatrixForDatabases(dbEmp, dbSuper *sql.DB, empresa
 		}
 	}
 	rows := buildRolPermissionEditorModuleRows(role, nil)
-	pageOverrides := map[string]bool{}
+	pageOverrides := roleDefaultPageOverrides(role)
 	if len(ids) > 0 {
 		modules, err := dbpkg.ListRolesPermisosModuloByRolIDEmpresaScope(dbSuper, empresaID, ids)
 		if err != nil {

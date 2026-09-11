@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"testing"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -125,14 +126,14 @@ func TestCajeroPuedeUsarAPIAuxiliaresDelCarritoSinPaginaDeMenu(t *testing.T) {
 		"/api/empresa/ia_radio/activar",
 	}
 	for _, path := range allowed {
-		if !isCajeroCartAuxiliaryAPIRequest("cajero", path) {
+		if !isCajeroCartAuxiliaryAPIRequest("cajero", path, http.MethodGet) {
 			t.Fatalf("cajero debe poder usar API auxiliar de carrito %s", path)
 		}
 	}
-	if isCajeroCartAuxiliaryAPIRequest("cajero", "/api/empresa/usuarios") {
+	if isCajeroCartAuxiliaryAPIRequest("cajero", "/api/empresa/usuarios", http.MethodGet) {
 		t.Fatal("cajero no debe saltarse pagina para APIs administrativas")
 	}
-	if isCajeroCartAuxiliaryAPIRequest("contador", "/api/empresa/clientes") {
+	if isCajeroCartAuxiliaryAPIRequest("contador", "/api/empresa/clientes", http.MethodGet) {
 		t.Fatal("la excepcion de APIs auxiliares aplica solo a cajero")
 	}
 }

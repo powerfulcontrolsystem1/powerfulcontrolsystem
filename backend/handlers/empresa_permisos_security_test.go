@@ -15,6 +15,46 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
+func TestCajeroDiscountPOSReadsDoNotAuthorizeConfigurationWrites(t *testing.T) {
+	// Exercise the actual wrapper from a trusted, already-resolved request
+	// snapshot. Identity/database resolution is covered by the PostgreSQL tests.
+	for _, tc := range []struct {
+		name, method               string
+		pageAllowed, actionAllowed bool
+		want                       int
+	}{
+		{"POS read", http.MethodGet, false, true, http.StatusNoContent},
+		{"POS head", http.MethodHead, false, true, http.StatusNoContent},
+		{"create denied by page", http.MethodPost, false, true, http.StatusForbidden},
+		{"update denied by page", http.MethodPut, false, true, http.StatusForbidden},
+		{"patch denied by page", http.MethodPatch, false, true, http.StatusForbidden},
+		{"delete denied by page", http.MethodDelete, false, true, http.StatusForbidden},
+		{"explicit write permission", http.MethodPost, true, true, http.StatusNoContent},
+		{"read action still required", http.MethodGet, false, false, http.StatusForbidden},
+		{"write action still required", http.MethodPut, true, false, http.StatusForbidden},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := httptest.NewRequest(tc.method, "/api/empresa/codigos_de_descuento?empresa_id=922001&action=validar", nil)
+			snapshot := empresaPermissionSnapshot{
+				EmpresaID: 922001, AdminEmail: "cashier@example.invalid", AdminRole: "cajero", EffectiveRole: "cajero", CanAccess: true,
+				AllowedModules: map[string]bool{permModuleVentas: true}, AllowedPages: map[string]bool{"linkCodigosDescuento": tc.pageAllowed},
+				RoleModuleActions: map[string]bool{permissionModuleActionKey(permModuleVentas, defaultPermissionActionFromMethod(tc.method)): tc.actionAllowed},
+			}
+			ctx := context.WithValue(r.Context(), "adminEmail", snapshot.AdminEmail)
+			ctx = context.WithValue(ctx, empresaPermissionSnapshotContextKey{}, snapshot)
+			called := false
+			w := httptest.NewRecorder()
+			WithEmpresaVentasPermissions(nil, nil, func(w http.ResponseWriter, r *http.Request) {
+				called = true
+				w.WriteHeader(http.StatusNoContent)
+			})(w, r.WithContext(ctx))
+			if w.Code != tc.want || called != (tc.want == http.StatusNoContent) {
+				t.Fatalf("status=%d called=%t want=%d: %s", w.Code, called, tc.want, w.Body.String())
+			}
+		})
+	}
+}
+
 func TestNewRoleDefaultsDenyEveryModuleIncludingVida(t *testing.T) {
 	for _, role := range []string{"rol_futuro", "mesero", "", "sin_rol"} {
 		for _, row := range buildPermissionModuleMatrixForRole(role) {

@@ -172,13 +172,31 @@ func TestEmpresaPermissionRolesPostgresIsolationAndRevocation(t *testing.T) {
 	if _, _, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 13, "admin_empresa"); err == nil {
 		t.Fatal("custom role inherited super administrator")
 	}
-	_, meseroRows, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 3, "admin_empresa")
+	_, meseroRows, meseroPages, err := loadEmpresaRolePermissionMatrix(conn, 101, 3, "admin_empresa")
 	if err != nil {
 		t.Fatal(err)
 	}
 	meseroVentas := findPermissionModuleRowForTest(t, meseroRows, permModuleVentas)
 	if !meseroVentas.Read || !meseroVentas.Create || !meseroVentas.Update || meseroVentas.Delete || meseroVentas.Approve {
 		t.Fatal("catalogued mesero must receive only its persisted grants")
+	}
+	for _, page := range []string{"linkTarifasPorMinutos", "linkTarifasPorDia", "linkTarifasMotel", "linkCodigosDescuento"} {
+		if meseroPages[page] {
+			t.Fatalf("taking orders must not imply configuring %s", page)
+		}
+	}
+	exec(`INSERT INTO roles_de_usuario (id,nombre,empresa_id,rol_base_id,origen) VALUES (14,'Mesero autorizado',101,3,'empresa')`)
+	exec(`INSERT INTO roles_de_usuario_paginas_permisos (rol_id,pagina_clave,permitido) VALUES (14,'linkTarifasPorMinutos',1),(14,'linkCodigosDescuento',1)`)
+	_, customMeseroRows, customMeseroPages, err := loadEmpresaRolePermissionMatrix(conn, 101, 14, "sin_rol")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !customMeseroPages["linkTarifasPorMinutos"] || !customMeseroPages["linkCodigosDescuento"] || customMeseroPages["linkTarifasPorDia"] || customMeseroPages["linkTarifasMotel"] || !findPermissionModuleRowForTest(t, customMeseroRows, permModuleVentas).Create {
+		t.Fatal("custom role explicit page grants must override only their selected defaults")
+	}
+	_, _, unchangedMeseroPages, err := loadEmpresaRolePermissionMatrix(conn, 101, 3, "sin_rol")
+	if err != nil || unchangedMeseroPages["linkTarifasPorMinutos"] || unchangedMeseroPages["linkCodigosDescuento"] {
+		t.Fatalf("custom page grants contaminated the global mesero base: %v", err)
 	}
 	_, futureRows, _, err := loadEmpresaRolePermissionMatrix(conn, 101, 4, "admin_empresa")
 	if err != nil {
