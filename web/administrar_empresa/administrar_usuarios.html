@@ -31,16 +31,17 @@
     .role-permissions-toolbar label{flex:1 1 240px}
     .role-permissions-content{display:grid;gap:12px;min-width:0}
     .role-permissions-content details{border:1px solid var(--border);border-radius:8px;padding:12px;min-width:0}
-    .role-permissions-content summary{cursor:pointer;font-weight:700;overflow-wrap:anywhere}
+    .role-permissions-content summary{cursor:pointer;font-weight:700;overflow-wrap:anywhere;color:inherit}
     .role-permissions-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:12px}
-    .role-permissions-actions label{display:grid;gap:6px;min-width:0}
+    .role-permissions-actions label{display:grid;gap:6px;min-width:0;color:inherit}
     .role-permissions-actions small{color:var(--muted)}
     .role-permissions-page{display:flex;gap:12px;align-items:center;justify-content:space-between}
     .role-permissions-page select{flex:0 0 160px;width:160px;max-width:100%}
     .role-permissions-page{padding:10px 0;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
     .role-permissions-page span{min-width:0}
     .role-permissions-page small{display:block;color:var(--muted)}
-    #rolePermissionsPanel{scroll-margin-top:16px;min-width:0}
+    #rolePermissionsPanel{scroll-margin-top:16px;min-width:0;background:var(--surface);color:var(--text)}
+    #rolePermissionsPanel h2,#rolePermissionsPanel h3{color:inherit}
     .custom-role-badge{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:2px 7px;margin-left:6px;font-size:.72rem;color:var(--muted);background:var(--surface-soft);font-weight:700}
     .usuarios-global-msg{display:none;margin:12px 0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);font-weight:700}
     .usuarios-global-msg.is-visible{display:block}
@@ -101,7 +102,7 @@
       background:linear-gradient(90deg,var(--accent),var(--accent-2));
     }
     @media(max-width:760px){.role-editor-grid,.custom-role-grid{grid-template-columns:1fr}}
-    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}.role-row{grid-template-columns:1fr}.role-actions{justify-content:flex-start}.role-permissions-page{align-items:stretch;flex-direction:column}.role-permissions-page select{flex:auto;width:100%}}
+    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}.role-row{grid-template-columns:1fr}.role-actions{justify-content:flex-start}.role-permissions-toolbar{align-items:stretch;flex-direction:column}.role-permissions-toolbar label,.role-permissions-toolbar button{flex:auto;width:100%}.role-permissions-actions{grid-template-columns:minmax(0,1fr)}.role-permissions-actions select{min-width:0;width:100%}.role-permissions-page{align-items:stretch;flex-direction:column}.role-permissions-page select{flex:auto;width:100%}}
   </style>
 </head>
 <body class="super-page usuarios-page">

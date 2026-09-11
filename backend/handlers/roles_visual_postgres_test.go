@@ -253,7 +253,7 @@ func setupRolesVisualPostgresFixture(t *testing.T, conn *sql.DB) {
 		}
 	}
 	// DDL is limited to creating this disposable test fixture, before serving.
-	for _, ensure := range []func(*sql.DB) error{dbpkg.EnsureRolesPermisosSchema, dbpkg.EnsureEmpresaConfiguracionOperativaSchema, dbpkg.EnsureEmpresaAuditoriaSchema} {
+	for _, ensure := range []func(*sql.DB) error{dbpkg.EnsurePostgresRuntimeCompat, dbpkg.EnsureRolesPermisosSchema, dbpkg.EnsureEmpresaConfiguracionOperativaSchema, dbpkg.EnsureEmpresaAuditoriaSchema} {
 		if err := ensure(conn); err != nil {
 			t.Fatal("prepare synthetic visual fixture: ", err)
 		}

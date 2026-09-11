@@ -403,15 +403,20 @@ func EmpresaRolesDeUsuarioHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			var payload struct {
-				Nombre      string `json:"nombre"`
-				Descripcion string `json:"descripcion"`
-				RolBaseID   int64  `json:"rol_base_id"`
+				Nombre            string `json:"nombre"`
+				Descripcion       string `json:"descripcion"`
+				RolBaseID         int64  `json:"rol_base_id"`
+				ExpectedRolBaseID *int64 `json:"expected_rol_base_id"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateEmpresaRolDeUsuario(dbSuper, empresaID, id, payload.Nombre, payload.Descripcion, payload.RolBaseID); err != nil {
+			if err := dbpkg.UpdateEmpresaRolDeUsuarioConBaseEsperada(dbSuper, empresaID, id, payload.Nombre, payload.Descripcion, payload.RolBaseID, payload.ExpectedRolBaseID); err != nil {
+				if errors.Is(err, dbpkg.ErrRolPermisosRevisionRequired) || errors.Is(err, dbpkg.ErrRolPermisosRevisionConflict) {
+					writeEmpresaRolPermissionError(w, err)
+					return
+				}
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "rol personalizado no encontrado", http.StatusNotFound)
 					return

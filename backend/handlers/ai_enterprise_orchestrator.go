@@ -160,12 +160,12 @@ func enterpriseAIExecutionContext(r *http.Request, dbEmp, dbSuper *sql.DB, empre
 func enterpriseAIPermissionsFromSnapshot(snapshot empresaPermissionSnapshot) []string {
 	permissions := make([]string, 0, len(snapshot.RoleModuleActions))
 	for permission, allowed := range snapshot.RoleModuleActions {
-		module, action, valid := strings.Cut(permission, ":")
+		module, action, valid := strings.Cut(permission, "|")
 		if !allowed || !valid {
 			continue
 		}
 		if permitted, _ := empresaPermissionSnapshotAllowsAdditionalModule(snapshot, module, action, ""); permitted {
-			permissions = append(permissions, permission)
+			permissions = append(permissions, strings.ToLower(strings.TrimSpace(module))+":"+strings.ToUpper(strings.TrimSpace(action)))
 		}
 	}
 	sort.Strings(permissions)
