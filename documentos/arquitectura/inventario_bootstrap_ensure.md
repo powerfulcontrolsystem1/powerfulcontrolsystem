@@ -159,7 +159,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureVentaPublicaSchema` | [backend/db/venta_publica.go:21](../../backend/db/venta_publica.go#L21) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaVentaPublicaSchema` | [backend/db/venta_publica.go:563](../../backend/db/venta_publica.go#L563) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureCorporateEmailConfigFromEnv` | [backend/handlers/email_corporativo_handlers.go:279](../../backend/handlers/email_corporativo_handlers.go#L279) | provisionamiento de integracion | empresas o por confirmar |
-| `EnsureNextcloudConfigFromEnv` | [backend/handlers/nextcloud.go:271](../../backend/handlers/nextcloud.go#L271) | provisionamiento de integracion | empresas o por confirmar |
+| `EnsureNextcloudConfigFromEnv` | [backend/handlers/nextcloud.go:348](../../backend/handlers/nextcloud.go#L348) | provisionamiento de integracion | empresas o por confirmar |
 | `EnsureSensitiveSuperConfigEncrypted` | [backend/handlers/super_config_backup_handlers.go:59](../../backend/handlers/super_config_backup_handlers.go#L59) | provisionamiento de integracion | superadministrador o por confirmar |
 | `EnsureSuperContextoIALogicaNegocio` | [backend/handlers/super_portal_chat_ia_info.go:182](../../backend/handlers/super_portal_chat_ia_info.go#L182) | provisionamiento de integracion | superadministrador o por confirmar |
 
