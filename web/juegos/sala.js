@@ -1,7 +1,7 @@
 import {Sound} from './core.js';
 document.body.classList.toggle('compact',new URLSearchParams(location.search).has('compact'));
 const catalog=[
- {id:'simsong',name:'GTA SIMSong',tag:'SPRINGFIELD · MUNDO ABIERTO',help:'WASD: caminar. Arrastra o usa flechas para mirar. Espacio: saltar. Shift: correr. E: entrar, salir o conducir. F o clic: láser. V: tres cámaras. M: misiones. Derrota a los invasores y sus ovnis.',keys:[['←','a'],['↑','w'],['↓','s'],['→','d'],['Saltar',' '],['Usar','e'],['Correr','Shift'],['Láser','f'],['Cámara','v'],['Misiones','m']]},
+ {id:'simsong',name:'GTAS',tag:'SPRINGFIELD · MUNDO ABIERTO',help:'WASD: caminar. Arrastra o usa flechas para mirar. Espacio: saltar. Shift: correr. E: entrar, salir o conducir. Clic izquierdo o F: láser. Clic derecho o Q: menú del jugador. V: tres cámaras. M: misiones.',keys:[['←','a'],['↑','w'],['↓','s'],['→','d'],['Saltar',' '],['Usar','e'],['Correr','Shift'],['Láser','f'],['Cámara','v'],['Jugador','q'],['Misiones','m']]},
  {id:'pacman',name:'Pac-Man',tag:'ARCADE · 10 NIVELES',help:'Flechas o WASD para moverte. Come las pastillas grandes para perseguir a los fantasmas. Completa diez niveles.',keys:[['←','ArrowLeft'],['↑','ArrowUp'],['↓','ArrowDown'],['→','ArrowRight']]},
  {id:'tetris',name:'Tetris',tag:'ENCUENTRA TU RITMO',help:'Flechas: mover y girar. Espacio: caída instantánea. C: reservar. Z: giro inverso.',keys:[['←','ArrowLeft'],['Girar','ArrowUp'],['↓','ArrowDown'],['→','ArrowRight'],['Caer',' '],['Reservar','c']]},
  {id:'buscaminas',name:'Buscaminas',tag:'UNA BUENA INTUICIÓN',help:'Toca para descubrir. Bandera o clic derecho para marcar. Primera apertura segura.',keys:[['⚑ Bandera','f']]},
@@ -60,11 +60,11 @@ function makeRoom(item){
   if(action==='load'&&confirm('¿Cargar la última partida? Se reemplazan los avances sin guardar.'))await load(room,true);
   if(action==='new'&&room.game&&room.loaded&&confirm('¿Empezar una partida nueva? Tu récord se conserva.')){pause(room,false);if(room.saving)await room.saving;await room.game.reset();room.overlay.querySelector('button').hidden=false;await save(room);refreshHUD(room);await play(room)}
   if(action==='details'){const details=card.querySelector('.game-details');details.hidden=!details.hidden;button.setAttribute('aria-expanded',String(!details.hidden));if(!details.hidden)void ranking(room)}
-  if(action==='sound'){sound.enabled=!sound.enabled;for(const r of rooms.values())r.card.querySelector('[data-action=sound]').setAttribute('aria-pressed',String(sound.enabled));if(sound.enabled){await sound.unlock();sound.effect('score')}}
+  if(action==='sound'){sound.enabled=!sound.enabled;if(!sound.enabled)for(const r of rooms.values())r.game?.invasion?.audio.stop();for(const r of rooms.values())r.card.querySelector('[data-action=sound]').setAttribute('aria-pressed',String(sound.enabled));if(sound.enabled){await sound.unlock();sound.effect('score')}}
   if(action==='full'){if(document.fullscreenElement)await document.exitFullscreen();else if(card.requestFullscreen)await card.requestFullscreen();else message(room,'Pantalla completa no disponible; puedes ampliar la ventana.',true)}
  }catch(err){message(room,err.message,true)}});
- controls(room);room.canvas.addEventListener('contextmenu',e=>e.preventDefault());let pointer;
- room.canvas.addEventListener('pointerdown',e=>{if(!room.running)return;room.canvas.setPointerCapture(e.pointerId);pointer={x:e.clientX,y:e.clientY};if(room.item.id==='simsong'&&e.pointerType==='mouse'&&e.button===0)room.game.key('f',true);if(room.game.click){room.game.click(room.game.point(e),e.button===2);refreshHUD(room)}});
+ controls(room);room.canvas.addEventListener('contextmenu',e=>{e.preventDefault();if(room.running&&room.item.id==='simsong')room.game.playerMenu()});let pointer;
+ room.canvas.addEventListener('pointerdown',e=>{if(!room.running)return;if(room.item.id==='simsong'&&e.pointerType==='mouse'&&e.button===2)return;room.canvas.setPointerCapture(e.pointerId);pointer={x:e.clientX,y:e.clientY};if(room.item.id==='simsong'&&e.pointerType==='mouse'&&e.button===0)room.game.key('f',true);if(room.game.click){room.game.click(room.game.point(e),e.button===2);refreshHUD(room)}});
  room.canvas.addEventListener('pointermove',e=>{if(!room.running||!pointer||!room.game.look)return;room.game.look((e.clientX-pointer.x)*.006,(e.clientY-pointer.y)*.004);pointer={x:e.clientX,y:e.clientY}});
  room.canvas.onpointerup=room.canvas.onpointercancel=room.canvas.onlostpointercapture=()=>{pointer=null;if(room.item.id==='simsong')room.game?.key('f',false)};new ResizeObserver(()=>fit(room)).observe(card.querySelector('.stage'));return room;
 }

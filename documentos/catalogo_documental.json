@@ -786,7 +786,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-07",
       "review_due": "2026-12-06",
-      "sha256_lf": "8e66a964517607dcc2ea339aadf83fa13e4bb782429bdf0feacc9484f6b1acb7"
+      "sha256_lf": "fc2ec524929f3d9cc9f2bcf413b0439a7b02e7eb14ee16c10c8de23c39d84f91"
     },
     {
       "path": "documentos/estructura_bd.md",
@@ -1245,7 +1245,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "f47fd35ded7cf1a03374ac599fc95833865fe0db421c93f0c9c8016e12274cbb"
+      "sha256_lf": "4bd04bdeb05431077e7a831090647eb4c5df360a01cf61be38d4e5e35afef461"
     },
     {
       "path": "documentos/logistica_wms.md",
@@ -1483,12 +1483,12 @@
     },
     {
       "path": "web/juegos/simsong/PROVENANCE.md",
-      "title": "Recursos de GTA SIMSong",
+      "title": "Recursos de GTAS",
       "state": "referencia_por_validar",
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "d48e4095c0d3cdb9589d62a584c9e5d481eb0f3fe955cd0c6ace3f44a4440584"
+      "sha256_lf": "1845eed40bcc38b66252324f8ae9b3f16407682fe30c89d201207236366b2d2c"
     }
   ]
 }

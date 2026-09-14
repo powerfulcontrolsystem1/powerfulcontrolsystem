@@ -31,7 +31,9 @@ export class SpringfieldGame extends BaseGame {
  }
  syncScene(){this.city.group.visible=!this.s.interior;for(const [id,i]of Object.entries(this.interiors))i.group.visible=id===this.s.interior;this.scene.fog=this.s.interior?null:new THREE.Fog('#c1dce2',170,500)}
  look(dx,dy){this.s.cameraYaw-=dx;this.s.cameraPitch=clamp(this.s.cameraPitch+dy,-1.25,1.2)}
- action(key){if(this.s.deathTime||this.s.over)return;if(key==='v'){this.s.cameraMode=(this.s.cameraMode+1)%3;this.notify(['Primera persona','Tercera persona · media','Tercera persona · lejana'][this.s.cameraMode])}if(key===' ')this.jump=true;if(key==='e')this.interact();if(key==='m'){this.board.hidden=!this.board.hidden;this.updateJournal()}}
+ action(key){if(key==='q'){this.invasion.playerMenu();return}if(this.s.deathTime||this.s.over||this.invasion.menuOpen)return;if(key==='f')this.invasion.fire();if(key==='v'){this.s.cameraMode=(this.s.cameraMode+1)%3;this.notify(['Primera persona','Tercera persona · media','Tercera persona · lejana'][this.s.cameraMode])}if(key===' ')this.jump=true;if(key==='e')this.interact();if(key==='m'){this.board.hidden=!this.board.hidden;this.updateJournal()}}
+ playerMenu(force){this.invasion.playerMenu(force)}
+ pause(){super.pause();this.jump=false;this.invasion.playerMenu(false);this.invasion.audio.stop()}
  interact(){
   const s=this.s;if(s.deathTime||s.over)return;
   if(s.interior){if(Math.hypot(s.x,s.z-8)<3.4&&s.y<1){const p=LANDMARKS.find(p=>p.id===s.interior);s.interior=null;s.x=p.door.x;s.z=p.door.z+2;s.y=0;s.cameraYaw=0;this.syncScene();this.sound.effect('card')}return}

@@ -44,6 +44,7 @@ function landmark(parent,p){
 export function buildCity(assets){
  const group=new THREE.Group(),colliders=LANDMARKS.map(placeBounds),cars=[],pedestrianSpawns=[];
  const ground=new THREE.Mesh(new THREE.CircleGeometry(225,96),material('#97bd79'));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;group.add(ground);
+ const blenderWorld=assets.raw('springfield-world');blenderWorld.name='Springfield detallado en Blender';blenderWorld.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});group.add(blenderWorld);
  for(const axis of [0,1])for(const line of ROAD_LINES){const road=box(group,axis?0:line,.015,axis?line:0,axis?372:11,.03,axis?11:372,'#68747b');road.castShadow=false;for(const side of [-1,1]){const sidewalk=box(group,axis?0:line+side*7,.04,axis?line+side*7:0,axis?372:2.5,.08,axis?2.5:372,'#d7d4c0');sidewalk.castShadow=false}for(let i=-177;i<180;i+=9){if(ROAD_LINES.some(l=>Math.abs(i-l)<9))continue;box(group,axis?i:line,.04,axis?line:i,axis?4:.16,.02,axis?.16:4,'#f4e4a4')}}
  for(const x of ROAD_LINES)for(const z of ROAD_LINES)for(let i=-4;i<=4;i+=2){box(group,x+i,.05,z+8,1,.03,2.5,'#f8f3db');box(group,x+8,.05,z+i,2.5,.03,1,'#f8f3db')}
  LANDMARKS.forEach(p=>landmark(group,p));
@@ -61,5 +62,7 @@ export function buildCity(assets){
  for(let i=0;i<8;i++){const points=[];for(let j=0;j<=64;j++){const a=j*Math.PI/64;points.push(new THREE.Vector3(Math.cos(a)*200,Math.sin(a)*160,0))}const arc=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:'#a4d5e1',transparent:true,opacity:.23}));arc.rotation.y=i*Math.PI/8;group.add(arc)}
  const ring=new THREE.Mesh(new THREE.TorusGeometry(198,.3,6,128),material('#a8d0d7'));ring.rotation.x=Math.PI/2;group.add(ring);
  for(let i=0;i<16;i++){const angle=i*Math.PI/8;const hill=new THREE.Mesh(new THREE.SphereGeometry(45,12,8),material(i%2?'#95b6a1':'#adc8ab'));hill.scale.y=.6;hill.position.set(Math.cos(angle)*250,-8,Math.sin(angle)*250);group.add(hill)}
+ // The Blender vegetation is decorative; omit trees whose canopy intersects a building.
+ blenderWorld.updateMatrixWorld(true);const blockedTrees=[];blenderWorld.traverse(o=>{if(o.name.startsWith('Arbol')){const p=new THREE.Vector3();o.getWorldPosition(p);if(colliders.some(b=>p.x>b.x-3&&p.x<b.x+b.w+3&&p.z>b.z-3&&p.z<b.z+b.d+3))blockedTrees.push(o)}});blockedTrees.forEach(o=>o.removeFromParent());
  batchStatic(group,cars);return {group,colliders,cars,pedestrianSpawns};
 }
