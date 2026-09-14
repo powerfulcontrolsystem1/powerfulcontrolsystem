@@ -64,6 +64,3 @@ export class SpringfieldGame extends BaseGame {
  }
  drawMap(){const ctx=this.radar.getContext('2d');ctx.clearRect(0,0,180,180);ctx.fillStyle='#e8edce';ctx.beginPath();ctx.arc(90,90,86,0,Math.PI*2);ctx.fill();ctx.save();ctx.beginPath();ctx.arc(90,90,86,0,Math.PI*2);ctx.clip();ctx.strokeStyle='#a5b0a8';ctx.lineWidth=4;for(const v of [-112,-40,32,104]){const n=90+v*.43;ctx.beginPath();ctx.moveTo(n,0);ctx.lineTo(n,180);ctx.moveTo(0,n);ctx.lineTo(180,n);ctx.stroke()}for(const p of LANDMARKS){ctx.fillStyle=this.s.visited.includes(p.id)?'#4d8b75':'#b28c73';ctx.fillRect(90+(p.x-p.w/2)*.43,90+(p.z-p.d/2)*.43,p.w*.43,p.d*.43)}ctx.fillStyle='#7441c4';ctx.beginPath();const place=LANDMARKS.find(p=>p.id===this.s.interior)||this.s;ctx.arc(90+place.x*.43,90+place.z*.43,4,0,Math.PI*2);ctx.fill();ctx.restore()}
 }
-
-
-

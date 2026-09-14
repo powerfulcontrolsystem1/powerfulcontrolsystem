@@ -35,5 +35,3 @@ export function buildInterior(id,assets){
  }
  return {group,colliders,spawn:{x:0,y:0,z:7},floorAt(s){if(!home)return 0;if(Math.abs(s.x)<1.65&&s.z<6.5&&s.z>-5.2)return Math.max(0,Math.min(3.4,(6.4-s.z)/.65*.2));if(s.y>3.15&&(Math.abs(s.x)>1.65||s.z<-5.2))return 3.4;return 0}};
 }
-
-

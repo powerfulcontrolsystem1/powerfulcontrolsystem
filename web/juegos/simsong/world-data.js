@@ -23,4 +23,3 @@ export const MISSIONS=[
 export function createState(){return {worldVersion:1,score:0,over:false,won:false,time:0,x:-72,y:0,z:118,vy:0,yaw:Math.PI,cameraYaw:Math.PI,cameraPitch:.18,health:100,interior:null,driving:-1,carSpeed:0,firstPerson:false,visited:[],completed:[],carStates:[]}}
 export function placeBounds(place){return {x:place.x-place.w/2,z:place.z-place.d/2,w:place.w,d:place.d,minY:0,maxY:place.h}}
 export function nearestPlace(x,z){return LANDMARKS.reduce((best,p)=>Math.hypot(p.x-x,p.z-z)<Math.hypot(best.x-x,best.z-z)?p:best,LANDMARKS[0])}
-
