@@ -5076,3 +5076,14 @@ conserva fuera de Git y debe repetirse para cada candidato.
 - En el carrito, el selector de acciones y el boton Domotica se ubican en el
   encabezado de busqueda de producto; en movil se reorganizan dentro del mismo
   bloque sin duplicar controles ni identificadores.
+
+## Ubicacion GPS — navegacion empresarial
+
+- `Administrar empresa` presenta `Ubicacion GPS` como grupo principal propio,
+  fuera de `Control de asistencia y horarios`.
+- El grupo ofrece accesos directos a `Seguimiento GPS` y `Configuracion GPS`.
+  Ambos cargan `web/administrar_empresa/ubicacion_gps.html`, seleccionan su
+  seccion correspondiente y conservan el modulo efectivo `ubicacion_gps:C`.
+- La configuracion mantiene el alta y administracion de dispositivos por
+  `empresa_id`; el seguimiento conserva mapa y recorridos bajo los endpoints
+  empresariales protegidos existentes.

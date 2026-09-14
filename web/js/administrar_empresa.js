@@ -253,6 +253,7 @@ try {
     document.getElementById("linkBackups"),
     document.getElementById("linkSoporteRemoto"),
     document.getElementById("linkUbicacionGPS"),
+    document.getElementById("linkConfiguracionGPS"),
     document.getElementById("linkReservasHotel"),
     document.getElementById("linkTarifasHotel"),
     document.getElementById("linkTarifasMotel"),
@@ -562,6 +563,7 @@ try {
     linkVehiculosRegistro: { module: permModuleVehiculosRegistro, action: permActionCreate },
     linkHojaVidaOperativa: { module: permModuleHojaVidaOperativa, action: permActionUpdate },
     linkUbicacionGPS: { module: permModuleUbicacionGPS, action: permActionCreate },
+    linkConfiguracionGPS: { module: permModuleUbicacionGPS, action: permActionCreate },
 
     linkAuditoria: { module: permModuleAuditoria, action: permActionRead },
     linkCalidadProcesos: { module: permModuleCalidadProcesos, action: permActionCreate },
@@ -791,14 +793,14 @@ try {
   }
 
   function withEmpresaParam(href, empresaId) {
-    var normalized = normalizeHref(href);
-    if (!normalized) return "";
+    var raw = String(href || "").trim();
+    if (!raw) return "";
     try {
-      var url = new URL(normalized, window.location.origin);
+      var url = new URL(raw, window.location.origin);
       if (empresaId) {
         url.searchParams.set("empresa_id", empresaId);
       }
-      return url.pathname + url.search;
+      return url.pathname + url.search + url.hash;
     } catch (e) {
       return "";
     }
@@ -2195,7 +2197,7 @@ try {
         target.searchParams.set("source", "admin");
         target.searchParams.set("return_to", "admin");
       }
-      link.setAttribute("href", target.pathname + target.search);
+      link.setAttribute("href", target.pathname + target.search + target.hash);
 
       link.addEventListener("click", function (ev) {
         ev.preventDefault();

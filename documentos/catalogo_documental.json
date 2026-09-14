@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "4e1da2c5de2593e4bfa128b4feab9ae30471625707d649dc47fa4ac9e470af0a"
+      "sha256_lf": "d4d77ab2848a10b323debf92f5b1e4bb8997ace60698d969e3ca4ac836cb0ce9"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -1281,7 +1281,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "ae57c491b56d874b22ec963aedf60c5c738203b0c02d64bc2bb80ac3455c1e79"
+      "sha256_lf": "61b6ba075db4f9d6119a50c5f37f3ec1a58b8ca29fc07876527016e4825a6421"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",
@@ -1299,7 +1299,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-11",
       "review_due": "2026-12-10",
-      "sha256_lf": "dfb2ecd986e3cb3ac6e0e6db786c3a27f7a03fea5ace0a1683ebbdbd5ac4e7e8"
+      "sha256_lf": "0117e862c813e9f3172ead501fdfe92cdd10b23aa72a029cedff46a83cd69de4"
     },
     {
       "path": "documentos/modulos_empresariales_colombia.md",

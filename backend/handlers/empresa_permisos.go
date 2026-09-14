@@ -561,7 +561,8 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkCarnets", Modulo: permModuleCarnets, Accion: permActionCreate, Titulo: "Carnets de empleados y usuarios", Grupo: "Personas y activos"},
 	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleVehiculosRegistro, Accion: permActionCreate, Titulo: "Registro de vehiculos", Grupo: "Personas y activos"},
 	{PaginaClave: "linkHojaVidaOperativa", Modulo: permModuleHojaVidaOperativa, Accion: permActionUpdate, Titulo: "Hoja de vida operativa", Grupo: "Personas y activos"},
-	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleUbicacionGPS, Accion: permActionCreate, Titulo: "Ubicacion / GPS (activos)", Grupo: "Personas y activos"},
+	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleUbicacionGPS, Accion: permActionCreate, Titulo: "Seguimiento GPS", Grupo: "Ubicacion GPS"},
+	{PaginaClave: "linkConfiguracionGPS", Modulo: permModuleUbicacionGPS, Accion: permActionCreate, Titulo: "Configuracion GPS", Grupo: "Ubicacion GPS"},
 
 	{PaginaClave: "linkAuditoria", Modulo: permModuleAuditoria, Accion: permActionRead, Titulo: "Auditoria de acciones", Grupo: "Analisis y control"},
 	{PaginaClave: "linkCalidadProcesos", Modulo: permModuleCalidadProcesos, Accion: permActionCreate, Titulo: "Calidad, procesos y no conformidades", Grupo: "Analisis y control"},
