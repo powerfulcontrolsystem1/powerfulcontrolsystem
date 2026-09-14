@@ -34,6 +34,8 @@ Casos principales:
   comercio y medio de pago;
 - registrar suscripciones semanales, mensuales, trimestrales, semestrales,
   anuales o personalizadas;
+- al registrar un gasto manual, marcarlo opcionalmente como recurrente e
+  indicar periodicidad, próximo pago/vencimiento y días de anticipación;
 - recordar renovacion, cancelacion o ambas antes de la fecha configurada.
 
 La captura manual conserva el archivo como evidencia privada. La captura IA es
@@ -80,7 +82,7 @@ Acciones:
 | `GET` | `reporte` | Totales y agrupaciones personales filtrables por fecha, categoria, comercio y medio de pago |
 | `GET` | `notificaciones` | Preferencias privadas de aviso, con telefono enmascarado |
 | `GET` | `recibo&id=<id>` | Descarga privada del comprobante propio |
-| `POST` | `gasto` | Crea gasto; acepta JSON o `multipart/form-data` con `recibo` |
+| `POST` | `gasto` | Crea gasto; acepta JSON o `multipart/form-data` con `recibo`. Si `recurrente=true`, crea atómicamente el gasto inicial y su plan privado de pagos/alertas. |
 | `POST` | `factura_ia` | Lee imagen/PDF y crea atomicamente gasto, recibo privado y productos |
 | `PUT` | `gasto` | Actualiza los datos confirmados del gasto propio |
 | `DELETE` | `gasto` | Elimina el gasto propio y su comprobante privado |
@@ -121,6 +123,11 @@ crean juntos y `ON DELETE CASCADE` elimina las lineas si se elimina el gasto. La
 repeticion de una factura IA con la misma clave devuelve el resultado anterior
 sin consumir de nuevo al proveedor. API y worker no ejecutan DDL.
 
+Un gasto marcado como recurrente reutiliza la tabla de suscripciones: la misma
+transacción conserva el gasto ya ocurrido y crea el calendario de próximo pago.
+No genera pagos futuros, CxP ni movimientos empresariales. La misma clave de
+idempotencia, empresa y usuario impide repetir el gasto o su plan de aviso.
+
 ## Privacidad de IA
 
 Vida reutiliza la integracion OpenAI Responses configurada para PCS: foto o PDF
@@ -131,8 +138,8 @@ montos, confianza y maximo 200 productos antes de persistirse.
 
 ## Recordatorios
 
-La pagina muestra alertas cuando una suscripcion activa entra en su ventana de
-anticipacion o esta vencida. El menu de Administrar empresa consulta el resumen
+La pagina muestra alertas cuando una suscripcion o gasto recurrente activo entra
+en su ventana de anticipacion o esta vencido. El menu de Administrar empresa consulta el resumen
 al iniciar y cada 15 minutos, muestra un contador y, si el usuario ya concedio
 permiso de notificaciones al navegador, emite una notificacion deduplicada por
 empresa, suscripcion y fecha de renovacion. El boton `Activar alarmas` solicita

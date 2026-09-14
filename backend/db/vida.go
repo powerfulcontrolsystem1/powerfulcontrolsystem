@@ -34,6 +34,17 @@ type EmpresaVidaGasto struct {
 	RequestHash        string  `json:"-"`
 	FechaCreacion      string  `json:"fecha_creacion"`
 	FechaActualizacion string  `json:"fecha_actualizacion"`
+	// Los campos recurrentes solo existen en la solicitud de alta. El plan se
+	// conserva en empresa_vida_suscripciones para no convertir un gasto pasado
+	// en una obligacion contable ni duplicar el calendario de recordatorios.
+	Recurrente       bool   `json:"recurrente,omitempty"`
+	Periodicidad     string `json:"periodicidad,omitempty"`
+	Intervalo        int    `json:"intervalo,omitempty"`
+	ProximoPago      string `json:"proximo_pago,omitempty"`
+	RecordatorioDias int    `json:"recordatorio_dias,omitempty"`
+	TipoRecordatorio string `json:"tipo_recordatorio,omitempty"`
+	AutoRenovacion   bool   `json:"auto_renovacion,omitempty"`
+	SuscripcionID    int64  `json:"suscripcion_id,omitempty"`
 }
 
 type EmpresaVidaSuscripcion struct {
@@ -315,13 +326,25 @@ func VerifyEmpresaVidaSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// CreateEmpresaVidaGastoConPrecios creates a one-off expense and its optional
+// price lines atomically. It remains the compatibility entry point for callers
+// that do not create a recurrent payment plan.
 func CreateEmpresaVidaGastoConPrecios(dbConn *sql.DB, item EmpresaVidaGasto, precios []EmpresaVidaPrecio) (*EmpresaVidaGasto, []EmpresaVidaPrecio, bool, error) {
+	stored, storedPrecios, _, created, err := CreateEmpresaVidaGastoConDetalles(dbConn, item, precios, nil)
+	return stored, storedPrecios, created, err
+}
+
+// CreateEmpresaVidaGastoConDetalles preserves the personal expense, any price
+// lines, and an optional recurrent-payment plan in a single tenant- and
+// user-scoped transaction. Retrying the same request returns the original
+// records and never creates a second reminder plan.
+func CreateEmpresaVidaGastoConDetalles(dbConn *sql.DB, item EmpresaVidaGasto, precios []EmpresaVidaPrecio, suscripcion *EmpresaVidaSuscripcion) (*EmpresaVidaGasto, []EmpresaVidaPrecio, *EmpresaVidaSuscripcion, bool, error) {
 	if dbConn == nil {
-		return nil, nil, false, fmt.Errorf("database not available")
+		return nil, nil, nil, false, fmt.Errorf("database not available")
 	}
 	tx, err := dbConn.BeginTx(context.Background(), nil)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, nil, false, err
 	}
 	defer func() { _ = tx.Rollback() }()
 	result, err := execTxSQLCompat(tx, `INSERT INTO empresa_vida_gastos
@@ -330,25 +353,35 @@ func CreateEmpresaVidaGastoConPrecios(dbConn *sql.DB, item EmpresaVidaGasto, pre
 		item.EmpresaID, normalizeVidaUsuario(item.UsuarioID), item.FechaGasto, item.Categoria, item.Comercio, item.Descripcion,
 		item.Monto, strings.ToUpper(item.Moneda), item.MetodoPago, item.ReciboRef, item.ReciboNombre, item.ClientRequestID, item.RequestHash)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, nil, false, err
 	}
 	createdRows, _ := result.RowsAffected()
 	stored, err := scanEmpresaVidaGasto(queryRowTxSQLCompat(tx, vidaGastoSelect+` WHERE empresa_id=? AND usuario_id=? AND client_request_id=? LIMIT 1`, item.EmpresaID, normalizeVidaUsuario(item.UsuarioID), strings.TrimSpace(item.ClientRequestID)))
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, nil, false, err
 	}
 	if createdRows == 0 {
 		if stored.RequestHash != item.RequestHash {
-			return nil, nil, false, ErrEmpresaVidaIdempotencyConflict
+			return nil, nil, nil, false, ErrEmpresaVidaIdempotencyConflict
 		}
 		existing, err := listEmpresaVidaPreciosTx(tx, item.EmpresaID, item.UsuarioID, stored.ID)
 		if err != nil {
-			return nil, nil, false, err
+			return nil, nil, nil, false, err
+		}
+		var existingSubscription *EmpresaVidaSuscripcion
+		if suscripcion != nil {
+			existingSubscription, err = scanEmpresaVidaSuscripcion(queryRowTxSQLCompat(tx, vidaSuscripcionSelect+` WHERE empresa_id=? AND usuario_id=? AND client_request_id=? LIMIT 1`, item.EmpresaID, normalizeVidaUsuario(item.UsuarioID), strings.TrimSpace(suscripcion.ClientRequestID)))
+			if err != nil || existingSubscription.RequestHash != suscripcion.RequestHash {
+				if err != nil {
+					return nil, nil, nil, false, err
+				}
+				return nil, nil, nil, false, ErrEmpresaVidaIdempotencyConflict
+			}
 		}
 		if err := tx.Commit(); err != nil {
-			return nil, nil, false, err
+			return nil, nil, nil, false, err
 		}
-		return stored, existing, false, nil
+		return stored, existing, existingSubscription, false, nil
 	}
 	inserted := make([]EmpresaVidaPrecio, 0, len(precios))
 	for _, precio := range precios {
@@ -359,15 +392,35 @@ func CreateEmpresaVidaGastoConPrecios(dbConn *sql.DB, item EmpresaVidaGasto, pre
 			precio.FechaCompra, precio.CodigoBarras, precio.ProductoNombre, precio.Comercio, precio.Cantidad, precio.PrecioUnitario,
 			precio.PrecioTotal, strings.ToUpper(precio.Moneda), precio.Origen)
 		if err != nil {
-			return nil, nil, false, err
+			return nil, nil, nil, false, err
 		}
 		precio.ID = id
 		inserted = append(inserted, precio)
 	}
-	if err := tx.Commit(); err != nil {
-		return nil, nil, false, err
+	var storedSubscription *EmpresaVidaSuscripcion
+	if suscripcion != nil {
+		result, err := execTxSQLCompat(tx, `INSERT INTO empresa_vida_suscripciones
+			(empresa_id, usuario_id, nombre, proveedor, costo, moneda, periodicidad, intervalo, fecha_inicio, proxima_renovacion, recordatorio_dias, tipo_recordatorio, auto_renovacion, estado, notas, client_request_id, request_hash)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS DATE), CAST(? AS DATE), ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+			suscripcion.EmpresaID, normalizeVidaUsuario(suscripcion.UsuarioID), suscripcion.Nombre, suscripcion.Proveedor, suscripcion.Costo, strings.ToUpper(suscripcion.Moneda), suscripcion.Periodicidad,
+			suscripcion.Intervalo, suscripcion.FechaInicio, suscripcion.ProximaRenovacion, suscripcion.RecordatorioDias, suscripcion.TipoRecordatorio, suscripcion.AutoRenovacion,
+			suscripcion.Estado, suscripcion.Notas, suscripcion.ClientRequestID, suscripcion.RequestHash)
+		if err != nil {
+			return nil, nil, nil, false, err
+		}
+		storedSubscription, err = scanEmpresaVidaSuscripcion(queryRowTxSQLCompat(tx, vidaSuscripcionSelect+` WHERE empresa_id=? AND usuario_id=? AND client_request_id=? LIMIT 1`, suscripcion.EmpresaID, normalizeVidaUsuario(suscripcion.UsuarioID), strings.TrimSpace(suscripcion.ClientRequestID)))
+		if err != nil {
+			return nil, nil, nil, false, err
+		}
+		createdSubscription, _ := result.RowsAffected()
+		if createdSubscription == 0 && storedSubscription.RequestHash != suscripcion.RequestHash {
+			return nil, nil, nil, false, ErrEmpresaVidaIdempotencyConflict
+		}
 	}
-	return stored, inserted, true, nil
+	if err := tx.Commit(); err != nil {
+		return nil, nil, nil, false, err
+	}
+	return stored, inserted, storedSubscription, true, nil
 }
 
 func ListEmpresaVidaPrecios(dbConn *sql.DB, empresaID int64, usuarioID, codigo, producto string, limit int) ([]EmpresaVidaPrecio, error) {

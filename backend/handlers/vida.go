@@ -177,17 +177,27 @@ func handleEmpresaVidaPost(w http.ResponseWriter, r *http.Request, dbEmp, dbSupe
 			http.Error(w, precioErr.Error(), http.StatusBadRequest)
 			return
 		}
-		var stored *dbpkg.EmpresaVidaGasto
-		var created bool
-		if precio != nil {
-			item.RequestHash = vidaRequestHash(struct {
-				Gasto  dbpkg.EmpresaVidaGasto  `json:"gasto"`
-				Precio dbpkg.EmpresaVidaPrecio `json:"precio"`
-			}{item, *precio})
-			stored, _, created, err = dbpkg.CreateEmpresaVidaGastoConPrecios(dbEmp, item, []dbpkg.EmpresaVidaPrecio{*precio})
-		} else {
-			stored, created, err = dbpkg.CreateEmpresaVidaGasto(dbEmp, item)
+		suscripcion, recurrenteErr := vidaRecurringSubscriptionFromGasto(item)
+		if recurrenteErr != nil {
+			if savedPath != "" {
+				_ = os.Remove(savedPath)
+			}
+			http.Error(w, recurrenteErr.Error(), http.StatusBadRequest)
+			return
 		}
+		precios := []dbpkg.EmpresaVidaPrecio(nil)
+		if precio != nil {
+			precios = []dbpkg.EmpresaVidaPrecio{*precio}
+		}
+		item.RequestHash = vidaRequestHash(struct {
+			Gasto       dbpkg.EmpresaVidaGasto        `json:"gasto"`
+			Precios     []dbpkg.EmpresaVidaPrecio     `json:"precios,omitempty"`
+			Suscripcion *dbpkg.EmpresaVidaSuscripcion `json:"suscripcion,omitempty"`
+		}{item, precios, suscripcion})
+		if suscripcion != nil {
+			suscripcion.RequestHash = item.RequestHash
+		}
+		stored, _, storedSubscription, created, err := dbpkg.CreateEmpresaVidaGastoConDetalles(dbEmp, item, precios, suscripcion)
 		if err != nil {
 			if savedPath != "" {
 				_ = os.Remove(savedPath)
@@ -203,11 +213,14 @@ func handleEmpresaVidaPost(w http.ResponseWriter, r *http.Request, dbEmp, dbSupe
 			_ = os.Remove(savedPath)
 		}
 		decorateVidaGasto(stored, empresaID)
+		if storedSubscription != nil {
+			stored.SuscripcionID = storedSubscription.ID
+		}
 		status := http.StatusCreated
 		if !created {
 			status = http.StatusOK
 		}
-		writeJSON(w, status, map[string]interface{}{"ok": true, "created": created, "resultado": stored})
+		writeJSON(w, status, map[string]interface{}{"ok": true, "created": created, "resultado": stored, "suscripcion": storedSubscription})
 	case "factura_ia":
 		resultado, err := registrarEmpresaVidaFacturaIA(r, dbEmp, dbSuper, empresaID, usuarioID)
 		if err != nil {
@@ -381,9 +394,14 @@ func parseEmpresaVidaGastoCreate(r *http.Request, empresaID int64, usuarioID str
 		item = dbpkg.EmpresaVidaGasto{
 			FechaGasto: r.FormValue("fecha_gasto"), Categoria: r.FormValue("categoria"), Comercio: r.FormValue("comercio"),
 			Descripcion: r.FormValue("descripcion"), Moneda: r.FormValue("moneda"), MetodoPago: r.FormValue("metodo_pago"),
+			Recurrente: vidaFormBool(r.FormValue("recurrente")), Periodicidad: r.FormValue("periodicidad"),
+			ProximoPago: r.FormValue("proximo_pago"), TipoRecordatorio: r.FormValue("tipo_recordatorio"),
 			ClientRequestID: vidaRequestID(r, r.FormValue("client_request_id")),
 		}
 		item.Monto, _ = strconv.ParseFloat(strings.TrimSpace(r.FormValue("monto")), 64)
+		item.Intervalo, _ = strconv.Atoi(strings.TrimSpace(r.FormValue("intervalo")))
+		item.RecordatorioDias, _ = strconv.Atoi(strings.TrimSpace(r.FormValue("recordatorio_dias")))
+		item.AutoRenovacion = vidaFormBool(r.FormValue("auto_renovacion"))
 		item.EmpresaID, item.UsuarioID = empresaID, usuarioID
 		if err := normalizeAndValidateVidaGasto(&item); err != nil {
 			return item, "", err
@@ -417,6 +435,39 @@ func parseEmpresaVidaGastoCreate(r *http.Request, empresaID int64, usuarioID str
 	}
 	item.RequestHash = vidaRequestHash(item)
 	return item, "", nil
+}
+
+func vidaFormBool(raw string) bool {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "1", "true", "on", "si", "sí", "yes":
+		return true
+	default:
+		return false
+	}
+}
+
+// vidaRecurringSubscriptionFromGasto maps the optional schedule in a manual
+// expense to the existing private subscription/reminder model. The original
+// expense remains a historical record; only the subscription represents future
+// payment dates and notification delivery.
+func vidaRecurringSubscriptionFromGasto(gasto dbpkg.EmpresaVidaGasto) (*dbpkg.EmpresaVidaSuscripcion, error) {
+	if !gasto.Recurrente {
+		return nil, nil
+	}
+	nombre := firstNonEmpty(strings.TrimSpace(gasto.Comercio), strings.TrimSpace(gasto.Descripcion), "Gasto recurrente: "+gasto.Categoria)
+	item := &dbpkg.EmpresaVidaSuscripcion{
+		EmpresaID: gasto.EmpresaID, UsuarioID: gasto.UsuarioID,
+		Nombre: nombre, Proveedor: gasto.Comercio, Costo: gasto.Monto, Moneda: gasto.Moneda,
+		Periodicidad: gasto.Periodicidad, Intervalo: gasto.Intervalo,
+		FechaInicio: gasto.FechaGasto, ProximaRenovacion: gasto.ProximoPago,
+		RecordatorioDias: gasto.RecordatorioDias, TipoRecordatorio: gasto.TipoRecordatorio,
+		AutoRenovacion: gasto.AutoRenovacion, Estado: "activa", Notas: gasto.Descripcion,
+		ClientRequestID: gasto.ClientRequestID,
+	}
+	if err := normalizeAndValidateVidaSuscripcion(item); err != nil {
+		return nil, err
+	}
+	return item, nil
 }
 
 type empresaVidaFacturaIAItem struct {
@@ -806,11 +857,11 @@ func vidaAlertasFromSubscriptions(items []dbpkg.EmpresaVidaSuscripcion) []map[st
 			continue
 		}
 		kind := item.TipoRecordatorio
-		message := "Renueva " + item.Nombre
+		message := "Paga o renueva " + item.Nombre
 		if kind == "cancelar" {
 			message = "Revisa si debes cancelar " + item.Nombre
 		} else if kind == "ambos" {
-			message = "Renueva o cancela " + item.Nombre
+			message = "Paga, renueva o cancela " + item.Nombre
 		}
 		if item.DiasRestantes < 0 {
 			message += " (fecha vencida)"
