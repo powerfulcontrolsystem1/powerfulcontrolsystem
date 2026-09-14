@@ -4863,6 +4863,10 @@ Actualizacion 2026-07-21 (Nextcloud empresarial):
 - Super administrador puede crear cuentas personales de Nextcloud con cuota individual mediante OCS, separadas de la cuota predeterminada de cada empresa.
 - La pagina empresarial aprovisiona automaticamente la cuenta tecnica por `empresa_id` al abrirse cuando la configuracion global esta lista; la autenticacion de archivos permanece en Nextcloud y no se guardan contrasenas en PCS.
 
+Actualizacion 2026-09-13 (inicio automatico Nextcloud por empresa):
+- `Administrar empresa > Nextcloud` abre automaticamente la cuenta tecnica de la empresa mediante un token HMAC de 45 segundos ligado a `empresa_id`; no transporta ni persiste contrasenas de usuarios.
+- El componente propio `pcs_sso` valida el acceso dentro de Nextcloud y amplia `frame-ancestors` solo para `https://powerfulcontrolsystem.com` mediante la API CSP del proveedor, conservando cierre de sesion, cambio de clave y enlace de pagina completa.
+
 Actualizacion 2026-07-21 (gobierno de empresas):
 - El rol `super_administrador` conserva autoridad global para eliminar una empresa creada por otro administrador, bajo la confirmacion reforzada y la limpieza externa integral ya existente.
 Actualizacion 2026-07-24 (Plan 106, cartera de proveedores):

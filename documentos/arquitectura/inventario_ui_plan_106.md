@@ -4,10 +4,10 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 
 ## Alcance
 
-- Páginas HTML: **304**
-- Controles detectados: **6066**
-- Acciones a cubrir en E2E: **2960**
-- Entradas y selectores: **3106**
+- Páginas HTML: **305**
+- Controles detectados: **6089**
+- Acciones a cubrir en E2E: **2974**
+- Entradas y selectores: **3115**
 - Controles con marcador dinámico: **872**
 - Estado: inventario estático previo; la cobertura funcional, visual, por permisos y de IA se registra en el runner E2E y la matriz P106.
 
@@ -338,7 +338,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | - | ☰ Ocultar menú | sí |
 
-### `web/administrar_empresa/administrar_usuarios.html` (40)
+### `web/administrar_empresa/administrar_usuarios.html` (46)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -362,26 +362,32 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 18 | input/- | entrada | customRoleName | customRoleName | no |
 | 19 | select/- | entrada | customRoleBase | customRoleBase | no |
 | 20 | button/button | accion | customRoleSave | Guardar rol | no |
-| 21 | button/button | accion | customRoleCancel | Cancelar | no |
-| 22 | textarea/- | entrada | customRoleDescription | customRoleDescription | no |
-| 23 | input/checkbox | accion | stationAccessEnabled | stationAccessEnabled | no |
-| 24 | select/- | entrada | stationAccessUser | stationAccessUser | no |
-| 25 | select/- | entrada | stationAccessCashbox | stationAccessCashbox | no |
-| 26 | input/checkbox | accion | stationAccessLimit | stationAccessLimit | no |
-| 27 | input/checkbox | accion | stationAccessCaja | stationAccessCaja | no |
-| 28 | button/button | accion | stationAccessAll | Marcar todas | no |
-| 29 | button/button | accion | stationAccessNone | Quitar todas | no |
-| 30 | button/button | accion | stationAccessSave | Guardar acceso | no |
-| 31 | button/button | accion | - | Seleccionar | no |
-| 32 | a/- | accion | - | Saber mas | no |
-| 33 | button/button | accion | - | Editar | no |
-| 34 | button/button | accion | - | sin etiqueta | no |
-| 35 | input/checkbox | accion | - | ' + id + ' | no |
-| 36 | button/- | accion | ' + item.id + ' | Editar | sí |
-| 37 | button/- | accion | ' + item.id + ' | Cambiar rol | sí |
-| 38 | button/- | accion | ' + item.id + ' | Eliminar | sí |
-| 39 | button/- | accion | ' + item.id + ' | ' + toggleLabel + ' | sí |
-| 40 | button/- | accion | ' + item.id + ' | Reenviar confirmación | sí |
+| 21 | button/button | accion | customRoleReload | Recargar rol | no |
+| 22 | button/button | accion | customRoleCancel | Cancelar | no |
+| 23 | textarea/- | entrada | customRoleDescription | customRoleDescription | no |
+| 24 | input/search | entrada | rolePermissionsSearch | rolePermissionsSearch | no |
+| 25 | button/button | accion | rolePermissionsSave | Guardar permisos del rol | no |
+| 26 | button/button | accion | rolePermissionsReload | Recargar permisos | no |
+| 27 | button/button | accion | rolePermissionsClose | Cerrar | no |
+| 28 | input/checkbox | accion | stationAccessEnabled | stationAccessEnabled | no |
+| 29 | select/- | entrada | stationAccessUser | stationAccessUser | no |
+| 30 | select/- | entrada | stationAccessCashbox | stationAccessCashbox | no |
+| 31 | input/checkbox | accion | stationAccessLimit | stationAccessLimit | no |
+| 32 | input/checkbox | accion | stationAccessCaja | stationAccessCaja | no |
+| 33 | button/button | accion | stationAccessAll | Marcar todas | no |
+| 34 | button/button | accion | stationAccessNone | Quitar todas | no |
+| 35 | button/button | accion | stationAccessSave | Guardar acceso | no |
+| 36 | button/button | accion | - | Seleccionar | no |
+| 37 | a/- | accion | - | Saber mas | no |
+| 38 | button/button | accion | - | Editar | no |
+| 39 | button/button | accion | - | Permisos | no |
+| 40 | button/button | accion | - | sin etiqueta | no |
+| 41 | input/checkbox | accion | - | ' + id + ' | no |
+| 42 | button/- | accion | ' + item.id + ' | Editar | sí |
+| 43 | button/- | accion | ' + item.id + ' | Cambiar rol | sí |
+| 44 | button/- | accion | ' + item.id + ' | Eliminar | sí |
+| 45 | button/- | accion | ' + item.id + ' | ' + toggleLabel + ' | sí |
+| 46 | button/- | accion | ' + item.id + ' | Reenviar confirmación | sí |
 
 ### `web/administrar_empresa/aiu_construccion.html` (49)
 
@@ -803,10 +809,10 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 12 | button/button | accion | cancelCarritoBtn | Cancelar | no |
 | 13 | input/- | entrada | buscarCarrito | buscarCarrito | no |
 | 14 | button/button | accion | buscarCarritoBtn | Buscar | no |
-| 15 | button/button | accion | backToStationsHeaderBtn | Regresar a estaciones | no |
-| 16 | select/- | entrada | carritoActionSelect | Selecciona una acción Historial de productos ☑ Descuentos ☑ Cambiar tarifa ☐ Transferir cuenta ☐ Domótica ☑ Cancelar car | no |
-| 17 | button/button | accion | carritoBtnControlElectrico | ⚡ Domótica | no |
-| 18 | button/button | accion | directSaleFullscreenBtn | Pantalla completa ⛶ | no |
+| 15 | select/- | entrada | carritoActionSelect | Selecciona una acción Historial de productos ☑ Descuentos ☑ Cambiar tarifa ☐ Transferir cuenta ☐ Domótica ☑ Cancelar car | no |
+| 16 | button/button | accion | carritoBtnControlElectrico | ⚡ Domótica | no |
+| 17 | button/button | accion | backToStationsHeaderBtn | Regresar | no |
+| 18 | button/button | accion | directSaleFullscreenBtn | ⛶ | no |
 | 19 | select/- | entrada | scannerSearchMode | Codigo de barras Codigo SKU Nombre | no |
 | 20 | input/- | entrada | scannerCodigo | scannerCodigo | no |
 | 21 | input/- | entrada | scannerSku | scannerSku | no |
@@ -2236,15 +2242,16 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | - | &#9776; Ocultar menú | sí |
 
-### `web/administrar_empresa/configuracion_permisos.html` (5)
+### `web/administrar_empresa/configuracion_permisos.html` (6)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | btnReloadPermisos | Actualizar | no |
 | 2 | button/button | accion | btnEnableAllEmpresaPerms | Activar todo | no |
 | 3 | button/button | accion | btnSaveEmpresaPerms | Guardar techo empresa | no |
-| 4 | input/checkbox | accion | - | sin etiqueta | sí |
-| 5 | input/checkbox | accion | - | sin etiqueta | sí |
+| 4 | input/search | entrada | empresaPermisosSearch | empresaPermisosSearch | no |
+| 5 | input/checkbox | accion | - | ' + escapeHtml(pair[2] + ' en ' + labelMódulo(item.modulo)) + ' | sí |
+| 6 | input/checkbox | accion | - | ' + escapeHtml('Mostrar ' + (item.titulo \|\| item.pagina_clave)) + ' | sí |
 
 ### `web/administrar_empresa/configuracion_rol_cajero.html` (54)
 
@@ -4172,7 +4179,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | - | &#9776; Ocultar menu | sí |
 
-### `web/administrar_empresa/nextcloud.html` (5)
+### `web/administrar_empresa/nextcloud.html` (6)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -4180,7 +4187,8 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 2 | button/button | accion | nextcloudReset | Restablecer acceso | no |
 | 3 | button/button | accion | nextcloudToggle | Desactivar espacio | no |
 | 4 | button/button | accion | nextcloudOpen | Abrir Nextcloud | no |
-| 5 | button/button | accion | nextcloudCopy | Copiar credencial | no |
+| 5 | a/- | accion | nextcloudFullPage | Abrir en pagina completa | no |
+| 6 | button/button | accion | nextcloudCopy | Copiar credencial | no |
 
 ### `web/administrar_empresa/niif.html` (28)
 
@@ -6151,7 +6159,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 2 | button/button | accion | btnActualizar | Actualizar | no |
 | 3 | input/date | entrada | desde | desde | no |
 | 4 | input/date | entrada | hasta | hasta | no |
-| 5 | select/- | entrada | modulo | Todos Empresas Interacciones UI Administradores Empresas compartidas Licencias Reportes globales Tipos de empresas | no |
+| 5 | select/- | entrada | modulo | Todos Inicios de sesión Empresas Interacciones UI Administradores Empresas compartidas Licencias Reportes globales Tipos | no |
 | 6 | select/- | entrada | resultado | Todos OK Error Rechazado | no |
 | 7 | input/- | entrada | usuario | usuario | no |
 | 8 | input/- | entrada | empresaId | empresaId | no |
@@ -6163,6 +6171,25 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 14 | button/button | accion | nextPage | Siguiente | no |
 | 15 | button/button | accion | cerrarDetalle | Cerrar | no |
 
+### `web/super/auditoria_login.html` (14)
+
+| # | Tipo | Clase | ID | Etiqueta | Dinámico |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | button/button | accion | btnActualizar | Actualizar | no |
+| 2 | input/date | entrada | desde | desde | no |
+| 3 | input/date | entrada | hasta | hasta | no |
+| 4 | select/- | entrada | modulo | Inicios de sesión | no |
+| 5 | select/- | entrada | resultado | Todos Exitoso Rechazado Error interno | no |
+| 6 | input/- | entrada | usuario | usuario | no |
+| 7 | input/- | entrada | empresaId | empresaId | no |
+| 8 | input/- | entrada | search | search | no |
+| 9 | button/submit | accion | - | Consultar accesos | no |
+| 10 | button/button | accion | btnCSV | Exportar CSV | no |
+| 11 | button/button | accion | btnJSON | Exportar JSON | no |
+| 12 | button/button | accion | prevPage | Anterior | no |
+| 13 | button/button | accion | nextPage | Siguiente | no |
+| 14 | button/button | accion | cerrarDetalle | Cerrar | no |
+
 ### `web/super/auditoria_super_admin.html` (14)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
@@ -6170,7 +6197,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 1 | button/button | accion | btnActualizar | Actualizar | no |
 | 2 | input/date | entrada | desde | desde | no |
 | 3 | input/date | entrada | hasta | hasta | no |
-| 4 | select/- | entrada | modulo | Todos Panel super UI Gmail SMTP Wompi / Nequi Epayco reCAPTCHA IA global OnlyOffice RustDesk VPS Voz IA Respaldo Segurid | no |
+| 4 | select/- | entrada | modulo | Todos Inicios de sesión Panel super UI Gmail SMTP Wompi / Nequi Epayco reCAPTCHA IA global OnlyOffice RustDesk VPS Voz I | no |
 | 5 | select/- | entrada | resultado | Todos OK Error Rechazado | no |
 | 6 | input/- | entrada | usuario | usuario | no |
 | 7 | input/- | entrada | empresaId | empresaId | no |
@@ -6928,7 +6955,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 7 | button/button | accion | auditPrevious | Anterior | no |
 | 8 | button/button | accion | auditNext | Siguiente | no |
 
-### `web/super/permisos_rol.html` (14)
+### `web/super/permisos_rol.html` (15)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -6941,11 +6968,12 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 7 | button/button | accion | prExpandAll | Desplegar grupos | no |
 | 8 | button/button | accion | prCollapseAll | Plegar grupos | no |
 | 9 | button/button | accion | saveBtn | Guardar cambios | no |
-| 10 | button/button | accion | saveBtn2 | Guardar cambios | no |
-| 11 | input/checkbox | accion | - | sin etiqueta | sí |
-| 12 | button/button | accion | - | Activar todo | sí |
-| 13 | button/button | accion | - | Desactivar todo | sí |
-| 14 | input/checkbox | accion | - | sin etiqueta | sí |
+| 10 | button/button | accion | reloadBtn | Recargar permisos | no |
+| 11 | button/button | accion | saveBtn2 | Guardar cambios | no |
+| 12 | input/checkbox | accion | - | ' + escapeHtml(actionLabelShort(a) + ' en ' + mTitle) + ' | sí |
+| 13 | button/button | accion | - | Activar todo | sí |
+| 14 | button/button | accion | - | Desactivar todo | sí |
+| 15 | input/checkbox | accion | - | ' + escapeHtml('Mostrar ' + tit) + ' | sí |
 
 ### `web/super/plantillas_produccion_masiva.html` (17)
 

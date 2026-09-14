@@ -65,14 +65,17 @@
     var container = byID("nextcloudEmbed");
     if (!frame || !container) return;
     container.classList.add("visible");
-    byID("nextcloudEmbedStatus").textContent = "Cargando vista integrada...";
+    byID("nextcloudEmbedStatus").textContent = "Iniciando sesion segura...";
     if (frame.getAttribute("src") !== url) frame.setAttribute("src", url);
   }
   function openCompanyNextcloudWhenReady(data) {
-    if (!data || !data.provisioned || !data.active || !data.web_url || data.temporary_password) return;
-    // Mantener la experiencia dentro del iframe contentFrame de Administrar
-    // empresa; nunca abrir una pestaña ni reemplazar el shell principal.
-    embedNextcloud(data.web_url);
+    if (!data || !data.provisioned || !data.active || !data.web_url) return;
+    if (data.autologin_url) {
+      embedNextcloud(data.autologin_url);
+      return;
+    }
+    byID("nextcloudEmbedStatus").textContent = data.autologin_error || "Inicio automatico no disponible.";
+    byID("nextcloudEmbed").classList.add("visible");
   }
   async function run(action) {
     setBusy(true);
@@ -80,6 +83,7 @@
     try {
       var data = await request(action, "POST");
       render(data);
+      if (action === "provision") openCompanyNextcloudWhenReady(data);
     }
     catch (error) { byID("nextcloudStatus").textContent = error.message; }
     finally { if (state.data) render(state.data); }
@@ -105,10 +109,10 @@
     run(action);
   });
   byID("nextcloudOpen").addEventListener("click", function () {
-    if (state.data && state.data.web_url) embedNextcloud(state.data.web_url);
+    if (state.data) openCompanyNextcloudWhenReady(state.data);
   });
   byID("nextcloudFrame").addEventListener("load", function () {
-    byID("nextcloudEmbedStatus").textContent = "Vista integrada cargada";
+    byID("nextcloudEmbedStatus").textContent = "Nextcloud abierto para esta empresa";
   });
   byID("nextcloudCopy").addEventListener("click", function () {
     var value = byID("nextcloudTemporaryPassword").textContent;
