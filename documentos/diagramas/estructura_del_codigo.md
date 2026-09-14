@@ -1,6 +1,24 @@
 # Estructura del código
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-14.
+
+## Menu visual por empresa
+
+`pcs-migrate` inicializa `menu_visual_config` version 3 para las empresas
+existentes y `CreateEmpresaIdempotente` asegura el mismo valor para una empresa
+nueva. El shell carga primero permisos, licencia y rol; luego aplica
+`hidden_links`. `Configuracion > Menu visible` permite activar grupos o modulos y
+guarda el resultado por `empresa_id` mediante `/api/empresa/estacion_prefs`.
+`Soluciones por negocio` no se monta en el shell ni en esa configuracion. La
+adaptacion por tipo queda en el flujo de alta y primera entrada al panel.
+
+```mermaid
+flowchart LR
+  D[Predeterminado version 3] --> P[empresa_estacion_prefs por empresa]
+  A[Permisos, licencia y rol] --> M[Menu efectivo]
+  P --> M
+  C[Configuracion por empresa] --> P
+```
 
 
 ## Accesorios y juegos

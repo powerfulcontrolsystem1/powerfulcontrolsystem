@@ -135,7 +135,7 @@ func postponeEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguraci
 	observaciones := "[configuracion_guiada] asistente inicial pospuesto por el usuario"
 	if noMostrarMas {
 		estado = "no_mostrar_mas"
-		mensaje = "Listo. La configuracion guiada no se mostrara automaticamente para esta empresa. Puedes abrirla desde Configuracion cuando la necesites."
+		mensaje = "Listo. La configuracion guiada inicial no se mostrara nuevamente para esta empresa."
 		observaciones = "[configuracion_guiada] asistente inicial oculto permanentemente por el usuario"
 	}
 	resumen := map[string]interface{}{

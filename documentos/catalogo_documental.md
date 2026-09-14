@@ -100,7 +100,7 @@ Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/diagramas/diagramas_sistema_pcs_manifest.json](<diagramas/diagramas_sistema_pcs_manifest.json>) | generado | Coordinación técnica | Pendiente / no aplica |
 | [documentos/diagramas/documentacion_tecnica_completa.md](<diagramas/documentacion_tecnica_completa.md>) | generado | Coordinación técnica | Pendiente / no aplica |
 | [documentos/diagramas/documentacion_tecnica_completa_manifest.json](<diagramas/documentacion_tecnica_completa_manifest.json>) | generado | Coordinación técnica | Pendiente / no aplica |
-| [documentos/diagramas/estructura_del_codigo.md](<diagramas/estructura_del_codigo.md>) | vigente | Coordinación técnica | 2026-09-05 |
+| [documentos/diagramas/estructura_del_codigo.md](<diagramas/estructura_del_codigo.md>) | vigente | Coordinación técnica | 2026-09-14 |
 | [documentos/docker_vps_operacion.md](<docker_vps_operacion.md>) | vigente | QA/operación | 2026-09-05 |
 | [documentos/domicilios_profesional.md](<domicilios_profesional.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/domotica_raspberry_tunnel.md](<domotica_raspberry_tunnel.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
@@ -108,8 +108,8 @@ Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/energia_solar.md](<energia_solar.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/erp_multiempresa/README.md](<erp_multiempresa/README.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/estado_actual.md](<estado_actual.md>) | vigente | Coordinación técnica | 2026-09-07 |
-| [documentos/estructura_bd.md](<estructura_bd.md>) | vigente | Coordinación técnica | 2026-09-05 |
-| [documentos/flujos_operativos.md](<flujos_operativos.md>) | vigente | Coordinación técnica | 2026-09-05 |
+| [documentos/estructura_bd.md](<estructura_bd.md>) | vigente | Coordinación técnica | 2026-09-14 |
+| [documentos/flujos_operativos.md](<flujos_operativos.md>) | vigente | Coordinación técnica | 2026-09-14 |
 | [documentos/gobernanza_tecnica/README.md](<gobernanza_tecnica/README.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/gobernanza_tecnica/adr/ADR-0001-frontera-multiempresa-empresa-id.md](<gobernanza_tecnica/adr/ADR-0001-frontera-multiempresa-empresa-id.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md](<gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md>) | vigente | Coordinación técnica | 2026-09-05 |

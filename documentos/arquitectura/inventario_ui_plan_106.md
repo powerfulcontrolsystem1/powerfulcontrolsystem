@@ -4,11 +4,11 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 
 ## Alcance
 
-- Páginas HTML: **305**
-- Controles detectados: **6089**
-- Acciones a cubrir en E2E: **2974**
+- Páginas HTML: **307**
+- Controles detectados: **6090**
+- Acciones a cubrir en E2E: **2975**
 - Entradas y selectores: **3115**
-- Controles con marcador dinámico: **872**
+- Controles con marcador dinámico: **873**
 - Estado: inventario estático previo; la cobertura funcional, visual, por permisos y de IA se registra en el runner E2E y la matriz P106.
 
 ## Controles por página
@@ -33,10 +33,10 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 6 | button/button | accion | - | Usuarios, clientes y personas | no |
 | 7 | button/button | accion | - | Canales digitales y colaboración | no |
 | 8 | button/button | accion | - | Control de asistencia y horarios | no |
-| 9 | button/button | accion | - | Análisis y control | no |
-| 10 | button/button | accion | - | Domótica y Energía Solar | no |
-| 11 | button/button | accion | - | Documentos, nube y soporte | no |
-| 12 | button/button | accion | - | Soluciones por negocio | no |
+| 9 | button/button | accion | - | Ubicación GPS | no |
+| 10 | button/button | accion | - | Análisis y control | no |
+| 11 | button/button | accion | - | Domótica y Energía Solar | no |
+| 12 | button/button | accion | - | Documentos, nube y soporte | no |
 | 13 | button/button | accion | - | Administración | no |
 | 14 | button/button | accion | - | Licencia | no |
 | 15 | button/button | accion | - | &#9776; Ocultar menú | sí |
@@ -1723,15 +1723,16 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | a/- | accion | - | Ver todas | no |
 
-### `web/administrar_empresa/configuracion/menu_visual.html` (5)
+### `web/administrar_empresa/configuracion/menu_visual.html` (6)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | btnGuardarMenuVisual | Guardar configuracion | no |
 | 2 | input/checkbox | accion | menuVisualEnabled | menuVisualEnabled | no |
 | 3 | button/button | accion | btnMostrarTodo | Mostrar todo | no |
-| 4 | button/button | accion | btnOcultarNoCriticos | Ocultar soluciones especializadas | no |
+| 4 | button/button | accion | btnAplicarPredeterminado | Aplicar selección predeterminada | no |
 | 5 | input/checkbox | accion | - | sin etiqueta | sí |
+| 6 | input/checkbox | accion | - | sin etiqueta | sí |
 
 ### `web/administrar_empresa/configuracion/panel_inicio.html` (6)
 

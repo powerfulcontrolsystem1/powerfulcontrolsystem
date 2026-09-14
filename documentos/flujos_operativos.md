@@ -1,6 +1,6 @@
 # Flujos operativos
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-14.
 
 ## Configuracion fiscal internacional (2026-09-05)
 
@@ -162,16 +162,30 @@ afecte dinero, documentos, licencias o seguridad.
 ## Menu visible por empresa
 
 1. Abrir `Administrar empresa > Configuracion > Menu visible`.
-2. Marcar los modulos que deben mostrarse y desmarcar los que se quieren ocultar
-   del menu para todos los usuarios de esa empresa.
-3. PCS guarda la preferencia en
+2. Usar la casilla `Mostrar grupo` para activar o desactivar una seccion completa,
+   o ajustar por separado las casillas de sus modulos.
+3. `Aplicar seleccion predeterminada` deja visibles Panel, Vida, Operacion y
+   ventas, Inventario y compras, Finanzas y cumplimiento, Canales digitales y
+   colaboracion, Ubicacion GPS, Analisis y control, Domotica y Energia Solar,
+   Documentos/nube/soporte, Administracion, Licencia, Noticias Beta y Volver a
+   empresas.
+4. Produccion, CRM y clientes, Usuarios/clientes/personas, Control de asistencia
+   y horarios quedan ocultos en esa seleccion inicial.
+5. `Soluciones por negocio` no forma parte del menu empresarial ni de `Menu
+   visible`. `Adaptacion por tipo` y `Configuracion guiada` tampoco aparecen en
+   el menu ordinario de Configuracion: la adaptacion se ofrece al crear la
+   empresa y durante su primera entrada al panel.
+6. PCS guarda la preferencia en
    `empresa_estacion_prefs.menu_visual_config` con `estacion_id=0` y lista
    `hidden_links`, siempre por `empresa_id`.
-4. Al cargar `Administrar empresa`, primero se aplican permisos, licencia y rol;
+7. La migracion `20260914-002-menu-visual-defaults-v3` reemplaza la seleccion de
+   empresas existentes una vez; las empresas nuevas reciben el mismo valor si
+   aun no tienen una preferencia.
+8. Al cargar `Administrar empresa`, primero se aplican permisos, licencia y rol;
    luego se aplica este filtro visual. Por eso un modulo oculto no aparece en el
    menu, pero sus endpoints siguen protegidos por backend.
-5. `Panel`, `Configuracion`, `Menu visible` y `Volver a empresas` no se pueden
-   ocultar para evitar que el administrador pierda la ruta de recuperacion.
+9. `Configuracion`, `Menu visible` y `Volver a empresas` no se pueden ocultar
+   para evitar que el administrador pierda la ruta de recuperacion.
 
 ## Nomina y nomina electronica DIAN
 
