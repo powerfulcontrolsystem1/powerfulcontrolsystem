@@ -417,7 +417,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "4f39fe56022b025c0b81873604566fe72d5439136db2e1d257edf41a6b82a048"
+      "sha256_lf": "28d9ab294825f71ffb75358819844c4673a89dc5885976db76b55670fdb02b21"
     },
     {
       "path": "documentos/arquitectura/matriz_rutas_multiempresa.md",
@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "ed9c242ed5ab56da2cce593eacb2355447f7db5a1e4ce22550e65d44b408656f"
+      "sha256_lf": "bb7d946f87da8583d33cc5df741b2fbf85300fa7d613722079a6962e425acc5a"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -723,7 +723,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "ab036a17339f47f369ec05203c5b9c478bba2f3bcb788d6a54f11bc0ab0fab62"
+      "sha256_lf": "9786b4fae20f083777a53699f74583957bcda0360d06c8818f2b62374bb27aa4"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -1308,7 +1308,7 @@
       "owner": "Ingeniería del módulo",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "315d9e79d002d8a85056b0c49fd3a90cd288ea510f9a86c4cdf6fd490de51a56"
+      "sha256_lf": "3edd686413a59dbee399fa7a13b3e1cc7e04ce5e45693edb14ea8d781b97046d"
     },
     {
       "path": "documentos/nomina_colombia_avanzada.md",

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Nextcloud empresarial</title>
   <link rel="stylesheet" href="/estilos.css">
-  <link rel="stylesheet" href="/nextcloud_empresa.css?v=20260722-frame-policy">
+  <link rel="stylesheet" href="/nextcloud_empresa.css?v=20260913-sso">
 </head>
 <body class="empresa-subpage">
   <main class="nextcloud-page">
@@ -26,6 +26,7 @@
       <button id="nextcloudReset" class="btn secondary" type="button">Restablecer acceso</button>
       <button id="nextcloudToggle" class="btn secondary" type="button">Desactivar espacio</button>
       <button id="nextcloudOpen" class="btn secondary" type="button">Abrir Nextcloud</button>
+      <a id="nextcloudFullPage" class="btn secondary" href="https://nextcloud.powerfulcontrolsystem.com" target="_blank" rel="noopener noreferrer">Abrir en pagina completa</a>
     </div>
     <section id="nextcloudCredential" class="nextcloud-credential" aria-live="polite">
       <strong>Credencial temporal de un solo vistazo</strong>
@@ -35,9 +36,9 @@
     <section id="nextcloudEmbed" class="nextcloud-embed" aria-label="Nextcloud integrado">
       <div class="nextcloud-embed-header"><span>Nextcloud</span><span id="nextcloudEmbedStatus" class="nextcloud-embed-status">Preparando vista integrada...</span></div>
       <iframe id="nextcloudFrame" class="nextcloud-frame" title="Nextcloud empresarial integrado" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen"></iframe>
-      <p class="nextcloud-embed-help">La vista se mantiene dentro de Administrar empresa. Si el servidor externo impide incrustar su contenido, ajusta su politica de marco para permitir <code>https://powerfulcontrolsystem.com</code>.</p>
+      <p class="nextcloud-embed-help">La sesion corresponde exclusivamente a la empresa seleccionada. Puedes cerrar sesion o cambiar la clave desde el menu de perfil de Nextcloud.</p>
     </section>
   </main>
-  <script src="/js/nextcloud_empresa.js?v=20260713-contexto-empresa"></script>
+  <script src="/js/nextcloud_empresa.js?v=20260913-sso"></script>
 </body>
 </html>

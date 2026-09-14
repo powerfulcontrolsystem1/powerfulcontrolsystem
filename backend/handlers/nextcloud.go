@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,7 +32,19 @@ const (
 	nextcloudDefaultQuotaMBKey  = "nextcloud.default_quota_mb"
 	nextcloudDefaultQuotaMB     = int64(1024)
 	nextcloudMaxQuotaMB         = int64(1024 * 1024)
+	nextcloudSSOTokenAudience   = "pcs-nextcloud"
+	nextcloudSSOTokenTTL        = 45 * time.Second
 )
+
+type nextcloudSSOToken struct {
+	Version   int    `json:"v"`
+	User      string `json:"uid"`
+	EmpresaID int64  `json:"empresa_id"`
+	Audience  string `json:"aud"`
+	IssuedAt  int64  `json:"iat"`
+	ExpiresAt int64  `json:"exp"`
+	Nonce     string `json:"nonce"`
+}
 
 type nextcloudOCSMeta struct {
 	Status     string `json:"status"`
@@ -236,6 +252,67 @@ func nextcloudAccessURLs(account nextcloudCompanyAccount, baseURL string) (webUR
 	webURL = baseURL
 	webDAVURL = baseURL + "/remote.php/dav/files/" + url.PathEscape(account.User) + "/"
 	return webURL, webDAVURL
+}
+
+func nextcloudSSOSecret() string {
+	secret := strings.TrimSpace(os.Getenv("NEXTCLOUD_SSO_SECRET"))
+	if len(secret) < 32 {
+		return ""
+	}
+	return secret
+}
+
+func signNextcloudSSOPayload(payloadPart, secret string) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(payloadPart))
+	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+}
+
+func createNextcloudSSOToken(account nextcloudCompanyAccount, empresaID int64, now time.Time) (string, error) {
+	secret := nextcloudSSOSecret()
+	if secret == "" {
+		return "", fmt.Errorf("NEXTCLOUD_SSO_SECRET no esta configurado")
+	}
+	if empresaID <= 0 || !account.Active || !account.Provisioned {
+		return "", fmt.Errorf("cuenta Nextcloud empresarial no disponible")
+	}
+	user, err := validateNextcloudAccountUser(account.User)
+	if err != nil || user != "pcs_empresa_"+strconv.FormatInt(empresaID, 10) {
+		return "", fmt.Errorf("cuenta Nextcloud empresarial invalida")
+	}
+	nonceBytes := make([]byte, 18)
+	if _, err := rand.Read(nonceBytes); err != nil {
+		return "", fmt.Errorf("no se pudo generar el acceso temporal")
+	}
+	issuedAt := now.UTC().Unix()
+	claims := nextcloudSSOToken{
+		Version:   1,
+		User:      user,
+		EmpresaID: empresaID,
+		Audience:  nextcloudSSOTokenAudience,
+		IssuedAt:  issuedAt,
+		ExpiresAt: now.Add(nextcloudSSOTokenTTL).UTC().Unix(),
+		Nonce:     base64.RawURLEncoding.EncodeToString(nonceBytes),
+	}
+	payload, err := json.Marshal(claims)
+	if err != nil {
+		return "", fmt.Errorf("no se pudo preparar el acceso temporal")
+	}
+	payloadPart := base64.RawURLEncoding.EncodeToString(payload)
+	return payloadPart + "." + signNextcloudSSOPayload(payloadPart, secret), nil
+}
+
+func nextcloudAutologinURL(baseURL, token string) string {
+	parsed, err := url.Parse(strings.TrimSpace(baseURL))
+	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || strings.TrimSpace(token) == "" {
+		return ""
+	}
+	parsed.Path = strings.TrimRight(parsed.Path, "/") + "/index.php/apps/pcs_sso/login"
+	query := parsed.Query()
+	query.Set("token", token)
+	parsed.RawQuery = query.Encode()
+	parsed.Fragment = ""
+	return parsed.String()
 }
 
 func auditNextcloudCompanyAction(dbEmp *sql.DB, r *http.Request, empresaID int64, action, result string, status int) {
@@ -517,6 +594,16 @@ func EmpresaNextcloudHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 		if webDAVURL != "" {
 			response["webdav_url"] = webDAVURL
+		}
+		if webURL != "" {
+			if token, tokenErr := createNextcloudSSOToken(account, empresaID, time.Now()); tokenErr == nil {
+				if autologinURL := nextcloudAutologinURL(baseURL, token); autologinURL != "" {
+					response["autologin_url"] = autologinURL
+					response["autologin_expires_seconds"] = int(nextcloudSSOTokenTTL / time.Second)
+				}
+			} else if nextcloudSSOSecret() == "" {
+				response["autologin_error"] = "Inicio automatico pendiente de configuracion en el VPS."
+			}
 		}
 		if temporaryPassword != "" {
 			response["temporary_password"] = temporaryPassword

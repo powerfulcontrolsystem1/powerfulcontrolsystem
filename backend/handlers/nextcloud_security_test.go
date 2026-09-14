@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/you/pos-backend/utils"
 )
@@ -27,6 +30,52 @@ func TestNextcloudAdminCredentialIsEncryptedBeforeStorage(t *testing.T) {
 	decrypted, err := utils.DecryptString(encrypted)
 	if err != nil || decrypted != plain {
 		t.Fatalf("nextcloud credential cannot be decrypted safely: %v", err)
+	}
+}
+
+func TestNextcloudSSOTokenIsShortLivedAndBoundToEmpresa(t *testing.T) {
+	secret := strings.Repeat("s", 48)
+	t.Setenv("NEXTCLOUD_SSO_SECRET", secret)
+	now := time.Date(2026, time.September, 13, 12, 0, 0, 0, time.UTC)
+	account := nextcloudCompanyAccount{User: "pcs_empresa_12", Active: true, Provisioned: true}
+	token, err := createNextcloudSSOToken(account, 12, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts := strings.Split(token, ".")
+	if len(parts) != 2 {
+		t.Fatalf("unexpected signed token format: %q", token)
+	}
+	expectedSignature := signNextcloudSSOPayload(parts[0], secret)
+	if !hmac.Equal([]byte(expectedSignature), []byte(parts[1])) {
+		t.Fatal("Nextcloud SSO token signature is invalid")
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var claims nextcloudSSOToken
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		t.Fatal(err)
+	}
+	if claims.User != "pcs_empresa_12" || claims.EmpresaID != 12 || claims.Audience != nextcloudSSOTokenAudience {
+		t.Fatalf("token lost its company boundary: %+v", claims)
+	}
+	if claims.ExpiresAt-claims.IssuedAt != int64(nextcloudSSOTokenTTL/time.Second) {
+		t.Fatalf("unexpected token lifetime: %d", claims.ExpiresAt-claims.IssuedAt)
+	}
+
+	account.User = "pcs_empresa_52"
+	if _, err := createNextcloudSSOToken(account, 12, now); err == nil {
+		t.Fatal("cross-company Nextcloud user must be rejected")
+	}
+}
+
+func TestNextcloudAutologinURLKeepsConfiguredBasePath(t *testing.T) {
+	got := nextcloudAutologinURL("https://nextcloud.example.test/cloud", "signed-token")
+	want := "https://nextcloud.example.test/cloud/index.php/apps/pcs_sso/login?token=signed-token"
+	if got != want {
+		t.Fatalf("autologin URL = %q, want %q", got, want)
 	}
 }
 

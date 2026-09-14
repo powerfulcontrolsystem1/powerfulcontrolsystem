@@ -10,16 +10,36 @@ Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 202
 
 Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
 
+## Actualizacion 2026-09-13 - inicio automatico empresarial seguro
+
+`Administrar empresa > Nextcloud` emite un token HMAC de 45 segundos ligado
+simultaneamente al `empresa_id` validado y al usuario tecnico
+`pcs_empresa_<id>`. El componente propio `pcs_sso` de Nextcloud valida firma,
+audiencia, vigencia, nonce y coincidencia exacta entre empresa y usuario antes
+de iniciar la sesion. El token no contiene contrasenas y PCS no conserva la
+clave de la cuenta empresarial.
+
+El mismo componente agrega `https://powerfulcontrolsystem.com` como unico
+ancestro externo permitido mediante la API CSP de Nextcloud. Asi se preserva la
+politica dinamica y sus nonces. La pagina empresarial usa la URL de autologin al
+cargar y tambien inmediatamente despues del aprovisionamiento; ya no marca
+como exitosa una navegacion directa que termina en la pagina de login.
+
+`NEXTCLOUD_SSO_SECRET` se genera automaticamente en el VPS y se comparte solo
+entre el backend y la configuracion protegida del contenedor Nextcloud. El
+script `scripts/configure_nextcloud_pcs_sso.sh` instala o actualiza el
+componente, conserva un respaldo de una version previa, valida PHP, configura
+el origen y habilita la aplicacion sin imprimir el secreto.
+
 ## Actualizacion 2026-07-24 - iframe restringido y version heredada
 
-El shell PCS debe declarar de forma explicita
-`https://nextcloud.powerfulcontrolsystem.com` en el `frame-src` de las dos CSP
-que sirve `deploy/nginx/pcs.conf`. El proxy externo de Nextcloud se ajusta con
-`deploy/scripts/vps-configure-nextcloud-host-nginx.sh`: agrega una CSP enforced
-con `frame-ancestors 'self' https://powerfulcontrolsystem.com`, crea respaldo,
-ejecuta `nginx -t` y recarga solo Nginx. Conserva tanto la CSP del proveedor
-como `X-Frame-Options: SAMEORIGIN`; los navegadores actuales aplican
-`frame-ancestors` y los clientes antiguos siguen fallando cerrados.
+El shell PCS declara de forma explicita
+`https://nextcloud.powerfulcontrolsystem.com` en `frame-src`. El antecedente de
+modificar la CSP dinamica desde Nginx queda reemplazado por `pcs_sso`, que usa
+la API CSP soportada de Nextcloud y conserva los nonces del proveedor. El
+script `deploy/scripts/vps-configure-nextcloud-host-nginx.sh` mantiene su
+rechazo seguro cuando detecta que no puede ampliar `frame-ancestors` sin
+destruir esa politica.
 
 El script valida que el sitio corresponde al dominio y al upstream
 `127.0.0.1:8090`; no crea, recrea, actualiza ni elimina contenedores. Antes de
@@ -42,10 +62,10 @@ imprime esa contrasena en PCS.
 
 Al abrir la pagina empresarial, PCS aprovisiona automaticamente la cuenta
 tecnica si el servicio esta configurado y el espacio esta activo. La
-autenticacion sigue siendo propia de Nextcloud:
-PCS no conserva contrasenas de empresas ni fabrica cookies de sesion. Para
-inicio de sesion unico real entre PCS y Nextcloud se requiere configurar un
-proveedor SSO compatible (OIDC o SAML) en ambos servicios.
+autenticacion sigue siendo propia de Nextcloud: PCS no conserva contrasenas de
+empresas. El acceso integrado usa el componente `pcs_sso` y un token firmado
+de vida corta para seleccionar exclusivamente la cuenta tecnica ya
+aprovisionada de la empresa autorizada.
 
 Cuando la cuenta ya esta aprovisionada, `Administrar empresa > Nextcloud`
 permanece dentro del panel derecho del shell y carga la vista de Nextcloud en
@@ -58,10 +78,10 @@ temporal se configura en el servidor Nextcloud mediante su politica de
 contrasenas, no en PCS, para que sea aplicada por el mismo proveedor de
 identidad.
 
-La incrustacion depende de que el reverse proxy de Nextcloud permita como
-origen de marco `https://powerfulcontrolsystem.com`; si conserva
-`X-Frame-Options: SAMEORIGIN`, el shell sigue visible y muestra la indicacion
-de ajuste pendiente, sin forzar una navegacion externa.
+La incrustacion depende de que `pcs_sso` este habilitado y configurado con
+`https://powerfulcontrolsystem.com` como origen. Si no hay secreto SSO, el shell
+informa que el inicio automatico esta pendiente y conserva el enlace HTTPS para
+abrir Nextcloud en pagina completa.
 
 ## Alcance
 
@@ -119,11 +139,15 @@ un parametro manipulable como fuente de autoridad.
    la cifra al arrancar.
 5. Probar la conexion OCS y verificar el aprovisionamiento de dos empresas de
    ensayo.
+6. Ejecutar `bash scripts/configure_nextcloud_pcs_sso.sh <checkout-validado>`,
+   recrear backend con el entorno actualizado y comprobar el autologin dentro
+   del panel empresarial.
 
 El backend toma `NEXTCLOUD_ENABLED`, `NEXTCLOUD_BASE_URL`,
 `NEXTCLOUD_ADMIN_USER`, `NEXTCLOUD_ADMIN_SECRET` y
-`NEXTCLOUD_DEFAULT_QUOTA_MB` desde `deploy/.env.platform`. Nunca se debe usar
-la cuenta administrativa inicial como credencial de integracion.
+`NEXTCLOUD_DEFAULT_QUOTA_MB` desde `deploy/.env.platform`. El acceso integrado
+lee tambien `NEXTCLOUD_SSO_SECRET`. Nunca se debe usar la cuenta administrativa
+inicial como credencial de integracion.
 
 La instalacion heredada conserva su propio motor de datos, separado de PCS. No
 reintroduce otro motor dentro del runtime de PCS: PostgreSQL sigue siendo el
@@ -153,6 +177,8 @@ contenedores, volumenes ni datos sin evidencia de backup y restauracion.
 - prueba OCS desde Super administrador;
 - aprovisionamiento, apertura, restablecimiento y rechazo cruzado entre dos
   empresas de staging;
+- token SSO vencido o con empresa/usuario alterados rechazado, sesion correcta
+  en el iframe y carga de archivo verificada visualmente;
 - eliminacion de una empresa con cuenta Nextcloud, verificando que su usuario y
   archivos remotos desaparezcan sin afectar otra empresa.
 

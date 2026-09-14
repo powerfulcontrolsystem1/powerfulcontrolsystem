@@ -1297,6 +1297,12 @@ liquidaciones + pagos + perfil + configuracion
 
 - `backend/db/nextcloud.go` conserva la asignacion tecnica por `empresa_id` y sincroniza la cuota global para empresas existentes y nuevas.
 - `backend/handlers/nextcloud.go` expone activacion/desactivacion por rol empresarial y elimina la cuenta remota OCS antes del cascade de empresa.
+
+### Inicio automatico Nextcloud por empresa (2026-09-13)
+
+- `backend/handlers/nextcloud.go` emite un acceso HMAC de 45 segundos solo para `pcs_empresa_<empresa_id>` cuando la cuenta esta activa y aprovisionada.
+- `deploy/nextcloud/pcs_sso` valida ese acceso en Nextcloud, inicia la sesion del usuario tecnico y permite como ancestro de marco unicamente el origen PCS configurado.
+- `web/js/nextcloud_empresa.js` carga la URL firmada al entrar y despues de aprovisionar, manteniendo el enlace de pagina completa como alternativa visible.
 - El servicio vive en el stack separado del VPS principal; VPS2 continua independiente.
 
 ## Actualizacion 2026-05-13 (facturacion electronica: proveedores de firma digital)
