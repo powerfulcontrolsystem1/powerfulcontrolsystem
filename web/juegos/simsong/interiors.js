@@ -25,6 +25,10 @@ export function buildInterior(id,assets){
   for(const x of [-5.8,5.8])wall(x,0,8.4,.2,3.4); // Enter rooms around the ends beside the stairwell.
   furniture('bedDouble',-6,5,1.3,3.4);furniture('bedSingle',6,5,1.2,3.4);furniture('bedSingle',6,-5,1.2,3.4);furniture('desk',8,-7,1.1,3.4);furniture('bathtub',-7,-6,1.1,3.4);furniture('toilet',-4,-7,1.1,3.4);furniture('bathroomSink',-8,-3,1.2,3.4);
   label(group,'742 EVERGREEN TERRACE',0,2.9,-8.7,3);
+ }else if(id==='plant'){
+  furniture('desk',0,-4,1.3);furniture('chair',0,-6,1.5);furniture('bookcaseOpen',-7,-7,2.6);furniture('loungeSofa',6,3,1.35);furniture('pottedPlant',-7,5,2);
+  label(group,'CENTRAL NUCLEAR · DIRECCIÓN',0,2.7,-8.7,9,'#25584f','#f0e2b8');
+  for(const x of [-5,5]){box(group,x,1.2,-7,2,2.4,.4,'#6f9e9b');for(let i=0;i<3;i++)box(group,x+(i-1)*.45,1.5,-6.75,.15,.15,.05,'#e7ce54')}
  }else{
   box(group,-6,1.1,-2,2.2,2.2,10,'#755642');colliders.push({x:-7.1,z:-7,w:2.2,d:10,minY:0,maxY:2.2});
   for(let z=-6;z<=3;z+=2.1)furniture('stoolBar',-3.6,z,1.2);

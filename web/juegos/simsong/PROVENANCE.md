@@ -40,3 +40,11 @@ Los peatones combinan A* sobre una malla de ocupación con llegada, separación 
 previsión de tráfico inspiradas en los
 [comportamientos de dirección de Craig Reynolds](https://www.red3d.com/cwr/steer/).
 La planificación pertenece a NPC; no genera flechas ni una ruta para el jugador.
+
+## Combate y referencia de GTA
+
+Se revisó [la explicación de Rockstar sobre primera persona y controles](https://blog.playstation.com/archive/2014/11/04/grand-theft-auto-v-ps4-introducing-new-first-person-mode/) y [sus consejos de perspectiva](https://www.rockstargames.com/es/newswire/article/25o2411812oa29/rockstar-game-tips-playing-with-perspective-in-gtav). Se aplican cambio de perspectiva con un botón, cámara al hombro, movimiento relativo a cámara, vehículo utilizable, misión elegible y minimapa. No se incorpora código, audio ni recursos de GTA.
+
+Los personajes de Springfield, equipo militar, extraterrestres y ovnis de [characters.js](characters.js) son geometría original estilizada. Para Kang y Kodos se consultaron las [figuras oficiales de Super7](https://super7.com/blogs/news/the-simpsons-ultimates-wave-3-figures) y [la imagen de referencia de Kodos](https://simpsonswiki.com/wiki/File:Kodos.png): ojo único, tentáculos, dientes y casco transparente. Las imágenes no se redistribuyen. El militar y los peatones reutilizan el rig y las animaciones CC0 de Kenney; no se afirma que los personajes propios sean modelos oficiales ni que pertenezcan a la licencia de Kenney.
+
+La IA emplea A* y separación para perseguir sin cruzar edificios, rayos contra cajas para visibilidad y obstáculos, enfriamiento entre ataques y proyectiles con colisión continua. No usa servicios externos ni aprendizaje automático.

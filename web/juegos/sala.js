@@ -1,7 +1,7 @@
 import {Sound} from './core.js';
 document.body.classList.toggle('compact',new URLSearchParams(location.search).has('compact'));
 const catalog=[
- {id:'simsong',name:'GTA SIMSong',tag:'SPRINGFIELD · MUNDO ABIERTO',help:'WASD: caminar. Arrastra o usa flechas para mirar. Espacio: saltar. Shift: correr. E: entrar, salir o usar un vehículo. M: misiones. Explora sin rutas obligatorias.',keys:[['←','a'],['↑','w'],['↓','s'],['→','d'],['Saltar',' '],['Usar','e'],['Correr','Shift'],['Misiones','m']]},
+ {id:'simsong',name:'GTA SIMSong',tag:'SPRINGFIELD · MUNDO ABIERTO',help:'WASD: caminar. Arrastra o usa flechas para mirar. Espacio: saltar. Shift: correr. E: entrar, salir o conducir. F o clic: láser. V: tres cámaras. M: misiones. Derrota a los invasores y sus ovnis.',keys:[['←','a'],['↑','w'],['↓','s'],['→','d'],['Saltar',' '],['Usar','e'],['Correr','Shift'],['Láser','f'],['Cámara','v'],['Misiones','m']]},
  {id:'pacman',name:'Pac-Man',tag:'ARCADE · 10 NIVELES',help:'Flechas o WASD para moverte. Come las pastillas grandes para perseguir a los fantasmas. Completa diez niveles.',keys:[['←','ArrowLeft'],['↑','ArrowUp'],['↓','ArrowDown'],['→','ArrowRight']]},
  {id:'tetris',name:'Tetris',tag:'ENCUENTRA TU RITMO',help:'Flechas: mover y girar. Espacio: caída instantánea. C: reservar. Z: giro inverso.',keys:[['←','ArrowLeft'],['Girar','ArrowUp'],['↓','ArrowDown'],['→','ArrowRight'],['Caer',' '],['Reservar','c']]},
  {id:'buscaminas',name:'Buscaminas',tag:'UNA BUENA INTUICIÓN',help:'Toca para descubrir. Bandera o clic derecho para marcar. Primera apertura segura.',keys:[['⚑ Bandera','f']]},
@@ -34,7 +34,7 @@ async function ranking(room){
 }
 async function load(room,explicit=false){
  try{if(explicit)pause(room,false);if(room.saving)await room.saving;const data=await api(room.item.id);room.version=data.partida.version;room.loaded=true;const button=room.overlay.querySelector('button');button.disabled=false;button.hidden=false;
-  if(data.partida.estado){await room.game.load(data.partida.estado);overlay(room,'Tu partida te espera','Retoma donde te quedaste.','Continuar partida');message(room,`Último guardado: ${new Date(data.partida.actualizado_en).toLocaleString('es-CO')}`)}else{if(explicit)await room.game.reset();overlay(room,'¿Listo para jugar?',room.item.id==='simsong'?'Springfield te espera. Camina, salta y explora a tu manera.':'Activa los controles y el sonido.','Jugar');message(room,'Sin partida guardada')}
+  if(data.partida.estado){await room.game.load(data.partida.estado);overlay(room,'Tu partida te espera','Retoma donde te quedaste.','Continuar partida');message(room,`Último guardado: ${new Date(data.partida.actualizado_en).toLocaleString('es-CO')}`)}else{if(explicit)await room.game.reset();overlay(room,'¿Listo para jugar?',room.item.id==='simsong'?'Defiende Springfield: 12 extraterrestres y 3 ovnis. Tienes 3 vidas; elige tus misiones y guarda tu avance.':'Activa los controles y el sonido.','Jugar');message(room,'Sin partida guardada')}
   room.game.render();refreshHUD(room);status.textContent=`${data.nombre} · Partidas privadas`;return true;
  }catch(e){room.loaded=false;overlay(room,'No se pudo cargar la partida',e.message,'Reintentar');message(room,e.message,true);if(e.status===401){status.replaceChildren();const link=document.createElement('a');link.href='/login.html';link.target='_top';link.textContent='Iniciar sesión en PCS';status.append(link)}return false}
 }
@@ -64,9 +64,9 @@ function makeRoom(item){
   if(action==='full'){if(document.fullscreenElement)await document.exitFullscreen();else if(card.requestFullscreen)await card.requestFullscreen();else message(room,'Pantalla completa no disponible; puedes ampliar la ventana.',true)}
  }catch(err){message(room,err.message,true)}});
  controls(room);room.canvas.addEventListener('contextmenu',e=>e.preventDefault());let pointer;
- room.canvas.addEventListener('pointerdown',e=>{if(!room.running)return;room.canvas.setPointerCapture(e.pointerId);pointer={x:e.clientX,y:e.clientY};if(room.game.click){room.game.click(room.game.point(e),e.button===2);refreshHUD(room)}});
+ room.canvas.addEventListener('pointerdown',e=>{if(!room.running)return;room.canvas.setPointerCapture(e.pointerId);pointer={x:e.clientX,y:e.clientY};if(room.item.id==='simsong'&&e.pointerType==='mouse'&&e.button===0)room.game.key('f',true);if(room.game.click){room.game.click(room.game.point(e),e.button===2);refreshHUD(room)}});
  room.canvas.addEventListener('pointermove',e=>{if(!room.running||!pointer||!room.game.look)return;room.game.look((e.clientX-pointer.x)*.006,(e.clientY-pointer.y)*.004);pointer={x:e.clientX,y:e.clientY}});
- room.canvas.onpointerup=room.canvas.onpointercancel=room.canvas.onlostpointercapture=()=>{pointer=null};new ResizeObserver(()=>fit(room)).observe(card.querySelector('.stage'));return room;
+ room.canvas.onpointerup=room.canvas.onpointercancel=room.canvas.onlostpointercapture=()=>{pointer=null;if(room.item.id==='simsong')room.game?.key('f',false)};new ResizeObserver(()=>fit(room)).observe(card.querySelector('.stage'));return room;
 }
 async function selectGame(item){
  if(selecting)return;selecting=true;try{
@@ -82,7 +82,7 @@ async function selectGame(item){
  }finally{selecting=false}
 }
 for(const item of catalog){const b=document.createElement('button');b.className='game-choice';b.type='button';b.dataset.game=item.id;b.innerHTML=`<img src="/juegos/portadas/${item.id}.png" alt="Vista del juego ${item.name}" loading="lazy"><span class="choice-copy"><small>${item.tag}</small><strong>${item.name}</strong></span><span class="choice-play" aria-hidden="true">▶</span>`;b.onclick=()=>selectGame(item);menu.append(b)}
-const allowed=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','w','a','s','d','e','q','c','x','z','u','f','m','1','2','3','Shift'];
+const allowed=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','w','a','s','d','e','q','c','x','z','u','f','m','v','1','2','3','Shift'];
 function normalizeKey(key){return key.length===1?key.toLowerCase():key}
 // Keys are scoped to the game iframe; the business application keeps its shortcuts.
  document.addEventListener('keydown',e=>{if(!active||['INPUT','TEXTAREA'].includes(e.target.tagName))return;const key=normalizeKey(e.key);if(key==='Escape'||key==='p'){e.preventDefault();pause(active);return}if(allowed.includes(key)){e.preventDefault();if(!e.repeat||active.item.id==='tetris')active.game.key(key,true)}});

@@ -41,7 +41,7 @@ Cargar y Nueva solicitan confirmación para reemplazar avances.
 - [GTA SIMSong](../web/juegos/simsong/game.js): ciudad de exploración libre,
   caminar/correr, salto y gravedad, vehículos utilizables, peatones animados,
   cúpula transparente con límite físico, casa de Homero de dos plantas y Moe
-  accesibles. Las tres misiones de descubrimiento se completan en cualquier
+  accesibles, más la oficina de Burns en la central. Las tres misiones de descubrimiento se completan en cualquier
   orden y permiten seguir explorando al concluir. No hay flechas ni camino guiado.
   [Datos del mundo](../web/juegos/simsong/world-data.js),
   [ciudad](../web/juegos/simsong/city.js),
@@ -50,6 +50,24 @@ Cargar y Nueva solicitan confirmación para reemplazar avances.
   [carga de recursos](../web/juegos/simsong/assets.js) separan escena, reglas y
   estado. A* evita edificios; separación y previsión de tráfico complementan
   las rutas de los peatones. Se guardan posición, interior, vehículo y misiones.
+  El militar usa láser (F/clic), salto, carrera y tres cámaras (V): primera persona,
+  tercera media y tercera lejana. El mando móvil añade Láser y Cámara.
+  [Reglas de combate](../web/juegos/simsong/combat.js) y
+  [simulación de la invasión](../web/juegos/simsong/invasion.js) coordinan doce
+  extraterrestres (90 de salud, 250 puntos) y tres ovnis (300 de salud, 1000 puntos).
+  El láser inflige 30 de daño. A* y separación guían la persecución terrestre;
+  línea de visión, enfriamiento y colisión continua limitan los disparos enemigos.
+  Los ovnis patrullan en altura y sus pilotos son visibles bajo cabinas transparentes.
+  Hay tres vidas, caída y alma ascendente durante cuatro segundos; después se
+  reaparece con protección temporal, o termina la partida al agotar las vidas.
+  Eliminar la invasión concede 2000 puntos una sola vez y mantiene exploración libre.
+  El guardado privado conserva salud, vidas, cámara, enemigos, proyectiles y progreso;
+  las partidas anteriores reciben valores de combate por defecto sin perder avance.
+  [Personajes](../web/juegos/simsong/characters.js) contiene adaptaciones estilizadas
+  originales: Homero, Marge, Bart, Lisa y Maggie en casa; Moe y Barney en la taberna;
+  Burns y Smithers en la central; Apu, Flanders, Skinner, Krusty y Milhouse en la
+  ciudad, y Gorgory sentado en la patrulla. Este es el elenco inicial, ampliable.
+  El equipo militar se monta sobre el rig CC0 y recolorea ropa en el shader.
 - [Mundos](../web/juegos/mundos.js) y [renderizador](../web/juegos/render3d.js):
   WebGL nativo para la aventura sorpresa, que
   incluye exploración, oxígeno recargable en superficie, diez tesoros, fauna
@@ -73,8 +91,8 @@ adicional del motor/modelos al seleccionar GTA, memoria GPU y mantenimiento de
 la versión vendorizada; los clásicos no cargan ese motor.
 
 La ciudad es una primera interpretación compacta con geometría original y
-modelos genéricos; no replica exactamente un mapa oficial ni contiene modelos
-oficiales de los personajes. La estética es estilizada, no fotorealista.
+modelos CC0 y personajes originales estilizados; no replica exactamente un mapa
+oficial ni contiene modelos oficiales de los personajes. La estética es estilizada, no fotorealista.
 WebGL y Web
 Audio deben estar disponibles. Pantalla completa depende de la API del navegador;
 su ausencia se informa y se conserva la vista adaptable. La emulación móvil de
@@ -132,6 +150,8 @@ a producción. [Pruebas de reglas](../tools/juegos.test.mjs) cubren las transici
 de los clásicos y serialización sin depender de puntuaciones de cuentas reales.
 [Pruebas de Springfield](../tools/simsong.test.mjs) cubren colisiones, límite de
 la cúpula, salto/gravedad, A*, evitación de tráfico y accesibilidad de entradas.
+[Pruebas de combate](../tools/simsong_combat.test.mjs) comprueban impactos múltiples,
+puntos únicos, tres vidas y animación completa, restauración y oclusión por paredes.
 [La prueba de migración de Springfield](../backend/db/juegos_simsong_test.go) comprueba que los guardados retirados se conservan y que el CHECK admite el nuevo juego.
 La aceptación visual incluye controles, pausa, guardado/carga, audio activado y
 pantalla completa en escritorio y viewport móvil. La evidencia de cada candidato

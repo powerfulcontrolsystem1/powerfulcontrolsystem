@@ -1245,7 +1245,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "8bc6c0ce60fb0d1d1c66d4961f6efe617110f9ffcb2131ef4d5e577fdd4ec956"
+      "sha256_lf": "f47fd35ded7cf1a03374ac599fc95833865fe0db421c93f0c9c8016e12274cbb"
     },
     {
       "path": "documentos/logistica_wms.md",
@@ -1488,7 +1488,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "c33a65b93d2e2be4f3f1b0bd83256239fd7d2cc87b213be34f1154dd46d6eb5b"
+      "sha256_lf": "d48e4095c0d3cdb9589d62a584c9e5d481eb0f3fe955cd0c6ace3f44a4440584"
     }
   ]
 }

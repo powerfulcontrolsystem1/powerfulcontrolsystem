@@ -21,7 +21,7 @@ export async function loadAssets(){
     // Correct the source FBX shoulder spread after retargeting to the medium mesh.
     // Lower-body motion and forearm articulation remain the imported clips.
     root.updateMatrixWorld(true);root.getWorldQuaternion(facing);
-    for(const {bone,child,side}of arms){if(!bone||!child)continue;bone.getWorldPosition(position);child.getWorldPosition(direction).sub(position).normalize();const swing=Math.sin(mixer.time*8)*side*(name==='run'?.65:.025);desired.set(side*.16,name==='jump'?-.45:-1,swing+(name==='jump'?.7:0)).normalize().applyQuaternion(facing);rotation.setFromUnitVectors(direction,desired);bone.getWorldQuaternion(world);bone.parent.getWorldQuaternion(parent).invert();bone.quaternion.copy(parent.multiply(rotation.multiply(world)));bone.updateMatrixWorld(true)}
+    for(const {bone,child,side}of arms){if(!bone||!child)continue;bone.getWorldPosition(position);child.getWorldPosition(direction).sub(position).normalize();const swing=Math.sin(mixer.time*8)*side*(name==='run'?.65:.025);desired.set(root.userData.military?side*.1:side*.16,root.userData.military?-.45:name==='jump'?-.45:-1,root.userData.military?.85:swing+(name==='jump'?.7:0)).normalize().applyQuaternion(facing);rotation.setFromUnitVectors(direction,desired);bone.getWorldQuaternion(world);bone.parent.getWorldQuaternion(parent).invert();bone.quaternion.copy(parent.multiply(rotation.multiply(world)));bone.updateMatrixWorld(true)}
    }};
   }
  };

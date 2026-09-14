@@ -7,8 +7,8 @@
   "files": [
     {
       "path": "simsong/assets/cars/LICENSE.txt",
-      "bytes": 696,
-      "sha256": "c33b7f6453d134deae7b1b8493717d9ccfa754c25ab97f6de89b88f8fda19b00"
+      "bytes": 669,
+      "sha256": "847b37777af163f68fefce4e93fff3fb3333de5c4a9fcd3d96e92a589c6b648e"
     },
     {
       "path": "simsong/assets/cars/Textures/colormap.png",
@@ -42,8 +42,8 @@
     },
     {
       "path": "simsong/assets/characters/LICENSE.txt",
-      "bytes": 699,
-      "sha256": "68280323c6dca1f532c71fb248a6f344abed39a574278a2edfa27801aea3d0cd"
+      "bytes": 673,
+      "sha256": "336ffb1ae74c21ecb37a800a72a3dba2723ac6bae169463ee1b75b253c8919e7"
     },
     {
       "path": "simsong/assets/characters/criminalMaleA.glb",
@@ -197,8 +197,8 @@
     },
     {
       "path": "simsong/assets/suburban/LICENSE.txt",
-      "bytes": 706,
-      "sha256": "d778fa769a89a7d9f167bc337fdf8fc2144e47d9abb0c35eb6ad897c0ee24d0a"
+      "bytes": 679,
+      "sha256": "2c0cc93bd025107c9a21a188a54935ae0c83cb7e2c0ca3c1dd5b6d15c06116fa"
     },
     {
       "path": "simsong/assets/suburban/Textures/colormap.png",
@@ -252,8 +252,8 @@
     },
     {
       "path": "vendor/three/GLTFLoader.js",
-      "bytes": 117560,
-      "sha256": "824c4555f027822eca4f11859ce2fd04c8d3802e8cbabc55a2339b7e08e52670"
+      "bytes": 117558,
+      "sha256": "1fb28ad78bc873cfc3f3a5494bb961abc8552668ee4e70f6bac08654ce53f48c"
     },
     {
       "path": "vendor/three/LICENSE",
