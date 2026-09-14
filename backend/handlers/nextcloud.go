@@ -32,7 +32,7 @@ const (
 	nextcloudDefaultQuotaMBKey  = "nextcloud.default_quota_mb"
 	nextcloudDefaultQuotaMB     = int64(1024)
 	nextcloudMaxQuotaMB         = int64(1024 * 1024)
-	nextcloudSSOTokenAudience   = "pcs-nextcloud"
+	nextcloudSSOTokenAudience   = "pcs-nextcloud" // #nosec G101 -- public token audience, not a credential.
 	nextcloudSSOTokenTTL        = 45 * time.Second
 )
 
