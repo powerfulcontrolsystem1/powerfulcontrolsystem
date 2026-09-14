@@ -128,7 +128,7 @@ try {
   };
   var enterpriseAIVisibleLinks = {};
   var enterpriseMenuVisualConfig = { hiddenLinks: {} };
-  var enterpriseMenuVisualDefaults = window.PCS_MENU_VISUAL_DEFAULTS || { version: 3, enabled: true, hidden_links: [] };
+  var enterpriseMenuVisualDefaults = window.PCS_MENU_VISUAL_DEFAULTS || { version: 4, enabled: true, hidden_links: [] };
   var cashierAutoDirectSaleEnabled = false;
   var stationEntryDomoticaEnabled = false;
   var adminPageURLsConfig = { enabled: false };
@@ -201,10 +201,6 @@ try {
     document.getElementById("linkImportacionesCosteo"),
     document.getElementById("linkProduccionMRP"),
     document.getElementById("linkLogisticaWMS"),
-    document.getElementById("linkPlantillasIntegracion"),
-    document.getElementById("linkParqueadero"),
-    document.getElementById("linkAlquileres"),
-    document.getElementById("linkTurnosAtencion"),
     document.getElementById("linkConfiguracion"),
     document.getElementById("linkEmpresasCompartidas"),
     document.getElementById("linkLicenciaSistema"),
@@ -230,7 +226,6 @@ try {
     document.getElementById("linkPruebasDian"),
     document.getElementById("linkProveedoresFirmaDigital"),
     document.getElementById("linkFacturasElectronicas"),
-    document.getElementById("linkAIUConstruccion"),
     document.getElementById("linkChatIA"),
     document.getElementById("linkCentroIAEmpresarial"),
     document.getElementById("linkFinanzas"),
@@ -262,7 +257,6 @@ try {
     document.getElementById("linkTutorialDomotica"),
     document.getElementById("linkConsultorioOdontologico"),
     document.getElementById("linkDrogueriaFarmacia"),
-    document.getElementById("linkDomicilios"),
     document.getElementById("linkReportes"),
     document.getElementById("linkReportesEjecutivos"),
     document.getElementById("linkReportesTurnos"),
@@ -410,7 +404,6 @@ try {
   var permModuleCumplimientoKYC = "cumplimiento_kyc";
   var permModuleContratosObligaciones = "contratos_obligaciones";
   var permModuleCalidadProcesos = "calidad_procesos";
-  var permModuleAIUConstruccion = "aiu_construccion";
   var permModuleClientes = "clientes";
   var permModuleCRMUnificado = "crm_unificado";
   var permModuleFacturacion = "facturacion";
@@ -420,10 +413,6 @@ try {
   var permModuleVentaPublica = "venta_publica";
   var permModuleReservasHotel = "reservas_hotel";
   var permModuleChatTareas = "chat_tareas";
-  var permModuleDomicilios = "domicilios";
-  var permModuleParqueadero = "parqueadero";
-  var permModuleAlquileres = "alquileres";
-  var permModuleTurnos = "turnos_atencion";
   var permModuleControlElectrico = "control_electrico";
   var permModuleCamaras = "camaras";
   var permModuleCarnets = "carnets";
@@ -459,8 +448,6 @@ try {
     linkHotelTarjetasAcceso: { module: permModuleReservasHotel, action: permActionCreate },
     linkChatTareas: { module: permModuleChatTareas, action: permActionCreate },
     linkConfiguracionChatFlotante: { module: permModuleChatTareas, action: permActionUpdate },
-    linkTurnosAtencion: { module: permModuleTurnos, action: permActionCreate },
-    linkPlantillasIntegracion: { module: permModuleSeguridad, action: permActionRead },
 
     linkProductos: { module: permModuleInventario, action: permActionCreate },
     linkProductosMain: { module: permModuleInventario, action: permActionCreate },
@@ -485,10 +472,6 @@ try {
     linkEmailCorporativo: { module: permModuleSeguridad, action: permActionRead },
     linkConfiguracionCarritoEmpresa: { module: permModuleVentaPublica, action: permActionApprove },
     linkConfiguracionRolCajero: { module: permModuleSeguridad, action: permActionUpdate },
-    linkDomicilios: { module: permModuleDomicilios, action: permActionCreate },
-    linkParqueadero: { module: permModuleParqueadero, action: permActionCreate },
-    linkAlquileres: { module: permModuleAlquileres, action: permActionCreate },
-    linkAIUConstruccion: { module: permModuleAIUConstruccion, action: permActionCreate },
 
     linkClientes: { module: permModuleClientes, action: permActionCreate },
     linkCRMComercial: { module: permModuleCRMUnificado, action: permActionCreate },
@@ -1133,8 +1116,8 @@ try {
   }
 
   if (portalUsuariosLink) {
-  portalUsuariosLink.target = "_blank";
-  portalUsuariosLink.rel = "noopener";
+  portalUsuariosLink.target = "contentFrame";
+  portalUsuariosLink.removeAttribute("rel");
   resolvePortalUsuariosURL(id).then(function (url) {
     portalUsuariosLink.href = url;
   }).catch(function () {
@@ -1143,10 +1126,20 @@ try {
   portalUsuariosLink.addEventListener("click", function (event) {
     event.preventDefault();
     resolvePortalUsuariosURL(id).then(function (url) {
-    portalUsuariosLink.href = url;
-    window.open(url, "_blank", "noopener");
+      portalUsuariosLink.href = url;
+      if (frame) {
+        frame.src = url;
+      } else {
+        window.location.href = url;
+      }
     }).catch(function () {
-    window.open(buildPortalUsuariosURL(id, null), "_blank", "noopener");
+      var fallbackURL = buildPortalUsuariosURL(id, null);
+      portalUsuariosLink.href = fallbackURL;
+      if (frame) {
+        frame.src = fallbackURL;
+      } else {
+        window.location.href = fallbackURL;
+      }
     });
   });
   }
@@ -1397,16 +1390,6 @@ try {
         }
         break;
 
-      case permModuleAIUConstruccion:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
-        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
-          return roleIn(normalizedRole, ["admin_empresa", "contabilidad", "supervisor_sucursal"]);
-        }
-        if (normalizedAction === "D") {
-          return roleIn(normalizedRole, ["admin_empresa", "contabilidad"]);
-        }
-        break;
-
       case permModuleSeguridad:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
@@ -1417,10 +1400,6 @@ try {
       case permModuleVentaPublica:
       case permModuleReservasHotel:
       case permModuleChatTareas:
-      case permModuleDomicilios:
-      case permModuleParqueadero:
-      case permModuleAlquileres:
-      case permModuleTurnos:
       case permModuleCarnets:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {

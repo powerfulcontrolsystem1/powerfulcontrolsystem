@@ -1413,6 +1413,9 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			items := make([]map[string]any, 0, len(tipos))
 			for _, tipo := range tipos {
+				if !dbpkg.IsTipoEmpresaPreconfiguracionBasica(tipo.Nombre) {
+					continue
+				}
 				item, exists := byTipo[tipo.ID]
 				defaultItem := dbpkg.DefaultTipoEmpresaPreconfiguracion(tipo.ID, tipo.Nombre)
 				if !exists {
@@ -1468,6 +1471,20 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			if payload.TipoEmpresaID <= 0 {
 				http.Error(w, "tipo_empresa_id requerido", http.StatusBadRequest)
+				return
+			}
+			tiposPermitidos, err := dbpkg.GetTiposEmpresas(dbSuper)
+			tipoPermitido := false
+			if err == nil {
+				for _, tipo := range tiposPermitidos {
+					if tipo.ID == payload.TipoEmpresaID && dbpkg.IsTipoEmpresaPreconfiguracionBasica(tipo.Nombre) {
+						tipoPermitido = true
+						break
+					}
+				}
+			}
+			if !tipoPermitido {
+				http.Error(w, "solo se permiten las siete preconfiguraciones basicas", http.StatusBadRequest)
 				return
 			}
 			payload.Nombre = strings.TrimSpace(payload.Nombre)

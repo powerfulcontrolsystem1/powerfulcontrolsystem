@@ -6,7 +6,7 @@
   <title>Menu visible por empresa</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
-  <script src="/js/menu_visual_defaults.js?v=20260914-menu-defaults-v3"></script>
+  <script src="/js/menu_visual_defaults.js?v=20260914-menu-defaults-v4"></script>
   <style>
     .menu-visibility-grid{display:grid;gap:12px}
     .menu-visibility-group{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:12px}
@@ -61,7 +61,7 @@
         linkConfiguracionMenuVisual: true,
         linkVolverEmpresas: true
       };
-      const DEFAULT_CONFIG = window.PCS_MENU_VISUAL_DEFAULTS || { version: 3, enabled: true, hidden_links: [] };
+      const DEFAULT_CONFIG = window.PCS_MENU_VISUAL_DEFAULTS || { version: 4, enabled: true, hidden_links: [] };
       const FALLBACK_CATALOG = [
         { group: 'Accesos generales', items: [
           ['linkPanelEmpresa', 'Panel'],
@@ -306,7 +306,7 @@
         });
         hidden.sort();
         return {
-          version: 3,
+          version: 4,
           enabled: document.getElementById('menuVisualEnabled').checked,
           hidden_links: hidden,
           updated_at: new Date().toISOString()

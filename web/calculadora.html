@@ -1,36 +1,11 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="light" data-appearance-mode="light" data-appearance-contract="light-dark" class="theme-light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>Calculadora</title>
-  <script>
-    (function(){
-      var valid = {
-        dark: true,
-        'dark-violet': true,
-        'dark-emerald': true,
-        'dark-corporate': true,
-        'dark-neon': true,
-        light: true,
-        'light-rose': true,
-        'light-gold': true,
-        'light-wood': true
-      };
-      function cookie(name){
-        var match = String(document.cookie || '').match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-        return match ? decodeURIComponent(match.pop()) : '';
-      }
-      var theme = '';
-      try { theme = window.localStorage.getItem('theme') || ''; } catch (error) {}
-      theme = String(theme || cookie('pcs_theme') || 'light').trim().toLowerCase();
-      if (theme === 'dark-protect') theme = 'dark';
-      if (!valid[theme]) theme = 'light';
-      document.documentElement.setAttribute('data-theme', theme);
-      document.documentElement.classList.toggle('theme-light', theme.indexOf('light') === 0);
-      document.documentElement.classList.toggle('theme-dark', theme.indexOf('light') !== 0);
-    })();
-  </script>
+  <script src="/js/theme_bootstrap.js?v=20260914"></script>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     html,
@@ -146,9 +121,9 @@
     }
   </style>
 </head>
-<body class="calculator-floating-page">
-  <main class="calculator-floating-shell" aria-label="Calculadora">
-    <section class="calculator-floating-card" aria-label="Calculadora">
+<body class="calculator-floating-page" data-appearance-node="page">
+  <main class="calculator-floating-shell" aria-label="Calculadora" data-appearance-node="surface">
+    <section class="calculator-floating-card" aria-label="Calculadora" data-appearance-node="card">
       <div class="calc-display" aria-live="polite">
         <div id="calcExpr" class="calc-expr"></div>
         <div id="calcValue" class="calc-value">0</div>

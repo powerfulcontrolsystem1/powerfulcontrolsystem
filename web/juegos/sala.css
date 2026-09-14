@@ -4,3 +4,38 @@
 
 .world-reticle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#faffed;font:26px/1 monospace;text-shadow:0 1px 3px #203f39;pointer-events:none;z-index:3}.world-reticle.hit{color:#ff8a72}.world-reticle[hidden]{display:none}.stage[data-game="simsong"] .action-pad{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;max-width:200px}.stage[data-game="simsong"] .action-pad .action{font-size:9px;min-width:35px;min-height:40px;padding:4px}
 .world-damage{position:absolute;inset:0;z-index:6;pointer-events:none;background:radial-gradient(circle,transparent 30%,#ee493388 80%,#6c0910d9);mix-blend-mode:multiply}.player-menu{position:absolute;z-index:9;left:50%;top:50%;transform:translate(-50%,-50%);width:min(330px,88%);max-height:calc(100% - 16px);overflow:auto;padding:18px;border:1px solid #b8d8cd;border-radius:16px;background:#102b31ed;color:#eefcf4;box-shadow:0 16px 50px #07131799}.player-menu h3{margin:0 0 12px;letter-spacing:1.5px}.player-menu [data-player-stats]{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}.player-menu [data-player-stats]>*{padding:7px;border-radius:7px;background:#ffffff12}.camera-options{display:grid;grid-template-columns:1fr;gap:5px}.player-menu button{border:1px solid #7da99e;background:#284b50;color:#fff;border-radius:8px;padding:8px}.player-menu button.selected{background:#cfe581;color:#172a27}.player-menu [data-close]{width:100%;margin-top:8px;background:#e7d584;color:#172a27;font-weight:800}.player-menu-help{font-size:9px;color:#bad0ca}.stage[data-game="simsong"] .action-pad{grid-template-columns:repeat(4,1fr);max-width:232px}
+
+/* Contrato visual PCS PLAY: las superficies de interfaz responden al nodo claro/oscuro;
+   los escenarios de cada juego conservan su paleta propia para no alterar jugabilidad. */
+html[data-appearance-mode="light"]{
+  --play-bg:#eef3fa;--play-surface:#fff;--play-surface-soft:#f5f7fb;--play-text:#172b45;
+  --play-muted:#66778d;--play-border:#d5dde9;--play-accent:#7353ad;--play-accent-soft:#eee7fb;
+  --play-toolbar:#f7f9fc;--play-shadow:0 16px 42px rgba(23,43,69,.10);--play-focus:#7654b8;
+}
+html[data-appearance-mode="dark"]{
+  --play-bg:#07111d;--play-surface:#101d2c;--play-surface-soft:#162538;--play-text:#eef5ff;
+  --play-muted:#a4b5c9;--play-border:#2b4057;--play-accent:#b99ae9;--play-accent-soft:#2a2340;
+  --play-toolbar:#0c1927;--play-shadow:0 18px 50px rgba(0,0,0,.38);--play-focus:#cbb1f2;
+}
+html,body{background:var(--play-bg);color:var(--play-text)}
+body{background-image:radial-gradient(circle at 12% -10%,color-mix(in srgb,var(--play-accent) 12%,transparent),transparent 36%)}
+.console-shell{color:var(--play-text)}
+.eyebrow,.console-mark,#session-status,footer,.help,.record-list small{color:var(--play-muted)}
+.console-mark b,.choice-play,footer a,.credits-shell a{color:var(--play-accent)}
+.game-choice{border-color:var(--play-border);background:var(--play-surface);box-shadow:0 1px 0 rgba(255,255,255,.04)}
+.game-choice:hover{border-color:color-mix(in srgb,var(--play-accent) 48%,var(--play-border));box-shadow:var(--play-shadow)}
+.game-choice[data-game=simsong]{border-color:color-mix(in srgb,var(--play-accent) 52%,var(--play-border))}
+.game-choice[data-game=simsong] .choice-copy{background:var(--play-accent-soft)}
+.choice-copy small{color:var(--play-muted)}
+.game-toolbar{background:var(--play-toolbar);border-bottom:1px solid var(--play-border)}
+.game-toolbar button,.game-actions button,.refresh-rank{border-color:var(--play-border);background:var(--play-surface);color:var(--play-text)}
+.game-toolbar button:hover,.game-actions button:hover,.refresh-rank:hover{border-color:var(--play-accent);background:var(--play-accent-soft)}
+.game-actions button:first-child{background:color-mix(in srgb,var(--play-accent) 72%,#233957);border-color:var(--play-accent);color:#fff}
+.game-details{border-color:var(--play-border);background:var(--play-surface-soft);color:var(--play-text)}
+.record-list li{border-color:var(--play-border)}
+.game-card:fullscreen{background:var(--play-bg)}
+.save-status{color:color-mix(in srgb,#39a875 72%,var(--play-text))}
+button:focus-visible,a:focus-visible,canvas:focus-visible{outline-color:var(--play-focus)}
+.credits-shell{max-width:780px;padding:clamp(20px,4vw,44px);margin:24px auto;border:1px solid var(--play-border);border-radius:18px;background:var(--play-surface);box-shadow:var(--play-shadow)}
+.credits-shell h2{margin-top:28px}.credits-shell p{color:var(--play-muted);line-height:1.7}.credits-shell a{text-decoration-thickness:1px;text-underline-offset:3px}
+@media(max-width:700px){.credits-shell{margin:8px;border-radius:14px}}

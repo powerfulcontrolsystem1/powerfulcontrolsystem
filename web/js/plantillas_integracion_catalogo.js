@@ -18,34 +18,9 @@
     return meta;
   }
 
-  var catalog = {
-    parqueadero: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla de parqueadero conectada al nucleo comun: tickets y cobros crean servicio, venta y pago central sin modulo comercial paralelo.",
-      duplicados: [],
-      supportModules: ["estaciones", "turnos_atencion"],
-      similarTemplates: ["parque_recreativo"]
-    },
-    domicilios: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla logistica conectada al nucleo comun: pedidos, clientes, menu, ventas y pagos se resuelven en los modulos centrales.",
-      duplicados: []
-    },
-    alquileres: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla de alquiler conectada al nucleo comun: clientes, activos vendibles, contratos, ventas y pagos usan la fuente unica.",
-      duplicados: []
-    },
-    aiu_construccion: {
-      estado: "plantilla_integrada_nucleo",
-      visibleOperativo: true,
-      motivo: "Plantilla de construccion conectada al nucleo comun: clientes, contratos, conceptos, ventas, impuestos y reportes se enlazan sin duplicar documentos comerciales.",
-      duplicados: []
-    }
-  };
+  // El catálogo heredado queda vacío: solo se incorpora Taller de motos desde
+  // PCS_NUEVAS_PLANTILLAS como sistema destacado autorizado.
+  var catalog = {};
 
   Object.keys(catalog).forEach(function (key) {
     catalog[key] = applyFinancialDefaults(catalog[key] || {});

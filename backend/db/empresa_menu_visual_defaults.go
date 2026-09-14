@@ -7,7 +7,9 @@ import (
 	"strings"
 )
 
-const EmpresaMenuVisualDefaultConfigJSON = `{"version":3,"enabled":true,"hidden_links":["linkImportacionesCosteo","linkProduccionMRP","linkLogisticaWMS","linkCRMComercial","linkUsuarios","linkClientes","linkPortalUsuarios","linkMiHorario","linkHorariosTrabajadores","linkAsistenciaEmpleados","linkCarnets","linkVehiculosRegistro","linkHojaVidaOperativa"]}`
+const empresaMenuVisualDefaultConfigV3JSON = `{"version":3,"enabled":true,"hidden_links":["linkImportacionesCosteo","linkProduccionMRP","linkLogisticaWMS","linkCRMComercial","linkUsuarios","linkClientes","linkPortalUsuarios","linkMiHorario","linkHorariosTrabajadores","linkAsistenciaEmpleados","linkCarnets","linkVehiculosRegistro","linkHojaVidaOperativa"]}`
+
+const EmpresaMenuVisualDefaultConfigJSON = `{"version":4,"enabled":true,"hidden_links":["linkImportacionesCosteo","linkProduccionMRP","linkLogisticaWMS","linkCRMComercial","linkMiHorario","linkHorariosTrabajadores","linkAsistenciaEmpleados","linkCarnets","linkVehiculosRegistro","linkHojaVidaOperativa"]}`
 
 const empresaMenuVisualDefaultsSQL = `INSERT INTO empresa_estacion_prefs (
  empresa_id, estacion_id, clave, valor, fecha_creacion, fecha_actualizacion,
@@ -25,9 +27,18 @@ ON CONFLICT (empresa_id, estacion_id, clave) DO UPDATE SET
  estado = 'activo',
  observaciones = EXCLUDED.observaciones`
 
-const empresaMenuVisualDefaultsFingerprint = empresaMenuVisualDefaultsSQL + "\n-- default_config=" + EmpresaMenuVisualDefaultConfigJSON
+const empresaMenuVisualDefaultsFingerprint = empresaMenuVisualDefaultsSQL + "\n-- default_config=" + empresaMenuVisualDefaultConfigV3JSON
+const empresaMenuVisualDefaultsV4Fingerprint = empresaMenuVisualDefaultsSQL + "\n-- default_config=" + EmpresaMenuVisualDefaultConfigJSON
 
 func applyEmpresaMenuVisualDefaultsTx(ctx context.Context, tx *sql.Tx) error {
+	if tx == nil {
+		return errors.New("migration transaction is required")
+	}
+	_, err := tx.ExecContext(ctx, empresaMenuVisualDefaultsSQL, empresaMenuVisualDefaultConfigV3JSON)
+	return err
+}
+
+func applyEmpresaMenuVisualDefaultsV4Tx(ctx context.Context, tx *sql.Tx) error {
 	if tx == nil {
 		return errors.New("migration transaction is required")
 	}

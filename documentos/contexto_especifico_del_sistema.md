@@ -1,6 +1,6 @@
 # Contexto especifico del sistema
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-14.
 
 Este documento amplia el
 [`Contexto general del sistema`](contexto_general_del_sistema.md). No se debe
@@ -37,12 +37,13 @@ forzadas aunque el boton se oculte en frontend.
 
 ## Modulos operativos
 
-- Catalogo publico, pagina principal y plantillas vigentes:
-  `mapa_modulos.md`, `matriz_integracion_plantillas.md`,
+- Catalogo publico, pagina principal y preconfiguraciones vigentes:
+  `mapa_modulos.md`, `matriz_preconfiguraciones_basicas.md`,
   `web/index.html`, `web/descripcion_de_los_sistemas.html` y
-  `backend/handlers/pagina_principal_handlers.go`. El corte vigente es de 53
-  modulos y 13 plantillas; configuraciones publicas antiguas se filtran antes
-  de responder o renderizar.
+  `backend/handlers/pagina_principal_handlers.go`. Se sugieren Hotel, Motel,
+  Restaurante, Bar, Pymes, Salon de belleza y Lavadero de autos; Taller de motos
+  permanece como sistema destacado. Las ofertas retiradas se filtran antes de
+  responder o renderizar, incluso si estaban guardadas por el super administrador.
 
 - Vida personal, gastos familiares, comprobantes privados, suscripciones y
   recordatorios: `vida.md`, `estructura_bd.md`,
