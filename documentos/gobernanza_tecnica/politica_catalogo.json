@@ -508,11 +508,11 @@
     },
     "documentos/flujos_operativos.md": {
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05"
+      "reviewed": "2026-09-14"
     },
     "documentos/estructura_bd.md": {
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05"
+      "reviewed": "2026-09-14"
     },
     "documentos/matriz_roles_permisos_pos_multiempresa.md": {
       "owner": "Coordinación técnica",
@@ -520,7 +520,7 @@
     },
     "documentos/diagramas/estructura_del_codigo.md": {
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05"
+      "reviewed": "2026-09-14"
     },
     "documentos/manual_de_instalacion.md": {
       "owner": "QA/operación",

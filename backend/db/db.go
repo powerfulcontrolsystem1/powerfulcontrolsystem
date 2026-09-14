@@ -1892,6 +1892,7 @@ func CreateEmpresaIdempotente(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, 
 			return 0, false, err
 		}
 		_, _ = EnsureEmpresaPOS80Defaults(dbConn, existingID, usuarioCreador)
+		_ = EnsureEmpresaMenuVisualDefault(dbConn, existingID, usuarioCreador)
 		return existingID, false, nil
 	}
 
@@ -1906,6 +1907,7 @@ func CreateEmpresaIdempotente(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, 
 		return 0, false, err
 	}
 	_, _ = EnsureEmpresaPOS80Defaults(dbConn, id, usuarioCreador)
+	_ = EnsureEmpresaMenuVisualDefault(dbConn, id, usuarioCreador)
 	return id, true, nil
 }
 

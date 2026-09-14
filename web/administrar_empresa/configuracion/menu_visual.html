@@ -6,10 +6,13 @@
   <title>Menu visible por empresa</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/menu_visual_defaults.js?v=20260914-menu-defaults-v3"></script>
   <style>
     .menu-visibility-grid{display:grid;gap:12px}
     .menu-visibility-group{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:12px}
-    .menu-visibility-group h3{margin:0 0 8px;font-size:1rem}
+    .menu-visibility-group-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 8px}
+    .menu-visibility-group h3{margin:0;font-size:1rem}
+    .menu-visibility-group-toggle{display:flex;align-items:center;gap:7px;font-size:.82rem;color:var(--muted);cursor:pointer}
     .menu-visibility-items{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
     .menu-visibility-item{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--card)}
     .menu-visibility-item input{margin-top:3px}
@@ -41,7 +44,7 @@
         </label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button id="btnMostrarTodo" class="btn secondary" type="button">Mostrar todo</button>
-          <button id="btnOcultarNoCriticos" class="btn secondary" type="button">Ocultar soluciones especializadas</button>
+          <button id="btnAplicarPredeterminado" class="btn secondary" type="button">Aplicar selección predeterminada</button>
         </div>
       </div>
 
@@ -54,28 +57,28 @@
     (function(){
       const PREF_KEY = 'menu_visual_config';
       const NON_HIDEABLE = {
-        linkPanelEmpresa: true,
         linkConfiguracion: true,
         linkConfiguracionMenuVisual: true,
         linkVolverEmpresas: true
       };
-      const SPECIALIZED_IDS = {
-        linkParqueadero: true,
-        linkReservasHotel: true,
-        linkAlquileres: true,
-        linkAIUConstruccion: true,
-        linkDomicilios: true,
-        linkTurnosAtencion: true
-      };
+      const DEFAULT_CONFIG = window.PCS_MENU_VISUAL_DEFAULTS || { version: 3, enabled: true, hidden_links: [] };
       const FALLBACK_CATALOG = [
+        { group: 'Accesos generales', items: [
+          ['linkPanelEmpresa', 'Panel'],
+          ['linkVida', 'Vida'],
+          ['linkNoticias', 'Noticias Beta']
+        ]},
         { group: 'Operacion y ventas', items: [
           ['linkVentaDirecta', 'Venta directa'],
           ['linkEstaciones', 'Estaciones'],
-          ['linkCorteCaja', 'Corte de Caja']
+          ['linkCorteCaja', 'Corte de Caja'],
+          ['linkFacturasElectronicas', 'Facturas electronicas']
         ]},
         { group: 'Inventario y compras', items: [
           ['linkProductos', 'Productos'],
-          ['linkCompras', 'Compras'],
+          ['linkCompras', 'Compras']
+        ]},
+        { group: 'Produccion', items: [
           ['linkImportacionesCosteo', 'Importaciones y costeo'],
           ['linkProduccionMRP', 'Produccion / MRP'],
           ['linkLogisticaWMS', 'Logistica WMS']
@@ -87,20 +90,23 @@
           ['linkReportes', 'Reportes ejecutivos']
         ]},
         { group: 'CRM y clientes', items: [
-          ['linkClientes', 'Clientes'],
           ['linkCRMComercial', 'CRM unificado']
         ]},
         { group: 'Canales digitales y colaboracion', items: [
           ['linkVentaPublica', 'Venta publica'],
+          ['linkRappi', 'Rappi'],
           ['linkEmailCorporativo', 'E-mail Corporativo'],
           ['linkRedSocialComercial', 'Red social empresarial'],
           ['linkCodigosDescuento', 'Codigos de descuento'],
           ['linkChatIA', 'Asistente IA'],
           ['linkCentroIAEmpresarial', 'Centro IA empresarial']
         ]},
-        { group: 'Personas y activos', items: [
+        { group: 'Usuarios, clientes y personas', items: [
           ['linkUsuarios', 'Usuarios'],
-          ['linkPortalUsuarios', 'Login de usuarios'],
+          ['linkClientes', 'Clientes'],
+          ['linkPortalUsuarios', 'Login de usuarios']
+        ]},
+        { group: 'Control de asistencia y horarios', items: [
           ['linkMiHorario', 'Mi horario'],
           ['linkHorariosTrabajadores', 'Horarios laborales'],
           ['linkAsistenciaEmpleados', 'Asistencia de empleados'],
@@ -132,17 +138,12 @@
           ['linkContratosObligaciones', 'Contratos'],
           ['linkSoporteRemoto', 'Soporte remoto']
         ]},
-        { group: 'Soluciones por negocio', items: [
-          ['linkParqueadero', 'Parqueadero'],
-          ['linkReservasHotel', 'Reservas'],
-          ['linkAlquileres', 'Alquiler'],
-          ['linkAIUConstruccion', 'Construccion / AIU'],
-          ['linkDomicilios', 'Domicilios'],
-          ['linkTurnosAtencion', 'Turnos de atencion']
-        ]},
-        { group: 'Administracion y licencia', items: [
+        { group: 'Administracion', items: [
+          ['linkConfiguracion', 'Configuracion'],
           ['linkEmpresasCompartidas', 'Empresas compartidas'],
-          ['linkBackups', 'Backup profesional'],
+          ['linkBackups', 'Backup profesional']
+        ]},
+        { group: 'Licencia', items: [
           ['linkLicenciaSistema', 'Licencia del sistema']
         ]}
       ];
@@ -216,11 +217,23 @@
 
       function normalizeConfig(raw) {
         const src = raw && typeof raw === 'object' ? raw : {};
-        const rows = Array.isArray(src.hidden_links) ? src.hidden_links : (Array.isArray(src.hiddenLinks) ? src.hiddenLinks : []);
+        const rows = Array.isArray(src.hidden_links)
+          ? src.hidden_links
+          : (Array.isArray(src.hiddenLinks) ? src.hiddenLinks : DEFAULT_CONFIG.hidden_links || []);
         return {
-          enabled: src.enabled === undefined ? true : !!src.enabled,
+          version: Number(src.version || DEFAULT_CONFIG.version || 3),
+          enabled: src.enabled === undefined ? DEFAULT_CONFIG.enabled !== false : !!src.enabled,
           hidden_links: rows.map(normalizeText).filter(id => id && !NON_HIDEABLE[id])
         };
+      }
+
+      function syncGroupCheckbox(section) {
+        const groupInput = section.querySelector('input[data-menu-group]');
+        const itemInputs = Array.from(section.querySelectorAll('input[data-menu-link-id]'));
+        if (!groupInput || !itemInputs.length) return;
+        const checked = itemInputs.filter(input => input.checked).length;
+        groupInput.checked = checked === itemInputs.length;
+        groupInput.indeterminate = checked > 0 && checked < itemInputs.length;
       }
 
       async function loadConfig() {
@@ -246,8 +259,13 @@
         catalog.forEach(group => {
           const section = document.createElement('section');
           section.className = 'menu-visibility-group';
+          const header = document.createElement('div');
+          header.className = 'menu-visibility-group-header';
           const title = document.createElement('h3');
           title.textContent = group.group;
+          const groupToggle = document.createElement('label');
+          groupToggle.className = 'menu-visibility-group-toggle';
+          groupToggle.innerHTML = '<input type="checkbox" data-menu-group><span>Mostrar grupo</span>';
           const items = document.createElement('div');
           items.className = 'menu-visibility-items';
           group.items.forEach(item => {
@@ -259,13 +277,24 @@
             const input = row.querySelector('input');
             input.setAttribute('data-menu-link-id', id);
             input.checked = !hidden[id];
+            input.addEventListener('change', () => syncGroupCheckbox(section));
             row.querySelector('strong').textContent = label;
             row.querySelector('small').textContent = id;
             items.appendChild(row);
           });
-          section.appendChild(title);
+          const groupInput = groupToggle.querySelector('input');
+          groupInput.addEventListener('change', () => {
+            items.querySelectorAll('input[data-menu-link-id]').forEach(input => {
+              input.checked = groupInput.checked;
+            });
+            syncGroupCheckbox(section);
+          });
+          header.appendChild(title);
+          header.appendChild(groupToggle);
+          section.appendChild(header);
           section.appendChild(items);
           grid.appendChild(section);
+          syncGroupCheckbox(section);
         });
       }
 
@@ -277,7 +306,7 @@
         });
         hidden.sort();
         return {
-          version: 1,
+          version: 3,
           enabled: document.getElementById('menuVisualEnabled').checked,
           hidden_links: hidden,
           updated_at: new Date().toISOString()
@@ -322,15 +351,21 @@
 
       document.getElementById('btnMostrarTodo').addEventListener('click', () => {
         grid.querySelectorAll('input[data-menu-link-id]').forEach(input => { input.checked = true; });
+        grid.querySelectorAll('.menu-visibility-group').forEach(syncGroupCheckbox);
+        document.getElementById('menuVisualEnabled').checked = true;
         setMsg('Todo queda visible al guardar.', false);
       });
 
-      document.getElementById('btnOcultarNoCriticos').addEventListener('click', () => {
+      document.getElementById('btnAplicarPredeterminado').addEventListener('click', () => {
+        const hidden = {};
+        (DEFAULT_CONFIG.hidden_links || []).forEach(id => { hidden[id] = true; });
         grid.querySelectorAll('input[data-menu-link-id]').forEach(input => {
           const id = input.getAttribute('data-menu-link-id');
-          if (SPECIALIZED_IDS[id]) input.checked = false;
+          input.checked = !hidden[id];
         });
-        setMsg('Soluciones especializadas marcadas para ocultar. Revisa y guarda.', false);
+        grid.querySelectorAll('.menu-visibility-group').forEach(syncGroupCheckbox);
+        document.getElementById('menuVisualEnabled').checked = true;
+        setMsg('Selección predeterminada aplicada. Revisa las casillas y guarda.', false);
       });
 
       (async function init(){
@@ -339,7 +374,7 @@
         try {
           currentConfig = await loadConfig();
           render();
-          setMsg('Selecciona los modulos que deben verse en el menu empresarial.', false);
+          setMsg('Selecciona los grupos y modulos que deben verse en el menu empresarial.', false);
         } catch (err) {
           currentConfig = normalizeConfig(null);
           render();

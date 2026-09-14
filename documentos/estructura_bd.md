@@ -1,6 +1,19 @@
 # Estructura del Base de Datos
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-14.
+
+## Menu visual predeterminado por empresa
+
+No se agregan tablas ni columnas. `empresa_estacion_prefs` conserva una fila por
+`empresa_id`, `estacion_id=0` y `clave='menu_visual_config'`; el valor JSON
+version 3 contiene `enabled` y `hidden_links`. La migracion catalogada
+`20260914-002-menu-visual-defaults-v3` establece una sola vez el predeterminado
+solicitado para las empresas existentes. `EnsureEmpresaMenuVisualDefault` crea
+la misma preferencia al registrar una empresa nueva con `ON CONFLICT DO NOTHING`,
+por lo que una seleccion posterior de esa empresa no se sobrescribe.
+
+La preferencia solo controla visibilidad. La autorizacion efectiva continua en
+los permisos, licencias y endpoints, todos con aislamiento por `empresa_id`.
 
 
 ## Accesorios y juegos

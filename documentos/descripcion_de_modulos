@@ -436,11 +436,14 @@ archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
 - Frontend: `Administrar empresa > Auditoria` agrega filtros visibles para revisar y exportar actividad de estos modulos sin depender de busquedas manuales.
 - Seguridad: no se registra contenido de mensajes, archivos, claves, tokens ni payloads QR; se conservan solo IDs, estados, tamanos y banderas operativas.
 
-2026-06-11: Menu visible por empresa
+2026-09-14: Menu visible por empresa
 - Modulos afectados: `administrar_empresa`, `configuracion` y `frontend_ux`.
 - Navegacion: `Administrar empresa > Configuracion > Menu visible` abre `web/administrar_empresa/configuracion/menu_visual.html`.
-- Persistencia: usa `empresa_estacion_prefs` con clave `menu_visual_config`, `estacion_id=0` y lista `hidden_links`.
-- Comportamiento: el menu principal y submenus aplican permisos/licencia/rol y despues ocultan visualmente los links marcados por la empresa. `Panel`, `Configuracion`, `Menu visible` y `Volver a empresas` quedan protegidos contra ocultamiento para permitir recuperacion.
+- Configuracion: cada grupo y cada modulo tiene una casilla. `Aplicar seleccion predeterminada` restaura el conjunto inicial y `Mostrar todo` permite preparar una seleccion amplia antes de guardar.
+- Predeterminado: quedan visibles Panel; Vida; Operacion y ventas; Inventario y compras; Finanzas y cumplimiento; Canales digitales y colaboracion; Ubicacion GPS; Analisis y control; Domotica y Energia Solar; Documentos, nube y soporte; Administracion; Noticias Beta y Volver a empresas. Produccion, CRM y clientes, Usuarios/clientes/personas, Control de asistencia y horarios y Licencia inician ocultos.
+- Alta inicial: `Soluciones por negocio`, `Adaptacion por tipo` y `Configuracion guiada` no aparecen en los menus ordinarios. La adaptacion por tipo se ofrece solo al crear la empresa y en su primera entrada al panel mediante el asistente inicial.
+- Persistencia: usa `empresa_estacion_prefs` con clave `menu_visual_config`, `estacion_id=0`, version 3 y lista `hidden_links`. La migracion `20260914-002-menu-visual-defaults-v3` aplica la seleccion a empresas existentes y las empresas nuevas la reciben al crearse.
+- Comportamiento: el menu principal aplica permisos/licencia/rol y despues el filtro visual para todos los usuarios, incluido Super cuando entra a una empresa. `Configuracion`, `Menu visible` y `Volver a empresas` quedan protegidos contra ocultamiento para permitir recuperacion.
 - Seguridad: es una preferencia visual; no otorga ni revoca permisos ni reemplaza validaciones backend.
 
 2026-06-11: Atajos POS configurables por empresa
