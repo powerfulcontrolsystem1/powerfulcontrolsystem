@@ -2,12 +2,12 @@
   "schema_version": 1,
   "policy": "documentos/gobernanza_tecnica/politica_catalogo.json",
   "scope": "Documentos de texto versionados o nuevos no ignorados por Git; metadatos técnicos bajo documentos. Excluye datos privados ignorados y binarios. Sin auditoría semántica ni validación de URLs externas.",
-  "total": 163,
+  "total": 164,
   "counts": {
     "vigente": 137,
     "generado": 20,
     "contrato_maquina": 1,
-    "referencia_por_validar": 3,
+    "referencia_por_validar": 4,
     "control_documental": 1,
     "referencia_externa": 1
   },
@@ -786,7 +786,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-07",
       "review_due": "2026-12-06",
-      "sha256_lf": "1c0ecddce1b4005c7790bbedf7b6815dcd425b28522b458fe0307df77159dc1f"
+      "sha256_lf": "8e66a964517607dcc2ea339aadf83fa13e4bb782429bdf0feacc9484f6b1acb7"
     },
     {
       "path": "documentos/estructura_bd.md",
@@ -1245,7 +1245,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "7e462b15b03612b6cff12daa8f1b7c785b7add409591eccad375176bdabc8962"
+      "sha256_lf": "8bc6c0ce60fb0d1d1c66d4961f6efe617110f9ffcb2131ef4d5e577fdd4ec956"
     },
     {
       "path": "documentos/logistica_wms.md",
@@ -1281,7 +1281,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "b189fc807175bfd7c5bdd2c7c1d5679193fee2588293b245e39c93c26f22b94b"
+      "sha256_lf": "60166eebf7adfd3fa2b05bd9cc56a076f54d683d630dff453d109675f1ed88b3"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",
@@ -1480,6 +1480,15 @@
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
       "sha256_lf": "caeb44b699bfcdb375ada30b8a4ef9930462c67d738192248f7f82c4f519ee20"
+    },
+    {
+      "path": "web/juegos/simsong/PROVENANCE.md",
+      "title": "Recursos de GTA SIMSong",
+      "state": "referencia_por_validar",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "c33a65b93d2e2be4f3f1b0bd83256239fd7d2cc87b213be34f1154dd46d6eb5b"
     }
   ]
 }

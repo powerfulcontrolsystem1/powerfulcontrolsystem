@@ -1,2 +1,6 @@
 # Los scripts se ejecutan en Linux desde el VPS y deben conservar LF.
 *.sh text eol=lf
+
+# Vendored checksums must be identical on Windows and Linux.
+web/juegos/vendor/three/** text eol=lf -whitespace
+web/juegos/simsong/assets/** -text -whitespace

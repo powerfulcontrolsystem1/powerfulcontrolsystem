@@ -7,7 +7,7 @@ No editar manualmente. Generar con `node tools/docs_catalog.mjs --write`; valida
 Política y significado de estados: [marco documental](gobernanza_tecnica/marco_documental.md).
 Inventario y hallazgos detallados: [JSON](catalogo_documental.json). La clasificación no acredita revisión semántica ni producción.
 
-Documentos: 163. Hallazgos locales: 0; bloqueantes: 0.
+Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 
 | Estado | Cantidad |
 | --- | --- |
@@ -15,7 +15,7 @@ Documentos: 163. Hallazgos locales: 0; bloqueantes: 0.
 | control_documental | 1 |
 | generado | 20 |
 | referencia_externa | 1 |
-| referencia_por_validar | 3 |
+| referencia_por_validar | 4 |
 | vigente | 137 |
 
 ## Índice completo
@@ -185,6 +185,7 @@ Documentos: 163. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/vida.md](<vida.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/vps2_operacion.md](<vps2_operacion.md>) | vigente | QA/operación | 2026-09-05 |
 | [services/voice_stream_server/README.md](<../services/voice_stream_server/README.md>) | vigente | Ingeniería y operación | 2026-09-05 |
+| [web/juegos/simsong/PROVENANCE.md](<../web/juegos/simsong/PROVENANCE.md>) | referencia_por_validar | Coordinación técnica | Pendiente / no aplica |
 
 ## Hallazgos heredados
 

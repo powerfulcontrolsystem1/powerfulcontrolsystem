@@ -1,0 +1,279 @@
+{
+  "three": "0.186.0",
+  "licenses": [
+    "MIT (Three.js)",
+    "CC0 (Kenney)"
+  ],
+  "files": [
+    {
+      "path": "simsong/assets/cars/LICENSE.txt",
+      "bytes": 696,
+      "sha256": "c33b7f6453d134deae7b1b8493717d9ccfa754c25ab97f6de89b88f8fda19b00"
+    },
+    {
+      "path": "simsong/assets/cars/Textures/colormap.png",
+      "bytes": 12371,
+      "sha256": "f3622a03a20c6696065cae9cbe391351be873508af190c2ebd1d420c055787a5"
+    },
+    {
+      "path": "simsong/assets/cars/hatchback-sports.glb",
+      "bytes": 197804,
+      "sha256": "bd5c9d4c3b4bdd254a66b8426563a68b1487ae7a5076df3a2488e6ffed7be64f"
+    },
+    {
+      "path": "simsong/assets/cars/police.glb",
+      "bytes": 195336,
+      "sha256": "a617b880594f56239b7ac4cf6fd4d74ebdae3ba6c5d842e77c76a5906eff352a"
+    },
+    {
+      "path": "simsong/assets/cars/sedan.glb",
+      "bytes": 172216,
+      "sha256": "b532ea7d2c59f7f6b22b138cf1955218a2c1898f1cea932af4d3fd563c3959b7"
+    },
+    {
+      "path": "simsong/assets/cars/taxi.glb",
+      "bytes": 175608,
+      "sha256": "3803539718ffd3b84b515dbce8ed6b489f1ff5be58edb1903d2c5db5c584bdc7"
+    },
+    {
+      "path": "simsong/assets/cars/van.glb",
+      "bytes": 175664,
+      "sha256": "ed4ed56e8e5ed98db050af09ed2062b3b6bb7b93eab1e563cb6774b387b233a1"
+    },
+    {
+      "path": "simsong/assets/characters/LICENSE.txt",
+      "bytes": 699,
+      "sha256": "68280323c6dca1f532c71fb248a6f344abed39a574278a2edfa27801aea3d0cd"
+    },
+    {
+      "path": "simsong/assets/characters/criminalMaleA.glb",
+      "bytes": 502332,
+      "sha256": "66cbf36acd55d0fd1356d3a937ffe231055c7673f966721652b8aa149c214cdc"
+    },
+    {
+      "path": "simsong/assets/characters/skaterFemaleA.glb",
+      "bytes": 517452,
+      "sha256": "bc3277ebba2c6d22cfb6c3370d2b337123a89891da6ed8d9d4897ad7413d0ba6"
+    },
+    {
+      "path": "simsong/assets/characters/skaterMaleA.glb",
+      "bytes": 522344,
+      "sha256": "4b1195f09c573bd3c53695b404bf0ed41cfe40581c8552630ce6e54adc4596a0"
+    },
+    {
+      "path": "simsong/assets/characters/skin-cabeed9d1be58037.png",
+      "bytes": 41705,
+      "sha256": "cabeed9d1be58037cc1cf3e29fdb42a0cb6af15bebeed877c41a758a932d14f8"
+    },
+    {
+      "path": "simsong/assets/characters/skin-de575f5075a89919.png",
+      "bytes": 40073,
+      "sha256": "de575f5075a8991907a4807fea3ef291b8e57778c6c4f4ada990abe7582026df"
+    },
+    {
+      "path": "simsong/assets/characters/skin-e2f66e682c95253f.png",
+      "bytes": 35033,
+      "sha256": "e2f66e682c95253fbb45206ab44bdb4fe61b03af3481abbd0e4344a6958a0530"
+    },
+    {
+      "path": "simsong/assets/furniture/LICENSE.txt",
+      "bytes": 614,
+      "sha256": "bc0de1a0742cb490f9ed4bae0bd284286ebb27e23149b9917c7d8c0d590b8b29"
+    },
+    {
+      "path": "simsong/assets/furniture/bathroomSink.glb",
+      "bytes": 22536,
+      "sha256": "39d4f19608cab7e0fed52303b2c689f5f51fae1bad9b6913cb53d838875e797e"
+    },
+    {
+      "path": "simsong/assets/furniture/bathtub.glb",
+      "bytes": 35500,
+      "sha256": "54c405c7035aab63dc41e709dc3c50fc5bcfbc4cddc91ffc54188075a6d25d01"
+    },
+    {
+      "path": "simsong/assets/furniture/bear.glb",
+      "bytes": 11884,
+      "sha256": "fd87c08f81dcd652b1f7f61afae9d1f040fa1322ac4ddda6f543ed423b954aed"
+    },
+    {
+      "path": "simsong/assets/furniture/bedDouble.glb",
+      "bytes": 23368,
+      "sha256": "c49b33e7d797d2ba1111895587dba7ff63b17a712eb9b4ceeb40a598f73e476c"
+    },
+    {
+      "path": "simsong/assets/furniture/bedSingle.glb",
+      "bytes": 18636,
+      "sha256": "ca00c63f9a12da3138d902b2f5f18e0360fb6e8a5ac42ccb4bc3f185724b65d1"
+    },
+    {
+      "path": "simsong/assets/furniture/bookcaseOpen.glb",
+      "bytes": 18020,
+      "sha256": "750702218d68c062b15dfef6ab06a4014d1cfa8bd05f02e57c53b7e13bec157c"
+    },
+    {
+      "path": "simsong/assets/furniture/books.glb",
+      "bytes": 6864,
+      "sha256": "b8dc56e5d29f6fc1f4727fccb1b9642627fee9942c48060a00034e98df02701c"
+    },
+    {
+      "path": "simsong/assets/furniture/chair.glb",
+      "bytes": 10756,
+      "sha256": "c8a11eec93e89e31250ba91afc1b8d56c3bec7ae86640fd1239f595ff4180883"
+    },
+    {
+      "path": "simsong/assets/furniture/desk.glb",
+      "bytes": 15048,
+      "sha256": "0164fe828f028b321730fb8c74502e353583f751be74da1682d42fff7d3c5a42"
+    },
+    {
+      "path": "simsong/assets/furniture/kitchenBar.glb",
+      "bytes": 6004,
+      "sha256": "792c3d31e60c8a8d8c7a28cf7d1efe004c5a601adc1b163a8799dde32c1b559d"
+    },
+    {
+      "path": "simsong/assets/furniture/kitchenCabinet.glb",
+      "bytes": 10444,
+      "sha256": "7238c57778935ae25db5e57e9f7af3ba7068c71b005ff7cfbff3b6f3b1a13200"
+    },
+    {
+      "path": "simsong/assets/furniture/kitchenFridge.glb",
+      "bytes": 20116,
+      "sha256": "8af4f4bbb1b5525ad8226e97926a5af60fa8fb20a3cb74dbda5328a9d320dbab"
+    },
+    {
+      "path": "simsong/assets/furniture/kitchenSink.glb",
+      "bytes": 23480,
+      "sha256": "7b9610277d71f00dcf1bba49cf4d98d77ce5177e84bf76c7da2f8893e542f743"
+    },
+    {
+      "path": "simsong/assets/furniture/kitchenStove.glb",
+      "bytes": 54324,
+      "sha256": "3239edb36295dfca9530a9b9a6ad0aff98ce62e7cf8d13ca2a5a1a6b2a904656"
+    },
+    {
+      "path": "simsong/assets/furniture/lampRoundFloor.glb",
+      "bytes": 6600,
+      "sha256": "50fe1b5b588edf15bfa9cc880f71a02a4fda6036350b24733d0ef4de5cc5e908"
+    },
+    {
+      "path": "simsong/assets/furniture/loungeSofa.glb",
+      "bytes": 9644,
+      "sha256": "1886b811c0d3ad0d8525a4fd43adf4112c497c8e0ed906f06877ca3517f4c7dd"
+    },
+    {
+      "path": "simsong/assets/furniture/pottedPlant.glb",
+      "bytes": 7576,
+      "sha256": "5b760eda2766f75fda36b2c5df652a1662f82981ef64cd8fa7fe7bcd386b3a15"
+    },
+    {
+      "path": "simsong/assets/furniture/rugRectangle.glb",
+      "bytes": 3188,
+      "sha256": "a989d2d59c04e3071e0c90388b113a9a8f339ce1814ef984c51cb6dcd7c8e0eb"
+    },
+    {
+      "path": "simsong/assets/furniture/stoolBar.glb",
+      "bytes": 11816,
+      "sha256": "a86167a9f92401a61fec7e509ad089ecc552d0f299743add3aeb919acb24e341"
+    },
+    {
+      "path": "simsong/assets/furniture/table.glb",
+      "bytes": 8196,
+      "sha256": "ff1a94498d023957f4bc3ff6f55a7a82977d336dbf01a573b3364f03afe5ff61"
+    },
+    {
+      "path": "simsong/assets/furniture/tableCoffee.glb",
+      "bytes": 8256,
+      "sha256": "e38bea760fbd514efbb75528d09b4752c91af44677bbb97e6d4386c263525179"
+    },
+    {
+      "path": "simsong/assets/furniture/televisionVintage.glb",
+      "bytes": 19392,
+      "sha256": "eb144cc8fb1e7f761e3665226e4266c8868679421d21d6548f24d2abad7c67cf"
+    },
+    {
+      "path": "simsong/assets/furniture/toilet.glb",
+      "bytes": 18112,
+      "sha256": "16165cfd03c56c2cb443b800570810a22ef770f65e7a468f6761d9dc14eaaeae"
+    },
+    {
+      "path": "simsong/assets/suburban/LICENSE.txt",
+      "bytes": 706,
+      "sha256": "d778fa769a89a7d9f167bc337fdf8fc2144e47d9abb0c35eb6ad897c0ee24d0a"
+    },
+    {
+      "path": "simsong/assets/suburban/Textures/colormap.png",
+      "bytes": 11784,
+      "sha256": "9b5de86078c25ef02351a80d35ff3c978693a1044565b73eedd9ae9b5b80665d"
+    },
+    {
+      "path": "simsong/assets/suburban/building-type-a.glb",
+      "bytes": 98604,
+      "sha256": "49f32e20b9dcd24b1c8f6d6488807b8c8cb684cbb595bfb0bb36ad903e470faa"
+    },
+    {
+      "path": "simsong/assets/suburban/building-type-b.glb",
+      "bytes": 146720,
+      "sha256": "a964a10c51bb334be677657fd8fa483531974dd15b4243575990192818e2300e"
+    },
+    {
+      "path": "simsong/assets/suburban/building-type-c.glb",
+      "bytes": 99592,
+      "sha256": "86a69f30f1a09461283e158514945ae5cc9d56357b0ddc83a9a3f0eecd113591"
+    },
+    {
+      "path": "simsong/assets/suburban/building-type-e.glb",
+      "bytes": 145512,
+      "sha256": "9ec43994c8c332b1ae5b058d8b9646255831fd91047c1a35b1fc1ecae4c082fc"
+    },
+    {
+      "path": "simsong/assets/suburban/building-type-g.glb",
+      "bytes": 93596,
+      "sha256": "f497a7bc3a8e6b6273ba99f090042d1cfb3141da57d3c51998c57a479a0ece11"
+    },
+    {
+      "path": "simsong/assets/suburban/building-type-j.glb",
+      "bytes": 99512,
+      "sha256": "fbdce9cb6bb6cf60a861bab36a896403aff604afbf2cb2b86676ae6f49fa2de3"
+    },
+    {
+      "path": "simsong/assets/suburban/building-type-m.glb",
+      "bytes": 96996,
+      "sha256": "36d31f4e45498f6229805b6a7a1577ef00230daeea4c6a4469481e9d5a0fdb7c"
+    },
+    {
+      "path": "simsong/assets/suburban/building-type-q.glb",
+      "bytes": 98632,
+      "sha256": "9b56037cab0de804e308766cc5e69b95b3576ffb444084c9016a0748cbcaca04"
+    },
+    {
+      "path": "vendor/three/BufferGeometryUtils.js",
+      "bytes": 37712,
+      "sha256": "9fb63427ce6641fa14fd0baff9cc4d1b5f9c3d85fd084bf2e90e803c44ec1797"
+    },
+    {
+      "path": "vendor/three/GLTFLoader.js",
+      "bytes": 117560,
+      "sha256": "824c4555f027822eca4f11859ce2fd04c8d3802e8cbabc55a2339b7e08e52670"
+    },
+    {
+      "path": "vendor/three/LICENSE",
+      "bytes": 1081,
+      "sha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+    },
+    {
+      "path": "vendor/three/SkeletonUtils.js",
+      "bytes": 11535,
+      "sha256": "b1632a703206c3d830de9fcbe515696770d04b71a15ee6b50afa6d2c3298c86f"
+    },
+    {
+      "path": "vendor/three/three.core.js",
+      "bytes": 1458113,
+      "sha256": "9edde002b066a9a05676a6127f67735b62baf399bdea529f2f7e31657da769e6"
+    },
+    {
+      "path": "vendor/three/three.module.js",
+      "bytes": 662772,
+      "sha256": "9052042d676cb0fdc1ddfefe193053f34b7ac0513a616fdac4535d49987812ea"
+    }
+  ]
+}

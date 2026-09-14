@@ -522,7 +522,7 @@
           '<button id="utilitiesMenuToggle" class="fm-item fm-action-item fm-icon-item" type="button" aria-expanded="false" aria-controls="utilitiesMenuPopup"><img class="fm-item-icon" src="/img/play.svg" alt="">Accesorios ▾</button>' +
           '<div id="utilitiesMenuPopup" aria-hidden="true">' +
             '<a class="fm-item fm-icon-item" href="/calculadora.html?compact=1" data-open-calculator="1"><img class="fm-item-icon" src="/img/analytics-color.svg" alt="">Calculadora</a>' +
-            '<a class="fm-item fm-icon-item" href="/juegos.html" target="_blank" rel="noopener"><img class="fm-item-icon" src="/img/play.svg" alt="">Juegos ↗</a>' +
+            '<a class="fm-item fm-icon-item" href="/juegos.html" data-open-games="1"><img class="fm-item-icon" src="/img/play.svg" alt="">Juegos</a>' +
           '</div>' +
         '</div>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html" data-admin-frame-url="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
@@ -1357,6 +1357,19 @@
         closeUtilitiesPopup();
         closePanel();
         openCalculatorWindow();
+      });
+    }
+
+    var gamesLauncher = wrapper.querySelector('[data-open-games]');
+    if (gamesLauncher) {
+      gamesLauncher.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        closeUtilitiesPopup();
+        closePanel();
+        import('/juegos/ventana.js').then(function(module){ module.openGamesWidget(gamesLauncher); }).catch(function(){
+          gamesLauncher.textContent = 'No se pudo abrir Juegos. Reintentar';
+        });
       });
     }
 
