@@ -128,6 +128,7 @@ try {
   };
   var enterpriseAIVisibleLinks = {};
   var enterpriseMenuVisualConfig = { hiddenLinks: {} };
+  var enterpriseMenuVisualDefaults = window.PCS_MENU_VISUAL_DEFAULTS || { version: 3, enabled: true, hidden_links: [] };
   var cashierAutoDirectSaleEnabled = false;
   var stationEntryDomoticaEnabled = false;
   var adminPageURLsConfig = { enabled: false };
@@ -160,8 +161,6 @@ try {
     });
   }
   var nonHideableMenuLinks = {
-    linkPanelEmpresa: true,
-    linkVida: true,
     linkConfiguracion: true,
     linkConfiguracionMenuVisual: true,
     linkVolverEmpresas: true
@@ -654,6 +653,7 @@ try {
     var rows = [];
     if (Array.isArray(src.hidden_links)) rows = src.hidden_links;
     else if (Array.isArray(src.hiddenLinks)) rows = src.hiddenLinks;
+    else if (Array.isArray(enterpriseMenuVisualDefaults.hidden_links)) rows = enterpriseMenuVisualDefaults.hidden_links;
     rows.forEach(function (value) {
       var id = String(value || "").trim();
       if (id && !nonHideableMenuLinks[id]) {
@@ -661,14 +661,14 @@ try {
       }
     });
     return {
-      enabled: src.enabled === undefined ? true : !!src.enabled,
+      version: Number(src.version || enterpriseMenuVisualDefaults.version || 3),
+      enabled: src.enabled === undefined ? enterpriseMenuVisualDefaults.enabled !== false : !!src.enabled,
       hiddenLinks: hidden
     };
   }
 
   function isEnterpriseMenuLinkHidden(link) {
     if (!link || !enterpriseMenuVisualConfig || enterpriseMenuVisualConfig.enabled === false) return false;
-    if (isSuperAdminMenuContext()) return false;
     var linkId = String(link.id || "").trim();
     if (!linkId || nonHideableMenuLinks[linkId]) return false;
     return !!(enterpriseMenuVisualConfig.hiddenLinks && enterpriseMenuVisualConfig.hiddenLinks[linkId]);

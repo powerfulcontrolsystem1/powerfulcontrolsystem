@@ -6,14 +6,14 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 
 ## Resumen
 
-- Funciones inventariadas: 142.
+- Funciones inventariadas: 143.
 - Huella del catalogo legado: `d8de78d03b65f037b9b3028ad1ef36c85d6cae09b1d99985b2a798a2e5070a4a` (117 pasos).
 - DDL / indice / funcion: 113.
 - DDL catalogado de plataforma: 4.
 - compatibilidad PostgreSQL: 2.
 - provisionamiento de integracion: 4.
 - regla auxiliar o verificacion: 7.
-- seed o provisionamiento idempotente: 12.
+- seed o provisionamiento idempotente: 13.
 - Fuente: `backend/db`, `backend/handlers` y `backend/main.go`; excluye pruebas.
 
 ## Registro
@@ -79,6 +79,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaImpresorasSchema` | [backend/db/empresa_impresoras.go:171](../../backend/db/empresa_impresoras.go#L171) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPOS80Defaults` | [backend/db/empresa_impresoras.go:905](../../backend/db/empresa_impresoras.go#L905) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureAllEmpresasPOS80Defaults` | [backend/db/empresa_impresoras.go:980](../../backend/db/empresa_impresoras.go#L980) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEmpresaMenuVisualDefault` | [backend/db/empresa_menu_visual_defaults.go:40](../../backend/db/empresa_menu_visual_defaults.go#L40) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaPermisosFinosSchema` | [backend/db/empresa_permisos_finos.go:24](../../backend/db/empresa_permisos_finos.go#L24) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresasScopeReferences` | [backend/db/empresa_scope.go:10](../../backend/db/empresa_scope.go#L10) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaEnergiaSolarSchema` | [backend/db/energia_solar.go:108](../../backend/db/energia_solar.go#L108) | DDL / indice / funcion | empresas o por confirmar |
