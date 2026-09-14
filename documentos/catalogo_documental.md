@@ -7,7 +7,7 @@ No editar manualmente. Generar con `node tools/docs_catalog.mjs --write`; valida
 Política y significado de estados: [marco documental](gobernanza_tecnica/marco_documental.md).
 Inventario y hallazgos detallados: [JSON](catalogo_documental.json). La clasificación no acredita revisión semántica ni producción.
 
-Documentos: 162. Hallazgos locales: 0; bloqueantes: 0.
+Documentos: 163. Hallazgos locales: 0; bloqueantes: 0.
 
 | Estado | Cantidad |
 | --- | --- |
@@ -15,7 +15,7 @@ Documentos: 162. Hallazgos locales: 0; bloqueantes: 0.
 | control_documental | 1 |
 | generado | 20 |
 | referencia_externa | 1 |
-| referencia_por_validar | 2 |
+| referencia_por_validar | 3 |
 | vigente | 137 |
 
 ## Índice completo
@@ -158,6 +158,7 @@ Documentos: 162. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/ia_orquestador_empresarial.md](<ia_orquestador_empresarial.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/importaciones_costeo.md](<importaciones_costeo.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/inventario_avanzado.md](<inventario_avanzado.md>) | generado | Coordinación técnica | Pendiente / no aplica |
+| [documentos/juegos_accesorios.md](<juegos_accesorios.md>) | referencia_por_validar | Coordinación técnica | Pendiente / no aplica |
 | [documentos/logistica_wms.md](<logistica_wms.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/manual_de_instalacion.md](<manual_de_instalacion.md>) | vigente | QA/operación | 2026-09-05 |
 | [documentos/manual_vps_seguridad.md](<manual_vps_seguridad.md>) | vigente | QA/operación | 2026-09-05 |

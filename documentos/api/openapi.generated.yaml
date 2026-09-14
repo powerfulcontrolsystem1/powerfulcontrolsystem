@@ -2243,6 +2243,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/juegos":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/juegos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/juegos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/onlyoffice/callback":
     get:
       tags: [publico]

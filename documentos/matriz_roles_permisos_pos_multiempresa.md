@@ -2,6 +2,14 @@
 
 Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-11.
 
+
+## Accesorios y juegos
+
+El menú flotante agrupa Calculadora y Juegos en Accesorios. Los seis juegos
+comparten récords visibles entre empresas y conservan partidas privadas por
+identidad de usuario. Navegación, excepciones de autorización, migración,
+archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
+
 ## Perfiles propios y permisos escalables
 
 Cada empresa puede crear perfiles con nombre propio y una base global activa.

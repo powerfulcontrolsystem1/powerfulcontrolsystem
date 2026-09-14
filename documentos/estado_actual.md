@@ -16,6 +16,12 @@ producción.
 
 ## Condiciones vigentes de aceptación
 
+La sala personal de [Juegos y Accesorios](juegos_accesorios.md) incorpora seis
+juegos adaptables, guardado por identidad de sesión y récords recreativos
+compartidos entre empresas. Su aceptación requiere migración, aislamiento de
+partidas, recuperación de guardados y controles visuales en escritorio y móvil;
+los mundos WebGL usan modelos procedurales, sin promesa de fotorealismo.
+
 | Área | Criterio actual |
 | --- | --- |
 | Multiempresa | Toda lectura y mutación empresarial valida `empresa_id`, usuario, licencia, permiso y ownership de IDs secundarios en backend |

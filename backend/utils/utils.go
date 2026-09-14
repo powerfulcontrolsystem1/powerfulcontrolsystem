@@ -1241,6 +1241,12 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		if !principalOK {
 			return
 		}
+		// Personal games validate the active typed identity in their own handler.
+		// An operational user does not need a homonymous administrator account.
+		if principalType == "empresa_usuario" && (path == "/api/juegos" || path == "/juegos.html" || strings.HasPrefix(path, "/juegos/")) {
+			next.ServeHTTP(w, r.WithContext(withSessionPrincipalContext(r.Context(), sess, principalType)))
+			return
+		}
 
 		admin, err := getCachedAdminByEmailFull(dbSuper, sess.AdminEmail)
 		if err != nil {

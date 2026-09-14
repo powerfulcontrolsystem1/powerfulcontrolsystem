@@ -2,12 +2,12 @@
   "schema_version": 1,
   "policy": "documentos/gobernanza_tecnica/politica_catalogo.json",
   "scope": "Documentos de texto versionados o nuevos no ignorados por Git; metadatos técnicos bajo documentos. Excluye datos privados ignorados y binarios. Sin auditoría semántica ni validación de URLs externas.",
-  "total": 162,
+  "total": 163,
   "counts": {
     "vigente": 137,
     "generado": 20,
     "contrato_maquina": 1,
-    "referencia_por_validar": 2,
+    "referencia_por_validar": 3,
     "control_documental": 1,
     "referencia_externa": 1
   },
@@ -291,7 +291,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "24c048493e90818bda09c7b65cfcf94bcf3fb0162a668d8cfaf6f69a5402099c"
+      "sha256_lf": "34fd8daf1943a304e69c3285092d2af8898b1760d90e26e7d73212a622bc94c2"
     },
     {
       "path": "documentos/api/openapi.mobile.v1.yaml",
@@ -426,7 +426,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "55467c9cd1aa57b0f2a50bb7673a8557f394fb5cbf8e0fbd9149c09d714c8339"
+      "sha256_lf": "038b18c2622edd99c6450ec15ef28eb371a73f3f088b879ec827c6e9ad7a1322"
     },
     {
       "path": "documentos/arquitectura_modulos_universales.md",
@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "fe67ef1ae8f033b994062f8b87fa2f39b44da9dae64ca28b2581454c97c16df6"
+      "sha256_lf": "3d987497be6cc9dd4df0730591997e154ccbcc0d0dab45cc3a779408c9ddb882"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -723,7 +723,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "c4da263ef448373cc5b2f230f3b5bf3b60d5462521243b38fb0555bf746db14d"
+      "sha256_lf": "e395ea3de48a27b300847a0b5593cdf24a3465562f4ad0f287636aa399f99dc4"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -786,7 +786,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-07",
       "review_due": "2026-12-06",
-      "sha256_lf": "51876186a300d7585088d29a1414e489d33f1c42510912d134f6540a0a728f8b"
+      "sha256_lf": "1c0ecddce1b4005c7790bbedf7b6815dcd425b28522b458fe0307df77159dc1f"
     },
     {
       "path": "documentos/estructura_bd.md",
@@ -795,7 +795,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "c181d55a63deb646a30f145cae787a27ae79aa175b496c7385ad42d9aec8b1f3"
+      "sha256_lf": "8b5d8a97a06d370e0507d1e3c93759be0fc95931ba4667d05e7860973dad7096"
     },
     {
       "path": "documentos/flujos_operativos.md",
@@ -1239,6 +1239,15 @@
       "sha256_lf": "d7b982580e9f9a880dfd4b4e16c646c7ac76162fb8b5c25c41669e3376843f82"
     },
     {
+      "path": "documentos/juegos_accesorios.md",
+      "title": "Accesorios y juegos personales",
+      "state": "referencia_por_validar",
+      "owner": "Coordinación técnica",
+      "reviewed": null,
+      "review_due": null,
+      "sha256_lf": "7e462b15b03612b6cff12daa8f1b7c785b7add409591eccad375176bdabc8962"
+    },
+    {
       "path": "documentos/logistica_wms.md",
       "title": "Logistica avanzada / WMS de bodega, picking, packing y despachos",
       "state": "vigente",
@@ -1272,7 +1281,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "80c6c0742b10c7da214b755b13a8ea2ba34851983cb8e1d2e4d830e7cd05916d"
+      "sha256_lf": "ae57c491b56d874b22ec963aedf60c5c738203b0c02d64bc2bb80ac3455c1e79"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",
@@ -1290,7 +1299,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-11",
       "review_due": "2026-12-10",
-      "sha256_lf": "b8d6fa108c4119f8b1ff658b0f9370036f878862709761ebb2ba7249f022bbc7"
+      "sha256_lf": "dfb2ecd986e3cb3ac6e0e6db786c3a27f7a03fea5ace0a1683ebbdbd5ac4e7e8"
     },
     {
       "path": "documentos/modulos_empresariales_colombia.md",

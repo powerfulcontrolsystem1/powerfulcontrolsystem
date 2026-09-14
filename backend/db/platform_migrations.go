@@ -332,6 +332,7 @@ func PlatformMigrations(target string) ([]Migration, error) {
 				Body:        admin2FARetirementFingerprint,
 				Apply:       applyAdmin2FARetirementTx,
 			},
+			{Version: "20260914-001-juegos-personales-v1", Description: "personal game saves and shared recreational leaderboards", Body: juegosSchemaSQL, Apply: applyJuegosSchemaTx},
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown platform migration target %q", target)

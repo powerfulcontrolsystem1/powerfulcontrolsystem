@@ -1584,6 +1584,7 @@ func main() {
 	http.HandleFunc("/super/administradores", handlers.ListAdministradoresHandler(dbSuper))
 	http.HandleFunc("/super/sesiones", handlers.ListSesionesHandler(dbSuper))
 	http.HandleFunc("/api/user/configuracion", handlers.UserConfiguracionHandler(dbSuper))
+	http.HandleFunc("/api/juegos", handlers.JuegosHandler(dbSuper, dbEmpresas))
 
 	// Endpoints CRUD para tipos de empresas
 	http.HandleFunc("/super/api/tipos_empresas", handlers.WithAdminReadSuperWriteAuditoria(dbSuper, "tipos_empresas", handlers.TiposEmpresasHandler(dbSuper)))
