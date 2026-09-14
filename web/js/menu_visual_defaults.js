@@ -17,8 +17,7 @@
       "linkAsistenciaEmpleados",
       "linkCarnets",
       "linkVehiculosRegistro",
-      "linkHojaVidaOperativa",
-      "linkLicenciaSistema"
+      "linkHojaVidaOperativa"
     ]
   };
 })();

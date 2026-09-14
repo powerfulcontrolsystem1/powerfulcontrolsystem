@@ -167,9 +167,10 @@ afecte dinero, documentos, licencias o seguridad.
 3. `Aplicar seleccion predeterminada` deja visibles Panel, Vida, Operacion y
    ventas, Inventario y compras, Finanzas y cumplimiento, Canales digitales y
    colaboracion, Ubicacion GPS, Analisis y control, Domotica y Energia Solar,
-   Documentos/nube/soporte, Administracion, Noticias Beta y Volver a empresas.
+   Documentos/nube/soporte, Administracion, Licencia, Noticias Beta y Volver a
+   empresas.
 4. Produccion, CRM y clientes, Usuarios/clientes/personas, Control de asistencia
-   y horarios y Licencia quedan ocultos en esa seleccion inicial.
+   y horarios quedan ocultos en esa seleccion inicial.
 5. `Soluciones por negocio` no forma parte del menu empresarial ni de `Menu
    visible`. `Adaptacion por tipo` y `Configuracion guiada` tampoco aparecen en
    el menu ordinario de Configuracion: la adaptacion se ofrece al crear la

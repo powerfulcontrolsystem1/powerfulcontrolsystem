@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const EmpresaMenuVisualDefaultConfigJSON = `{"version":3,"enabled":true,"hidden_links":["linkImportacionesCosteo","linkProduccionMRP","linkLogisticaWMS","linkCRMComercial","linkUsuarios","linkClientes","linkPortalUsuarios","linkMiHorario","linkHorariosTrabajadores","linkAsistenciaEmpleados","linkCarnets","linkVehiculosRegistro","linkHojaVidaOperativa","linkLicenciaSistema"]}`
+const EmpresaMenuVisualDefaultConfigJSON = `{"version":3,"enabled":true,"hidden_links":["linkImportacionesCosteo","linkProduccionMRP","linkLogisticaWMS","linkCRMComercial","linkUsuarios","linkClientes","linkPortalUsuarios","linkMiHorario","linkHorariosTrabajadores","linkAsistenciaEmpleados","linkCarnets","linkVehiculosRegistro","linkHojaVidaOperativa"]}`
 
 const empresaMenuVisualDefaultsSQL = `INSERT INTO empresa_estacion_prefs (
  empresa_id, estacion_id, clave, valor, fecha_creacion, fecha_actualizacion,

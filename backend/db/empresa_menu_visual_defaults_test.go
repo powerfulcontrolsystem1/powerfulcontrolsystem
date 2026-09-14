@@ -23,7 +23,6 @@ func TestEmpresaMenuVisualDefaultConfig(t *testing.T) {
 		"linkCRMComercial", "linkUsuarios", "linkClientes", "linkPortalUsuarios",
 		"linkMiHorario", "linkHorariosTrabajadores", "linkAsistenciaEmpleados", "linkCarnets",
 		"linkVehiculosRegistro", "linkHojaVidaOperativa",
-		"linkLicenciaSistema",
 	}
 	if len(config.HiddenLinks) != len(wantHidden) {
 		t.Fatalf("hidden links=%d, want %d", len(config.HiddenLinks), len(wantHidden))
@@ -45,6 +44,7 @@ func TestEmpresaMenuVisualDefaultConfig(t *testing.T) {
 		"linkVentaPublica", "linkControlElectrico", "linkDocumentosOnlyOffice",
 		"linkUbicacionGPS", "linkConfiguracionGPS", "linkAuditoria", "linkCalidadProcesos",
 		"linkCamaras", "linkGrafologia", "linkBolsa", "linkConfiguracion", "linkNoticias", "linkVolverEmpresas",
+		"linkLicenciaSistema",
 	} {
 		if seen[visible] {
 			t.Fatalf("required default visible link %q cannot be hidden", visible)

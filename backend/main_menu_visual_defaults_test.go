@@ -46,12 +46,13 @@ func TestEmpresaMenuVisualDefaultsFrontendContract(t *testing.T) {
 	linkPattern := regexp.MustCompile(`<a id="(link[^"]+)"`)
 	hiddenGroups := map[string]bool{
 		"Producción": true, "CRM y clientes": true, "Usuarios, clientes y personas": true,
-		"Control de asistencia y horarios": true, "Licencia": true,
+		"Control de asistencia y horarios": true,
 	}
 	visibleGroups := map[string]bool{
 		"Operación y ventas": true, "Inventario y compras": true, "Finanzas y cumplimiento": true,
 		"Canales digitales y colaboración": true, "Ubicación GPS": true, "Análisis y control": true,
 		"Domótica y Energía Solar": true, "Documentos, nube y soporte": true, "Administración": true,
+		"Licencia": true,
 	}
 	seenGroups := map[string]bool{}
 	for _, match := range groupPattern.FindAllStringSubmatch(adminHTML, -1) {
