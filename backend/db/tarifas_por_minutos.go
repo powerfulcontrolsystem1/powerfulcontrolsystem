@@ -969,6 +969,46 @@ func UpsertEmpresaTarifaPorMinutosConfiguracion(dbConn *sql.DB, payload EmpresaT
 	return GetEmpresaTarifaPorMinutosConfiguracion(dbConn, payload.EmpresaID)
 }
 
+// calcularBloquesExtraConToleranciaRecurrente conserva un margen al comienzo de
+// cada bloque extra. Con base de 120, bloque de 60 y margen de 10, un cobro por
+// fracción se activa después de 130, 200, 270 minutos, etc. El margen no se
+// descuenta una sola vez del total, porque eso acortaría los bloques posteriores.
+func calcularBloquesExtraConToleranciaRecurrente(minutosConsumidos float64, minutosBase, minutosExtra, toleranciaMinutos int, cobrarPorFraccion bool) (float64, int) {
+	if minutosConsumidos < 0 {
+		minutosConsumidos = 0
+	}
+	base := float64(minutosBase)
+	if minutosConsumidos <= base || minutosExtra <= 0 {
+		return minutosConsumidos, 0
+	}
+
+	tolerancia := float64(normalizeTarifaPorMinutosMargin(toleranciaMinutos))
+	bloque := float64(minutosExtra)
+	periodoConTolerancia := bloque + tolerancia
+	extraConsumido := minutosConsumidos - base
+
+	// Los minutos facturables conservan la trazabilidad del tiempo realmente
+	// usado menos todos los márgenes ya transcurridos, incluso el margen que se
+	// está consumiendo antes del próximo bloque.
+	ciclosCompletos := math.Floor(extraConsumido / periodoConTolerancia)
+	restoCiclo := extraConsumido - (ciclosCompletos * periodoConTolerancia)
+	toleranciaAplicada := (ciclosCompletos * tolerancia) + math.Min(tolerancia, math.Max(0, restoCiclo))
+	minutosFacturables := math.Max(base, minutosConsumidos-toleranciaAplicada)
+
+	bloquesExtra := 0
+	if cobrarPorFraccion {
+		if extraConsumido > tolerancia {
+			bloquesExtra = int(math.Ceil((extraConsumido - tolerancia) / periodoConTolerancia))
+		}
+	} else {
+		bloquesExtra = int(math.Floor(extraConsumido / periodoConTolerancia))
+	}
+	if bloquesExtra < 0 {
+		bloquesExtra = 0
+	}
+	return round2(minutosFacturables), bloquesExtra
+}
+
 // CalcularDetalleTarifaPorMinutos calcula montos base/extra/redondeo/limites para una tarifa.
 func CalcularDetalleTarifaPorMinutos(tarifa EmpresaTarifaPorMinutos, minutosConsumidos float64, cfg EmpresaTarifaPorMinutosConfiguracion) EmpresaTarifaPorMinutosCalculo {
 	if minutosConsumidos <= 0 {
@@ -978,28 +1018,15 @@ func CalcularDetalleTarifaPorMinutos(tarifa EmpresaTarifaPorMinutos, minutosCons
 		minutosConsumidos = 0
 	}
 
-	montoBase := round2(tarifa.ValorBase)
-	minutosFacturables := minutosConsumidos
 	margenTolerancia := normalizeTarifaPorMinutosMargin(cfg.MargenToleranciaEntradaMinutos)
-	if margenTolerancia > 0 && minutosFacturables > float64(tarifa.MinutosBase) {
-		minutosFacturables -= float64(margenTolerancia)
-		if minutosFacturables < float64(tarifa.MinutosBase) {
-			minutosFacturables = float64(tarifa.MinutosBase)
-		}
-	}
-	bloquesExtra := 0
-	if minutosFacturables > float64(tarifa.MinutosBase) && tarifa.MinutosExtra > 0 {
-		extraMinutos := minutosFacturables - float64(tarifa.MinutosBase)
-		bloques := extraMinutos / float64(tarifa.MinutosExtra)
-		if tarifa.CobrarPorFraccion {
-			bloquesExtra = int(math.Ceil(bloques))
-		} else {
-			bloquesExtra = int(math.Floor(bloques))
-		}
-		if bloquesExtra < 0 {
-			bloquesExtra = 0
-		}
-	}
+	minutosFacturables, bloquesExtra := calcularBloquesExtraConToleranciaRecurrente(
+		minutosConsumidos,
+		tarifa.MinutosBase,
+		tarifa.MinutosExtra,
+		margenTolerancia,
+		tarifa.CobrarPorFraccion,
+	)
+	montoBase := round2(tarifa.ValorBase)
 
 	montoExtra := round2(float64(bloquesExtra) * round2(tarifa.ValorExtra))
 	subtotal := round2(montoBase + montoExtra)
