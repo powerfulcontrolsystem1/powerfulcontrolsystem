@@ -239,6 +239,7 @@ var permissionUniversalGroupLabels = map[string]string{
 	"Gestion de Relaciones con Clientes (CRM)":      "CRM universal y clientes",
 	"Clientes":                                      "CRM universal y clientes",
 	"Personas y activos":                            "Personas y activos universales",
+	"Ubicacion GPS":                                 "Ubicacion GPS universal",
 	"An\u00e1lisis y control":                       "An\u00e1lisis universal y control",
 	"Analisis y control":                            "An\u00e1lisis universal y control",
 	"Documentos, nube y soporte":                    "Documentos universales, nube y soporte",
