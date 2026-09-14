@@ -5,7 +5,7 @@ import {box,label,material} from './city.js';
 function ellipsoid(parent,x,y,z,sx,sy,sz,color){const m=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),material(color));m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;parent.add(m);return m}
 function tube(parent,points,r,color){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,12,r,7,false),material(color));parent.add(mesh);return mesh}
 function eyes(parent,y=1.57,z=.28){for(const x of [-.105,.105]){ellipsoid(parent,x,y,z,.115,.13,.065,'#fffdf4');ellipsoid(parent,x,y,z+.06,.038,.046,.02,'#222b29')}}
-// Original stylized fan models; the downloaded CC0 actor remains the military rig.
+// Original stylized fan models; the military body is authored in Blender.
 export function citizen(name){
  const root=new THREE.Group(),yellow='#f4cb35',blue='#3b83b1';root.name=name;
  const child=['Bart','Lisa','Maggie','Milhouse'].includes(name),fat=['Homero','Barney','Gorgory'].includes(name),female=['Marge','Lisa','Maggie'].includes(name);
@@ -33,12 +33,7 @@ export function citizen(name){
  compact(root);return root;
 }
 export function laserRifle(){const root=new THREE.Group();box(root,0,0,0,.13,.17,.62,'#354c54');box(root,0,.07,.25,.09,.08,.42,'#d2e6dd');box(root,0,-.14,-.12,.09,.2,.11,'#283837');const core=box(root,0,.025,.45,.07,.06,.16,'#57f4dc');core.material=new THREE.MeshStandardMaterial({color:'#63ffe7',emissive:'#28efd1',emissiveIntensity:3});return root}
-export function equipSoldier(actor){const root=actor.root,gear=new THREE.Group();root.traverse(o=>{if(o.isSkinnedMesh){o.material=o.material.clone();o.material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
-float blueCloth=step(diffuseColor.r*1.8,diffuseColor.b)*step(diffuseColor.g*1.2,diffuseColor.b);float redCloth=step(diffuseColor.g*3.,diffuseColor.r)*step(diffuseColor.b*1.4,diffuseColor.r);
-float camo=step(.4,fract(sin(dot(floor(vMapUv*24.),vec2(12.9898,78.233)))*43758.5453));
-if(blueCloth+redCloth>.5)diffuseColor.rgb=mix(vec3(.17,.23,.12),vec3(.32,.38,.2),camo);`)};}});root.userData.military=true;root.add(gear);ellipsoid(gear,0,1.71,0,.29,.16,.28,'#687d4d');box(gear,0,1.64,.23,.47,.055,.2,'#52663e');box(gear,0,1.15,-.04,.56,.54,.42,'#596846');box(gear,0,1.11,-.3,.4,.48,.23,'#6a7753');for(const x of [-.16,.16]){box(gear,x,1.03,.22,.14,.19,.1,'#7c8b5c');box(gear,x,.24,0,.21,.31,.3,'#39463c')}
- for(let i=0;i<8;i++)box(gear,(i%4-1.5)*.115,1.23-Math.floor(i/4)*.13,.18,.08,.07,.035,i%2?'#8a9462':'#394f37');
- const rifle=laserRifle();rifle.position.set(.34,1.07,.32);gear.add(rifle);compact(gear);return gear;
+export function equipSoldier(actor,assets){const root=actor.root,gear=assets.raw('soldier-gear');root.traverse(o=>{if(o.isSkinnedMesh)o.visible=false});root.userData.military=true;gear.name='Militar creado en Blender';root.add(gear);const legs=['L','R'].map(s=>{const node=gear.getObjectByName('SoldierLeg'+s);return {node,x:node?.rotation.x||0}});root.userData.animateMilitary=(name,time)=>{legs.forEach((leg,i)=>{if(leg.node)leg.node.rotation.x=leg.x+(name==='jump'?(i?-.35:.35):name==='run'?Math.sin(time*8+i*Math.PI)*.6:0)})};return gear;
 }
 export function populateCast(city,interiors){const cast=[];function add(name,parent,x,z,scale=1){const model=citizen(name);model.position.set(x,0,z);model.scale.multiplyScalar(scale);parent.add(model);label(parent,name,x,2.15*scale,z,1.5*scale,'#3b5149','#fff2c9');cast.push(model);return model}
  for(const [name,x,z]of [['Homero',-5,4],['Marge',5,-4],['Bart',-4,1],['Lisa',4,4],['Maggie',-4,4]])add(name,interiors.home.group,x,z);
@@ -48,11 +43,7 @@ export function populateCast(city,interiors){const cast=[];function add(name,par
  const officer=citizen('Gorgory');officer.scale.setScalar(.72);officer.position.set(.32,.4,.15);officer.userData.legs.forEach(l=>l.rotation.x=-Math.PI/2);city.cars[1].root.add(officer);cast.push(officer);city.cars[1].parked=false;
  return cast;
 }
-export function alienModel(ufo=false){const root=new THREE.Group(),body=new THREE.Group();root.add(body);const green='#71ab54';ellipsoid(body,0,1.2,0,.53,.68,.46,green);ellipsoid(body,0,1.54,.4,.3,.3,.09,'#fff7d6');ellipsoid(body,0,1.54,.49,.075,.12,.035,'#b95643');ellipsoid(body,0,1.54,.52,.025,.095,.02,'#263526');ellipsoid(body,0,.97,.38,.35,.2,.11,'#344c38');for(let i=0;i<7;i++){const tooth=new THREE.Mesh(new THREE.ConeGeometry(.05,.14,6),material('#fff3c9'));tooth.position.set((i-3)*.09,1.02,.49);tooth.rotation.z=Math.PI;body.add(tooth)}tube(body,[[.2,.9,.5],[.21,.65,.5],[.16,.57,.45]],.027,'#c9e68f');
- const helmet=new THREE.Mesh(new THREE.SphereGeometry(.77,20,14),new THREE.MeshPhysicalMaterial({color:'#c8f5e2',transparent:true,opacity:.13,roughness:.12,depthWrite:false}));helmet.position.y=1.25;body.add(helmet);
- const tentacles=[];for(let i=0;i<6;i++){const pivot=new THREE.Group();pivot.rotation.y=i*Math.PI/3;root.add(pivot);tube(pivot,[[0,.85,0],[.45,.5,.12],[.72,.15,.2],[.9,.05,.1]],.095,green);tentacles.push(pivot)}
- if(ufo){const saucer=new THREE.Mesh(new THREE.SphereGeometry(1,28,12),material('#bbc9c2'));saucer.scale.set(3.2,.45,3.2);saucer.position.y=.2;root.add(saucer);for(let i=0;i<12;i++){const a=i*Math.PI/6,lamp=ellipsoid(root,Math.sin(a)*2.7,.05,Math.cos(a)*2.7,.16,.08,.16,'#73ffe0');lamp.material=new THREE.MeshStandardMaterial({color:'#74ffd8',emissive:'#30e9bf',emissiveIntensity:2})}const glass=new THREE.Mesh(new THREE.SphereGeometry(1.5,24,16,0,Math.PI*2,0,Math.PI/2),new THREE.MeshPhysicalMaterial({color:'#b5eedb',transparent:true,opacity:.2,depthWrite:false}));glass.position.y=.5;root.add(glass)}
- root.userData.animate=time=>{tentacles.forEach((p,i)=>p.rotation.z=Math.sin(time*3+i)*.14);body.rotation.y=Math.sin(time*.7)*.15};compact(root);return root;
+export function alienModel(assets,ufo=false){const root=assets.raw(ufo?'ufo':'alien'),tentacles=[];root.traverse(o=>{if(o.name.includes('Tentacle'))tentacles.push({node:o,x:o.rotation.x,z:o.rotation.z});if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});root.userData.animate=time=>tentacles.forEach((p,i)=>{p.node.rotation.x=p.x+Math.sin(time*3+i)*.16;p.node.rotation.z=p.z+Math.cos(time*2.3+i)*.12});return root;
 }
 
 function compact(group){for(const child of [...group.children])if(child.isGroup)compact(child);const batches=new Map();for(const mesh of group.children){if(!mesh.isMesh||mesh.material.transparent||Array.isArray(mesh.material))continue;const key=mesh.material.uuid+Object.keys(mesh.geometry.attributes).join(',');if(!batches.has(key))batches.set(key,[]);batches.get(key).push(mesh)}for(const meshes of batches.values()){if(meshes.length<2)continue;const pieces=meshes.map(m=>{m.updateMatrix();return m.geometry.clone().applyMatrix4(m.matrix)}),geometry=mergeGeometries(pieces);pieces.forEach(g=>g.dispose());if(!geometry)continue;const merged=new THREE.Mesh(geometry,meshes[0].material);merged.castShadow=true;meshes.forEach(m=>m.removeFromParent());group.add(merged)}}
