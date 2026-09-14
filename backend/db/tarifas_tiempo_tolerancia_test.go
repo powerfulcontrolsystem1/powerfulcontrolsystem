@@ -1,6 +1,9 @@
 package db
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestCalcularDetalleTarifaPorMinutosRespetaMargenTolerancia(t *testing.T) {
 	tarifa := EmpresaTarifaPorMinutos{
@@ -34,6 +37,62 @@ func TestCalcularDetalleTarifaPorMinutosRespetaMargenTolerancia(t *testing.T) {
 	}
 	if fuera.MontoTotal != 150000 {
 		t.Fatalf("monto fuera de tolerancia = %.2f, want 150000", fuera.MontoTotal)
+	}
+}
+
+func TestCalcularDetalleTarifaPorMinutosRepiteToleranciaEnCadaBloqueExtra(t *testing.T) {
+	tarifa := EmpresaTarifaPorMinutos{
+		ID: 1, EmpresaID: 7, EstacionID: 101,
+		MinutosBase: 120, ValorBase: 20000,
+		MinutosExtra: 60, ValorExtra: 10000,
+		CobrarPorFraccion: true, Moneda: "COP",
+	}
+	cfg := defaultEmpresaTarifaPorMinutosConfiguracion(7)
+	cfg.MargenToleranciaEntradaMinutos = 10
+
+	for _, tc := range []struct {
+		minutos int
+		bloques int
+		total   float64
+	}{
+		{130, 0, 20000},
+		{131, 1, 30000},
+		{200, 1, 30000},
+		{201, 2, 40000},
+		{270, 2, 40000},
+		{271, 3, 50000},
+	} {
+		got := CalcularDetalleTarifaPorMinutos(tarifa, float64(tc.minutos), cfg)
+		if got.BloquesExtra != tc.bloques || got.MontoTotal != tc.total {
+			t.Fatalf("%d min: bloques=%d total=%.2f; want bloques=%d total=%.2f", tc.minutos, got.BloquesExtra, got.MontoTotal, tc.bloques, tc.total)
+		}
+	}
+
+	tarifa.CobrarPorFraccion = false
+	for _, tc := range []struct {
+		minutos int
+		bloques int
+	}{
+		{189, 0},
+		{190, 1},
+		{259, 1},
+		{260, 2},
+	} {
+		got := CalcularDetalleTarifaPorMinutos(tarifa, float64(tc.minutos), cfg)
+		if got.BloquesExtra != tc.bloques {
+			t.Fatalf("sin fraccion, %d min: bloques=%d; want %d", tc.minutos, got.BloquesExtra, tc.bloques)
+		}
+	}
+}
+
+func TestResolveCarritoTarifaPorMinutosCurrentEndIncluyeToleranciaRecurrente(t *testing.T) {
+	activadoEn := time.Date(2026, time.September, 13, 12, 0, 0, 0, time.UTC)
+	tarifa := EmpresaTarifaPorMinutos{MinutosBase: 120, MinutosExtra: 60}
+	detalle := EmpresaTarifaPorMinutosCalculo{MinutosTolerancia: 10, BloquesExtra: 2}
+	got := resolveCarritoTarifaPorMinutosCurrentEnd(activadoEn, tarifa, detalle)
+	want := activadoEn.Add(260 * time.Minute)
+	if !got.Equal(want) {
+		t.Fatalf("fin de dos bloques con tolerancia = %s, want %s", got, want)
 	}
 }
 
@@ -95,6 +154,26 @@ func TestCalcularDetalleTarifaMotelRespetaToleranciaDelPlan(t *testing.T) {
 	}
 	if fuera.MontoTotal != 150000 {
 		t.Fatalf("monto motel fuera de tolerancia = %.2f, want 150000", fuera.MontoTotal)
+	}
+}
+
+func TestCalcularDetalleTarifaMotelRepiteToleranciaEnCadaHoraExtra(t *testing.T) {
+	tarifa := EmpresaTarifaMotel{
+		ID: 1, EmpresaID: 7, EstacionID: 201,
+		MinutosIncluidos: 120, ValorBase: 20000,
+		MinutosExtra: 60, ValorExtra: 10000,
+		CobrarPorFraccion: true, ToleranciaMinutos: 10, Moneda: "COP",
+	}
+	for _, tc := range []struct {
+		minutos int
+		bloques int
+	}{
+		{130, 0}, {131, 1}, {200, 1}, {201, 2},
+	} {
+		got := CalcularDetalleTarifaMotel(tarifa, float64(tc.minutos))
+		if got.BloquesExtra != tc.bloques {
+			t.Fatalf("motel %d min: bloques=%d; want %d", tc.minutos, got.BloquesExtra, tc.bloques)
+		}
 	}
 }
 

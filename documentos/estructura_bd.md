@@ -1389,6 +1389,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - redondeo_unidad
   - monto_minimo_diario
   - monto_maximo_diario
+  - margen_tolerancia_entrada_minutos: minutos de gracia por cada bloque extra;
+    es una política de la empresa, no de una estación ni de una venta.
 
 ### Tabla de tarifas por dia por estacion
 - empresa_tarifas_por_dia:

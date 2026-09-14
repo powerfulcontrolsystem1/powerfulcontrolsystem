@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"sync"
 )
@@ -439,21 +438,16 @@ func CalcularDetalleTarifaMotel(tarifa EmpresaTarifaMotel, minutosConsumidos flo
 	if minutosConsumidos < 0 {
 		minutosConsumidos = 0
 	}
-	facturables := minutosConsumidos - float64(tarifa.ToleranciaMinutos)
-	if facturables < 0 {
-		facturables = 0
-	}
+	facturables, blocks := calcularBloquesExtraConToleranciaRecurrente(
+		minutosConsumidos,
+		tarifa.MinutosIncluidos,
+		tarifa.MinutosExtra,
+		tarifa.ToleranciaMinutos,
+		tarifa.CobrarPorFraccion,
+	)
 	extraMinutes := facturables - float64(tarifa.MinutosIncluidos)
 	if extraMinutes < 0 {
 		extraMinutes = 0
-	}
-	blocks := 0
-	if extraMinutes > 0 && tarifa.MinutosExtra > 0 {
-		if tarifa.CobrarPorFraccion {
-			blocks = int(math.Ceil(extraMinutes / float64(tarifa.MinutosExtra)))
-		} else {
-			blocks = int(math.Floor(extraMinutes / float64(tarifa.MinutosExtra)))
-		}
 	}
 	montoExtra := float64(blocks) * tarifa.ValorExtra
 	return EmpresaTarifaMotelCalculo{

@@ -178,9 +178,9 @@
           <input id="cfg_monto_maximo_diario" class="form-input" type="number" min="0" step="0.01" value="0">
         </div>
         <div class="form-col">
-          <label class="form-label">Margen de tolerancia para cobro extra (minutos)</label>
+          <label class="form-label">Tolerancia por cada bloque extra (minutos)</label>
           <input id="cfg_margen_tolerancia_entrada_minutos" class="form-input" type="number" min="0" max="1440" step="1" value="0">
-          <p class="form-help">Ejemplo: con 10 minutos, la hora o fraccion extra solo se cobra despues de superar ese margen.</p>
+          <p class="form-help">Se aplica por empresa y se repite en cada bloque. Ejemplo: base 120 min, bloque de 60 y tolerancia 10: los cobros por fracción empiezan después de 130, 200, 270 min, etc.</p>
         </div>
       </div>
       <div class="form-row">
@@ -897,7 +897,7 @@
           " | Extra: " + formatMoney(extra, moneda) +
           " | Ajuste redondeo: " + formatMoney(ajuste, moneda) +
           " | Bloques extra: " + bloques +
-          (tolerancia > 0 ? " | Facturables: " + facturables.toFixed(2) + " | Tolerancia: " + tolerancia + " min" : "") +
+          (tolerancia > 0 ? " | Facturables: " + facturables.toFixed(2) + " | Tolerancia por bloque: " + tolerancia + " min" : "") +
           (docCode ? " | Documento: " + docCode : ""),
           false
         );
