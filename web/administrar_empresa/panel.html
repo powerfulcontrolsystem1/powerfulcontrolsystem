@@ -59,10 +59,11 @@
       --panel-text: color-mix(in srgb, var(--text) 94%, white 6%);
       --panel-muted: color-mix(in srgb, var(--text) 72%, var(--muted) 28%);
       --panel-kicker: color-mix(in srgb, var(--text) 66%, var(--muted) 34%);
-      --panel-overlay-strong: color-mix(in srgb, var(--bg) 76%, transparent);
-      --panel-overlay-soft: color-mix(in srgb, var(--bg) 30%, transparent);
-      --panel-overlay-deep: color-mix(in srgb, var(--bg) 88%, transparent);
-      --panel-overlay-medium: color-mix(in srgb, var(--bg) 46%, transparent);
+      --panel-overlay-strong: color-mix(in srgb, var(--bg) 66%, transparent);
+      --panel-overlay-soft: color-mix(in srgb, var(--bg) 18%, transparent);
+      --panel-overlay-deep: color-mix(in srgb, var(--bg) 80%, transparent);
+      --panel-overlay-medium: color-mix(in srgb, var(--bg) 36%, transparent);
+      --panel-weather-landscape: url("/img/empresa-panel-paisaje-v1.png");
       --panel-glass-bg: color-mix(in srgb, var(--surface) 72%, transparent);
       --panel-glass-border: color-mix(in srgb, var(--border) 68%, white 32%);
       --panel-stat-bg: color-mix(in srgb, var(--surface-soft) 74%, transparent);
@@ -94,7 +95,7 @@
       border: 1px solid var(--panel-glass-border);
       background-image:
         linear-gradient(90deg, var(--panel-overlay-strong), var(--panel-overlay-soft)),
-        url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=80");
+        var(--panel-weather-landscape);
       background-size: cover;
       background-position: center;
       box-shadow: 0 24px 60px var(--panel-shadow);
@@ -104,25 +105,25 @@
     .empresa-home-hero.weather-cloudy {
       background-image:
         linear-gradient(90deg, var(--panel-overlay-strong), var(--panel-overlay-soft)),
-        url("https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=1800&q=80");
+        var(--panel-weather-landscape);
     }
 
     .empresa-home-hero.weather-rain {
       background-image:
         linear-gradient(90deg, var(--panel-overlay-deep), var(--panel-overlay-medium)),
-        url("https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1800&q=80");
+        var(--panel-weather-landscape);
     }
 
     .empresa-home-hero.weather-storm {
       background-image:
         linear-gradient(90deg, var(--panel-overlay-deep), var(--panel-overlay-medium)),
-        url("https://images.unsplash.com/photo-1500674425229-f692875b0ab7?auto=format&fit=crop&w=1800&q=80");
+        var(--panel-weather-landscape);
     }
 
     .empresa-home-hero.weather-night {
       background-image:
         linear-gradient(90deg, var(--panel-overlay-deep), var(--panel-overlay-medium)),
-        url("https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1800&q=80");
+        var(--panel-weather-landscape);
     }
 
     .empresa-home-hero-inner {
@@ -2917,6 +2918,30 @@
         return "/api/empresa/configuracion_general?empresa_id=" + encodeURIComponent(String(empresaId || ""));
       }
 
+      function weatherProxyURL(mode, params) {
+        var query = new URLSearchParams(params || {});
+        query.set("mode", mode);
+        if (empresaId) query.set("empresa_id", empresaId);
+        return "/api/empresa/clima?" + query.toString();
+      }
+
+      function fetchWeatherForecast(latitude, longitude, directURL) {
+        return fetchJSON(weatherProxyURL("forecast", {
+          latitude: latitude,
+          longitude: longitude
+        })).catch(function () {
+          return fetchJSON(directURL);
+        });
+      }
+
+      function fetchWeatherGeocoding(locationName, directURL) {
+        return fetchJSON(weatherProxyURL("geocoding", {
+          name: locationName
+        })).catch(function () {
+          return fetchJSON(directURL);
+        });
+      }
+
       function text(value) {
         return String(value == null ? "" : value).trim();
       }
@@ -3688,7 +3713,7 @@
           var forecastURL = "https://api.open-meteo.com/v1/forecast?latitude=" +
             encodeURIComponent(latitude) + "&longitude=" + encodeURIComponent(longitude) +
             "&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,is_day&timezone=auto";
-          return fetchJSON(forecastURL).then(function (forecast) {
+          return fetchWeatherForecast(latitude, longitude, forecastURL).then(function (forecast) {
             renderWeather(place || locationName, forecast);
             setStatus(weatherStatusForSource(source || loc.source), false);
           });
@@ -3704,7 +3729,7 @@
 
         var geocodeURL = "https://geocoding-api.open-meteo.com/v1/search?name=" +
           encodeURIComponent(locationName) + "&count=1&language=es&format=json";
-        return fetchJSON(geocodeURL)
+        return fetchWeatherGeocoding(locationName, geocodeURL)
           .then(function (geo) {
             var item = geo && Array.isArray(geo.results) ? geo.results[0] : null;
             if (!item) throw new Error("ubicacion no encontrada");

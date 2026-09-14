@@ -120,8 +120,8 @@ func TestSecurityHeadersAllowExactWeatherProviders(t *testing.T) {
 				t.Fatalf("%s connect-src missing weather origin %s: %q", header, origin, connect)
 			}
 		}
-		if images := directive(policy, "img-src"); !strings.Contains(images, "https://images.unsplash.com") {
-			t.Fatalf("%s img-src missing weather background origin: %q", header, images)
+		if images := directive(policy, "img-src"); strings.Contains(images, "https://images.unsplash.com") {
+			t.Fatalf("%s img-src must not depend on a remote weather background: %q", header, images)
 		}
 	}
 }

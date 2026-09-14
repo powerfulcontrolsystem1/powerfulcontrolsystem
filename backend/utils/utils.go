@@ -648,7 +648,7 @@ func securityContentSecurityPolicyWithInline(allowInline bool) string {
 		"https://checkout.wompi.co",
 	}
 	providerFrames := []string{"'self'", "https://mail.powerfulcontrolsystem.com", "https://accounts.google.com", "https://www.google.com", "https://www.gstatic.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
-	providerImages := []string{"'self'", "data:", "blob:", "https://lh3.googleusercontent.com", "https://images.unsplash.com"}
+	providerImages := []string{"'self'", "data:", "blob:", "https://lh3.googleusercontent.com"}
 
 	documentOrigins := cspOriginsFromEnv("ONLYOFFICE_DOCUMENT_SERVER_URL", "NEXTCLOUD_BASE_URL")
 	customImages := cspOriginsFromEnv("PCS_CSP_IMG_ORIGINS")

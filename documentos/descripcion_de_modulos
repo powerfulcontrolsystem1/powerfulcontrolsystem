@@ -2112,6 +2112,13 @@ archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
 - Flujo: la ciudad manual guardada conserva prioridad; si no existe, se consulta IP; si falla, se usan GPS guardado/GPS autorizado, zona horaria o perfil como respaldo.
 - Alcance: frontend y politicas CSP del backend/Nginx; no cambia contratos API, tablas, permisos ni dependencias.
 
+2026-09-14: Clima del panel con proxy empresarial y paisaje local
+- Modulos afectados: `administrar_empresa`, `panel_empresarial`.
+- Cambio funcional: el panel consulta pronostico y geocodificacion mediante `/api/empresa/clima`, protegido por contexto empresarial de autoservicio; si el proxy no responde, conserva la consulta directa a Open-Meteo como respaldo.
+- UX: el hero usa `web/img/empresa-panel-paisaje-v1.png`, un paisaje local visible bajo las capas de contraste, y deja de depender de fondos remotos de Unsplash.
+- Seguridad: el proxy solo acepta GET, modos fijos, coordenadas acotadas y nombres de hasta 120 caracteres; no recibe URLs del cliente ni expone errores del proveedor.
+- Alcance: no cambia tablas ni datos empresariales; mantiene `empresa_id`, sesion y licencia en el wrapper de la ruta.
+
 2026-05-13: Carrito de compras compacto sin separaciones entre tarjetas
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
 - Cambio UX: las tarjetas del carrito se pegan entre si y adoptan lectura plana tipo tabla, sin espacios visuales, radios ni sombras.

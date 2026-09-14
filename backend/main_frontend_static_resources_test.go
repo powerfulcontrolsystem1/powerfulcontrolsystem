@@ -827,7 +827,6 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 		"https://fonts.gstatic.com",
 		"https://www.google.com",
 		"https://www.gstatic.com",
-		"https://images.unsplash.com",
 		"https://api.open-meteo.com",
 		"https://geocoding-api.open-meteo.com",
 		"https://ipapi.co",
@@ -849,6 +848,40 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 	}
 	if !strings.Contains(string(domicilios), "function asArray(v)") || !strings.Contains(string(domicilios), "state.menu=asArray(menuData)") {
 		t.Fatal("Domicilios must render an empty menu response as an empty list")
+	}
+}
+
+func TestEmpresaPanelWeatherUsesBackendProxyAndLocalLandscape(t *testing.T) {
+	root := filepath.Clean("..")
+	panel, err := os.ReadFile(filepath.Join(root, "web", "administrar_empresa", "panel.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(panel)
+	for _, expected := range []string{
+		`--panel-weather-landscape: url("/img/empresa-panel-paisaje-v1.png")`,
+		`weatherProxyURL("forecast"`,
+		`weatherProxyURL("geocoding"`,
+		`fetchWeatherForecast(latitude, longitude, forecastURL)`,
+		`fetchWeatherGeocoding(locationName, geocodeURL)`,
+	} {
+		if !strings.Contains(content, expected) {
+			t.Fatalf("company panel weather is missing %q", expected)
+		}
+	}
+	if strings.Contains(content, "images.unsplash.com") {
+		t.Fatal("company panel weather background must be a local asset")
+	}
+	if _, err := os.Stat(filepath.Join(root, "web", "img", "empresa-panel-paisaje-v1.png")); err != nil {
+		t.Fatalf("local company weather landscape is missing: %v", err)
+	}
+
+	mainSource, err := os.ReadFile(filepath.Join(root, "backend", "main.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(mainSource), `http.HandleFunc("/api/empresa/clima", handlers.WithEmpresaSelfServicePermissions`) {
+		t.Fatal("weather proxy route must validate the authenticated company context")
 	}
 }
 

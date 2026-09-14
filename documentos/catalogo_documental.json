@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "d4d77ab2848a10b323debf92f5b1e4bb8997ace60698d969e3ca4ac836cb0ce9"
+      "sha256_lf": "509da09d5af48093638cb64fe38132cba5a47c7081ddc8226f533f1e4ed89ac5"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -1281,7 +1281,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "61b6ba075db4f9d6119a50c5f37f3ec1a58b8ca29fc07876527016e4825a6421"
+      "sha256_lf": "873a47313b68dfb8160c893335f22c2e2ed0abbad89665389d3e969331648bb5"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",
