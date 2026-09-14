@@ -291,7 +291,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "34fd8daf1943a304e69c3285092d2af8898b1760d90e26e7d73212a622bc94c2"
+      "sha256_lf": "9aaa0e18a8ed57b46092a06719cc73d9036a106754b117f3dc3a750e7ea08c48"
     },
     {
       "path": "documentos/api/openapi.mobile.v1.yaml",
