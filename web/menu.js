@@ -518,7 +518,13 @@
         '<a class="fm-item fm-icon-item" href="/administrar_empresa/noticias.html" data-admin-frame-url="/administrar_empresa/noticias.html"><img class="fm-item-icon" src="/img/report.svg" alt="">Noticias</a>' +
         '<button id="createHelpTicketLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/shield-security-color.svg" alt="">Crear ticket de ayuda</button>' +
         '<button id="openFloatingRadioLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/play.svg" alt="">Emisoras</button>' +
-        '<a class="fm-item fm-icon-item" href="/calculadora.html?compact=1" data-open-calculator="1"><img class="fm-item-icon" src="/img/analytics-color.svg" alt="">Calculadora</a>' +
+        '<div class="fm-accessories">' +
+          '<button id="utilitiesMenuToggle" class="fm-item fm-action-item fm-icon-item" type="button" aria-expanded="false" aria-controls="utilitiesMenuPopup"><img class="fm-item-icon" src="/img/play.svg" alt="">Accesorios ▾</button>' +
+          '<div id="utilitiesMenuPopup" aria-hidden="true">' +
+            '<a class="fm-item fm-icon-item" href="/calculadora.html?compact=1" data-open-calculator="1"><img class="fm-item-icon" src="/img/analytics-color.svg" alt="">Calculadora</a>' +
+            '<a class="fm-item fm-icon-item" href="/juegos.html" target="_blank" rel="noopener"><img class="fm-item-icon" src="/img/play.svg" alt="">Juegos ↗</a>' +
+          '</div>' +
+        '</div>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html" data-admin-frame-url="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
         '' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +

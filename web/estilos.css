@@ -22030,3 +22030,6 @@ body.corte-touch-mode .cash-close-actions.is-compact .btn {
   outline-offset: 3px !important;
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent, #2563eb) 24%, transparent) !important;
 }
+
+/* Accesorios del menú compartido */
+#utilitiesMenuPopup[aria-hidden='true']{display:none}#utilitiesMenuPopup.show{display:block;padding-left:14px;border-left:2px solid currentColor;margin-left:18px}
