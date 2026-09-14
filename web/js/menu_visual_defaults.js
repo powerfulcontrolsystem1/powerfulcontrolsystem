@@ -2,16 +2,13 @@
   "use strict";
 
   window.PCS_MENU_VISUAL_DEFAULTS = {
-    version: 3,
+    version: 4,
     enabled: true,
     hidden_links: [
       "linkImportacionesCosteo",
       "linkProduccionMRP",
       "linkLogisticaWMS",
       "linkCRMComercial",
-      "linkUsuarios",
-      "linkClientes",
-      "linkPortalUsuarios",
       "linkMiHorario",
       "linkHorariosTrabajadores",
       "linkAsistenciaEmpleados",

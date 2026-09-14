@@ -1,6 +1,6 @@
 # Estado actual del sistema
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-07.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-14.
 
 ## Snapshot operativo
 
@@ -15,6 +15,17 @@ código no acredita por sí sola migración aplicada, proveedor, hardware, stagi
 producción.
 
 ## Condiciones vigentes de aceptación
+
+El portal público conserva siete [preconfiguraciones básicas](matriz_preconfiguraciones_basicas.md)
+y destaca Taller de motos; la normalización elimina publicidad vertical retirada
+aunque exista en una configuración histórica.
+
+El panel Administrar empresa mantiene su menú lateral: sus páginas, incluido
+E-mail Corporativo y Login de usuarios, cargan en `contentFrame`. Vida pertenece
+a Finanzas y cumplimiento. Usuarios, Clientes y Login de usuarios permanecen
+visibles de forma predeterminada para todas las empresas. Solo Calculadora y
+Juegos se lanzan como ventanas accesorias. Estas superficies declaran contrato
+de nodos para apariencia clara y oscura.
 
 La sala personal de [Juegos y Accesorios](juegos_accesorios.md) incorpora seis
 juegos adaptables, guardado por identidad de sesión y récords recreativos

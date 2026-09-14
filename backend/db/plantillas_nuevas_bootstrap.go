@@ -33,29 +33,13 @@ type nuevoVerticalBootstrapMeta struct {
 }
 
 var nuevasPlantillasBootstrapMeta = []nuevoVerticalBootstrapMeta{
-	{"eventos_boleteria", "Taquilla", 4, []string{"productor_eventos", "taquilla", "control_acceso", "caja"}},
-	{"salon_spa", "Puesto", 4, []string{"recepcion", "profesional_belleza", "caja"}},
-	{"veterinaria_petshop", "Consultorio", 3, []string{"veterinario", "auxiliar_veterinaria", "caja"}},
-	{"lavanderia_tintoreria", "Punto", 3, []string{"recepcion", "operario_lavanderia", "caja"}},
 	{"taller_mecanico", "Bahia", 5, []string{"recepcion", "tecnico", "compras", "caja"}},
-	{"transporte_carga_tms", "Ruta", 5, []string{"coordinador_logistico", "conductor", "caja"}},
-	{"servicios_tecnicos", "Tecnico", 4, []string{"coordinador_servicio", "tecnico", "caja"}},
-	{"funeraria_exequial", "Sala", 4, []string{"coordinador_servicio", "asesor_exequial", "caja"}},
-	{"parque_recreativo", "Atraccion", 6, []string{"operador_parque", "taquilla", "supervisor", "caja"}},
 }
 
 var nuevasPlantillasTipoEmpresaCatalog = buildNuevasPlantillasTipoEmpresaCatalog()
 
 var nuevasPlantillasProduccionMasiva = map[string]int{
-	"salon_spa":             1,
-	"veterinaria_petshop":   2,
-	"taller_mecanico":       3,
-	"servicios_tecnicos":    4,
-	"lavanderia_tintoreria": 5,
-	"eventos_boleteria":     6,
-	"transporte_carga_tms":  7,
-	"funeraria_exequial":    8,
-	"parque_recreativo":     9,
+	"taller_mecanico": 1,
 }
 
 func buildNuevasPlantillasTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
@@ -66,9 +50,13 @@ func buildNuevasPlantillasTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
 		if modulo == "" || strings.TrimSpace(plantilla.Titulo) == "" {
 			continue
 		}
+		nombre := plantilla.Titulo
+		if modulo == "taller_mecanico" {
+			nombre = "Taller de motos"
+		}
 		out = append(out, NuevoVerticalTipoEmpresa{
 			Modulo:        modulo,
-			Nombre:        plantilla.Titulo,
+			Nombre:        nombre,
 			Observaciones: nuevoVerticalObservaciones(plantilla),
 			StationPrefix: meta.StationPrefix,
 			StationCount:  meta.StationCount,
@@ -183,7 +171,7 @@ func buildClassicTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmp
 			EstadoIntegracion:    "plantilla_integrada_nucleo",
 			Decision:             "mantener_como_plantilla",
 			ProduccionMasiva:     false,
-			MotivoDecision:       "Plantilla clasico conectado a preconfiguracion; la produccion masiva de nuevas plantillas se gobierna en el catalogo de 20 plantillas nuevas.",
+			MotivoDecision:       "Compatibilidad tecnica historica fuera del catalogo vigente de siete preconfiguraciones basicas y Taller de motos.",
 			TemplateActivates:    []string{modulo, "clientes", "inventario/servicios", "ventas", "pagos", "reportes", "seguridad"},
 			TablesTouched:        []string{"clientes", "servicios", "carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"},
 			RequiredPermissions:  []string{"seguridad:R", modulo + ":R", modulo + ":C", "ventas:C", "pagos:C", "finanzas:R/C", "reportes:R"},

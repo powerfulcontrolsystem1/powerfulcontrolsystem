@@ -23,8 +23,6 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/api/public/domotica/tunnel",
 		"/api/public/market_symbol",
 		"/api/public/informacion_de_modulos",
-		"/api/public/plantillas_nuevas/catalogo",
-		"/api/public/plantillas_integracion/catalogo",
 		"/api/public/licencias/payment_methods",
 		"/api/public/licencias/checkout_summary",
 		"/licencias/activar_sin_pago",
@@ -63,6 +61,8 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/super_administrador.html",
 		"/noticias.html",
 		"/api/public/noticias",
+		"/api/public/plantillas_nuevas/catalogo",
+		"/api/public/plantillas_integracion/catalogo",
 	}
 	for _, path := range protectedPaths {
 		path := path

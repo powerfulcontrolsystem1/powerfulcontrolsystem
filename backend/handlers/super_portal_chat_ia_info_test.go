@@ -5,16 +5,15 @@ import (
 	"testing"
 )
 
-func TestDefaultContextoIALogicaNegocioIncluyePlantillas2026(t *testing.T) {
+func TestDefaultContextoIALogicaNegocioIncluyeCatalogoVigente(t *testing.T) {
 	ctx := defaultContextoIALogicaNegocioText()
 
 	required := []string{
-		"20 plantillas 2026",
-		"agencia de viajes",
-		"transporte de carga/TMS",
-		"cooperativa/fondo de empleados",
-		"empresa_modulos_colombia",
-		"/api/public/plantillas_nuevas/catalogo",
+		"siete preconfiguraciones basicas",
+		"Hotel, Motel, Restaurante, Bar, Pymes, Salon de belleza y Lavadero de autos",
+		"Taller de motos",
+		"no es una octava preconfiguracion",
+		"Configuracion del menu",
 		"ocho licencias globales",
 		"COP 200000",
 		"dos compras adicionales",

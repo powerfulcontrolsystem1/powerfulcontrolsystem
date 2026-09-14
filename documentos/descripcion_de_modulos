@@ -1,14 +1,32 @@
 # Descripción de módulos
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-14.
 
 
 ## Accesorios y juegos
 
-El menú flotante agrupa Calculadora y Juegos en Accesorios. Los seis juegos
+El menú flotante agrupa Calculadora y Juegos en Accesorios y ambos son las únicas
+entradas del shell empresarial que abren una ventana independiente. Los seis juegos
 comparten récords visibles entre empresas y conservan partidas privadas por
-identidad de usuario. Navegación, excepciones de autorización, migración,
+identidad de usuario. PCS PLAY y sus créditos declaran nodos claros/oscuros con
+superficies y contraste adaptables. Navegación, excepciones de autorización, migración,
 archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
+
+## Portal publico y navegacion empresarial
+
+El portal publica las siete sugerencias de
+[preconfiguracion basica](matriz_preconfiguraciones_basicas.md) y conserva Taller
+de motos como sistema destacado, no como una octava preconfiguracion. La
+normalizacion backend y el filtro frontend impiden que configuraciones antiguas
+vuelvan a mostrar tarjetas retiradas.
+
+Administrar empresa mantiene el menú lateral al abrir cualquier página del panel:
+E-mail Corporativo y Login de usuarios se resuelven dentro de `contentFrame`.
+Vida está dentro de Finanzas y cumplimiento; Usuarios, Clientes y Login de
+usuarios permanecen visibles en el predeterminado v4. Volver a empresas sale del
+shell de forma explícita; Calculadora y Juegos son las únicas ventanas accesorias.
+Portada, landing, panel, correo y accesorios declaran nodos de apariencia
+clara/oscura verificables por contrato estático.
 
 2026-09-11: Carrito operativo accesible, navegación compacta y retiro global del botón VIP.
 - Módulos afectados: `carritos`, `estaciones`, `ventas`, `permisos` y
@@ -439,11 +457,10 @@ archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
 2026-09-14: Menu visible por empresa
 - Modulos afectados: `administrar_empresa`, `configuracion` y `frontend_ux`.
 - Navegacion: `Administrar empresa > Configuracion > Menu visible` abre `web/administrar_empresa/configuracion/menu_visual.html`.
-- Configuracion: cada grupo y cada modulo tiene una casilla. `Aplicar seleccion predeterminada` restaura el conjunto inicial y `Mostrar todo` permite preparar una seleccion amplia antes de guardar.
-- Predeterminado: quedan visibles Panel; Vida; Operacion y ventas; Inventario y compras; Finanzas y cumplimiento; Canales digitales y colaboracion; Ubicacion GPS; Analisis y control; Domotica y Energia Solar; Documentos, nube y soporte; Administracion; Licencia; Noticias Beta y Volver a empresas. Produccion, CRM y clientes, Usuarios/clientes/personas y Control de asistencia y horarios inician ocultos.
-- Alta inicial: `Soluciones por negocio`, `Adaptacion por tipo` y `Configuracion guiada` no aparecen en los menus ordinarios. La adaptacion por tipo se ofrece solo al crear la empresa y en su primera entrada al panel mediante el asistente inicial.
-- Persistencia: usa `empresa_estacion_prefs` con clave `menu_visual_config`, `estacion_id=0`, version 3 y lista `hidden_links`. La migracion `20260914-002-menu-visual-defaults-v3` aplica la seleccion a empresas existentes y las empresas nuevas la reciben al crearse.
-- Comportamiento: el menu principal aplica permisos/licencia/rol y despues el filtro visual para todos los usuarios, incluido Super cuando entra a una empresa. `Configuracion`, `Menu visible` y `Volver a empresas` quedan protegidos contra ocultamiento para permitir recuperacion.
+- Configuracion: cada grupo y cada modulo tiene una casilla; el administrador puede aplicar el predeterminado o mostrar todo antes de guardar.
+- Predeterminado: quedan visibles Panel; Operacion y ventas; Inventario y compras; Finanzas y cumplimiento con Vida; Usuarios, clientes y personas con Usuarios, Clientes y Login de usuarios; Canales digitales y colaboracion; Domotica y Energia Solar; Documentos, nube y soporte; Administracion; Licencia; Noticias Beta y Volver a empresas.
+- Persistencia: usa `empresa_estacion_prefs` con clave `menu_visual_config`, `estacion_id=0`, version 4 y lista `hidden_links`. La migracion `20260914-003-menu-visual-defaults-v4` restaura Usuarios, Clientes y Login de usuarios para empresas existentes; las nuevas reciben el mismo predeterminado.
+- Comportamiento: el menu principal aplica permisos/licencia/rol y despues el filtro visual. `Configuracion`, `Menu visible` y `Volver a empresas` quedan protegidos contra ocultamiento para permitir recuperacion.
 - Seguridad: es una preferencia visual; no otorga ni revoca permisos ni reemplaza validaciones backend.
 
 2026-06-11: Atajos POS configurables por empresa
@@ -536,7 +553,7 @@ archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
 
 2026-06-09: Imagenes profesionales para Mas sistemas en index.
 - Modulo afectado: `Portal publico e index`.
-- Frontend: `web/index.html` enlaza una imagen secundaria unica para cada tarjeta base del carrusel `Mas sistemas`, `web/js/plantillas_nuevas_catalogo.js` hace lo mismo con las plantillas verticales publicas y el render deja de reutilizar la misma foto de punto de venta.
+- Frontend: `web/index.html` enlaza imagenes secundarias por oferta y `web/js/preconfiguraciones_basicas_catalogo.js` aporta los recursos de las siete sugerencias iniciales.
 - Assets: `web/img/portal-systems/` contiene 46 ilustraciones SVG nuevas, generadas por titulo y proposito operativo de cada tarjeta.
 - Alcance: no cambia APIs, permisos, base de datos ni contenido dinamico del super; el fallback estatico del portal queda mas coherente visualmente.
 
@@ -1910,7 +1927,7 @@ archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
 2026-05-17: Menu principal de Administrar empresa enfocado en operacion diaria.
 - `Operacion y ventas` queda limitado a `Venta directa` y `Estaciones`.
 - `Venta publica`, `Red social empresarial`, `Codigos de descuento` y `Chat y tareas` se agrupan en `Canales digitales y colaboracion`.
-- `Reservas` se ubica en `Soluciones por negocio`.
+- `Reservas` se mantiene como capacidad operativa para Hotel y Motel, sin un grupo vertical separado.
 - `Punto de venta / TPV` queda como permiso base de ventas, fuera del grupo operativo visible.
 - El catalogo de permisos refleja esos grupos sin cambiar acciones, rutas, endpoints, tablas ni dependencias.
 
@@ -2111,16 +2128,8 @@ archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
 2026-05-13: Panel empresarial detecta ciudad por IP antes que GPS
 - Modulos afectados: `administrar_empresa`, `panel_empresarial`.
 - Cambio UX: el clima y los indicadores del panel toman como primera fuente automatica la ciudad detectada por IP.
-- Seguridad HTTP: la politica CSP autoriza solo los origenes HTTPS exactos usados por Open-Meteo, deteccion de ciudad, geocodificacion y fondos meteorologicos; no se habilitan comodines ni esquemas completos.
 - Flujo: la ciudad manual guardada conserva prioridad; si no existe, se consulta IP; si falla, se usan GPS guardado/GPS autorizado, zona horaria o perfil como respaldo.
-- Alcance: frontend y politicas CSP del backend/Nginx; no cambia contratos API, tablas, permisos ni dependencias.
-
-2026-09-14: Clima del panel con proxy empresarial y paisaje local
-- Modulos afectados: `administrar_empresa`, `panel_empresarial`.
-- Cambio funcional: el panel consulta pronostico y geocodificacion mediante `/api/empresa/clima`, protegido por contexto empresarial de autoservicio; si el proxy no responde, conserva la consulta directa a Open-Meteo como respaldo.
-- UX: el hero usa `web/img/empresa-panel-paisaje-v1.png`, un paisaje local visible bajo las capas de contraste, y deja de depender de fondos remotos de Unsplash.
-- Seguridad: el proxy solo acepta GET, modos fijos, coordenadas acotadas y nombres de hasta 120 caracteres; no recibe URLs del cliente ni expone errores del proveedor.
-- Alcance: no cambia tablas ni datos empresariales; mantiene `empresa_id`, sesion y licencia en el wrapper de la ruta.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
 
 2026-05-13: Carrito de compras compacto sin separaciones entre tarjetas
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
@@ -2401,7 +2410,7 @@ Identidad visual empresarial
 - Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
 
 2026-05-12: Carritos adaptables por tipo de empresa
-- Modulos afectados: `carritos`, `ventas`, `administrar_empresa`, `plantillas_integracion`.
+- Modulos afectados: `carritos`, `ventas`, `administrar_empresa`, `preconfiguracion_tipos_empresa`.
 - Cambio funcional: la tarjeta de totales del carrito usa el contexto `vertical_scope` de `/api/empresa/permisos_contexto` para presentar nombres de cuenta, cliente, servicios, productos, tiempos, total y saldo acordes al negocio activo.
 - Gobernanza: el carrito sigue siendo el nucleo unico de venta/pago/facturacion por `empresa_id`; la adaptacion es de UX y nomenclatura, sin duplicar modelos por vertical.
 - Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
@@ -2427,15 +2436,10 @@ Identidad visual empresarial
 - Frontend super: `web/super/preconfiguracion_tipos_empresa.html` muestra una vista `Nucleo configurable` y envia `adaptacion_nucleo` al guardar.
 - Gobernanza: no se duplican usuarios, clientes, productos, servicios, ventas ni pagos por vertical; solo se cambia la configuracion y nomenclatura del nucleo universal.
 
-2026-05-12: Matriz profesional de 30 plantillas
-- Modulos afectados: `plantillas_integracion`, `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `administrar_empresa`, `roles/licencias`, `reportes`.
-- Cambio funcional: el contrato `/api/*/plantillas_integracion/catalogo` publica exactamente 30 plantillas canonicos: 10 clasicos reales y 20 nuevos como plantillas reales sobre el mismo nucleo comun.
-- Backend: cada item visible publica `professional_ready`, `readiness_score`, `readiness_checks`, `configuration_scope`, `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables`, `financial_reports` y, cuando aplica, `fused_modules`, `support_modules` y `similar_templates`; la prueba de contrato exige preparacion profesional completa y bloquea alias/soportes como plantillas independientes.
-- Frontend: `web/administrar_empresa/plantillas_integracion.html` agrega panel `Perfil activo`, KPIs de contrato, ventas/finanzas, reportes y configuracion, y marca cada vertical como `Profesional` o `Brecha`.
-- Configuracion: el acceso `linkPlantillasIntegracion` se presenta como `Adaptacion por tipo`, manteniendo permiso `seguridad:R` y usando `/api/empresa/permisos_contexto` para identificar el vertical activo de la empresa.
-- Gobernanza: no se crean ventas, clientes, productos, pagos, ingresos, egresos ni reportes paralelos; la matriz audita que cada vertical opere como plantilla configurable del programa universal.
-- Finanzas: todos los plantillas deben enviar ingresos y egresos al nucleo por ventas/pagos, `empresa_finanzas_movimientos`, conciliacion/tesoreria y reportes financieros consolidados.
-- Fusion: `consultorio_odontologico` queda dentro de `odontologia`, `taxi` dentro de `taxi_system`, y `turnos_atencion`/`turnos` quedan como soporte transversal.
+2026-05-12: Matriz profesional de 30 plantillas (retirada)
+- Esta oferta y sus catalogos masivos se retiraron el 2026-09-14. No forman parte de la navegacion, publicidad, alta de empresa ni preconfiguraciones vigentes.
+- El sistema conserva siete preconfiguraciones basicas sobre el nucleo comun: Hotel, Motel, Restaurante, Bar, Pymes, Salon de belleza y Lavadero de autos. Taller de motos queda como sistema destacado independiente.
+- Las tablas historicas de empresas existentes se conservan por compatibilidad y aislamiento `empresa_id`; su eliminacion de datos requiere un mantenimiento independiente, respaldado y confirmado.
 
 2026-05-12: Licencias ocultables para clientes
 - `licencias`: la bandera `activo` del catalogo se usa como visibilidad comercial. `activo=1` muestra la licencia a clientes; `activo=0` la mantiene administrable pero oculta y sin checkout publico.
@@ -2475,63 +2479,18 @@ Autenticacion administrativa sin 2FA
 - La migración `20260907-001-retire-admin-2fa-v1` vacía secretos y códigos de recuperación anteriores y revoca sesiones administrativas activas. Las columnas legacy permanecen inertes durante la ventana de rollback.
 - Una futura validación opcional por WhatsApp no forma parte del contrato actual y debe diseñarse como capacidad independiente antes de habilitarse.
 
-2026-05-11: Catalogos publicos de plantillas sin sesion
-- Modulos afectados: `plantillas_nuevas`, `plantillas_integracion`, `portal_publico`, `autenticacion`.
-- Cambio funcional: los endpoints `/api/public/plantillas_nuevas/catalogo` y `/api/public/plantillas_integracion/catalogo` quedan disponibles sin cookie de administrador, como corresponde a su contrato publico.
-- Seguridad: se mantiene protegida la administracion; solo se abre el catalogo comercial/operativo de solo lectura.
-- QA: el middleware de autenticacion tiene prueba para ambas rutas publicas.
+2026-09-14: Catalogo inicial reducido a siete preconfiguraciones basicas
+- Modulos afectados: `preconfiguracion_tipos_empresa`, `seleccion_empresas`, `portal_publico`, `administrar_empresa`, `licencias` y `permisos`.
+- Catalogo: Hotel, Motel, Restaurante, Bar, Pymes, Salon de belleza y Lavadero de autos son las unicas sugerencias iniciales.
+- Sistema destacado: Taller de motos permanece operativo y publicable, separado del catalogo basico.
+- Navegacion: se elimina el grupo vertical del panel empresarial, sus paginas, scripts y accesos de configuracion.
+- Portada: index y landing descriptiva usan el catalogo basico y filtran ofertas retiradas aunque provengan de configuracion persistida.
+- Backend: el arranque, la resolucion y la administracion de preconfiguraciones se limitan a los siete tipos aprobados. Las tablas y APIs historicas se preservan sin publicidad para evitar borrado de datos.
+- Seguridad: no cambia el aislamiento por `empresa_id`; las APIs empresariales conservadas mantienen sus wrappers de licencia y permisos.
 
-2026-05-11: Sincronizacion idempotente de pagos en plantillas clinico/fitness
-- Modulos afectados: `odontologia`, `gimnasio`, `carritos`, `ventas`, `pagos`.
-- Gobernanza: no se agregan tablas, permisos, dependencias ni circuitos paralelos; se refuerza la regla de nucleo unico para ventas/pagos.
-
-2026-05-11: Veinte plantillas nuevas como plantillas reales
-- Modulos afectados: `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `licencias`, `index_publico`, `super_administrador`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
-- Cambio funcional: los 20 plantillas nuevas quedan en produccion masiva con ranking 1-20, preconfiguracion, tipos de empresa, licencias recomendadas, permisos, flujo de venta y reportes.
-- Producto: `operador_turistico`, `colegio_academia`, `guarderia_infantil`, `inmobiliaria_comercial`, `seguridad_privada`, `club_deportivo`, `funeraria_exequial`, `parque_recreativo`, `cooperativa_fondo` y `capacitacion_empresarial` tambien quedan listos para venta como plantillas reales.
-- Gobernanza: todos siguen operando como plantillas sobre el nucleo unico; no se crean ventas, clientes, productos ni pagos paralelos.
-
-2026-05-11: Portada publica alineada con modulos y plantillas reales
-- Modulos afectados: `index_publico`, `plantillas_nuevas`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `tickets_ayuda`, `calidad_procesos`, `facturacion`.
-- Cambio funcional: las tarjetas del index y los valores por defecto de `/api/public/pagina_principal` presentan los 20 plantillas nuevas como operativos de produccion masiva cuando el catalogo los marca como reales.
-- Producto: las 20 plantillas nuevas quedan publicables como `Probar gratis`.
-- Gobernanza: las tarjetas refuerzan que ventas, clientes, productos, pagos, facturacion y reportes viven en el nucleo unico, no en plantillas paralelos.
-
-2026-05-11: Fases de integracion profesional de plantillas
-- Modulos afectados: `plantillas_nuevas`, `administrar_empresa`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
-- Cambio funcional: el menu empresarial solo muestra plantillas que estan integrados como plantilla o soporte transversal; los plantillas clasicos con duplicados reales quedan ocultos hasta migrar al nucleo.
-- Catalogo: los 20 plantillas nuevas se declaran como `plantilla_integrada_nucleo` y comparten clientes, productos/servicios, ventas, pagos, facturacion, reportes y seguridad.
-- Frontend: `web/js/plantillas_integracion_catalogo.js` centraliza la decision visible/oculto y `web/js/administrar_empresa.js` la aplica antes de permisos y licencias.
-- Backend: los catalogos de plantillas nuevas exponen estado de integracion y el test de contrato impide publicar elementos sin esa metadata.
-- Gobernanza: no se elimina codigo funcional en esta fase; se oculta lo no integrado y se documenta la matriz para fusionar solo duplicados reales.
-
-2026-05-11: Preconfiguraciones conectadas a matriz extendida de plantillas
-- Modulos afectados: `preconfiguracion_tipos_empresa`, `plantillas_nuevas`, `roles/licencias`, `ventas`, `pagos`, `reportes`.
-- Cambio funcional: cada preconfiguracion normalizada puede incluir `integracion_vertical` con decision, prioridad de produccion masiva, modulos activados, tablas tocadas, permisos, flujo de venta y reportes.
-- Decision comercial: se priorizan los 20 plantillas nuevas para produccion masiva con ranking 1-20 y preconfiguracion conectada a la matriz extendida.
-- Alcance: cada vertical nuevo activa modulos, permisos, flujo de venta y reportes sobre el nucleo unico, sin duplicar clientes, productos, ventas ni pagos.
-- Backend: `/api/empresa/plantillas_nuevas/catalogo`, `/super/api/plantillas_nuevas/catalogo` y `/api/public/plantillas_nuevas/catalogo` exponen `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig`.
-- Plan de producto: `documentos/plan_plantillas_produccion_masiva_2026-05-11.md`.
-
-2026-05-11: Gobierno super de plantillas produccion masiva
-- Modulos afectados: `super_administrador`, `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `licencias`.
-- Cambio funcional: se agrega `web/super/plantillas_produccion_masiva.html` para que super administrador vea KPIs, filtros, ranking, decision, permisos, flujo de venta y reportes de los 20 plantillas nuevas.
-- Navegacion: `web/super_administrador.html` enlaza `Plantillas 20` dentro de Licencias y `web/js/super_administrador.js` permite restaurar esa pagina como pagina principal del panel super.
-- Operacion: la vista consume `/super/api/plantillas_nuevas/catalogo`, permite filtrar entre todos, produccion y no listos, buscar por modulo/permisos/reportes y exportar CSV.
-- Acciones: cada fila enlaza a `Tipos de empresa`, `Preconfiguraciones` y `Licencias` con parametros `q`, `vertical` o `modulo`; esas paginas aplican el filtro inicial para aterrizar en el vertical correcto.
-- Readiness: la vista cruza `/super/api/plantillas_nuevas/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licenciasactivo=1` para marcar `Listo venta` solo si el vertical esta en produccion masiva, tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluya el modulo.
-- Aseguramiento: `Asegurar 20` ejecuta `POST /super/api/plantillas_nuevas/catalogoaction=asegurar_20_licencias` y llama `EnsureNuevasPlantillasProduccionMasivaLicencias` para crear/actualizar tipos, preconfiguraciones y cuatro planes recomendados por cada vertical real. `asegurar_v1_licencias` queda como alias compatible.
-- Seguridad: no se agregan permisos ni endpoints nuevos; se reutiliza el alcance autenticado del panel super y el rol `control_super_administrador` conserva su navegacion limitada.
-
-2026-05-11: Sincronizacion segura desde matriz de plantillas
-- Navegacion: el acceso `Matriz de integracion` queda dentro de Administrar empresa > Configuracion > Base empresarial, usando el mismo `linkPlantillasIntegracion` y permiso `seguridad:R`.
-- Seguridad: la pantalla consulta `/api/empresa/permisos_contexto`, exige pagina visible o permiso de creacion del modulo y confirma la accion antes del POST. El endpoint vertical sigue siendo la autoridad final por rol, licencia y `empresa_id`.
-- UX: se agrega KPI `Permitidas` para diferenciar sincronizaciones existentes de sincronizaciones disponibles para el usuario actual.
-
-2026-05-11: Matriz extendida de plantillas plantillas
-- Modulos afectados: `plantillas_integracion`, `administrar_empresa`, `roles/licencias`, `reportes`.
-- Cambio funcional: cada vertical visible declara que plantilla activa, que tablas toca, que permisos requiere, que flujo de venta usa y que reportes produce.
-- Backend: el catalogo agrega `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`, con prueba que impide publicar plantillas visibles sin esa metadata.
+2026-05-11: Matriz extendida de plantillas (retirada)
+- Su catalogo masivo, pantallas y rutas se retiraron el 2026-09-14; no forma parte de la oferta ni de la navegacion vigente.
+- La configuracion inicial queda definida por las siete preconfiguraciones basicas; Taller de motos es un sistema destacado y no una octava sugerencia.
 
 2026-05-11: Gimnasio integrado al nucleo
 - Modulos afectados: `gimnasio`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
@@ -2585,13 +2544,6 @@ Autenticacion administrativa sin 2FA
 - Cambio funcional: contratos AIU sincronizan cliente y servicio central; conceptos de obra crean servicios vendibles y las facturas AIU enlazan carrito/item central sin recalcular IVA ni retenciones en el carrito.
 - Gobernanza: capitulos, AIU, retenciones, anticipo, garantia, avance, riesgo y auditoria tecnica quedan como especialidad de construccion; clientes, servicios, ventas y facturacion quedan en el nucleo.
 
-2026-05-11: Catalogo API de integracion de plantillas clasicos
-- Modulos afectados: `plantillas_integracion`, `administrar_empresa`, `super_administrador`, `roles/licencias`.
-- Backend: `backend/handlers/empresa_plantillas_integracion.go` crea el contrato y `backend/main.go` registra `/api/public/plantillas_integracion/catalogo`, `/api/empresa/plantillas_integracion/catalogo` y `/super/api/plantillas_integracion/catalogo`.
-- Frontend: `web/js/administrar_empresa.js` intenta cargar el contrato de empresa antes de aplicar permisos de menu y conserva `web/js/plantillas_integracion_catalogo.js` como fallback offline.
-- UI: `web/administrar_empresa.html` muestra un indicador compacto de fuente y conteo de plantillas visibles/ocultos para auditoria rapida del panel.
-- QA: `backend/handlers/empresa_plantillas_integracion_test.go` impide catalogar como visible un vertical con duplicados del nucleo.
-
 2026-05-11: Panel super profesional
 - Modulos afectados: `super_administrador`, `licencias`, `administradores`, `roles_permisos`, `seguridad`, `infraestructura`, `postgresql`, `integracion_ia`, `ayuda`.
 - Cambio funcional: el menu principal del super administrador queda reducido a los accesos operativos necesarios para gobierno diario y control de plataforma.
@@ -2611,13 +2563,6 @@ Autenticacion administrativa sin 2FA
 - Cambio funcional: `web/super/licencias_resumen.html` agrega una lectura ejecutiva del VPS y del proyecto con estado general, KPIs de capacidad, PostgreSQL, errores, alertas, servicios y consumo IA.
 - Integracion: reutiliza endpoints existentes de metricas, PostgreSQL, alertas, errores, servicios VPS, procesos y consumos; no introduce endpoints nuevos, dependencias externas ni cambios de esquema.
 - Operacion: agrega accesos directos a alertas, administracion PostgreSQL y auditoria de seguridad VPS para cerrar incidentes desde el mismo panel.
-
-2026-05-11: Portada publica y Probar Gratis para 20 nuevas empresas
-- Modulos afectados: `portal_publico`, `plantillas_nuevas`, `licencias`, `registro`.
-- Cambio funcional: las tarjetas publicas de las 20 nuevas empresas muestran parrafos descriptivos largos en lugar de textos resumidos.
-- Catalogo: `web/js/plantillas_nuevas_catalogo.js` incorpora `description` por cada vertical, reutilizable por index, detalle publico, licencias y futuras paginas comerciales.
-- Frontend: `web/index.html` prioriza la descripcion larga y agrega contexto al boton `Probar Gratis` con modulo, tipo de empresa, titulo, descripcion y secciones.
-- Detalle publico: `web/descripcion_de_los_sistemas.ht` muestra fichas mas especificas para cada vertical y conserva ese contexto al enviar al registro de prueba.
 
 2026-05-10: Carritos en modo tactil
 - Modulos afectados: `carritos`, `estaciones`, `venta_directa`, `productos`.
@@ -2955,7 +2900,7 @@ Autenticacion administrativa sin 2FA
 - Modulos afectados: `super`, `empresas`, `estaciones`, `productos`, `licencias`, `pagos`
 - Cambio funcional: Super Administrador agrega `Preconfiguracion de tipos de empresa` para guardar plantillas iniciales de estaciones/productos por tipo. Al crear una empresa, la plantilla activa se aplica como datos guia y luego puede conservarse o limpiarse. El checkout de licencias mejora sus tarjetas comerciales y muestra `Codigo de asesor comercial` debajo de `Codigo de descuento`.
 - Impacto operativo: la preconfiguracion es opcional y no bloquea la creacion de empresa si falla; el asesor sigue viajando como `asesor_id` a pagos y activacion sin pago.
-- Actualizacion 2026-05-10: la siembra ahora completa faltantes por tipo activo, los plantillas nuevas usan plantilla inteligente por defecto y el robot ya no inicia automaticamente una configuracion guiada al crear o abrir la empresa.
+- Actualizacion 2026-09-13: la siembra completa faltantes exclusivamente para los siete tipos basicos y el robot no inicia automaticamente una configuracion guiada al crear o abrir la empresa.
 
 2026-04-29: Estaciones - tarjetas sin filas vacias
 - Modulos afectados: `estaciones`, `carritos`
@@ -4309,11 +4254,10 @@ Criterio de esta guia:
 - Backups: el modulo empresarial agrega export local directa (`exportar_local` y `exportar_configuracion_local`) para descargar respaldos en el equipo/celular sin crear archivo en disco del VPS ni registro de historial. La configuracion de backups automaticos locales se guarda en el navegador por empresa y ejecuta descargas mientras la pagina esta abierta con sesion activa.
 - Seguridad: se reutilizan permisos existentes de `documentos_onlyoffice` y `backups`; no se agregan rutas publicas, dependencias ni motores de base de datos.
 
-2026-05-12: Plantillas 20 en super administrador
-- Modulos afectados: `super_administrador`, `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `licencias`.
-- Cambio funcional: la vista `Plantillas 20` ahora presenta semaforo ejecutivo, tarjetas de foco, conteo de brechas, metadata completa, listos para venta y licencias base.
-- Operacion: se agregan filtros para ver plantillas sin licencia base o sin preconfiguracion activa, manteniendo el cruce con catalogo, preconfiguraciones y licencias.
-- Alcance: no se agregan endpoints, permisos, tablas ni dependencias; se reutiliza `/super/api/plantillas_nuevas/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licencias`.
+2026-05-12: Plantillas 20 en super administrador (retiradas)
+- La vista, sus enlaces y el catalogo masivo asociado se eliminaron el 2026-09-14.
+- El super administrador gestiona las siete preconfiguraciones basicas vigentes;
+  Taller de motos permanece como sistema destacado independiente.
 
 2026-05-12: Identidad visual empresarial
 - Modulos afectados: `administrar_empresa`, `configuracion`, `facturacion/documentos`, `seguridad y permisos`.
@@ -5086,14 +5030,3 @@ conserva fuera de Git y debe repetirse para cada candidato.
 - En el carrito, el selector de acciones y el boton Domotica se ubican en el
   encabezado de busqueda de producto; en movil se reorganizan dentro del mismo
   bloque sin duplicar controles ni identificadores.
-
-## Ubicacion GPS — navegacion empresarial
-
-- `Administrar empresa` presenta `Ubicacion GPS` como grupo principal propio,
-  fuera de `Control de asistencia y horarios`.
-- El grupo ofrece accesos directos a `Seguimiento GPS` y `Configuracion GPS`.
-  Ambos cargan `web/administrar_empresa/ubicacion_gps.html`, seleccionan su
-  seccion correspondiente y conservan el modulo efectivo `ubicacion_gps:C`.
-- La configuracion mantiene el alta y administracion de dispositivos por
-  `empresa_id`; el seguimiento conserva mapa y recorridos bajo los endpoints
-  empresariales protegidos existentes.

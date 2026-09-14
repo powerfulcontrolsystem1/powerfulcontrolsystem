@@ -6,9 +6,10 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 
 No se agregan tablas ni columnas. `empresa_estacion_prefs` conserva una fila por
 `empresa_id`, `estacion_id=0` y `clave='menu_visual_config'`; el valor JSON
-version 3 contiene `enabled` y `hidden_links`. La migracion catalogada
-`20260914-002-menu-visual-defaults-v3` establece una sola vez el predeterminado
-solicitado para las empresas existentes. `EnsureEmpresaMenuVisualDefault` crea
+version 4 contiene `enabled` y `hidden_links`. La migracion aditiva
+`20260914-003-menu-visual-defaults-v4` restaura Usuarios, Clientes y Login de
+usuarios en el predeterminado de las empresas existentes sin alterar el checksum
+de la migracion v3. `EnsureEmpresaMenuVisualDefault` crea
 la misma preferencia al registrar una empresa nueva con `ON CONFLICT DO NOTHING`,
 por lo que una seleccion posterior de esa empresa no se sobrescribe.
 
@@ -954,13 +955,13 @@ Actualizacion 2026-05-12 (adaptacion del nucleo por plantilla)
 - Al aplicar una plantilla se guarda la preferencia `preconfiguracion_tipo_empresa_adaptacion_nucleo` en `empresa_estacion_prefs`.
 - `estaciones_config` agrega metadata JSON de recurso (`tipo_recurso`, `tipo_recurso_plural`, `representa_recurso_negocio`) para que la misma tabla de estaciones represente estaciones, apartamentos, puestos, vehiculos, bahias, aulas, consultorios u otros recursos.
 
-Actualizacion 2026-05-12 (matriz profesional de 30 plantillas)
+Registro historico 2026-05-12 (matriz profesional retirada del catalogo vigente)
 - No se agregan tablas ni columnas fisicas.
 - La matriz `/api/*/plantillas_integracion/catalogo` consume metadatos ya existentes de `tipo_empresa_preconfiguraciones.config_json`, `empresa_modulos_colombia_*` y catalogos de licencias/tipos para publicar preparacion profesional de 30 plantillas canonicos exactos.
 - `professional_ready`, `readiness_score`, `readiness_checks`, `configuration_scope`, `fused_modules`, `support_modules`, `similar_templates`, `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables` y `financial_reports` son campos de contrato API calculados; no se almacenan como columnas.
 - El amarre de ingresos/egresos usa las tablas existentes `carritos_compras`, `carrito_compra_items`, `empresa_finanzas_movimientos`, `empresa_finanzas_configuracion` y `empresa_finanzas_periodos`; no se crea una tabla financiera por vertical.
 - Los alias `consultorio_odontologico` y `taxi`, y los soportes `turnos_atencion`/`turnos`, no crean tablas nuevas ni filas de producto vertical; se resuelven por configuracion, permisos y plantilla canonica.
-- Los 20 plantillas nuevas conservan sus datos operativos transversales en `empresa_modulos_colombia_*` por `empresa_id` y `modulo`; ventas, pagos, productos, clientes, facturacion y reportes siguen en las tablas centrales.
+- Los datos creados por verticales historicos permanecen aislados en `empresa_modulos_colombia_*` por `empresa_id` y `modulo`; ya no se anuncian ni se ofrecen como preconfiguraciones nuevas. Ventas, pagos, productos, clientes, facturacion y reportes siguen en las tablas centrales.
 
 Actualizacion 2026-05-12 (visibilidad comercial de licencias)
 - No se agregan tablas ni columnas fisicas.
@@ -972,17 +973,17 @@ Retiro del 2FA administrativo
 - También elimina las claves `security.admin_2fa.enabled*` de `configuraciones` y revoca las sesiones administrativas activas para forzar un nuevo login.
 - Las columnas y la tabla legacy se conservan vacías e inertes durante la ventana de rollback; no existe código runtime que las consulte o modifique.
 
-Actualizacion 2026-05-11 (integracion profesional de plantillas)
+Registro historico 2026-05-11 (integracion profesional retirada del catalogo vigente)
 - La primera tanda de matriz/visibilidad no agrego tablas ni columnas.
-- Los 20 plantillas nuevas siguen usando las tablas compartidas `empresa_modulos_colombia_*` por `empresa_id` y `modulo`.
+- Las verticales historicas conservan compatibilidad interna sobre `empresa_modulos_colombia_*` por `empresa_id` y `modulo`, sin formar parte del catalogo vigente.
 - Los plantillas clasicos con tablas propias solo pueden quedar visibles cuando sus datos cobrables migran o referencian el nucleo de clientes, productos/servicios, ventas y pagos.
 
-Actualizacion 2026-05-11 (preconfiguraciones plantillas produccion masiva)
+Registro historico 2026-05-11 (preconfiguraciones de produccion masiva retiradas)
 - No se agregan tablas ni columnas fisicas.
 - El JSON de `tipo_empresa_preconfiguraciones.config_json` puede incluir `integracion_vertical` para conectar la plantilla con la matriz extendida.
 - `integracion_vertical` registra `modulo`, `estado_integracion`, `decision`, `produccion_masiva`, `prioridad_produccion`, `motivo_decision`, `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
-- Los 20 plantillas nuevas quedan marcados como produccion masiva en el JSON, con prioridad 1-20.
-- La accion super `asegurar_20_licencias` reutiliza las tablas existentes `tipos_empresas`, `tipo_empresa_preconfiguraciones` y `licencias`; no introduce esquema nuevo. Se conserva `asegurar_v1_licencias` como alias compatible.
+- Los marcadores y prioridades historicos pueden seguir presentes en JSON de empresas existentes, pero no crean opciones nuevas ni forman parte de la oferta actual.
+- La accion historica de aprovisionamiento masivo fue retirada. El sistema vigente administra las siete preconfiguraciones basicas y Taller de motos con las tablas existentes, sin introducir esquema nuevo.
 
 Actualizacion 2026-05-11 (gimnasio integrado al nucleo)
 - `empresa_gimnasio_socios.cliente_id`: referencia al cliente central creado o reutilizado para el socio.

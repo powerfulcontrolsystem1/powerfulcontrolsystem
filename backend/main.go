@@ -1313,12 +1313,6 @@ func main() {
 				log.Printf("INFO: tipo alquileres verificado: tipo_id=%d licencias=%d", tipoID, licencias)
 			}
 			startupTrace("after_ensure_alquileres_tipo_licencias")
-			if tipos, licencias, err := dbpkg.EnsureNuevasPlantillasTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
-				log.Printf("warning: no se pudieron asegurar nuevas plantillas/licencias: %v", err)
-			} else {
-				log.Printf("INFO: nuevas plantillas verificados: tipos=%d licencias=%d", tipos, licencias)
-			}
-			startupTrace("after_ensure_plantillas_nuevas_tipo_licencias")
 			if err := dbpkg.DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbSuper); err != nil {
 				log.Printf("warning: no se pudieron apagar robot/emisora en preconfiguraciones: %v", err)
 			}
@@ -1702,8 +1696,6 @@ func main() {
 	http.HandleFunc("/api/public/informacion_de_modulos", handlers.PublicInformacionModulosHandler(dbSuper))
 	http.HandleFunc("/api/public/noticias", handlers.PublicNoticiasPortalHandler(dbSuper))
 	http.HandleFunc("/api/public/portal_visitas", handlers.PublicPortalVisitasHandler(dbSuper))
-	http.HandleFunc("/api/public/plantillas_nuevas/catalogo", handlers.PublicPlantillasNuevosCatalogoHandler())
-	http.HandleFunc("/api/public/plantillas_integracion/catalogo", handlers.PublicPlantillasIntegracionCatalogoHandler())
 	http.HandleFunc("/api/public/contrato", handlers.PublicContratoHandler(dbSuper))
 	http.HandleFunc("/api/public/geo", handlers.PublicGeoHandler())
 	http.HandleFunc("/api/empresa/reservas_hotel", handlers.WithEmpresaReservasHotelPermissions(dbEmpresas, dbSuper, handlers.EmpresaReservasHotelHandler(dbEmpresas)))

@@ -71,7 +71,7 @@ func SuperPlantillasNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 		}
 		if r.Method == http.MethodPost {
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
-			if action != "asegurar_v1_licencias" && action != "asegurar_produccion_masiva" && action != "asegurar_20_licencias" {
+			if action != "asegurar_v1_licencias" && action != "asegurar_produccion_masiva" && action != "asegurar_taller_motos" {
 				http.Error(w, "accion no permitida", http.StatusBadRequest)
 				return
 			}
@@ -185,8 +185,8 @@ func init() {
 		PaginaClave: "linkNuevasPlantillas",
 		AnyModules:  modulos,
 		Accion:      permActionCreate,
-		Titulo:      "20 nuevas plantillas empresariales",
-		Grupo:       "Plantillas de negocio",
+		Titulo:      "Taller de motos",
+		Grupo:       "Operacion universal y ventas",
 	})
 	for _, item := range empresaPlantillasNuevosPermisos() {
 		permissionModulesCatalogOrdered = append(permissionModulesCatalogOrdered, item.Modulo)
@@ -196,7 +196,7 @@ func init() {
 			Modulo:      item.Modulo,
 			Accion:      permActionCreate,
 			Titulo:      item.Titulo,
-			Grupo:       "Plantillas de negocio",
+			Grupo:       "Operacion universal y ventas",
 		})
 	}
 }

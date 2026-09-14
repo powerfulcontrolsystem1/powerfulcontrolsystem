@@ -11,11 +11,23 @@ import (
 
 func TestEmpresaPlantillasIntegracionCatalogoContrato(t *testing.T) {
 	items := buildEmpresaPlantillasIntegracionCatalogo()
-	if len(items) != 13 {
-		t.Fatalf("catalogo universal debe publicar 13 plantillas canonicas exactas, obtuvo %d", len(items))
+	if len(items) != 1 {
+		t.Fatalf("el catalogo adicional solo debe publicar Taller de motos, obtuvo %d", len(items))
 	}
 	seen := map[string]bool{}
 	forbidden := map[string]string{
+		"parqueadero":              "sistema retirado del catalogo",
+		"domicilios":               "sistema retirado del catalogo",
+		"alquileres":               "sistema retirado del catalogo",
+		"aiu_construccion":         "sistema retirado del catalogo",
+		"eventos_boleteria":        "sistema retirado del catalogo",
+		"salon_spa":                "sistema retirado del catalogo",
+		"veterinaria_petshop":      "sistema retirado del catalogo",
+		"lavanderia_tintoreria":    "sistema retirado del catalogo",
+		"transporte_carga_tms":     "sistema retirado del catalogo",
+		"servicios_tecnicos":       "sistema retirado del catalogo",
+		"funeraria_exequial":       "sistema retirado del catalogo",
+		"parque_recreativo":        "sistema retirado del catalogo",
 		"gimnasio":                 "modulo retirado",
 		"odontologia":              "modulo retirado",
 		"consultorio_odontologico": "modulo retirado",
@@ -27,12 +39,7 @@ func TestEmpresaPlantillasIntegracionCatalogoContrato(t *testing.T) {
 		"turnos_atencion":          "capacidad de soporte transversal",
 		"turnos":                   "alias de soporte transversal",
 	}
-	required := map[string]bool{
-		"parqueadero":      false,
-		"domicilios":       false,
-		"alquileres":       false,
-		"aiu_construccion": false,
-	}
+	required := map[string]bool{"taller_mecanico": false}
 	for _, item := range items {
 		if item.ID == "" || item.Page == "" || item.Modulo == "" || item.Titulo == "" {
 			t.Fatalf("item incompleto: %+v", item)
@@ -120,8 +127,8 @@ func TestEmpresaPlantillasIntegracionCatalogoContrato(t *testing.T) {
 			t.Fatalf("nueva plantilla faltante en matriz universal: %s", module)
 		}
 	}
-	if len(items)-len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()) != 4 {
-		t.Fatalf("la matriz debe conservar 4 plantillas clasicas canonicas: total=%d nuevas=%d", len(items), len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()))
+	if len(items) != len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()) {
+		t.Fatalf("la matriz debe coincidir con el unico sistema adicional: total=%d adicionales=%d", len(items), len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()))
 	}
 }
 
@@ -158,7 +165,7 @@ func TestPublicPlantillasIntegracionCatalogoHandler(t *testing.T) {
 	if err := json.NewDecoder(rr.Body).Decode(&payload); err != nil {
 		t.Fatalf("decode payload: %v", err)
 	}
-	if !payload.OK || payload.Total != len(payload.Items) || payload.Total != 13 {
+	if !payload.OK || payload.Total != len(payload.Items) || payload.Total != 1 {
 		t.Fatalf("payload inesperado: %+v", payload)
 	}
 }
