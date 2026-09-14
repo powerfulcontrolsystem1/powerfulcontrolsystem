@@ -88,6 +88,44 @@ func TestSecurityHeadersAndNoStoreOnLogin(t *testing.T) {
 	}
 }
 
+func TestSecurityHeadersAllowExactWeatherProviders(t *testing.T) {
+	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/administrar_empresa/panel.html", nil))
+
+	directive := func(policy, name string) string {
+		start := strings.Index(policy, name+" ")
+		if start < 0 {
+			t.Fatalf("CSP missing %s: %q", name, policy)
+		}
+		section := policy[start:]
+		if end := strings.Index(section, ";"); end >= 0 {
+			section = section[:end]
+		}
+		return section
+	}
+
+	for _, header := range []string{"Content-Security-Policy", "Content-Security-Policy-Report-Only"} {
+		policy := rec.Header().Get(header)
+		connect := directive(policy, "connect-src")
+		for _, origin := range []string{
+			"https://api.open-meteo.com",
+			"https://geocoding-api.open-meteo.com",
+			"https://ipapi.co",
+			"https://ipinfo.io",
+			"https://api.bigdatacloud.net",
+			"https://nominatim.openstreetmap.org",
+		} {
+			if !strings.Contains(connect, origin) {
+				t.Fatalf("%s connect-src missing weather origin %s: %q", header, origin, connect)
+			}
+		}
+		if images := directive(policy, "img-src"); !strings.Contains(images, "https://images.unsplash.com") {
+			t.Fatalf("%s img-src missing weather background origin: %q", header, images)
+		}
+	}
+}
+
 func TestSecurityHeadersCanEnableStrictReportOnlyCSPWithoutBlockingCompatibility(t *testing.T) {
 	t.Setenv("PCS_CSP_REPORT_ONLY_STRICT", "true")
 	h := SecurityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))

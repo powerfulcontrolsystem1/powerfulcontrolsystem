@@ -754,6 +754,13 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 		"https://fonts.gstatic.com",
 		"https://www.google.com",
 		"https://www.gstatic.com",
+		"https://images.unsplash.com",
+		"https://api.open-meteo.com",
+		"https://geocoding-api.open-meteo.com",
+		"https://ipapi.co",
+		"https://ipinfo.io",
+		"https://api.bigdatacloud.net",
+		"https://nominatim.openstreetmap.org",
 	} {
 		if !strings.Contains(string(staticHeaders), origin) {
 			t.Fatalf("frontend CSP must allow the pinned visual resource origin %s", origin)

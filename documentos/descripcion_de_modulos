@@ -2108,8 +2108,9 @@ archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
 2026-05-13: Panel empresarial detecta ciudad por IP antes que GPS
 - Modulos afectados: `administrar_empresa`, `panel_empresarial`.
 - Cambio UX: el clima y los indicadores del panel toman como primera fuente automatica la ciudad detectada por IP.
+- Seguridad HTTP: la politica CSP autoriza solo los origenes HTTPS exactos usados por Open-Meteo, deteccion de ciudad, geocodificacion y fondos meteorologicos; no se habilitan comodines ni esquemas completos.
 - Flujo: la ciudad manual guardada conserva prioridad; si no existe, se consulta IP; si falla, se usan GPS guardado/GPS autorizado, zona horaria o perfil como respaldo.
-- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+- Alcance: frontend y politicas CSP del backend/Nginx; no cambia contratos API, tablas, permisos ni dependencias.
 
 2026-05-13: Carrito de compras compacto sin separaciones entre tarjetas
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.

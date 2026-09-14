@@ -631,9 +631,24 @@ func securityContentSecurityPolicyWithInline(allowInline bool) string {
 		providerScripts = append(providerScripts, "'unsafe-inline'")
 		providerStyles = append(providerStyles, "'unsafe-inline'")
 	}
-	providerConnect := []string{"'self'", "https://api.openai.com", "https://accounts.google.com", "https://www.google.com", "https://www.gstatic.com", "https://checkout.epayco.co", "https://secure.epayco.co", "https://checkout.wompi.co"}
+	providerConnect := []string{
+		"'self'",
+		"https://api.openai.com",
+		"https://api.open-meteo.com",
+		"https://geocoding-api.open-meteo.com",
+		"https://ipapi.co",
+		"https://ipinfo.io",
+		"https://api.bigdatacloud.net",
+		"https://nominatim.openstreetmap.org",
+		"https://accounts.google.com",
+		"https://www.google.com",
+		"https://www.gstatic.com",
+		"https://checkout.epayco.co",
+		"https://secure.epayco.co",
+		"https://checkout.wompi.co",
+	}
 	providerFrames := []string{"'self'", "https://mail.powerfulcontrolsystem.com", "https://accounts.google.com", "https://www.google.com", "https://www.gstatic.com", "https://checkout.epayco.co", "https://checkout.wompi.co"}
-	providerImages := []string{"'self'", "data:", "blob:", "https://lh3.googleusercontent.com"}
+	providerImages := []string{"'self'", "data:", "blob:", "https://lh3.googleusercontent.com", "https://images.unsplash.com"}
 
 	documentOrigins := cspOriginsFromEnv("ONLYOFFICE_DOCUMENT_SERVER_URL", "NEXTCLOUD_BASE_URL")
 	customImages := cspOriginsFromEnv("PCS_CSP_IMG_ORIGINS")
