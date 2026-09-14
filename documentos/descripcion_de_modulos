@@ -4742,6 +4742,7 @@ de productos/SKUs, caja, impuestos, cliente y reglas de facturacion.
 - Propinas por usuario o universales y comisiones por servicio permanecen auditadas por empresa. La propina no forma parte del total documental ni de la venta contable y se muestra separada en la impresion.
 - En hotel, cada regla puede tener nombre y ocupacion minima/maxima; el simulador recibe la cantidad de personas y muestra el valor aplicable antes de operar la estacion.
 - En motel, `cobrar_por_fraccion=true` cobra el primer bloque parcial mediante redondeo hacia arriba; apagado exige completar el bloque extra. La tarifa aplicable se fija al activar la sesion para que un cambio de dia o de configuracion no revalorice una cuenta abierta.
+- La configuración empresarial de tarifas por minutos define una tolerancia que se repite por bloque extra. Con base 120, bloque 60 y tolerancia 10, el cobro fraccionado cambia después de 130, 200 y 270 minutos; no se descuenta el margen una única vez para todos los extras.
 
 2026-07-11: Fiscalidad de comisiones y cancelacion temporizada de estaciones.
 - La comision del comisionista se causa como costo laboral fiscal enlazado a la venta y queda disponible para liquidacion de nomina; no aumenta el total cobrado al cliente.

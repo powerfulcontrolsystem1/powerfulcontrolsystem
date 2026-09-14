@@ -262,7 +262,7 @@ func getEmpresaTarifaPorMinutosConfiguracionTx(tx *sql.Tx, empresaID int64) (*Em
 func resolveCarritoTarifaPorMinutosCurrentEnd(activadoAt time.Time, tarifa EmpresaTarifaPorMinutos, detalle EmpresaTarifaPorMinutosCalculo) time.Time {
 	minutosTramoActual := tarifa.MinutosBase + detalle.MinutosTolerancia
 	if detalle.BloquesExtra > 0 {
-		minutosTramoActual = tarifa.MinutosBase + detalle.MinutosTolerancia + detalle.BloquesExtra*tarifa.MinutosExtra
+		minutosTramoActual = tarifa.MinutosBase + detalle.BloquesExtra*(tarifa.MinutosExtra+detalle.MinutosTolerancia)
 	}
 	if minutosTramoActual < tarifa.MinutosBase {
 		minutosTramoActual = tarifa.MinutosBase

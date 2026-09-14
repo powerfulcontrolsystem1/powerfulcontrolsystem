@@ -264,6 +264,19 @@ afecte dinero, documentos, licencias o seguridad.
 8. No se duplica inventario, no se crea una venta nueva y los roles restringidos
    de tablero de estaciones siguen sin poder ejecutar la transferencia.
 
+## Tolerancia recurrente de horas extras
+
+1. Abrir `Administrar empresa > Tarifas por minutos` y definir `Tolerancia por
+   cada bloque extra` para la empresa.
+2. La regla se aplica a todas las tarifas por minutos de sus estaciones sin
+   mezclar empresas. Para una base de 120 minutos, bloque extra de 60 y
+   tolerancia de 10, un cobro por fracción pasa a un bloque después de 130
+   minutos, a dos después de 200 y a tres después de 270.
+3. El simulador muestra bloques, minutos facturables y la tolerancia por bloque;
+   el carrito utiliza el mismo cálculo y conserva el fin del tramo vigente.
+4. Cuando una tarifa no cobra fracciones, cada bloque se cobra al completar sus
+   60 minutos más su tolerancia correspondiente.
+
 ## Impresoras por empresa y agente local
 
 1. Abrir `Administrar empresa > Configuracion > Configuracion de impresora`.

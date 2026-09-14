@@ -4250,6 +4250,9 @@ flowchart TD
     - soporta minutos consumidos fraccionarios y saltos de bloque por fraccion.
     - agrega aplicacion masiva de tarifa a todas las estaciones detectadas de la empresa.
     - agrega registro de trazabilidad contable del calculo por minutos.
+    - la tolerancia empresarial se aplica de forma recurrente entre bloques
+      extra, por lo que el cálculo del simulador y del carrito comparten los
+      mismos umbrales de cobro.
   - `backend/handlers/tarifas_por_minutos.go`:
     - agrega `GET/PUT action=config` para configuracion avanzada.
     - extiende `GET action=calcular` con respuesta detallada y referencia contable (`trazabilidad_contable_id`, `documento_codigo`, `periodo_contable`).

@@ -140,7 +140,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureSuperMantenimientoAgentesSchema` | [backend/db/super_mantenimiento_agentes.go:52](../../backend/db/super_mantenimiento_agentes.go#L52) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureSuperServidorEventosSchema` | [backend/db/super_servidor_eventos.go:42](../../backend/db/super_servidor_eventos.go#L42) | DDL / indice / funcion | superadministrador o por confirmar |
 | `EnsureSuperVPSSnapshotSchema` | [backend/db/super_vps_snapshots.go:32](../../backend/db/super_vps_snapshots.go#L32) | DDL / indice / funcion | superadministrador o por confirmar |
-| `EnsureEmpresaTarifasMotelSchema` | [backend/db/tarifas_motel.go:75](../../backend/db/tarifas_motel.go#L75) | DDL / indice / funcion | empresas o por confirmar |
+| `EnsureEmpresaTarifasMotelSchema` | [backend/db/tarifas_motel.go:74](../../backend/db/tarifas_motel.go#L74) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaTarifasPorDiaSchema` | [backend/db/tarifas_por_dia.go:110](../../backend/db/tarifas_por_dia.go#L110) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaTarifasPorMinutosSchema` | [backend/db/tarifas_por_minutos.go:109](../../backend/db/tarifas_por_minutos.go#L109) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaTarifasPorMinutosConfiguracionSchema` | [backend/db/tarifas_por_minutos.go:214](../../backend/db/tarifas_por_minutos.go#L214) | DDL / indice / funcion | empresas o por confirmar |

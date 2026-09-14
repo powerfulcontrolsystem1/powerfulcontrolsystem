@@ -345,7 +345,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "3822cea01cad91b3a083e87cdfa7f332415d44346ccbb0127cf0c005b627c573"
+      "sha256_lf": "c5bc0572582ab312a203086203d366fabe09b0499f2e3dcdc40c58b01fd4a080"
     },
     {
       "path": "documentos/arquitectura/inventario_cliente_movil_plan_105.md",
@@ -660,7 +660,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "bb7d946f87da8583d33cc5df741b2fbf85300fa7d613722079a6962e425acc5a"
+      "sha256_lf": "fe67ef1ae8f033b994062f8b87fa2f39b44da9dae64ca28b2581454c97c16df6"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -723,7 +723,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "9786b4fae20f083777a53699f74583957bcda0360d06c8818f2b62374bb27aa4"
+      "sha256_lf": "c4da263ef448373cc5b2f230f3b5bf3b60d5462521243b38fb0555bf746db14d"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -795,7 +795,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "05586d31fbe52c82f67d6fb1492fe8dac47c4143dd2befc5ff6d3f06d66697e4"
+      "sha256_lf": "c181d55a63deb646a30f145cae787a27ae79aa175b496c7385ad42d9aec8b1f3"
     },
     {
       "path": "documentos/flujos_operativos.md",
@@ -804,7 +804,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "823c4feda2f2c237f6f3c4ffb8cba5b6998818fcf42979b0abcc743c80da9099"
+      "sha256_lf": "3be1ec2c11d636ad5c5fee56d9c477a3e2880e046dcd2fe949176f378a0631b4"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
