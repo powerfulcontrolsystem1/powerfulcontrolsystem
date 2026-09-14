@@ -5,10 +5,16 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 ## Navegación y alcance
 
 El [menú flotante](../web/menu.js) agrupa Calculadora y Juegos en Accesorios.
-[Juegos](../web/juegos.html) abre una pestaña nueva con `noopener`. Sus seis
-secciones se apilan en PC y móvil: Pac-Man Canvas, Tetris, Buscaminas, Solitario
-Klondike, DOON Selva viva y una aventura submarina sorpresa en 3D.
-La calculadora conserva su ventana compacta.
+[Juegos](../web/juegos.html) muestra exclusivamente un menú de seis botones con
+capturas de los juegos. El [contenedor flotante](../web/juegos/ventana.js) y sus
+[estilos](../web/juegos/ventana.css) abren un iframe pequeño, movible, redimensionable
+en PC y minimizable, sin bloquear la aplicación del fondo. Cada juego ocupa ese
+mismo iframe; volver al menú pausa y guarda. Cerrar oculta el iframe y conserva
+su estado en memoria. No se interceptan los atajos de la aplicación anfitriona.
+El catálogo presenta primero GTA SIMSong, seguido de Pac-Man Canvas, Tetris,
+Buscaminas, Solitario Klondike y la aventura submarina sorpresa. DOON se retira.
+La calculadora conserva su ventana compacta. En móvil el mando semitransparente
+se superpone al juego; no se abre una pestaña nueva.
 
 La [sala](../web/juegos/sala.js), sus [estilos](../web/juegos/sala.css) y el
 [núcleo de audio/estado](../web/juegos/core.js) coordinan una sola partida activa,
@@ -32,18 +38,44 @@ Cargar y Nueva solicitan confirmación para reemplazar avances.
   primera apertura segura, banderas, apertura vecina y expansión de vacíos para
   Buscaminas; robo de una carta, secuencias alternadas, bases por palo,
   auto a bases y deshacer para Solitario.
+- [GTA SIMSong](../web/juegos/simsong/game.js): ciudad de exploración libre,
+  caminar/correr, salto y gravedad, vehículos utilizables, peatones animados,
+  cúpula transparente con límite físico, casa de Homero de dos plantas y Moe
+  accesibles. Las tres misiones de descubrimiento se completan en cualquier
+  orden y permiten seguir explorando al concluir. No hay flechas ni camino guiado.
+  [Datos del mundo](../web/juegos/simsong/world-data.js),
+  [ciudad](../web/juegos/simsong/city.js),
+  [interiores](../web/juegos/simsong/interiors.js),
+  [física y planificación de NPC](../web/juegos/simsong/simulation.js) y
+  [carga de recursos](../web/juegos/simsong/assets.js) separan escena, reglas y
+  estado. A* evita edificios; separación y previsión de tráfico complementan
+  las rutas de los peatones. Se guardan posición, interior, vehículo y misiones.
 - [Mundos](../web/juegos/mundos.js) y [renderizador](../web/juegos/render3d.js):
-  WebGL nativo, sin bibliotecas ni binarios externos. Selva incluye tres armas,
-  tres oleadas, vidas, suministros, escudos, poder radial, búsqueda de caminos
-  alrededor de obstáculos y enemigos cuerpo a cuerpo/a distancia. La sorpresa
+  WebGL nativo para la aventura sorpresa, que
   incluye exploración, oxígeno recargable en superficie, diez tesoros, fauna
-  animada y pulso localizador. Son juegos originales, no un port de DOOM.
+  animada y pulso localizador. El código de combate y selva retirado ya no forma
+  parte de este motor.
 - [Créditos visibles](../web/juegos/creditos.html) delimitan autoría y licencias.
   Se investigaron también [Freedoom](https://freedoom.github.io/about.html) y
   [Dwasm](https://github.com/GMH-Code/Dwasm); no se distribuyen sus recursos.
 
-La estética de los mundos es 3D procedural con modelos articulados. No se
-presenta como fotorealismo ni como animación capturada de actores. WebGL y Web
+GTA SIMSong usa Three.js r186/0.186.0, GLTFLoader, SkeletonUtils y
+BufferGeometryUtils, autorizados expresamente por el usuario. La
+[procedencia](../web/juegos/simsong/PROVENANCE.md) detalla versiones, licencias,
+modelos CC0 de Kenney, conversiones y referencias de Springfield. El
+[manifiesto](../web/juegos/simsong/assets/manifest.json) permite verificar los
+recursos mediante [el comprobador](../tools/simsong_assets.mjs). La dependencia
+es exclusivamente web y local, sin cambios en go.mod ni peticiones a CDN.
+La alternativa sin terceros sería extender el renderizador WebGL existente;
+se adopta Three.js para cargar GLTF con rigs y mezclas de animación mantenibles,
+capacidades que Go estándar no proporciona en el navegador. Impacto: descarga
+adicional del motor/modelos al seleccionar GTA, memoria GPU y mantenimiento de
+la versión vendorizada; los clásicos no cargan ese motor.
+
+La ciudad es una primera interpretación compacta con geometría original y
+modelos genéricos; no replica exactamente un mapa oficial ni contiene modelos
+oficiales de los personajes. La estética es estilizada, no fotorealista.
+WebGL y Web
 Audio deben estar disponibles. Pantalla completa depende de la API del navegador;
 su ausencia se informa y se conserva la vista adaptable. La emulación móvil de
 Chromium no certifica rendimiento ni compatibilidad en cada teléfono físico.
@@ -77,7 +109,11 @@ No usar estos resultados para premios, pagos ni decisiones laborales.
 
 La migración aditiva `20260914-001-juegos-personales-v1` del catálogo super crea
 `juegos_partidas` y `juegos_records`; implementación en
-[juegos.go](../backend/db/juegos.go). Solo el migrador aplica DDL en runtime.
+[juegos.go](../backend/db/juegos.go). La nueva
+`20260914-002-simsong-v1`, en [juegos_simsong.go](../backend/db/juegos_simsong.go),
+amplía el CHECK para `simsong` conservando filas antiguas de `selva`; ese ID ya
+no está admitido por la API ni el catálogo. No se reescribe el checksum anterior.
+Solo el migrador aplica DDL en runtime.
 El guardado y el récord se actualizan en una transacción. Una versión antigua
 produce 409 sin sobrescribir. Un puntaje inferior o empatado conserva al titular
 y su fecha original; desempate global por fecha ascendente y clave estable.
@@ -94,6 +130,9 @@ ejercitan la migración nueva, privacidad, ranking compartido, conservación de
 fecha y conflicto de ocho escritores concurrentes. Nunca apuntar esa variable
 a producción. [Pruebas de reglas](../tools/juegos.test.mjs) cubren las transiciones
 de los clásicos y serialización sin depender de puntuaciones de cuentas reales.
+[Pruebas de Springfield](../tools/simsong.test.mjs) cubren colisiones, límite de
+la cúpula, salto/gravedad, A*, evitación de tráfico y accesibilidad de entradas.
+[La prueba de migración de Springfield](../backend/db/juegos_simsong_test.go) comprueba que los guardados retirados se conservan y que el CHECK admite el nuevo juego.
 La aceptación visual incluye controles, pausa, guardado/carga, audio activado y
 pantalla completa en escritorio y viewport móvil. La evidencia de cada candidato
 se conserva fuera de Git; no se deduce despliegue de la mera existencia del código.

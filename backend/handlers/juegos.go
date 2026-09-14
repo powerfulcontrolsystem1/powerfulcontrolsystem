@@ -12,7 +12,7 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
-var juegosPermitidos = map[string]bool{"pacman": true, "tetris": true, "buscaminas": true, "solitario": true, "selva": true, "sorpresa": true}
+var juegosPermitidos = map[string]bool{"simsong": true, "pacman": true, "tetris": true, "buscaminas": true, "solitario": true, "sorpresa": true}
 
 // Juegos is a free personal accessory, independent of business permissions and
 // licences. Typed, active session identity is mandatory even for leaderboards.

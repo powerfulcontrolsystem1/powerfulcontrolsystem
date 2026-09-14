@@ -1,18 +1,3 @@
 <!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="color-scheme" content="light"><title>Juegos · PCS</title>
-  <link rel="stylesheet" href="/juegos/sala.css">
-  <script type="module" src="/juegos/sala.js"></script>
-</head>
-<body>
-  <header class="topbar"><a href="/seleccionar_empresa.html" class="brand">PCS <span>/ ACCESORIOS</span></a><a href="/administrar_empresa.html">Volver a mi empresa ↗</a></header>
-  <main>
-    <div class="intro"><div><span class="eyebrow">TU PAUSA, TU PRÓXIMO RÉCORD</span><h1>Fuera de oficina<span>.</span></h1><p>Clásicos que nunca fallan. Mundos por descubrir.<br>Una sala para todas las empresas, una partida solo tuya.</p></div><div class="intro-badge"><span>6</span><div>juegos<br>muchas formas de ganar</div></div></div>
-    <nav class="game-nav" aria-label="Elegir juego"><a href="#pacman">01 Pac-Man</a><a href="#tetris">02 Tetris</a><a href="#buscaminas">03 Buscaminas</a><a href="#solitario">04 Solitario</a><a href="#selva">05 Selva 3D</a><a href="#sorpresa">06 Sorpresa ✦</a></nav>
-    <p id="session-status" role="status">Preparando tu sala…</p>
-    <div id="games"></div>
-    <footer>Los récords muestran nombre, puntaje y fecha a usuarios de todas las empresas. Las partidas son privadas.<br>Clasificación recreativa, sin premios. Hora mostrada en tu zona local. <a href="/juegos/creditos.html">Créditos y licencias</a></footer>
-  </main>
-</body></html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light"><title>Juegos · PCS</title><link rel="stylesheet" href="/juegos/sala.css"><script type="importmap">{"imports":{"three":"/juegos/vendor/three/three.module.js"}}</script><script type="module" src="/juegos/sala.js"></script></head>
+<body><main class="console-shell"><header class="console-header"><div><span class="eyebrow">UNA PAUSA A TU MEDIDA</span><h1>¿A qué jugamos?</h1></div><span class="console-mark">PCS <b>PLAY</b></span></header><p id="session-status" role="status">Elige un juego para empezar.</p><section id="game-menu" aria-label="Elegir juego"></section><div id="games" hidden></div><footer><span>Partidas privadas · Récords entre empresas</span><a href="/juegos/creditos.html" target="_blank" rel="noopener">Créditos</a></footer></main></body></html>
