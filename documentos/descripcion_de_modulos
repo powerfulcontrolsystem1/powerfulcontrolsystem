@@ -2108,8 +2108,16 @@ archivos y pruebas se mantienen en [Accesorios y juegos](juegos_accesorios.md).
 2026-05-13: Panel empresarial detecta ciudad por IP antes que GPS
 - Modulos afectados: `administrar_empresa`, `panel_empresarial`.
 - Cambio UX: el clima y los indicadores del panel toman como primera fuente automatica la ciudad detectada por IP.
+- Seguridad HTTP: la politica CSP autoriza solo los origenes HTTPS exactos usados por Open-Meteo, deteccion de ciudad, geocodificacion y fondos meteorologicos; no se habilitan comodines ni esquemas completos.
 - Flujo: la ciudad manual guardada conserva prioridad; si no existe, se consulta IP; si falla, se usan GPS guardado/GPS autorizado, zona horaria o perfil como respaldo.
-- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+- Alcance: frontend y politicas CSP del backend/Nginx; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-09-14: Clima del panel con proxy empresarial y paisaje local
+- Modulos afectados: `administrar_empresa`, `panel_empresarial`.
+- Cambio funcional: el panel consulta pronostico y geocodificacion mediante `/api/empresa/clima`, protegido por contexto empresarial de autoservicio; si el proxy no responde, conserva la consulta directa a Open-Meteo como respaldo.
+- UX: el hero usa `web/img/empresa-panel-paisaje-v1.png`, un paisaje local visible bajo las capas de contraste, y deja de depender de fondos remotos de Unsplash.
+- Seguridad: el proxy solo acepta GET, modos fijos, coordenadas acotadas y nombres de hasta 120 caracteres; no recibe URLs del cliente ni expone errores del proveedor.
+- Alcance: no cambia tablas ni datos empresariales; mantiene `empresa_id`, sesion y licencia en el wrapper de la ruta.
 
 2026-05-13: Carrito de compras compacto sin separaciones entre tarjetas
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
@@ -5075,3 +5083,14 @@ conserva fuera de Git y debe repetirse para cada candidato.
 - En el carrito, el selector de acciones y el boton Domotica se ubican en el
   encabezado de busqueda de producto; en movil se reorganizan dentro del mismo
   bloque sin duplicar controles ni identificadores.
+
+## Ubicacion GPS — navegacion empresarial
+
+- `Administrar empresa` presenta `Ubicacion GPS` como grupo principal propio,
+  fuera de `Control de asistencia y horarios`.
+- El grupo ofrece accesos directos a `Seguimiento GPS` y `Configuracion GPS`.
+  Ambos cargan `web/administrar_empresa/ubicacion_gps.html`, seleccionan su
+  seccion correspondiente y conservan el modulo efectivo `ubicacion_gps:C`.
+- La configuracion mantiene el alta y administracion de dispositivos por
+  `empresa_id`; el seguimiento conserva mapa y recorridos bajo los endpoints
+  empresariales protegidos existentes.

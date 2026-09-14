@@ -97,7 +97,14 @@
             <li><a id="linkCarnets" href="/administrar_empresa/modulo_menu.html?module=carnets" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carnets</a></li>
             <li><a id="linkVehiculosRegistro" href="/administrar_empresa/modulo_menu.html?module=vehiculos_registro" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Registro de vehículos</a></li>
             <li><a id="linkHojaVidaOperativa" href="/administrar_empresa/modulo_menu.html?module=hoja_vida_operativa" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Historial de activos</a></li>
-            <li><a id="linkUbicacionGPS" href="/administrar_empresa/modulo_menu.html?module=ubicacion_gps" target="contentFrame"><img class="icon" src="/img/gps.svg" alt="">Ubicación GPS</a></li>
+          </ul>
+        </li>
+
+        <li class="admin-nav-group">
+          <button type="button" class="admin-nav-group-title" aria-expanded="false">Ubicación GPS</button>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkUbicacionGPS" href="/administrar_empresa/ubicacion_gps.html?vista=seguimiento#tab-mapa" target="contentFrame"><img class="icon" src="/img/gps.svg" alt="">Seguimiento GPS</a></li>
+            <li><a id="linkConfiguracionGPS" href="/administrar_empresa/ubicacion_gps.html?vista=configuracion#tab-configuracion" target="contentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Configuración GPS</a></li>
           </ul>
         </li>
 
@@ -350,7 +357,7 @@
   </section>
 
   <script src="/js/estaciones_labels.js?v=20260825-admin-load-v1"></script>
-  <script src="/js/administrar_empresa.js?v=20260825-admin-load-v1"></script>
+  <script src="/js/administrar_empresa.js?v=20260913-gps-menu-v1"></script>
   <script src="/js/radio_catalog.js?v=20260607-admin-audit"></script>
   <script src="/js/radio_player.js?v=20260825-admin-load-v1"></script>
   <script src="/js/ai_chat_drawer.js?v=20260825-admin-load-v1"></script>

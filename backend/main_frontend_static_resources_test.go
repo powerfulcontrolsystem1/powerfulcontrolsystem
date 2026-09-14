@@ -33,6 +33,79 @@ func TestFrontendStaticResourcesExist(t *testing.T) {
 	}
 }
 
+func TestAdministrarEmpresaGPSUsesDedicatedPrimaryMenu(t *testing.T) {
+	root := filepath.Clean("..")
+	read := func(rel ...string) string {
+		t.Helper()
+		content, err := os.ReadFile(filepath.Join(append([]string{root}, rel...)...))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(content)
+	}
+
+	adminPage := read("web", "administrar_empresa.html")
+	gpsGroup := `<button type="button" class="admin-nav-group-title" aria-expanded="false">Ubicación GPS</button>`
+	if !strings.Contains(adminPage, gpsGroup) {
+		t.Fatal("Administrar empresa must expose Ubicacion GPS as its own primary menu group")
+	}
+	for _, expected := range []string{
+		`id="linkUbicacionGPS" href="/administrar_empresa/ubicacion_gps.html?vista=seguimiento#tab-mapa"`,
+		`id="linkConfiguracionGPS" href="/administrar_empresa/ubicacion_gps.html?vista=configuracion#tab-configuracion"`,
+	} {
+		if !strings.Contains(adminPage, expected) {
+			t.Fatalf("Administrar empresa GPS group is missing %q", expected)
+		}
+	}
+	attendanceStart := strings.Index(adminPage, ">Control de asistencia y horarios</button>")
+	gpsGroupStart := strings.Index(adminPage, gpsGroup)
+	if attendanceStart < 0 || gpsGroupStart < 0 || attendanceStart >= gpsGroupStart {
+		t.Fatal("dedicated GPS group must follow the attendance group")
+	}
+	if strings.Contains(adminPage[attendanceStart:gpsGroupStart], `id="linkUbicacionGPS"`) {
+		t.Fatal("Ubicacion GPS must no longer be nested under attendance and schedules")
+	}
+
+	gpsPage := read("web", "administrar_empresa", "ubicacion_gps.html")
+	for _, expected := range []string{
+		`id="tab-configuracion" class="card gps-panel" data-pcs-submenu-section="configuracion"`,
+		`<h2>Configuración GPS</h2>`,
+		`id="tab-mapa" class="card gps-map-panel" data-pcs-submenu-section="mapa"`,
+		`<h2>Seguimiento GPS</h2>`,
+	} {
+		if !strings.Contains(gpsPage, expected) {
+			t.Fatalf("GPS page is missing its requested section %q", expected)
+		}
+	}
+
+	adminScript := read("web", "js", "administrar_empresa.js")
+	if !strings.Contains(adminScript, "return url.pathname + url.search + url.hash;") {
+		t.Fatal("company menu links must preserve section hashes while adding empresa_id")
+	}
+	if !strings.Contains(adminScript, `link.setAttribute("href", target.pathname + target.search + target.hash);`) {
+		t.Fatal("company shell must retain section hashes when binding menu links")
+	}
+	for _, pageKey := range []string{"linkUbicacionGPS", "linkConfiguracionGPS"} {
+		expected := pageKey + ": { module: permModuleUbicacionGPS, action: permActionCreate }"
+		if !strings.Contains(adminScript, expected) {
+			t.Fatalf("GPS menu page %s must retain the ubicacion_gps permission", pageKey)
+		}
+	}
+
+	permissionCatalog := read("backend", "handlers", "empresa_permisos.go")
+	if !strings.Contains(permissionCatalog, `PaginaClave: "linkConfiguracionGPS", Modulo: permModuleUbicacionGPS`) {
+		t.Fatal("GPS configuration page must be registered in the backend permission catalog")
+	}
+
+	legacyModuleMenu := read("web", "administrar_empresa", "modulo_menu.html")
+	if strings.Contains(legacyModuleMenu, "Ubicacion GPS - Motel Calipso") {
+		t.Fatal("GPS module title must not contain a tenant-specific company name")
+	}
+	if !strings.Contains(legacyModuleMenu, `"Configuracion GPS"`) {
+		t.Fatal("legacy GPS module entry must also expose GPS configuration")
+	}
+}
+
 func TestBackendDefaultsToStrictCSPObservationWithoutBlockingCompatibility(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.platform.yml"))
 	if err != nil {
@@ -754,6 +827,12 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 		"https://fonts.gstatic.com",
 		"https://www.google.com",
 		"https://www.gstatic.com",
+		"https://api.open-meteo.com",
+		"https://geocoding-api.open-meteo.com",
+		"https://ipapi.co",
+		"https://ipinfo.io",
+		"https://api.bigdatacloud.net",
+		"https://nominatim.openstreetmap.org",
 	} {
 		if !strings.Contains(string(staticHeaders), origin) {
 			t.Fatalf("frontend CSP must allow the pinned visual resource origin %s", origin)
@@ -769,6 +848,40 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 	}
 	if !strings.Contains(string(domicilios), "function asArray(v)") || !strings.Contains(string(domicilios), "state.menu=asArray(menuData)") {
 		t.Fatal("Domicilios must render an empty menu response as an empty list")
+	}
+}
+
+func TestEmpresaPanelWeatherUsesBackendProxyAndLocalLandscape(t *testing.T) {
+	root := filepath.Clean("..")
+	panel, err := os.ReadFile(filepath.Join(root, "web", "administrar_empresa", "panel.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(panel)
+	for _, expected := range []string{
+		`--panel-weather-landscape: url("/img/empresa-panel-paisaje-v1.png")`,
+		`weatherProxyURL("forecast"`,
+		`weatherProxyURL("geocoding"`,
+		`fetchWeatherForecast(latitude, longitude, forecastURL)`,
+		`fetchWeatherGeocoding(locationName, geocodeURL)`,
+	} {
+		if !strings.Contains(content, expected) {
+			t.Fatalf("company panel weather is missing %q", expected)
+		}
+	}
+	if strings.Contains(content, "images.unsplash.com") {
+		t.Fatal("company panel weather background must be a local asset")
+	}
+	if _, err := os.Stat(filepath.Join(root, "web", "img", "empresa-panel-paisaje-v1.png")); err != nil {
+		t.Fatalf("local company weather landscape is missing: %v", err)
+	}
+
+	mainSource, err := os.ReadFile(filepath.Join(root, "backend", "main.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(mainSource), `http.HandleFunc("/api/empresa/clima", handlers.WithEmpresaSelfServicePermissions`) {
+		t.Fatal("weather proxy route must validate the authenticated company context")
 	}
 }
 

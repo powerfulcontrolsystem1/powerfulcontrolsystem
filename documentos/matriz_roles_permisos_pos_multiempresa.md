@@ -98,6 +98,11 @@ acción del módulo. No copiar una matriz estática antigua como autorización.
 | Nómina fiscal | Lectura/emisión cruzan los permisos de Nómina y Facturación |
 | Vida | empresa_id + usuario_id; un administrador no obtiene datos ajenos por el rol |
 
+Ubicacion GPS usa dos claves de pagina para su grupo principal:
+`linkUbicacionGPS` (seguimiento) y `linkConfiguracionGPS` (configuracion). Las
+dos exigen el mismo modulo efectivo `ubicacion_gps:C`; separar la navegacion no
+concede permisos nuevos ni sustituye el wrapper empresarial de los endpoints.
+
 Consultar `GET /api/empresa/permisos_contexto` dentro de la empresa autorizada;
 `include_matrix=1` expone el catálogo base. Verificar por separado los overrides
 y el permiso de cada action. Pruebas negativas deben cubrir rol sin acción,

@@ -38,8 +38,8 @@
       ["alertas", "Alertas"]
     ],
     "ubicacion_gps.html": [
-      ["dispositivos", "Dispositivos"],
-      ["mapa", "Mapa"]
+      ["configuracion", "Configuración GPS"],
+      ["mapa", "Seguimiento GPS"]
     ],
     "auditoria.html": [
       ["resumen", "Resumen"],
