@@ -248,6 +248,8 @@ if [ -d "$theme_source" ]; then
     /var/www/html/themes \
     /var/www/html/snappymail/themes \
     /var/www/html/snappymail/v/0.0.0/themes \
+    /var/www/snappymail/themes \
+    /var/www/snappymail/snappymail/v/*/themes \
     /snappymail/themes \
     /snappymail/v/0.0.0/themes
   do
@@ -258,7 +260,7 @@ if [ -d "$theme_source" ]; then
     fi
   done
   if [ "$copied" = "0" ]; then
-    for candidate in $(find / -maxdepth 6 -type d \( -path "*/snappymail/v/0.0.0/themes" -o -path "*/snappymail/themes" -o -path "*/html/themes" \) 2>/dev/null | head -n 6); do
+    for candidate in $(find /var/www /app /snappymail -type d \( -path "*/snappymail/v/*/themes" -o -path "*/snappymail/themes" -o -path "*/html/themes" \) 2>/dev/null | head -n 12); do
       cp -R "$theme_source"/PCS* "$candidate"/ 2>/dev/null || true
       chown -R mailu:mailu "$candidate"/PCS* 2>/dev/null || true
     done

@@ -47,9 +47,19 @@ class LoginController extends Controller {
 		}
 
 		$this->session->regenerateId();
-		$this->userSession->setUser($user);
-		$this->session->set('loginname', $uid);
-		$user->updateLastLoginTimestamp();
+		// Nextcloud validates every browser session against an entry in its
+		// authentication token store. Setting user_id alone works only for the
+		// current request and is discarded by validateSession() on redirect.
+		// completeLogin initializes the normal login state and
+		// createSessionToken persists the passwordless browser session.
+		$this->userSession->completeLogin($user, [
+			'loginName' => $uid,
+			'password' => '',
+		], false);
+		if (!$this->userSession->createSessionToken($this->request, $uid, $uid, null)) {
+			$this->userSession->logout();
+			return $this->loginPage();
+		}
 
 		return new RedirectResponse($this->urlGenerator->linkToRouteAbsolute('files.view.index'));
 	}

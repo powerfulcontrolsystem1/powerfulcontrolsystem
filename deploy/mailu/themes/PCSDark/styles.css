@@ -41,6 +41,43 @@ body,
   color: #e5eefb !important;
 }
 
+#rl-content,
+#rl-right,
+.messageList,
+.messageView,
+.messageListPlace {
+  background-color: #0b1726 !important;
+  color: #e5eefb !important;
+}
+
+#V-MailMessageList > .btn-toolbar,
+#V-MailMessageView > .btn-toolbar,
+.messageList .b-toolbar {
+  background-color: #0f1c2e !important;
+  border-color: #213147 !important;
+}
+
+.messageListItem {
+  background-color: #0b1726 !important;
+  border-color: #213147 !important;
+  color: #e5eefb !important;
+}
+
+.messageListItem:hover,
+.messageListItem.focused,
+.messageListItem.selected {
+  background-color: #10243a !important;
+}
+
+.messageListItem.unseen {
+  background-color: #112a43 !important;
+}
+
+.messageListItem *,
+.messageView .b-message-view-desc {
+  color: inherit !important;
+}
+
 .b-toolbar,
 .b-folders,
 .b-message-list,
