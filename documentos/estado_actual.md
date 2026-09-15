@@ -31,7 +31,10 @@ La sala personal de [Juegos y Accesorios](juegos_accesorios.md) incorpora seis
 juegos adaptables, guardado por identidad de sesión y récords recreativos
 compartidos entre empresas. Su aceptación requiere migración, aislamiento de
 partidas, recuperación de guardados y controles visuales en escritorio y móvil;
-GTAS usa Three.js autorizado y modelos CC0 con una reconstrucción compacta de Springfield. Se abre en una ventana flotante y sustituye DOON; la exploración es libre, sin ruta guiada. No se presenta como una réplica exacta ni como fotorealismo.
+GTAS usa Three.js autorizado, modelos CC0 y recursos propios de Blender con una
+reconstrucción compacta de Springfield. Juegos se abre en una ventana independiente
+y sustituye DOON; la exploración es libre, sin ruta guiada. No se presenta como
+una réplica exacta ni como fotorealismo.
 
 | Área | Criterio actual |
 | --- | --- |

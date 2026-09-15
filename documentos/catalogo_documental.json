@@ -273,7 +273,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "9aaa0e18a8ed57b46092a06719cc73d9036a106754b117f3dc3a750e7ea08c48"
+      "sha256_lf": "d26df4cc6b905f0b6c446ac9c523e5625b5940670eba772698392c811147edc5"
     },
     {
       "path": "documentos/api/openapi.mobile.v1.yaml",
@@ -759,7 +759,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-14",
       "review_due": "2026-12-13",
-      "sha256_lf": "080dbd1be9c5da5bee252e02c2b7a61fce85bc2cb987f6ccd20fb57cf207f8d6"
+      "sha256_lf": "74002b6cae9d26b92a7ec1bc8e004e42d6462814f0d0508dda41a199d171abe1"
     },
     {
       "path": "documentos/estructura_bd.md",
