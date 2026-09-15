@@ -11,7 +11,7 @@ capturas de los juegos. El [contenedor flotante](../web/juegos/ventana.js) y sus
 en PC y minimizable, sin bloquear la aplicación del fondo. Cada juego ocupa ese
 mismo iframe; volver al menú pausa y guarda. Cerrar oculta el iframe y conserva
 su estado en memoria. No se interceptan los atajos de la aplicación anfitriona.
-El catálogo presenta primero GTA SIMSong, seguido de Pac-Man Canvas, Tetris,
+El catálogo presenta primero GTAS, seguido de Pac-Man Canvas, Tetris,
 Buscaminas, Solitario Klondike y la aventura submarina sorpresa. DOON se retira.
 La calculadora conserva su ventana compacta. En móvil el mando semitransparente
 se superpone al juego; no se abre una pestaña nueva.
@@ -38,7 +38,7 @@ Cargar y Nueva solicitan confirmación para reemplazar avances.
   primera apertura segura, banderas, apertura vecina y expansión de vacíos para
   Buscaminas; robo de una carta, secuencias alternadas, bases por palo,
   auto a bases y deshacer para Solitario.
-- [GTA SIMSong](../web/juegos/simsong/game.js): ciudad de exploración libre,
+- [GTAS](../web/juegos/simsong/game.js): ciudad de exploración libre,
   caminar/correr, salto y gravedad, vehículos utilizables, peatones animados,
   cúpula transparente con límite físico, casa de Homero de dos plantas y Moe
   accesibles, más la oficina de Burns en la central. Las tres misiones de descubrimiento se completan en cualquier
@@ -67,7 +67,27 @@ Cargar y Nueva solicitan confirmación para reemplazar avances.
   originales: Homero, Marge, Bart, Lisa y Maggie en casa; Moe y Barney en la taberna;
   Burns y Smithers en la central; Apu, Flanders, Skinner, Krusty y Milhouse en la
   ciudad, y Gorgory sentado en la patrulla. Este es el elenco inicial, ampliable.
-  El equipo militar se monta sobre el rig CC0 y recolorea ropa en el shader.
+  El militar visible es un modelo completo de Blender con uniforme, casco, visor,
+  rifle, guantes y botas; sus piernas alternan al correr y se flexionan al saltar.
+  Los peatones conservan el rig y los clips CC0.
+  El clic izquierdo dispara inmediatamente y, sostenido, repite cada 0,2 segundos;
+  el derecho o Q abre el menú del jugador y congela el combate. El mando táctil
+  incluye Jugador. El menú permite cambiar las tres cámaras y consultar salud,
+  vidas, puntaje y enemigos restantes. El ID interno `simsong` conserva partidas.
+  El [audio de GTAS](../web/juegos/simsong/audio.js) genera una melodía original,
+  láser, gritos de impacto y avisos de proximidad según distancia. Recibir daño
+  activa sonido, viñeta roja y reacción del cuerpo; la invulnerabilidad no simula
+  otro impacto. Pausa y silencio detienen los sonidos activos y no generan otros.
+  El [generador de Blender](../tools/blender/build_gtas_assets.py) produce el
+  [proyecto editable](../tools/blender/gtas_models.blend) y cuatro recursos:
+  [militar completo](../web/juegos/simsong/assets/gtas/soldier-gear.glb),
+  [extraterrestre](../web/juegos/simsong/assets/gtas/alien.glb),
+  [ovni](../web/juegos/simsong/assets/gtas/ufo.glb) y
+  [detalle urbano](../web/juegos/simsong/assets/gtas/springfield-world.glb).
+  Se regeneran con Blender 4.5.13 `--background --python tools/blender/build_gtas_assets.py`.
+  El archivo tiene colecciones separadas y materiales PBR; el detalle urbano
+  añade calzadas, andenes, farolas, bancos, vegetación e hidrantes. Los edificios
+  existentes se conservan. Los tentáculos se animan sobre su orientación original.
 - [Mundos](../web/juegos/mundos.js) y [renderizador](../web/juegos/render3d.js):
   WebGL nativo para la aventura sorpresa, que
   incluye exploración, oxígeno recargable en superficie, diez tesoros, fauna
@@ -77,7 +97,7 @@ Cargar y Nueva solicitan confirmación para reemplazar avances.
   Se investigaron también [Freedoom](https://freedoom.github.io/about.html) y
   [Dwasm](https://github.com/GMH-Code/Dwasm); no se distribuyen sus recursos.
 
-GTA SIMSong usa Three.js r186/0.186.0, GLTFLoader, SkeletonUtils y
+GTAS usa Three.js r186/0.186.0, GLTFLoader, SkeletonUtils y
 BufferGeometryUtils, autorizados expresamente por el usuario. La
 [procedencia](../web/juegos/simsong/PROVENANCE.md) detalla versiones, licencias,
 modelos CC0 de Kenney, conversiones y referencias de Springfield. El
@@ -152,6 +172,8 @@ de los clásicos y serialización sin depender de puntuaciones de cuentas reales
 la cúpula, salto/gravedad, A*, evitación de tráfico y accesibilidad de entradas.
 [Pruebas de combate](../tools/simsong_combat.test.mjs) comprueban impactos múltiples,
 puntos únicos, tres vidas y animación completa, restauración y oclusión por paredes.
+[Pruebas de audio](../tools/gtas_audio.test.mjs) verifican silencio, proximidad,
+liberación de conexiones y firmas distintas para música, armas e impactos.
 [La prueba de migración de Springfield](../backend/db/juegos_simsong_test.go) comprueba que los guardados retirados se conservan y que el CHECK admite el nuevo juego.
 La aceptación visual incluye controles, pausa, guardado/carga, audio activado y
 pantalla completa en escritorio y viewport móvil. La evidencia de cada candidato

@@ -4,12 +4,13 @@ import {clone} from '../vendor/three/SkeletonUtils.js';
 
 export async function loadAssets(){
  const loader=new GLTFLoader(),assets=new Map();
- const groups={characters:['skaterMaleA','skaterFemaleA','criminalMaleA'],cars:['sedan','police','taxi','van'],suburban:['building-type-a','building-type-b','building-type-c','building-type-e','building-type-g','building-type-j','building-type-m','building-type-q'],furniture:['loungeSofa','televisionVintage','lampRoundFloor','tableCoffee','kitchenFridge','kitchenStove','kitchenSink','kitchenCabinet','table','chair','stoolBar','kitchenBar','bedDouble','bedSingle','desk','bookcaseOpen','bathtub','toilet','bathroomSink','rugRectangle','pottedPlant']};
+ const groups={characters:['skaterMaleA','skaterFemaleA','criminalMaleA'],cars:['sedan','police','taxi','van'],suburban:['building-type-a','building-type-b','building-type-c','building-type-e','building-type-g','building-type-j','building-type-m','building-type-q'],furniture:['loungeSofa','televisionVintage','lampRoundFloor','tableCoffee','kitchenFridge','kitchenStove','kitchenSink','kitchenCabinet','table','chair','stoolBar','kitchenBar','bedDouble','bedSingle','desk','bookcaseOpen','bathtub','toilet','bathroomSink','rugRectangle','pottedPlant'],gtas:['soldier-gear','alien','ufo','springfield-world']};
  await Promise.all(Object.entries(groups).flatMap(([group,names])=>names.map(async name=>{
   const gltf=await loader.loadAsync(`/juegos/simsong/assets/${group}/${name}.glb`);
   gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});assets.set(name,gltf);
  })));
  return {
+  raw(name){const source=assets.get(name);if(!source)throw Error(`Modelo no disponible: ${name}`);return clone(source.scene)},
   model(name,height){const source=assets.get(name);if(!source)throw Error(`Modelo no disponible: ${name}`);const root=clone(source.scene),box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),scale=height/size.y;root.scale.multiplyScalar(scale);root.position.y-=box.min.y*scale;const group=new THREE.Group();group.add(root);return group},
   actor(name){
    const root=this.model(name,1.8),mixer=new THREE.AnimationMixer(root),actions={};
@@ -17,7 +18,7 @@ export async function loadAssets(){
    const arms=[['LeftArm','LeftForeArm',-1],['RightArm','RightForeArm',1]].map(([a,b,side])=>({bone:root.getObjectByName(a),child:root.getObjectByName(b),side}));
    const position=new THREE.Vector3(),direction=new THREE.Vector3(),desired=new THREE.Vector3(),rotation=new THREE.Quaternion(),parent=new THREE.Quaternion(),world=new THREE.Quaternion(),facing=new THREE.Quaternion();let current;
    return {root,mixer,animate(name,dt){
-    const next=actions[name]||actions.idle;if(next&&next!==current){current?.fadeOut(.18);next.reset().fadeIn(.18).play();current=next}mixer.update(dt);
+    const next=actions[name]||actions.idle;if(next&&next!==current){current?.fadeOut(.18);next.reset().fadeIn(.18).play();current=next}mixer.update(dt);root.userData.animateMilitary?.(name,mixer.time);
     // Correct the source FBX shoulder spread after retargeting to the medium mesh.
     // Lower-body motion and forearm articulation remain the imported clips.
     root.updateMatrixWorld(true);root.getWorldQuaternion(facing);

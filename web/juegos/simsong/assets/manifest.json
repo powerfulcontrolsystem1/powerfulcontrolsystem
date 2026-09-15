@@ -2,7 +2,8 @@
   "three": "0.186.0",
   "licenses": [
     "MIT (Three.js)",
-    "CC0 (Kenney)"
+    "CC0 (Kenney)",
+    "Original PCS (GTAS Blender assets)"
   ],
   "files": [
     {
@@ -194,6 +195,26 @@
       "path": "simsong/assets/furniture/toilet.glb",
       "bytes": 18112,
       "sha256": "16165cfd03c56c2cb443b800570810a22ef770f65e7a468f6761d9dc14eaaeae"
+    },
+    {
+      "path": "simsong/assets/gtas/alien.glb",
+      "bytes": 393432,
+      "sha256": "261821f2330e3ab17b4eb07362d4eaed43bdf78a42a5c6cdc513ab105e189e51"
+    },
+    {
+      "path": "simsong/assets/gtas/soldier-gear.glb",
+      "bytes": 376144,
+      "sha256": "db2dabfa180a3aa393d8a6ce2fdeb0400234a9fa19e68d68b00cc16e84275f2c"
+    },
+    {
+      "path": "simsong/assets/gtas/springfield-world.glb",
+      "bytes": 2595904,
+      "sha256": "87d8a6851271334bd13529d88283e348f96a3877dbd7cc54e3245dc4221bb6ec"
+    },
+    {
+      "path": "simsong/assets/gtas/ufo.glb",
+      "bytes": 327820,
+      "sha256": "88dbf24768e205e0d2ac7bdc96508dbb9e2f33cb19e644e1d0ce9851105e64e9"
     },
     {
       "path": "simsong/assets/suburban/LICENSE.txt",

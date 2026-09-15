@@ -1,4 +1,11 @@
-# Recursos de GTA SIMSong
+# Recursos de GTAS
+
+El equipo militar, extraterrestre, OVNI y detalle urbano de `assets/gtas/` son
+obras originales creadas para PCS en Blender 4.5.13 LTS. Su fuente reproducible
+es [build_gtas_assets.py](../../../tools/blender/build_gtas_assets.py) y el
+proyecto editable es [gtas_models.blend](../../../tools/blender/gtas_models.blend).
+No heredan la licencia CC0 de Kenney. La música y efectos de [audio.js](audio.js)
+son síntesis original de PCS, sin grabaciones de terceros.
 
 Three.js **0.186.0 / r186**, MIT, fue autorizado expresamente por el usuario para
 renderizado, GLTF y animaciones el 2026-09-14. Se aloja en
@@ -45,6 +52,6 @@ La planificación pertenece a NPC; no genera flechas ni una ruta para el jugador
 
 Se revisó [la explicación de Rockstar sobre primera persona y controles](https://blog.playstation.com/archive/2014/11/04/grand-theft-auto-v-ps4-introducing-new-first-person-mode/) y [sus consejos de perspectiva](https://www.rockstargames.com/es/newswire/article/25o2411812oa29/rockstar-game-tips-playing-with-perspective-in-gtav). Se aplican cambio de perspectiva con un botón, cámara al hombro, movimiento relativo a cámara, vehículo utilizable, misión elegible y minimapa. No se incorpora código, audio ni recursos de GTA.
 
-Los personajes de Springfield, equipo militar, extraterrestres y ovnis de [characters.js](characters.js) son geometría original estilizada. Para Kang y Kodos se consultaron las [figuras oficiales de Super7](https://super7.com/blogs/news/the-simpsons-ultimates-wave-3-figures) y [la imagen de referencia de Kodos](https://simpsonswiki.com/wiki/File:Kodos.png): ojo único, tentáculos, dientes y casco transparente. Las imágenes no se redistribuyen. El militar y los peatones reutilizan el rig y las animaciones CC0 de Kenney; no se afirma que los personajes propios sean modelos oficiales ni que pertenezcan a la licencia de Kenney.
+[characters.js](characters.js) compone el elenco original estilizado y carga los modelos propios de Blender para el militar, extraterrestres y ovnis. Para Kang y Kodos se consultaron las [figuras oficiales de Super7](https://super7.com/blogs/news/the-simpsons-ultimates-wave-3-figures) y [la imagen de referencia de Kodos](https://simpsonswiki.com/wiki/File:Kodos.png): ojo único, tentáculos, dientes y casco transparente. Las imágenes no se redistribuyen. Los peatones reutilizan el rig y las animaciones CC0 de Kenney; el cuerpo visible del militar se modela en Blender y anima sus piernas de forma procedural; no se afirma que los personajes propios sean modelos oficiales ni que pertenezcan a la licencia de Kenney.
 
 La IA emplea A* y separación para perseguir sin cruzar edificios, rayos contra cajas para visibilidad y obstáculos, enfriamiento entre ataques y proyectiles con colisión continua. No usa servicios externos ni aprendizaje automático.
