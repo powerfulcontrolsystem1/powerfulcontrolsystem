@@ -112,14 +112,31 @@ display_name="$(printf "%s" "${PCS_MAILU_NAME:-}" | tr "\r\n\t" "   " | tr "\\\"
 path="/data/_data_/_default_/storage/$safe_domain/$safe_local"
 mkdir -p "$path"
 printf "[{\"Id\":\"\",\"Label\":\"\",\"Email\":\"%s\",\"Name\":\"%s\",\"ReplyTo\":\"\",\"Bcc\":\"\",\"Signature\":\"\",\"SignatureInsertBefore\":false,\"sentFolder\":\"\",\"pgpEncrypt\":false,\"pgpSign\":false,\"smimeKey\":\"\",\"smimeCertificate\":\"\"}]\n" "$email" "$display_name" > "$path/identities"
-settings_dir="$path/settings"
-mkdir -p "$settings_dir"
-printf "[webmail]\ntheme = \"%s@custom\"\n\n[defaults]\ntheme = \"%s@custom\"\n" "$theme_name" "$theme_name" > "$settings_dir/settings_local"
-printf "{\"theme\":\"%s@custom\",\"mode\":\"%s\"}\n" "$theme_name" "$theme_mode" > "$settings_dir/pcs-theme.json"
+settings_file="$path/settings"
+if [ -d "$settings_file" ]; then
+  rm -f "$settings_file/settings_local" "$settings_file/pcs-theme.json"
+  rmdir "$settings_file"
+fi
+update_theme_setting() {
+  settings_target="$1"
+  settings_tmp="$settings_target.pcs-theme.tmp"
+  if [ ! -f "$settings_target" ] || ! grep -q "^[[:space:]]*{" "$settings_target"; then
+    printf "{\"Theme\":\"%s@custom\"}" "$theme_name" > "$settings_tmp"
+  elif grep -q '"Theme"[[:space:]]*:' "$settings_target"; then
+    sed -E "s/\"Theme\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"Theme\":\"$theme_name@custom\"/" "$settings_target" > "$settings_tmp"
+  elif grep -Eq "^[[:space:]]*\\{[[:space:]]*\\}[[:space:]]*$" "$settings_target"; then
+    printf "{\"Theme\":\"%s@custom\"}" "$theme_name" > "$settings_tmp"
+  else
+    sed "s/^[[:space:]]*{/{\"Theme\":\"$theme_name@custom\",/" "$settings_target" > "$settings_tmp"
+  fi
+  mv "$settings_tmp" "$settings_target"
+}
+update_theme_setting "$path/settings"
+update_theme_setting "$path/settings_local"
+printf "{\"theme\":\"%s@custom\",\"mode\":\"%s\"}\n" "$theme_name" "$theme_mode" > "$path/pcs-theme.json"
 chown -R mailu:mailu "$path" 2>/dev/null || true
 chmod 700 "$path" 2>/dev/null || true
 chmod 600 "$path/identities" 2>/dev/null || true
-chmod 700 "$settings_dir" 2>/dev/null || true
-chmod 600 "$settings_dir/settings_local" "$settings_dir/pcs-theme.json" 2>/dev/null || true
+chmod 600 "$settings_file" "$path/settings_local" "$path/pcs-theme.json" 2>/dev/null || true
 ' >/dev/null 2>&1 || true
 fi
