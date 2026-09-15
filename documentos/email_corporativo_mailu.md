@@ -150,8 +150,11 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
   `settings_local` de cada buzon cuando recibe `PCS_MAILU_THEME_MODE`. Tambien
   repara la estructura antigua que habia creado `settings` como directorio e
   impedia guardar cambios.
-- El autologin sincroniza esa preferencia antes de crear la sesion de SnappyMail;
-  por ello el webmail integrado abre con el modo claro u oscuro activo en PCS.
+- El autologin sincroniza esa preferencia con
+  `deploy/scripts/vps-sync-snappymail-theme.sh` antes de crear la sesion de
+  SnappyMail. La operacion es independiente del proveedor de aprovisionamiento
+  (`mailu_api` o `mailu_direct`), por lo que el webmail integrado abre con el
+  modo claro u oscuro activo en PCS.
 
 ## Tablas y configuracion
 
