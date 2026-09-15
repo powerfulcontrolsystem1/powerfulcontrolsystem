@@ -1072,6 +1072,11 @@ liquidaciones + pagos + perfil + configuracion
 - `web/js/vida.js` usa `BarcodeDetector` y `getUserMedia` solo tras el clic del
   usuario, detiene todas las pistas al cerrar y conserva entrada manual como
   alternativa.
+- El alta manual de gasto puede marcarse recurrente: el handler valida el
+  calendario y `backend/db/vida.go` inserta gasto, líneas de precio opcionales y
+  suscripción de recordatorio en una única transacción por empresa y usuario.
+  La UI lo presenta como “Gastos recurrentes y suscripciones”; no crea CxP,
+  contabilidad ni cobros futuros.
 
 ## Actualizacion 2026-04-30 (pagos, chat IA, documentos y empresas compartidas)
 

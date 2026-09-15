@@ -66,13 +66,34 @@ func TestVidaValidationRejectsInvalidPersonalAmountsAndDates(t *testing.T) {
 	}
 }
 
+func TestVidaRecurringExpenseBuildsPrivatePaymentPlan(t *testing.T) {
+	gasto := dbpkg.EmpresaVidaGasto{
+		EmpresaID: 12, UsuarioID: "persona@example.test", FechaGasto: "2026-09-14",
+		Categoria: "servicios", Comercio: "Internet hogar", Descripcion: "Plan familiar",
+		Monto: 89000, Moneda: "COP", MetodoPago: "transferencia", ClientRequestID: "vida-recurrente-1",
+		Recurrente: true, Periodicidad: "mensual", Intervalo: 1, ProximoPago: "2026-10-14",
+		RecordatorioDias: 7, TipoRecordatorio: "renovar", AutoRenovacion: true,
+	}
+	plan, err := vidaRecurringSubscriptionFromGasto(gasto)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan == nil || plan.EmpresaID != gasto.EmpresaID || plan.UsuarioID != gasto.UsuarioID || plan.Costo != gasto.Monto || plan.ProximaRenovacion != "2026-10-14" || plan.ClientRequestID != gasto.ClientRequestID {
+		t.Fatalf("unexpected recurring plan: %#v", plan)
+	}
+	gasto.ProximoPago = "invalida"
+	if _, err := vidaRecurringSubscriptionFromGasto(gasto); err == nil {
+		t.Fatal("recurring expense accepted an invalid next payment date")
+	}
+}
+
 func TestVidaFrontendCaptureAndLocalDateContract(t *testing.T) {
 	page, err := os.ReadFile(filepath.Join("..", "..", "web", "administrar_empresa", "vida.html"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	html := string(page)
-	for _, marker := range []string{`capture="environment"`, `accept="image/jpeg,image/png,image/webp,application/pdf"`, `id="vidaExpenseDialog"`, `id="vidaSubscriptionDialog"`, `id="vidaAIDialog"`, `id="vidaScannerDialog"`, `data-tab="precios"`} {
+	for _, marker := range []string{`capture="environment"`, `accept="image/jpeg,image/png,image/webp,application/pdf"`, `id="vidaExpenseDialog"`, `id="vidaSubscriptionDialog"`, `id="vidaExpenseRecurring"`, `id="vidaExpenseRecurringFields"`, `name="proximo_pago"`, `id="vidaAIDialog"`, `id="vidaScannerDialog"`, `data-tab="precios"`} {
 		if !strings.Contains(html, marker) {
 			t.Fatalf("Vida page is missing %q", marker)
 		}
@@ -83,7 +104,7 @@ func TestVidaFrontendCaptureAndLocalDateContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	js := string(script)
-	for _, marker := range []string{"d.getFullYear()", "d.getMonth()+1", "d.getDate()", "pcs_vida_alert_", "BarcodeDetector", "getUserMedia", "factura_ia", "loadPrices"} {
+	for _, marker := range []string{"d.getFullYear()", "d.getMonth()+1", "d.getDate()", "pcs_vida_alert_", "BarcodeDetector", "getUserMedia", "factura_ia", "loadPrices", "toggleExpenseRecurrence", "response.suscripcion"} {
 		if !strings.Contains(js, marker) {
 			t.Fatalf("Vida script is missing %q", marker)
 		}

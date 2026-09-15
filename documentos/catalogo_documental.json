@@ -273,7 +273,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "9aaa0e18a8ed57b46092a06719cc73d9036a106754b117f3dc3a750e7ea08c48"
+      "sha256_lf": "d26df4cc6b905f0b6c446ac9c523e5625b5940670eba772698392c811147edc5"
     },
     {
       "path": "documentos/api/openapi.mobile.v1.yaml",
@@ -705,7 +705,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-14",
       "review_due": "2026-12-13",
-      "sha256_lf": "ce656eff898e1467d17cfa27a59d02c7694d43046533b29e7fcc50931b4a96d3"
+      "sha256_lf": "9773746e75f35fde9b36431b57e03af23b351f0d03437bf5ff89102695e3d43f"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -768,7 +768,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-14",
       "review_due": "2026-12-13",
-      "sha256_lf": "e1a8ec9cc1566705d9a61171ec1e9a1381be81feb53bb4dc99dfc033db2b0079"
+      "sha256_lf": "4dbc3f6be930003a6820e1a41c062f8e533aeef7a998882a46d3f4c963bd5a89"
     },
     {
       "path": "documentos/flujos_operativos.md",
@@ -1434,7 +1434,7 @@
       "owner": "Ingeniería del módulo",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "c0c80af29cb73a31dd5449f8dcfee9f90caf2004abaf1e123223d35749e722b9"
+      "sha256_lf": "f00251095047d3a60f4f044eff89f7316ea6f486cc5415c5ae9a1fc6024d62b3"
     },
     {
       "path": "documentos/vps2_operacion.md",
