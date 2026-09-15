@@ -2,9 +2,9 @@
   "schema_version": 1,
   "policy": "documentos/gobernanza_tecnica/politica_catalogo.json",
   "scope": "Documentos de texto versionados o nuevos no ignorados por Git; metadatos técnicos bajo documentos. Excluye datos privados ignorados y binarios. Sin auditoría semántica ni validación de URLs externas.",
-  "total": 164,
+  "total": 161,
   "counts": {
-    "vigente": 137,
+    "vigente": 134,
     "generado": 20,
     "contrato_maquina": 1,
     "referencia_por_validar": 4,
@@ -231,24 +231,6 @@
       "sha256_lf": "e3335c82c31516164e86ad43703ccb981deeed59f8f280337c84741581bc0e20"
     },
     {
-      "path": "documentos/aiu_construccion.md",
-      "title": "AIU construccion y contratos de obra",
-      "state": "vigente",
-      "owner": "Ingeniería del módulo",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "083057e3d10ef50f6afd40754795eb56d6266390d994e12f41a61106a0420ae6"
-    },
-    {
-      "path": "documentos/alquileres.md",
-      "title": "Alquileres / Renta universal de activos",
-      "state": "vigente",
-      "owner": "Ingeniería del módulo",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "170e632093753a855c5520e1aad7af8c534370bcdc70f99989a0ef77d3c1e990"
-    },
-    {
       "path": "documentos/api/README.md",
       "title": "Contratos e inventarios API",
       "state": "vigente",
@@ -345,7 +327,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "80df83c91ee8092b911bddc1d7d631de16561314010b948f19c1dc75f1c0af7f"
+      "sha256_lf": "a76609d65c685b9be8d3755bdbb8e3354a402205c21c9eed04b2fb51c1e9b7d2"
     },
     {
       "path": "documentos/arquitectura/inventario_cliente_movil_plan_105.md",
@@ -417,7 +399,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "1c41c9ebee7a7069ea33c0f877dbdac2f7160234f3d846eb9aef9cee1f846686"
+      "sha256_lf": "00529003f533f108dc1101527b48764570630bce8541f0204f9a95d2f551d529"
     },
     {
       "path": "documentos/arquitectura/matriz_rutas_multiempresa.md",
@@ -433,9 +415,9 @@
       "title": "Arquitectura de modulos universales",
       "state": "vigente",
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "ebc958be72e0abd040b9ea896842449cbf15552c4179c4c1c1133b8f54e2d9e4"
+      "reviewed": "2026-09-14",
+      "review_due": "2026-12-13",
+      "sha256_lf": "492f003adbbf297ba732b5df3d2bc930dd388e8eb63038162a20575a9be4acd1"
     },
     {
       "path": "documentos/calidad/code_quality_baseline.json",
@@ -586,9 +568,9 @@
       "title": "Contexto especifico del sistema",
       "state": "vigente",
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "a1d5ed93796ade8009e764aa94aa906a0d8e78fc3a6298a77cb33200a46aee8f"
+      "reviewed": "2026-09-14",
+      "review_due": "2026-12-13",
+      "sha256_lf": "07c847112329c507a62d832f552e526dfe88ce1021fc39fd8e1f6c4f11acb722"
     },
     {
       "path": "documentos/contexto_general_del_sistema.md",
@@ -658,9 +640,9 @@
       "title": "Descripción de módulos",
       "state": "vigente",
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "d54fabcd0d011bbe90270690526e831c78d96e21ded436c8ad715b0970f168c9"
+      "reviewed": "2026-09-14",
+      "review_due": "2026-12-13",
+      "sha256_lf": "7497f54be206a7c4d12c0f198e18eefe553bc3b574f15af8e5f6a49519dfaf29"
     },
     {
       "path": "documentos/descripcion_del_proyecto",
@@ -723,7 +705,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-14",
       "review_due": "2026-12-13",
-      "sha256_lf": "a57fef6a8b83ee77226acba415a9c8476421c6200dba16810ddcf870d2a7a4ab"
+      "sha256_lf": "9773746e75f35fde9b36431b57e03af23b351f0d03437bf5ff89102695e3d43f"
     },
     {
       "path": "documentos/docker_vps_operacion.md",
@@ -733,15 +715,6 @@
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
       "sha256_lf": "307dd8b84f284386294206723b5c8aba9fb524dde3966ec84a1ae2c0905ac5eb"
-    },
-    {
-      "path": "documentos/domicilios_profesional.md",
-      "title": "Modulo profesional de domicilios",
-      "state": "vigente",
-      "owner": "Ingeniería del módulo",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "f94b7d73c34481b9bfc9e114442c22f7f32f063556f903e218665d43e96f9916"
     },
     {
       "path": "documentos/domotica_raspberry_tunnel.md",
@@ -784,9 +757,9 @@
       "title": "Estado actual del sistema",
       "state": "vigente",
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-07",
-      "review_due": "2026-12-06",
-      "sha256_lf": "fc2ec524929f3d9cc9f2bcf413b0439a7b02e7eb14ee16c10c8de23c39d84f91"
+      "reviewed": "2026-09-14",
+      "review_due": "2026-12-13",
+      "sha256_lf": "080dbd1be9c5da5bee252e02c2b7a61fce85bc2cb987f6ccd20fb57cf207f8d6"
     },
     {
       "path": "documentos/estructura_bd.md",
@@ -795,7 +768,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-14",
       "review_due": "2026-12-13",
-      "sha256_lf": "d6c098acf9069044d2b279ac6c0cb77b20cc0b538450500fbca7a44c4ace2c7e"
+      "sha256_lf": "4dbc3f6be930003a6820e1a41c062f8e533aeef7a998882a46d3f4c963bd5a89"
     },
     {
       "path": "documentos/flujos_operativos.md",
@@ -804,7 +777,7 @@
       "owner": "Coordinación técnica",
       "reviewed": "2026-09-14",
       "review_due": "2026-12-13",
-      "sha256_lf": "64cedda6b05d68877515acd2c79b036fcdd86450bdd45a72ab74c67eb8c5cbbe"
+      "sha256_lf": "13d933fc82f525f6147b594200074190e33cc629f6a70dd3bff0da1bcb140754"
     },
     {
       "path": "documentos/gobernanza_tecnica/README.md",
@@ -1020,7 +993,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "dd67090247631ecfb794ebf936227653ca733d5d339ec2d094beb1e19c40cc2c"
+      "sha256_lf": "63822c58338f74aee92bfcaccacc9d53beac06ab3520984acec895283ade9a96"
     },
     {
       "path": "documentos/gobernanza_tecnica/riesgos_y_brechas.md",
@@ -1245,7 +1218,7 @@
       "owner": "Coordinación técnica",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "4bd04bdeb05431077e7a831090647eb4c5df360a01cf61be38d4e5e35afef461"
+      "sha256_lf": "f660137c8270c750988e2e1b80499517cedf53fd71d88149f870f5f07088001e"
     },
     {
       "path": "documentos/logistica_wms.md",
@@ -1279,18 +1252,27 @@
       "title": "Mapa de modulos",
       "state": "vigente",
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "60166eebf7adfd3fa2b05bd9cc56a076f54d683d630dff453d109675f1ed88b3"
+      "reviewed": "2026-09-14",
+      "review_due": "2026-12-13",
+      "sha256_lf": "d4983187f0af1d4c2322684e695794921022a2e03ef6daed12937c8f920f94d0"
     },
     {
       "path": "documentos/matriz_integracion_plantillas.md",
       "title": "Matriz de integracion de plantillas",
       "state": "vigente",
       "owner": "Ingeniería de módulos",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "d927877a27289982b0070da67d0e910d7ade967eafe0235379b97664e5ada884"
+      "reviewed": "2026-09-14",
+      "review_due": "2026-12-13",
+      "sha256_lf": "f13a7fd85ff8c7d6bb1a93cffbb9a36ec2b225ab1a99d97ddb3da63f366dd409"
+    },
+    {
+      "path": "documentos/matriz_preconfiguraciones_basicas.md",
+      "title": "Matriz de preconfiguraciones basicas",
+      "state": "vigente",
+      "owner": "Ingeniería de módulos",
+      "reviewed": "2026-09-14",
+      "review_due": "2026-12-13",
+      "sha256_lf": "092f7b1f238b272f42ff7a3ece768e7d0707f5bcc215ad7d6dfaf33cd17b9220"
     },
     {
       "path": "documentos/matriz_roles_permisos_pos_multiempresa.md",
@@ -1345,15 +1327,6 @@
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
       "sha256_lf": "f195e609f2c4a53e862da3ef4e3ae8a94fd7584e46ffdb3b5ccde8a1e381c7de"
-    },
-    {
-      "path": "documentos/parqueadero_tickets_qr.md",
-      "title": "Modulo Parqueadero: tickets QR y cobro automatico",
-      "state": "vigente",
-      "owner": "Ingeniería del módulo",
-      "reviewed": "2026-09-05",
-      "review_due": "2026-12-04",
-      "sha256_lf": "7f0610824acace3e6d4a280439d71205a9fcc965c3406db1fbb7f55c05147bf5"
     },
     {
       "path": "documentos/portal_contador.md",
