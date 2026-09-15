@@ -7,14 +7,14 @@ import (
 
 func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 	catalog := NuevasPlantillasTipoEmpresaCatalog()
-	if len(catalog) != 9 {
-		t.Fatalf("expected 9 nuevas plantillas, got %d", len(catalog))
+	if len(catalog) != 1 || catalog[0].Modulo != "taller_mecanico" {
+		t.Fatalf("expected solo taller_mecanico, got %+v", catalog)
 	}
 	for _, item := range catalog {
 		t.Run(item.Modulo, func(t *testing.T) {
 			plantilla := GetEmpresaModuloColombiaPlantilla(item.Modulo)
-			if item.Nombre != plantilla.Titulo {
-				t.Fatalf("catalog nombre=%q want plantilla titulo=%q", item.Nombre, plantilla.Titulo)
+			if item.Nombre != "Taller de motos" || plantilla.Modulo != item.Modulo {
+				t.Fatalf("catalogo de taller inesperado: item=%+v plantilla=%+v", item, plantilla)
 			}
 			if strings.TrimSpace(item.Observaciones) == "" || !strings.Contains(strings.ToLower(item.Observaciones), "gestion profesional") {
 				t.Fatalf("observaciones derivadas invalidas: %q", item.Observaciones)
@@ -41,8 +41,8 @@ func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 
 func TestNuevasPlantillasProduccionMasivaLicenciasRecomendadas(t *testing.T) {
 	selected := NuevasPlantillasProduccionMasivaSeleccionados()
-	if len(selected) != 9 {
-		t.Fatalf("seleccion produccion len=%d want 9", len(selected))
+	if len(selected) != 1 || selected[0] != "taller_mecanico" {
+		t.Fatalf("seleccion adicional inesperada: %v", selected)
 	}
 	for _, modulo := range selected {
 		t.Run(modulo, func(t *testing.T) {

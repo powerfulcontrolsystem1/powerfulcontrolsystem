@@ -14,6 +14,21 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## Navegacion y apariencia de Administrar empresa
+
+1. Toda entrada del menú empresarial abre en el iframe `contentFrame` y conserva
+   el menú lateral, incluidos E-mail Corporativo y Login de usuarios.
+2. Vida se presenta dentro de Finanzas y cumplimiento. Usuarios, Clientes y
+   Login de usuarios están visibles en el predeterminado v4 para todas las empresas.
+3. `Volver a empresas` es la salida explícita al selector.
+4. Calculadora y Juegos son las únicas entradas accesorias que usan una ventana
+   independiente; un bloqueo de popup no reemplaza el panel actual.
+5. El documento raíz declara `data-appearance-contract="light-dark"`; sus nodos
+   visuales identifican página, superficie, tarjeta, controles, estado o contenido.
+6. Al cambiar apariencia, `theme_bootstrap.js` y `menu.js` sincronizan
+   `data-theme`, `data-appearance-mode` y clases `theme-light/theme-dark` antes de
+   validar contraste, foco, formularios e iframes del mismo origen.
+
 ## Reenvio manual DIAN de una cola terminal
 
 1. El usuario autorizado pulsa `Reenviar DIAN` sobre el documento de la
@@ -164,13 +179,13 @@ afecte dinero, documentos, licencias o seguridad.
 1. Abrir `Administrar empresa > Configuracion > Menu visible`.
 2. Usar la casilla `Mostrar grupo` para activar o desactivar una seccion completa,
    o ajustar por separado las casillas de sus modulos.
-3. `Aplicar seleccion predeterminada` deja visibles Panel, Vida, Operacion y
-   ventas, Inventario y compras, Finanzas y cumplimiento, Canales digitales y
+3. `Aplicar seleccion predeterminada` deja visibles Panel, Operacion y ventas,
+   Inventario y compras, Finanzas y cumplimiento (con Vida), Usuarios/clientes/
+   personas (Usuarios, Clientes y Login de usuarios), Canales digitales y
    colaboracion, Ubicacion GPS, Analisis y control, Domotica y Energia Solar,
-   Documentos/nube/soporte, Administracion, Licencia, Noticias Beta y Volver a
-   empresas.
-4. Produccion, CRM y clientes, Usuarios/clientes/personas, Control de asistencia
-   y horarios quedan ocultos en esa seleccion inicial.
+   Documentos/nube/soporte, Administracion, Licencia, Noticias Beta y Volver a empresas.
+4. Produccion, CRM y clientes y Control de asistencia y horarios quedan ocultos
+   en esa seleccion inicial.
 5. `Soluciones por negocio` no forma parte del menu empresarial ni de `Menu
    visible`. `Adaptacion por tipo` y `Configuracion guiada` tampoco aparecen en
    el menu ordinario de Configuracion: la adaptacion se ofrece al crear la
@@ -178,7 +193,7 @@ afecte dinero, documentos, licencias o seguridad.
 6. PCS guarda la preferencia en
    `empresa_estacion_prefs.menu_visual_config` con `estacion_id=0` y lista
    `hidden_links`, siempre por `empresa_id`.
-7. La migracion `20260914-002-menu-visual-defaults-v3` reemplaza la seleccion de
+7. La migracion `20260914-003-menu-visual-defaults-v4` reemplaza la seleccion de
    empresas existentes una vez; las empresas nuevas reciben el mismo valor si
    aun no tienen una preferencia.
 8. Al cargar `Administrar empresa`, primero se aplican permisos, licencia y rol;

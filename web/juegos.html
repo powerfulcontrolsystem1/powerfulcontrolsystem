@@ -1,3 +1,22 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light"><title>Juegos · PCS</title><link rel="stylesheet" href="/juegos/sala.css"><script type="importmap">{"imports":{"three":"/juegos/vendor/three/three.module.js"}}</script><script type="module" src="/juegos/sala.js"></script></head>
-<body><main class="console-shell"><header class="console-header"><div><span class="eyebrow">UNA PAUSA A TU MEDIDA</span><h1>¿A qué jugamos?</h1></div><span class="console-mark">PCS <b>PLAY</b></span></header><p id="session-status" role="status">Elige un juego para empezar.</p><section id="game-menu" aria-label="Elegir juego"></section><div id="games" hidden></div><footer><span>Partidas privadas · Récords entre empresas</span><a href="/juegos/creditos.html" target="_blank" rel="noopener">Créditos</a></footer></main></body></html>
+<html lang="es" data-theme="light" data-appearance-mode="light" data-appearance-contract="light-dark" class="theme-light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Juegos · PCS</title>
+  <script src="/js/theme_bootstrap.js?v=20260914"></script>
+  <link rel="stylesheet" href="/juegos/sala.css?v=20260914-appearance">
+  <script type="importmap">{"imports":{"three":"/juegos/vendor/three/three.module.js"}}</script>
+  <script type="module" src="/juegos/sala.js"></script>
+</head>
+<body data-appearance-node="page">
+  <main class="console-shell" data-appearance-node="surface">
+    <header class="console-header"><div><span class="eyebrow">UNA PAUSA A TU MEDIDA</span><h1>¿A qué jugamos?</h1></div><span class="console-mark">PCS <b>PLAY</b></span></header>
+    <p id="session-status" role="status" data-appearance-node="status">Elige un juego para empezar.</p>
+    <section id="game-menu" aria-label="Elegir juego" data-appearance-node="cards"></section>
+    <div id="games" data-appearance-node="game" hidden></div>
+    <footer><span>Partidas privadas · Récords entre empresas</span><a href="/juegos/creditos.html">Créditos</a></footer>
+  </main>
+</body>
+</html>

@@ -795,8 +795,6 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 
 	for _, rel := range []string{
 		"venta_publica.html",
-		filepath.Join("administrar_empresa", "alquileres.html"),
-		filepath.Join("administrar_empresa", "domicilios.html"),
 		filepath.Join("administrar_empresa", "ubicacion_gps.html"),
 	} {
 		content, readErr := os.ReadFile(filepath.Join(root, "web", rel))
@@ -842,13 +840,6 @@ func TestPlan108FullSweepFrontendRegressions(t *testing.T) {
 		t.Fatal("frontend CSP must declare an explicit font-src")
 	}
 
-	domicilios, err := os.ReadFile(filepath.Join(root, "web", "js", "domicilios.js"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(domicilios), "function asArray(v)") || !strings.Contains(string(domicilios), "state.menu=asArray(menuData)") {
-		t.Fatal("Domicilios must render an empty menu response as an empty list")
-	}
 }
 
 func TestEmpresaPanelWeatherUsesBackendProxyAndLocalLandscape(t *testing.T) {

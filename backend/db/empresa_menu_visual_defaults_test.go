@@ -15,12 +15,12 @@ func TestEmpresaMenuVisualDefaultConfig(t *testing.T) {
 	if err := json.Unmarshal([]byte(EmpresaMenuVisualDefaultConfigJSON), &config); err != nil {
 		t.Fatalf("default menu config must be valid JSON: %v", err)
 	}
-	if config.Version != 3 || !config.Enabled {
+	if config.Version != 4 || !config.Enabled {
 		t.Fatalf("unexpected default menu config: %+v", config)
 	}
 	wantHidden := []string{
 		"linkImportacionesCosteo", "linkProduccionMRP", "linkLogisticaWMS",
-		"linkCRMComercial", "linkUsuarios", "linkClientes", "linkPortalUsuarios",
+		"linkCRMComercial",
 		"linkMiHorario", "linkHorariosTrabajadores", "linkAsistenciaEmpleados", "linkCarnets",
 		"linkVehiculosRegistro", "linkHojaVidaOperativa",
 	}
@@ -41,6 +41,7 @@ func TestEmpresaMenuVisualDefaultConfig(t *testing.T) {
 	}
 	for _, visible := range []string{
 		"linkPanelEmpresa", "linkVida", "linkVentaDirecta", "linkProductos", "linkFinanzas",
+		"linkUsuarios", "linkClientes", "linkPortalUsuarios",
 		"linkVentaPublica", "linkControlElectrico", "linkDocumentosOnlyOffice",
 		"linkUbicacionGPS", "linkConfiguracionGPS", "linkAuditoria", "linkCalidadProcesos",
 		"linkCamaras", "linkGrafologia", "linkBolsa", "linkConfiguracion", "linkNoticias", "linkVolverEmpresas",
@@ -64,7 +65,7 @@ func TestEmpresaCatalogIncludesMenuVisualDefaultsMigration(t *testing.T) {
 		if migration.Apply == nil || migration.Body != empresaMenuVisualDefaultsFingerprint {
 			t.Fatal("menu visual defaults migration must be executable and immutable")
 		}
-		for _, marker := range []string{"FROM empresas e", "menu_visual_config", "ON CONFLICT", EmpresaMenuVisualDefaultConfigJSON} {
+		for _, marker := range []string{"FROM empresas e", "menu_visual_config", "ON CONFLICT", empresaMenuVisualDefaultConfigV3JSON} {
 			if !strings.Contains(migration.Body, marker) {
 				t.Fatalf("menu visual migration missing %q", marker)
 			}
@@ -72,4 +73,24 @@ func TestEmpresaCatalogIncludesMenuVisualDefaultsMigration(t *testing.T) {
 		return
 	}
 	t.Fatal("menu visual defaults migration is missing from empresas catalog")
+}
+
+func TestEmpresaCatalogIncludesMenuVisualDefaultsV4Migration(t *testing.T) {
+	migrations, err := PlatformMigrations(MigrationTargetEmpresas)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations {
+		if migration.Version != "20260914-003-menu-visual-defaults-v4" {
+			continue
+		}
+		if migration.Apply == nil || migration.Body != empresaMenuVisualDefaultsV4Fingerprint {
+			t.Fatal("menu visual v4 migration must be executable and immutable")
+		}
+		if !strings.Contains(migration.Body, EmpresaMenuVisualDefaultConfigJSON) {
+			t.Fatal("menu visual v4 migration must contain the current default")
+		}
+		return
+	}
+	t.Fatal("menu visual defaults v4 migration is missing from empresas catalog")
 }

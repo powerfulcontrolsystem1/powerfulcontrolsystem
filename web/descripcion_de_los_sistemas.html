@@ -1,16 +1,18 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="light" data-appearance-mode="light" data-appearance-contract="light-dark" class="theme-light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>Descripcion de los sistemas</title>
+  <script src="/js/theme_bootstrap.js?v=20260914"></script>
   <link rel="stylesheet" href="/estilos.css">
   <link rel="icon" type="image/png" href="/img/punto_venta.png">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <script src="/menu.js"></script>
-  <script src="/js/plantillas_nuevas_catalogo.js"></script>
+  <script src="/js/preconfiguraciones_basicas_catalogo.js?v=20260914-taller-motos"></script>
 </head>
-<body>
+<body data-appearance-node="page">
   <div class="portal systems-page">
     <header class="portal-header">
       <div class="brand"><a class="btn secondary" href="/index.html">Volver al portal</a></div>
@@ -22,8 +24,8 @@
     <main class="portal-main container systems-main systems-main-compact">
       <header class="systems-catalog-heading">
         <p>Cat&aacute;logo vigente</p>
-        <h1>53 m&oacute;dulos activos y 13 plantillas empresariales</h1>
-        <span>Las plantillas especializan el negocio sobre Inventario, Ventas, Pagos, Finanzas y Facturaci&oacute;n, sin duplicar el n&uacute;cleo.</span>
+        <h1>M&oacute;dulos empresariales, 7 preconfiguraciones b&aacute;sicas y Taller de motos</h1>
+        <span>Las siete sugerencias iniciales configuran el n&uacute;cleo empresarial; Taller de motos se conserva como sistema destacado.</span>
       </header>
       <p id="systemsStatus" class="form-help systems-status" role="status"></p>
 
@@ -142,66 +144,60 @@
         },
       ];
 
-      var localVerticalCatalog = window.PCS_NUEVAS_PLANTILLAS || [];
-      var localVerticalVisualsByModule = {};
-      localVerticalCatalog.forEach(function(item) {
-        if (item && item.module) localVerticalVisualsByModule[item.module] = item;
-      });
-
-      function verticalSectionsFromCatalogItem(item) {
-        var sections = [];
-        if (item && Array.isArray(item.sections)) {
-          sections = item.sections.slice();
-        } else if (item && item.plantilla && Array.isArray(item.plantilla.secciones_flujo)) {
-          sections = item.plantilla.secciones_flujo.slice();
-        }
+      function catalogSections(item) {
+        var sections = item && Array.isArray(item.sections) ? item.sections.slice() : [];
         return sections.map(function(section) {
           return String(section || '').trim();
         }).filter(Boolean);
       }
 
-      function verticalCardFromCatalogItem(item) {
+      function publicCatalogCard(item, kind) {
         var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
-        var local = localVerticalVisualsByModule[module] || {};
-        var title = (item && (item.full_title || item.fullTitle || item.title || item.titulo)) || local.fullTitle || local.title || module;
-        var summary = (item && (item.description || item.descripcion_larga || item.descripcion || item.lead || item.summary || item.resumen)) || local.description || local.lead || 'Modulo plantilla empresarial con configuracion, operacion, permisos y reportes.';
-        var sections = verticalSectionsFromCatalogItem(item);
+        var title = item.fullTitle || item.title || module;
+        var summary = item.description || item.lead || 'Configuracion empresarial lista para iniciar.';
+        var sections = catalogSections(item);
         var firstSections = sections.slice(0, 5);
         var points = firstSections.map(function(section) {
           return 'Flujo operativo: ' + section + '.';
         });
-        points.push('Permisos por rol, licencia y empresa usando el motor comun de plantillas.');
-        points.push('Configuracion inicial con tipos, estados, acciones sugeridas, diagnostico y exportacion.');
+        points.push('Permisos por rol, licencia y empresa sobre el nucleo empresarial comun.');
+        points.push('Apariencia clara u oscura y navegacion coherente en computador y movil.');
+        var basic = kind === 'preconfiguracion';
         return {
-          __verticalModule: module,
+          __publicCatalog: true,
           module: module,
           full_title: title,
           sections: sections,
-          detalle_id: 'plantilla-' + module,
+          detalle_id: (basic ? 'preconfiguracion-' : 'sistema-') + module,
           titulo: title,
           descripcion: summary,
-          imagen_url: local.icon || (item && item.icon) || '/img/company-briefcase-color.svg',
-          imagen_secundaria_url: local.secondaryIcon || (item && (item.secondaryIcon || item.secondary_icon)) || '/img/report.svg',
-          enlace: '/administrar_empresa.html?module=' + encodeURIComponent(module),
-          detalle_etiqueta: 'Plantilla empresarial',
-          detalle_titular: 'Activa ' + title + ' con roles, licencia, configuracion y operacion lista para trabajar.',
-          detalle_parrafo_uno: summary + ' Trabaja sobre el motor empresarial comun de Powerful Control System, por eso puede compartir usuarios, roles, licencias, auditoria, reportes, evidencias y configuracion inicial sin duplicar tecnologia ni aislar la informacion del negocio.',
+          imagen_url: item.icon || '/img/company-briefcase-color.svg',
+          imagen_secundaria_url: item.secondaryIcon || '/img/report.svg',
+          enlace: basic ? '/registrar_nuevo_usuario_administrador.html?tipo_empresa=' + encodeURIComponent(module) : '/administrar_empresa.html?module=' + encodeURIComponent(module),
+          detalle_etiqueta: basic ? 'Preconfiguracion basica' : 'Sistema destacado',
+          detalle_titular: (basic ? 'Inicia ' : 'Opera ') + title + ' con configuracion, caja y control centralizados.',
+          detalle_parrafo_uno: summary + ' Trabaja sobre el motor empresarial comun de Powerful Control System y conserva usuarios, roles, licencias, auditoria, reportes y datos aislados por empresa.',
           detalle_parrafo_dos: sections.length
-            ? ('La ruta de trabajo incluye ' + sections.join(', ') + '. Esa estructura permite arrancar con un negocio real, mantener control por permisos y crecer hacia reportes, SLA, evidencias y configuraciones avanzadas sin cambiar de plataforma.')
-            : 'La ruta de trabajo se alimenta desde el catalogo backend de la plantilla, de modo que la portada, licencias, roles y pantalla operativa usan el mismo contrato funcional.',
+            ? ('La ruta de trabajo incluye ' + sections.join(', ') + '. La estructura permite comenzar con datos reales, mantener permisos y crecer sin cambiar de plataforma.')
+            : 'La portada, los permisos y la pantalla operativa comparten el mismo contrato funcional.',
           detalle_puntos: points
         };
       }
 
-      var classicTemplateCatalog = [
-        { module: 'parqueadero', fullTitle: 'Parqueadero', description: 'Tickets QR, placas, entrada y salida, tarifas y cobro conectado a la venta central.', icon: '/img/vehiculos-flotas-logo.svg', secondaryIcon: '/img/portal-systems/realistic/parqueaderos-ticket-qr.jpg', sections: ['Entradas', 'Tickets QR', 'Tarifas', 'Salidas', 'Cobros', 'Reportes'] },
-        { module: 'domicilios', fullTitle: 'Domicilios', description: 'Pedidos, domiciliarios, seguimiento, estados logísticos y cobro conectado a ventas y pagos.', icon: '/img/logo.png', secondaryIcon: '/img/portal-systems/realistic/domicilios-entregas.jpg', sections: ['Pedidos', 'Asignacion', 'Seguimiento', 'Entrega', 'Cobro', 'Reportes'] },
-        { module: 'alquileres', fullTitle: 'Alquileres', description: 'Contratos, activos, garantías, entregas, devoluciones y mantenimiento sobre clientes y servicios centrales.', icon: '/img/company-briefcase-color.svg', secondaryIcon: '/img/portal-systems/realistic/alquileres-activos.jpg', sections: ['Activos', 'Contratos', 'Garantias', 'Entregas', 'Devoluciones', 'Mantenimiento'] },
-        { module: 'aiu_construccion', fullTitle: 'Construcción / AIU', description: 'Contratos de obra, capítulos, presupuestos, AIU, retenciones, avances y facturación central.', icon: '/img/taxes.svg', secondaryIcon: '/img/portal-systems/realistic/aiu-construccion.jpg', sections: ['Contratos', 'Capitulos', 'Presupuestos', 'AIU', 'Avances', 'Facturacion'] }
-      ];
-      var publicClassicTemplateCards = classicTemplateCatalog.map(verticalCardFromCatalogItem);
-      var publicVerticalCards = localVerticalCatalog.map(verticalCardFromCatalogItem);
-      fallbackCards = fallbackCards.concat(publicClassicTemplateCards, publicVerticalCards);
+      var publicBasicPreconfigurationCards = (window.PCS_PRECONFIGURACIONES_BASICAS || []).map(function (item) {
+        return publicCatalogCard(item, 'preconfiguracion');
+      });
+      var publicFeaturedSystemCards = (window.PCS_SISTEMAS_DESTACADOS || []).map(function (item) {
+        return publicCatalogCard(item, 'sistema');
+      });
+      var publicCatalogCards = publicBasicPreconfigurationCards.concat(publicFeaturedSystemCards);
+      fallbackCards = fallbackCards.filter(function (card) {
+        var module = String((card && card.module) || '').trim().toLowerCase();
+        var title = String((card && card.titulo) || '').trim().toLowerCase();
+        return !publicCatalogCards.some(function (entry) {
+          return module === entry.module || title === String(entry.titulo || '').trim().toLowerCase();
+        });
+      }).concat(publicCatalogCards);
 
       function escapeHTML(value) {
         return String(value == null ? '' : value)
@@ -263,9 +259,12 @@
         cooperativa_fondo: true,
         capacitacion_empresarial: true
       };
+      (window.PCS_PORTAL_RETIRED_CARD_KEYS || []).forEach(function (key) {
+        retiredPortalCardModules[normalizeCatalogKey(key)] = true;
+      });
 
       function portalCardModuleKey(card) {
-        var direct = normalizeCatalogKey(card && (card.module || card.__verticalModule || card.modulo));
+        var direct = normalizeCatalogKey(card && (card.module || card.modulo));
         if (direct) return direct;
         var link = String((card && card.enlace) || '').trim();
         if (!link) return '';
@@ -314,7 +313,7 @@
       function buildPublicTrialLink(raw, card, titulo, descripcion, detalleId) {
         var base = resolvePublicTrialLink(raw);
         var params = new URLSearchParams();
-        var module = String((card && (card.module || card.__verticalModule || card.modulo)) || '').trim().toLowerCase();
+        var module = String((card && (card.module || card.modulo)) || '').trim().toLowerCase();
         params.set('origen', 'probar_gratis');
         params.set('detalle_id', detalleId);
         params.set('titulo', titulo);
@@ -402,42 +401,25 @@
         });
       }
 
-      async function refreshFallbackVerticalCards() {
-        try {
-          var response = await fetch('/api/public/plantillas_nuevas/catalogo', { credentials: 'same-origin' });
-          if (!response.ok) return;
-          var payload = await response.json();
-          var rows = payload && Array.isArray(payload.items) ? payload.items : [];
-          if (!rows.length) return;
-          var modules = {};
-          rows.forEach(function(item) {
-            var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
-            if (module) modules[module] = true;
-          });
-          publicVerticalCards = rows.map(verticalCardFromCatalogItem);
-          fallbackCards = fallbackCards.filter(function(card) {
-            return !card.__verticalModule || !modules[card.__verticalModule];
-          }).concat(publicVerticalCards);
-        } catch (_) {}
-      }
-
-      function mergeCardsWithVerticals(rawCards) {
+      function mergeCardsWithPublicCatalog(rawCards) {
         if (!Array.isArray(rawCards) || !rawCards.length) {
           return fallbackCards;
         }
-        var publicTemplateCards = publicClassicTemplateCards.concat(publicVerticalCards);
-        if (!publicTemplateCards.length) {
+        if (!publicCatalogCards.length) {
           return rawCards;
         }
         var modules = {};
-        publicTemplateCards.forEach(function(card) {
+        var titles = {};
+        publicCatalogCards.forEach(function(card) {
           var module = portalCardModuleKey(card);
           if (module) modules[module] = true;
+          titles[normalizeCatalogKey(card && card.titulo)] = true;
         });
         return rawCards.filter(function(card) {
           var module = portalCardModuleKey(card);
-          return !module || !modules[module];
-        }).concat(publicTemplateCards);
+          var title = normalizeCatalogKey(card && card.titulo);
+          return (!module || !modules[module]) && !titles[title];
+        }).concat(publicCatalogCards);
       }
 
       function getSelectedBusinessCardId() {
@@ -583,7 +565,7 @@
           var videoHTML = buildYouTubeEmbedHTML(card);
 
           return '' +
-            '<article id="' + escapeHTML(card.detalle_id) + '" class="system-detail-card home-offer-card" tabindex="-1">' +
+            '<article id="' + escapeHTML(card.detalle_id) + '" class="system-detail-card home-offer-card" data-appearance-node="card" tabindex="-1">' +
             '  <div class="system-detail-media">' +
             '    <span class="system-detail-tag">' + escapeHTML(card.detalle_etiqueta) + '</span>' +
             '    <img class="system-detail-photo" src="' + escapeHTML(card.imagen_secundaria_url || card.imagen_url) + '" alt="Imagen ' + escapeHTML(card.titulo) + '">' +
@@ -636,7 +618,6 @@
       async function loadSystems() {
         statusEl.textContent = 'Cargando descripciones...';
         try {
-          await refreshFallbackVerticalCards();
           var response = await fetch('/api/public/pagina_principal', { credentials: 'same-origin' });
           var payload = null;
           try {
@@ -650,7 +631,7 @@
           }
 
           applyVisualSettings(payload && payload.estilos);
-          var cards = normalizeCards(mergeCardsWithVerticals(payload && payload.tarjetas));
+          var cards = normalizeCards(mergeCardsWithPublicCatalog(payload && payload.tarjetas));
           renderQuickNav(cards);
           renderSections(cards);
           bindSectionObserver();

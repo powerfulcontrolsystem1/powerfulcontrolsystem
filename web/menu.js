@@ -853,7 +853,33 @@
       if (win && typeof win.focus === 'function') {
         win.focus();
       } else {
-        window.location.href = '/calculadora.html?compact=1';
+        window.alert('El navegador bloqueó la ventana de Calculadora. Habilita las ventanas emergentes para PCS y vuelve a intentarlo.');
+      }
+    }
+
+    function openGamesWindow(){
+      var width = Math.min(980, Math.max(680, window.screen && window.screen.availWidth ? window.screen.availWidth - 120 : 900));
+      var height = Math.min(780, Math.max(560, window.screen && window.screen.availHeight ? window.screen.availHeight - 120 : 700));
+      var left = Math.max(0, Math.round((window.screenX || window.screenLeft || 0) + ((window.outerWidth || window.innerWidth || width) - width) / 2));
+      var top = Math.max(0, Math.round((window.screenY || window.screenTop || 0) + ((window.outerHeight || window.innerHeight || height) - height) / 2));
+      var features = [
+        'popup=yes',
+        'width=' + width,
+        'height=' + height,
+        'left=' + left,
+        'top=' + top,
+        'resizable=yes',
+        'scrollbars=yes',
+        'menubar=no',
+        'toolbar=no',
+        'location=no',
+        'status=no'
+      ].join(',');
+      var win = window.open('/juegos.html', 'pcs_juegos', features);
+      if (win && typeof win.focus === 'function') {
+        win.focus();
+      } else {
+        window.alert('El navegador bloqueó la ventana de Juegos. Habilita las ventanas emergentes para PCS y vuelve a intentarlo.');
       }
     }
 
@@ -1367,9 +1393,7 @@
         event.stopPropagation();
         closeUtilitiesPopup();
         closePanel();
-        import('/juegos/ventana.js').then(function(module){ module.openGamesWidget(gamesLauncher); }).catch(function(){
-          gamesLauncher.textContent = 'No se pudo abrir Juegos. Reintentar';
-        });
+        openGamesWindow();
       });
     }
 

@@ -79,7 +79,7 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaImpresorasSchema` | [backend/db/empresa_impresoras.go:171](../../backend/db/empresa_impresoras.go#L171) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPOS80Defaults` | [backend/db/empresa_impresoras.go:905](../../backend/db/empresa_impresoras.go#L905) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureAllEmpresasPOS80Defaults` | [backend/db/empresa_impresoras.go:980](../../backend/db/empresa_impresoras.go#L980) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEmpresaMenuVisualDefault` | [backend/db/empresa_menu_visual_defaults.go:40](../../backend/db/empresa_menu_visual_defaults.go#L40) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEmpresaMenuVisualDefault` | [backend/db/empresa_menu_visual_defaults.go:51](../../backend/db/empresa_menu_visual_defaults.go#L51) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaPermisosFinosSchema` | [backend/db/empresa_permisos_finos.go:24](../../backend/db/empresa_permisos_finos.go#L24) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresasScopeReferences` | [backend/db/empresa_scope.go:10](../../backend/db/empresa_scope.go#L10) | regla auxiliar o verificacion | empresas o por confirmar |
 | `EnsureEmpresaEnergiaSolarSchema` | [backend/db/energia_solar.go:108](../../backend/db/energia_solar.go#L108) | DDL / indice / funcion | empresas o por confirmar |
@@ -113,8 +113,8 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureOutboxSchema` | [backend/db/outbox.go:42](../../backend/db/outbox.go#L42) | DDL catalogado de plataforma | superadministrador |
 | `EnsureEmpresaParqueaderoSchema` | [backend/db/parqueadero.go:89](../../backend/db/parqueadero.go#L89) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsurePaymentCheckoutIdempotencySchema` | [backend/db/payment_checkout_idempotency.go:61](../../backend/db/payment_checkout_idempotency.go#L61) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureNuevasPlantillasTipoEmpresaYLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:250](../../backend/db/plantillas_nuevas_bootstrap.go#L250) | seed o provisionamiento idempotente | superadministrador o por confirmar |
-| `EnsureNuevasPlantillasProduccionMasivaLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:280](../../backend/db/plantillas_nuevas_bootstrap.go#L280) | regla auxiliar o verificacion | superadministrador o por confirmar |
+| `EnsureNuevasPlantillasTipoEmpresaYLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:238](../../backend/db/plantillas_nuevas_bootstrap.go#L238) | seed o provisionamiento idempotente | superadministrador o por confirmar |
+| `EnsureNuevasPlantillasProduccionMasivaLicencias` | [backend/db/plantillas_nuevas_bootstrap.go:268](../../backend/db/plantillas_nuevas_bootstrap.go#L268) | regla auxiliar o verificacion | superadministrador o por confirmar |
 | `EnsureEmpresaPortalContadorSchema` | [backend/db/portal_contador.go:109](../../backend/db/portal_contador.go#L109) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaPortalTercerosCertificadosSchema` | [backend/db/portal_terceros_certificados.go:98](../../backend/db/portal_terceros_certificados.go#L98) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaProduccionMRPSchema` | [backend/db/produccion_mrp.go:159](../../backend/db/produccion_mrp.go#L159) | DDL / indice / funcion | empresas o por confirmar |
@@ -148,9 +148,9 @@ Este archivo se genera con `node tools/ensure_bootstrap_inventory.mjs`. Inventar
 | `EnsureEmpresaTesoreriaPresupuestoSchema` | [backend/db/tesoreria_presupuesto.go:114](../../backend/db/tesoreria_presupuesto.go#L114) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureAyudaTicketsSchema` | [backend/db/tickets_ayuda.go:85](../../backend/db/tickets_ayuda.go#L85) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureTipoEmpresaPreconfiguracionSchema` | [backend/db/tipo_empresa_preconfiguracion.go:375](../../backend/db/tipo_empresa_preconfiguracion.go#L375) | DDL / indice / funcion | empresas o por confirmar |
-| `EnsureCanonicalTiposEmpresaPreconfigurables` | [backend/db/tipo_empresa_preconfiguracion.go:688](../../backend/db/tipo_empresa_preconfiguracion.go#L688) | regla auxiliar o verificacion | empresas o por confirmar |
-| `EnsureDefaultRolesForTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1368](../../backend/db/tipo_empresa_preconfiguracion.go#L1368) | seed o provisionamiento idempotente | empresas o por confirmar |
-| `EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1770](../../backend/db/tipo_empresa_preconfiguracion.go#L1770) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureCanonicalTiposEmpresaPreconfigurables` | [backend/db/tipo_empresa_preconfiguracion.go:689](../../backend/db/tipo_empresa_preconfiguracion.go#L689) | regla auxiliar o verificacion | empresas o por confirmar |
+| `EnsureDefaultRolesForTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1383](../../backend/db/tipo_empresa_preconfiguracion.go#L1383) | seed o provisionamiento idempotente | empresas o por confirmar |
+| `EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones` | [backend/db/tipo_empresa_preconfiguracion.go:1785](../../backend/db/tipo_empresa_preconfiguracion.go#L1785) | seed o provisionamiento idempotente | empresas o por confirmar |
 | `EnsureEmpresaTurnosAtencionSchema` | [backend/db/turnos_atencion.go:109](../../backend/db/turnos_atencion.go#L109) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureEmpresaUbicacionGPSSchema` | [backend/db/ubicacion_gps.go:67](../../backend/db/ubicacion_gps.go#L67) | DDL / indice / funcion | empresas o por confirmar |
 | `EnsureUsuarioConfiguracionSchema` | [backend/db/usuario_config_schema.go:12](../../backend/db/usuario_config_schema.go#L12) | DDL / indice / funcion | empresas o por confirmar |

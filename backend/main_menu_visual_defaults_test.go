@@ -45,11 +45,12 @@ func TestEmpresaMenuVisualDefaultsFrontendContract(t *testing.T) {
 	groupPattern := regexp.MustCompile(`(?s)<li class="admin-nav-group[^\"]*">\s*<button[^>]*>(.*?)</button>\s*<ul[^>]*>(.*?)</ul>\s*</li>`)
 	linkPattern := regexp.MustCompile(`<a id="(link[^"]+)"`)
 	hiddenGroups := map[string]bool{
-		"Producción": true, "CRM y clientes": true, "Usuarios, clientes y personas": true,
+		"Producción": true, "CRM y clientes": true,
 		"Control de asistencia y horarios": true,
 	}
 	visibleGroups := map[string]bool{
 		"Operación y ventas": true, "Inventario y compras": true, "Finanzas y cumplimiento": true,
+		"Usuarios, clientes y personas":    true,
 		"Canales digitales y colaboración": true, "Ubicación GPS": true, "Análisis y control": true,
 		"Domótica y Energía Solar": true, "Documentos, nube y soporte": true, "Administración": true,
 		"Licencia": true,
@@ -78,7 +79,7 @@ func TestEmpresaMenuVisualDefaultsFrontendContract(t *testing.T) {
 			t.Fatalf("default-visible group missing from admin menu: %q", groupName)
 		}
 	}
-	for _, id := range []string{"linkPanelEmpresa", "linkVida", "linkNoticias", "linkVolverEmpresas"} {
+	for _, id := range []string{"linkPanelEmpresa", "linkVida", "linkUsuarios", "linkClientes", "linkPortalUsuarios", "linkNoticias", "linkVolverEmpresas"} {
 		if hidden[id] {
 			t.Fatalf("required standalone menu link is hidden by default: %s", id)
 		}
@@ -104,8 +105,8 @@ func TestEmpresaMenuVisualDefaultsFrontendContract(t *testing.T) {
 		}
 	}
 	for _, required := range []string{
-		`/js/menu_visual_defaults.js?v=20260914-menu-defaults-v3`,
-		`/js/administrar_empresa.js?v=20260914-menu-defaults-v3`,
+		`/js/menu_visual_defaults.js?v=20260914-menu-defaults-v4`,
+		`/js/administrar_empresa.js?v=20260914-menu-defaults-v4`,
 	} {
 		if !strings.Contains(adminHTML, required) {
 			t.Fatalf("admin shell missing %q", required)
@@ -125,6 +126,10 @@ func TestEmpresaMenuVisualDefaultsFrontendContract(t *testing.T) {
 	}
 	if strings.Contains(adminJS, "isSuperAdminMenuContext()) return false") {
 		t.Fatal("super administrators must see the same company menu selection")
+	}
+	financeGroup := regexp.MustCompile(`(?s)>Finanzas y cumplimiento</button>\s*<ul[^>]*>(.*?)</ul>`).FindStringSubmatch(adminHTML)
+	if len(financeGroup) != 2 || !strings.Contains(financeGroup[1], `id="linkVida"`) {
+		t.Fatal("Vida must live inside Finanzas y cumplimiento")
 	}
 	for _, recoverable := range []string{"linkConfiguracion: true", "linkVolverEmpresas: true"} {
 		if !strings.Contains(adminJS, recoverable) || !strings.Contains(configHTML, recoverable) {

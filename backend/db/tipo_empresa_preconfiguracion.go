@@ -557,6 +557,7 @@ func SeedDefaultTipoEmpresaPreconfiguraciones(dbConn *sql.DB, usuario string, ov
 	if err != nil {
 		return nil, err
 	}
+	tipos = filterTiposEmpresaPreconfiguracionBasica(tipos)
 	if !overwrite {
 		if skip, err := canSkipDefaultTipoEmpresaSeed(dbConn, len(tipos)); err == nil && skip {
 			return &TipoEmpresaPreconfigSeedResult{
@@ -699,30 +700,19 @@ func SyncCanonicalTiposEmpresaPreconfigurables(dbConn *sql.DB) error {
 	canonicos := []struct {
 		nombre        string
 		observaciones string
-		matches       func(string) bool
 	}{
-		{"Restaurante", "Mesas, cocina, pedidos y venta directa.", isTipoEmpresaRestaurante},
-		{"Motel", "Estaciones por turnos, minibar, tarifas y recepcion.", isTipoEmpresaMotel},
-		{"Hotel", "Estaciones por noche, reservas, consumos y recepcion.", isTipoEmpresaHotel},
-		{"Bar", "Mesas, barra, bebidas, eventos y caja.", isTipoEmpresaBar},
-		{"Salon de belleza", "Sillas, estilistas, agenda, servicios y comisiones.", isTipoEmpresaSalonBelleza},
-		{"Lavadero de autos", "Bahias, lavado, vehiculos, tiempos y comisiones.", isTipoEmpresaLavaderoAutos},
-		{"Pymes", "Empresa general con venta directa, productos, servicios y caja.", isTipoEmpresaPyme},
-		{"Punto de venta", "Una estacion principal y venta directa por mostrador.", isTipoEmpresaPuntoVenta},
-		{"Taller mecanico", "Bahias, tecnicos, ordenes de servicio y comisiones.", isTipoEmpresaTaller},
-		{"Alquileres de herramientas, motos y objetos", "Herramientas, motos, maquinaria, mobiliario, garantias, contratos, devoluciones y mantenimiento.", isTipoEmpresaAlquilerObjetos},
-		{"Constructora", "Obras, presupuestos AIU, contratistas, compras, centros de costo y avance de proyectos.", isTipoEmpresaConstructora},
-		{"Drogueria y farmacia", "Medicamentos, lotes, INVIMA, vencimientos, formulas, controlados y dispensacion.", isTipoEmpresaDrogueriaFarmacia},
-		{"Manejo de turnos", "Servicios, puestos, emision publica y pantalla de llamados.", isTipoEmpresaTurnos},
-		{"Vehiculos y flotas", "Registro, permanencia, hoja de vida, mantenimientos y alertas de vehiculos.", isTipoEmpresaVehiculos},
-		{"Tecnico independiente", "Sin estaciones; venta directa, agenda y servicios.", isTipoEmpresaIndependiente},
-		{"Redes sociales", "Clientes, paquetes, tareas, contenidos y reportes.", isTipoEmpresaRedesSociales},
-		{"Sensores y monitoreo", "Accesos, sensores, instalaciones y monitoreo.", isTipoEmpresaSensores},
+		{"Restaurante", "Mesas, cocina, pedidos y venta directa."},
+		{"Motel", "Estaciones por turnos, minibar, tarifas y recepcion."},
+		{"Hotel", "Estaciones por noche, reservas, consumos y recepcion."},
+		{"Bar", "Mesas, barra, bebidas, eventos y caja."},
+		{"Salon de belleza", "Sillas, estilistas, agenda, servicios y comisiones."},
+		{"Lavadero de autos", "Bahias, lavado, vehiculos, tiempos y comisiones."},
+		{"Pymes", "Empresa general con venta directa, productos, servicios y caja."},
 	}
 	for _, canonical := range canonicos {
 		exists := false
 		for _, tipo := range tipos {
-			if canonical.matches(tipo.Nombre) {
+			if normalizeTipoEmpresaName(tipo.Nombre) == normalizeTipoEmpresaName(canonical.nombre) {
 				exists = true
 				break
 			}
@@ -736,6 +726,28 @@ func SyncCanonicalTiposEmpresaPreconfigurables(dbConn *sql.DB) error {
 		tipos = append(tipos, TipoEmpresa{Nombre: canonical.nombre, Observaciones: canonical.observaciones, Estado: "activo"})
 	}
 	return nil
+}
+
+// IsTipoEmpresaPreconfiguracionBasica limita las sugerencias automaticas al
+// catalogo inicial aprobado. Los otros tipos historicos pueden conservar datos,
+// pero no vuelven a publicarse ni reciben una preconfiguracion sugerida.
+func IsTipoEmpresaPreconfiguracionBasica(tipoNombre string) bool {
+	switch normalizeTipoEmpresaName(tipoNombre) {
+	case "restaurante", "motel", "hotel", "bar", "salon de belleza", "lavadero de autos", "pyme", "pymes":
+		return true
+	default:
+		return false
+	}
+}
+
+func filterTiposEmpresaPreconfiguracionBasica(tipos []TipoEmpresa) []TipoEmpresa {
+	out := make([]TipoEmpresa, 0, len(tipos))
+	for _, tipo := range tipos {
+		if IsTipoEmpresaPreconfiguracionBasica(tipo.Nombre) {
+			out = append(out, tipo)
+		}
+	}
+	return out
 }
 
 // DefaultTipoEmpresaPreconfiguracion entrega una plantilla profesional sugerida para tipos conocidos.
@@ -757,6 +769,9 @@ func DefaultTipoEmpresaPreconfiguracion(tipoEmpresaID int64, tipoNombre string) 
 
 // ResolveTipoEmpresaPreconfiguracion devuelve la configuracion guardada o la sugerida por defecto.
 func ResolveTipoEmpresaPreconfiguracion(dbConn *sql.DB, tipoEmpresaID int64, tipoNombre string) (*TipoEmpresaPreconfiguracion, error) {
+	if !IsTipoEmpresaPreconfiguracionBasica(tipoNombre) {
+		return nil, nil
+	}
 	if tipoEmpresaID > 0 {
 		saved, err := GetTipoEmpresaPreconfiguracionByTipoID(dbConn, tipoEmpresaID)
 		if err != nil {

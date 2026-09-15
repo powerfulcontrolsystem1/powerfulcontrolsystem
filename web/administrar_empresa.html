@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="light" data-appearance-mode="light" data-appearance-contract="light-dark" class="theme-light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>Administrar Empresa</title>
+  <script src="/js/theme_bootstrap.js?v=20260914"></script>
   <link rel="stylesheet" href="/estilos.css?v=20260615-cart-ia-visual">
   <link rel="stylesheet" href="/administrar_empresa.css?v=20260813-p110-csp">
   <script src="/js/service_worker_update.js?v=20260521-admin-mobile-cache-v4"></script>
@@ -11,18 +13,16 @@
   <script src="/js/empresa_submenu_context.js?v=20260521-connectivity"></script>
   <script src="/js/plantillas_integracion_catalogo.js?v=20260823-retire-verticals"></script>
   <script src="/js/plantillas_nuevas_catalogo.js?v=20260823-retire-verticals"></script>
-  <script src="/js/menu_visual_defaults.js?v=20260914-menu-defaults-v3"></script>
+  <script src="/js/menu_visual_defaults.js?v=20260914-menu-defaults-v4"></script>
   <script src="/js/ai_button_icons.js?v=20260615-ia-logo-theme"></script>
 </head>
-<body class="admin-empresa-shell" data-auto-collapse-menu="true" data-auto-estacion-labels="true">
+<body class="admin-empresa-shell" data-auto-collapse-menu="true" data-auto-estacion-labels="true" data-appearance-node="page">
   <div class="admin-layout">
-    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible" data-appearance-node="sidebar">
       <h2 id="empresaTitleMenu">Administrar Empresa</h2>
       <p id="empresaNameMenu" class="empresa-name-menu"></p>
       <ul class="nav admin-nav-grouped" id="adminSidebarNav">
         <li><a id="linkPanelEmpresa" href="/administrar_empresa/panel.html?v=20260620-guided-dismiss" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Panel</a></li>
-        <li><a id="linkVida" href="/administrar_empresa/vida.html" target="contentFrame"><span class="icon menu-symbol-icon" aria-hidden="true">♥</span>Vida</a></li>
-
         <li class="admin-nav-group is-open">
           <button type="button" class="admin-nav-group-title" aria-expanded="true">Operación y ventas</button>
           <ul class="admin-nav-sublist">
@@ -53,6 +53,7 @@
         <li class="admin-nav-group">
           <button type="button" class="admin-nav-group-title" aria-expanded="false">Finanzas y cumplimiento</button>
           <ul class="admin-nav-sublist">
+            <li><a id="linkVida" href="/administrar_empresa/vida.html" target="contentFrame"><span class="icon menu-symbol-icon" aria-hidden="true">♥</span>Vida</a></li>
             <li><a id="linkFinanzas" href="/administrar_empresa/finanzas_menu.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Centro financiero y contable</a></li>
             <li><a id="linkNominaMenu" href="/administrar_empresa/nomina_menu.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Nomina</a></li>
             <li><a id="linkFacturacionElectronica" href="/administrar_empresa/facturacion_electronica_menu.html" target="contentFrame"><img class="icon" src="/img/invoice.svg" alt="">Facturación electrónica</a></li>
@@ -72,7 +73,7 @@
           <ul class="admin-nav-sublist">
             <li><a id="linkUsuarios" href="/administrar_empresa/administrar_usuarios.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Usuarios</a></li>
             <li><a id="linkClientes" href="/administrar_empresa/administrar_clientes.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Clientes</a></li>
-            <li><a id="linkPortalUsuarios" href="/login_usuario.html" target="_blank" rel="noopener"><img class="icon" src="/img/user-avatar-color.svg" alt="">Login de usuarios</a></li>
+            <li><a id="linkPortalUsuarios" href="/login_usuario.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Login de usuarios</a></li>
           </ul>
         </li>
 
@@ -165,7 +166,7 @@
       </ul>
     </aside>
 
-    <main class="admin-content">
+    <main class="admin-content" data-appearance-node="surface">
       <div class="admin-frame-toolbar" aria-label="Acciones de página">
         <div class="admin-notification-wrap">
           <button id="adminNotificationBell" class="admin-notification-btn" type="button" aria-expanded="false" aria-controls="adminNotificationMenu" title="Notificaciones" aria-label="Notificaciones">
@@ -184,7 +185,7 @@
         </div>
         <button id="adminFavoriteBtn" class="admin-favorite-btn" type="button" aria-pressed="false" title="Agregar a favoritos" aria-label="Agregar página a favoritos">&#9733;</button>
       </div>
-      <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido de empresa" class="admin-empresa-frame" allow="geolocation; fullscreen"></iframe>
+      <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido de empresa" class="admin-empresa-frame" data-appearance-node="content" allow="geolocation; fullscreen"></iframe>
     </main>
   </div>
 
@@ -344,7 +345,7 @@
   </section>
 
   <script src="/js/estaciones_labels.js?v=20260825-admin-load-v1"></script>
-  <script src="/js/administrar_empresa.js?v=20260914-menu-defaults-v3"></script>
+  <script src="/js/administrar_empresa.js?v=20260914-menu-defaults-v4"></script>
   <script src="/js/radio_catalog.js?v=20260607-admin-audit"></script>
   <script src="/js/radio_player.js?v=20260825-admin-load-v1"></script>
   <script src="/js/ai_chat_drawer.js?v=20260825-admin-load-v1"></script>

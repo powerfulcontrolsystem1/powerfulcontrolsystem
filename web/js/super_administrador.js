@@ -61,7 +61,6 @@
     "/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html": true,
     "/super/tipos_empresas.html": true,
     "/super/preconfiguracion_tipos_empresa.html": true,
-    "/super/plantillas_produccion_masiva.html": true,
     "/super/licencias.html": true,
     "/super/pagos_auditoria.html": true,
     "/super/licencias_codigos_descuento.html": true,

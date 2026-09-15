@@ -235,6 +235,7 @@ func PlatformMigrations(target string) ([]Migration, error) {
 			{Version: "20260906-004-offline-cash-report-v1", Description: "tenant cash-register breakdown for synchronized offline sales", Body: empresaOfflineCashReportSchemaFingerprint, Apply: applyEmpresaOfflineCashReportSchemaTx},
 			{Version: "20260910-001-comisiones-productos-v1", Description: "configurable product lines in worker commission base", Body: empresaComisionesProductosSchemaFingerprint, Apply: applyEmpresaComisionesProductosSchemaTx},
 			{Version: "20260914-002-menu-visual-defaults-v3", Description: "default enterprise menu selection for existing companies", Body: empresaMenuVisualDefaultsFingerprint, Apply: applyEmpresaMenuVisualDefaultsTx},
+			{Version: "20260914-003-menu-visual-defaults-v4", Description: "restore users clients and user login in default enterprise menu", Body: empresaMenuVisualDefaultsV4Fingerprint, Apply: applyEmpresaMenuVisualDefaultsV4Tx},
 		}, nil
 	case MigrationTargetSuper:
 		return []Migration{
