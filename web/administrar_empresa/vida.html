@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Vida</title>
   <link rel="stylesheet" href="/estilos.css">
-  <link rel="stylesheet" href="/administrar_empresa/vida.css?v=20260831-vida-v6">
+  <link rel="stylesheet" href="/administrar_empresa/vida.css?v=20260914-vida-recurrentes-v7">
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
 <body class="empresa-subpage vida-page">
@@ -29,7 +29,7 @@
       <button type="button" data-tab="gastos">Gastos</button>
       <button type="button" data-tab="reportes">Reportes</button>
       <button type="button" data-tab="precios">Historial de precios</button>
-      <button type="button" data-tab="suscripciones">Suscripciones</button>
+      <button type="button" data-tab="suscripciones">Recurrentes</button>
     </nav>
 
     <div id="vidaMessage" class="vida-message" role="status" aria-live="polite" hidden></div>
@@ -109,8 +109,8 @@
     <section class="vida-tab" data-panel="suscripciones" hidden>
       <article class="vida-card">
         <div class="vida-card-head vida-wrap">
-          <div><h2>Suscripciones</h2><p>Controla pagos mensuales, anuales o personalizados y recibe avisos antes del cobro.</p></div>
-          <button class="btn primary" type="button" data-open-subscription>+ Nueva suscripción</button>
+          <div><h2>Gastos recurrentes y suscripciones</h2><p>Controla pagos mensuales, anuales o personalizados y recibe avisos antes del cobro.</p></div>
+          <button class="btn primary" type="button" data-open-subscription>+ Nuevo plan recurrente</button>
         </div>
         <div class="vida-subscription-summary"><span>Proyección anual</span><strong id="vidaSubscriptionYear">$ 0</strong></div>
         <div id="vidaSubscriptions" class="vida-subscription-grid"></div>
@@ -144,6 +144,17 @@
         <label>Método de pago<select id="vidaExpensePayment" name="metodo_pago"><option value="efectivo">Efectivo</option><option value="debito">Tarjeta débito</option><option value="credito">Tarjeta crédito</option><option value="transferencia">Transferencia</option><option value="billetera">Billetera digital</option><option value="otro">Otro</option></select></label>
         <label>Moneda<input id="vidaExpenseCurrency" name="moneda" value="COP" maxlength="3" required></label>
         <label class="vida-field-full">Descripción<textarea id="vidaExpenseDescription" name="descripcion" maxlength="500" rows="2" placeholder="Compra semanal, medicamentos, transporte..."></textarea></label>
+        <label class="vida-check vida-field-full"><input id="vidaExpenseRecurring" name="recurrente" type="checkbox"><span>Este gasto se repite y debe recordarse</span><small>Se guarda el gasto de hoy y un plan privado para avisarte antes del próximo pago.</small></label>
+        <fieldset id="vidaExpenseRecurringFields" class="vida-recurring-fields vida-field-full" hidden>
+          <legend>Próximo pago y aviso</legend>
+          <label>Periodicidad<select id="vidaExpensePeriod" name="periodicidad"><option value="semanal">Semanal</option><option value="mensual" selected>Mensual</option><option value="trimestral">Trimestral</option><option value="semestral">Semestral</option><option value="anual">Anual</option><option value="personalizada">Personalizada (meses)</option></select></label>
+          <label>Intervalo<input id="vidaExpenseInterval" name="intervalo" type="number" min="1" max="120" value="1"><small>Ej.: cada 2 meses.</small></label>
+          <label>Próximo pago / vencimiento<input id="vidaExpenseNextPayment" name="proximo_pago" type="date"></label>
+          <label>Avisar con anticipación<input id="vidaExpenseReminderDays" name="recordatorio_dias" type="number" min="0" max="365" value="5"><small>días antes</small></label>
+          <label>Tipo de aviso<select id="vidaExpenseReminderType" name="tipo_recordatorio"><option value="renovar">Pagar o renovar</option><option value="cancelar">Revisar o cancelar</option><option value="ambos">Pagar, renovar o cancelar</option></select></label>
+          <label class="vida-check"><input id="vidaExpenseAutoRenew" name="auto_renovacion" type="checkbox" checked><span>Mantener el plan activo al marcarlo pagado</span></label>
+          <p class="vida-dialog-copy vida-field-full">El reporte y las alertas mostrarán este gasto hasta que lo renueves, pauses o elimines desde “Gastos recurrentes y suscripciones”.</p>
+        </fieldset>
         <label>Producto para historial<input id="vidaExpenseProduct" name="producto_nombre" maxlength="220" placeholder="Ej. Leche entera 1 L"></label>
         <label>Código de barras
           <span class="vida-input-action"><input id="vidaExpenseBarcode" name="codigo_barras" inputmode="numeric" maxlength="80" placeholder="Escanéalo o escríbelo"><button type="button" class="vida-icon-btn" id="vidaScanOpen">Usar cámara</button></span>
@@ -187,7 +198,7 @@
 
   <dialog id="vidaSubscriptionDialog" class="vida-dialog">
     <form id="vidaSubscriptionForm" method="dialog">
-      <header><div><span class="vida-kicker">Cobro recurrente</span><h2 id="vidaSubscriptionTitle">Nueva suscripción</h2></div><button type="button" class="vida-dialog-close" data-close-dialog aria-label="Cerrar">×</button></header>
+      <header><div><span class="vida-kicker">Plan recurrente</span><h2 id="vidaSubscriptionTitle">Nuevo plan recurrente</h2></div><button type="button" class="vida-dialog-close" data-close-dialog aria-label="Cerrar">×</button></header>
       <input type="hidden" id="vidaSubscriptionId">
       <div class="vida-form-grid">
         <label>Nombre<input id="vidaSubscriptionName" maxlength="160" required placeholder="Ej. Netflix, gimnasio"></label>
@@ -211,17 +222,17 @@
   <dialog id="vidaReminderDialog" class="vida-dialog">
     <form id="vidaReminderForm" method="dialog">
       <header><div><span class="vida-kicker">Avisos personales</span><h2>Recordatorios por email y WhatsApp</h2></div><button type="button" class="vida-dialog-close" data-close-dialog aria-label="Cerrar">×</button></header>
-      <p class="vida-dialog-copy">Los avisos se envían solo por las suscripciones de tu cuenta y empresa actual. El correo se entrega a tu cuenta de inicio de sesión.</p>
+      <p class="vida-dialog-copy">Los avisos se envían solo por tus gastos recurrentes y suscripciones en esta empresa. El correo se entrega a tu cuenta de inicio de sesión.</p>
       <div class="vida-form-grid">
         <label class="vida-check"><input id="vidaReminderEmail" type="checkbox"><span>Recibir recordatorios por email</span></label>
         <label class="vida-check"><input id="vidaReminderWhatsApp" type="checkbox"><span>Recibir recordatorios por WhatsApp</span></label>
         <label>Mi número de WhatsApp<input id="vidaReminderPhone" inputmode="tel" maxlength="20" placeholder="Ej. +57 300 123 4567"><small id="vidaReminderPhoneHelp">Se guarda de forma privada y solo se usa para estos avisos.</small></label>
-        <label>Hora local de aviso<input id="vidaReminderHour" type="time" value="09:00" required><small>El sistema revisa las suscripciones durante esta hora.</small></label>
+        <label>Hora local de aviso<input id="vidaReminderHour" type="time" value="09:00" required><small>El sistema revisa tus cobros recurrentes durante esta hora.</small></label>
       </div>
       <footer><button type="button" class="btn secondary" data-close-dialog>Cancelar</button><button type="submit" class="btn primary" id="vidaReminderSave">Guardar avisos</button></footer>
     </form>
   </dialog>
 
-  <script src="/js/vida.js?v=20260831-vida-v2"></script>
+  <script src="/js/vida.js?v=20260914-vida-recurrentes-v3"></script>
 </body>
 </html>

@@ -111,6 +111,12 @@ unicas de `client_request_id` usan la misma frontera. Todos los IDs secundarios
 se consultan con empresa y usuario. Los archivos no se guardan en PostgreSQL:
 la tabla conserva una referencia opaca a la categoria privada `vida`.
 
+Un gasto manual recurrente no duplica tabla ni toca contabilidad: se registra
+como gasto histórico en `empresa_vida_gastos` y, en la misma transacción, crea
+su calendario privado en `empresa_vida_suscripciones`. Ese calendario contiene
+periodicidad (mensual, anual u otra), próximo pago y anticipación del aviso;
+los reportes/alertas y el worker lo consumen siempre por `empresa_id + usuario_id`.
+
 La migracion aditiva `20260831-003-vida-price-history-ai-v1` crea
 `empresa_vida_precios`. Cada fila pertenece a `empresa_id + usuario_id`, enlaza
 el `gasto_id` personal con borrado en cascada y conserva fecha, codigo de barras,
