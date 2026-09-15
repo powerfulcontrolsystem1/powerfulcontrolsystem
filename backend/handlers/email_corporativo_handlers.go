@@ -1738,6 +1738,12 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 				writeCorporateEmailAutologinError(w, http.StatusConflict, "No se pudo preparar el acceso automatico al buzon corporativo.")
 				return
 			}
+			// SnappyMail stores the selected theme in the mailbox settings file.
+			// Synchronize it before creating the browser session so the embedded
+			// webmail follows the light/dark mode selected in PCS.
+			if corporateEmailAutomaticProvisioningEnabled(cfg) {
+				_ = provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, *account, password, theme)
+			}
 			redirectURL, setCookies, redirectErr := snappyMailAutologinRedirectURL(cfg, account.Email, password, theme)
 			if redirectErr != nil {
 				writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. Intenta nuevamente desde el panel.")

@@ -143,10 +143,15 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
   sistema; si empieza por `dark`, usa el tema oscuro del correo, de lo contrario
   usa el tema claro.
 - `deploy/scripts/vps-compose-sidecar-up.sh` deja `PCSLight@custom` como tema
-  global base para buzones nuevos y copia ambos temas al contenedor
-  `pcs-mailu-webmail`.
-- `deploy/scripts/vps-provision-mailu-mailbox.sh` escribe una preferencia local
-  por buzon en `settings/settings_local` cuando recibe `PCS_MAILU_THEME_MODE`.
+  global base para buzones nuevos y copia ambos temas al directorio personalizado
+  y al directorio versionado del contenedor `pcs-mailu-webmail`.
+- `deploy/scripts/vps-provision-mailu-mailbox.sh` conserva las preferencias del
+  usuario y actualiza la clave `Theme` en los archivos JSON `settings` y
+  `settings_local` de cada buzon cuando recibe `PCS_MAILU_THEME_MODE`. Tambien
+  repara la estructura antigua que habia creado `settings` como directorio e
+  impedia guardar cambios.
+- El autologin sincroniza esa preferencia antes de crear la sesion de SnappyMail;
+  por ello el webmail integrado abre con el modo claro u oscuro activo en PCS.
 
 ## Tablas y configuracion
 
