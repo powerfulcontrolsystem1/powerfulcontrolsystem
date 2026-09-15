@@ -1,8 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="light" data-appearance-mode="light" data-appearance-contract="light-dark" class="theme-light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>E-mail Corporativo</title>
   <link rel="stylesheet" href="/estilos.css">
   <script>
@@ -25,6 +26,7 @@
       } catch (_) {}
       theme = normalizeTheme(theme || readStoredTheme());
       document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.setAttribute("data-appearance-mode", isLightTheme(theme) ? "light" : "dark");
       document.documentElement.classList.toggle("theme-light", isLightTheme(theme));
       document.documentElement.classList.toggle("theme-dark", !isLightTheme(theme));
     })();
@@ -211,8 +213,8 @@
     }
   </style>
 </head>
-<body class="email-corporativo-page">
-  <main class="email-corporativo-shell">
+<body class="email-corporativo-page" data-appearance-node="page">
+  <main class="email-corporativo-shell" data-appearance-node="surface">
     <header class="email-corporativo-header">
       <div>
         <p class="email-corporativo-kicker">Canales digitales</p>
@@ -249,7 +251,7 @@
         <div id="emailPlaceholder" class="email-corporativo-placeholder">
           La bandeja se abrir&aacute; autom&aacute;ticamente cuando el buz&oacute;n est&eacute; activo.
         </div>
-        <iframe id="emailFrame" class="email-corporativo-frame" title="Buzon de correo corporativo" loading="eager" referrerpolicy="no-referrer" hidden></iframe>
+        <iframe id="emailFrame" class="email-corporativo-frame" title="Buzon de correo corporativo" data-appearance-node="content" loading="eager" referrerpolicy="no-referrer" hidden></iframe>
       </div>
       <p id="emailNote" class="email-corporativo-note">PCS abre el webmail con acceso autom&aacute;tico cuando la empresa tiene buz&oacute;n provisionado.</p>
     </section>

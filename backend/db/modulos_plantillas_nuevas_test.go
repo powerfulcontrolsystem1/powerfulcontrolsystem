@@ -4,8 +4,8 @@ import "testing"
 
 func TestNuevasPlantillasTienenPlantillaYDemo(t *testing.T) {
 	catalog := NuevasPlantillasTipoEmpresaCatalog()
-	if len(catalog) != len(empresaModuloColombiaPlantillasPlantillas) {
-		t.Fatalf("catalogo tipos=%d plantillas=%d", len(catalog), len(empresaModuloColombiaPlantillasPlantillas))
+	if len(catalog) != 1 || catalog[0].Modulo != "taller_mecanico" {
+		t.Fatalf("catalogo adicional inesperado: %+v", catalog)
 	}
 	for _, item := range catalog {
 		modulo := item.Modulo

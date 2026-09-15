@@ -48,7 +48,7 @@
     },
     "documentos/contexto_especifico_del_sistema.md": {
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05"
+      "reviewed": "2026-09-14"
     },
     "documentos/contexto_general_del_sistema.md": {
       "owner": "Coordinación técnica",
@@ -68,7 +68,7 @@
     },
     "documentos/estado_actual.md": {
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-07"
+      "reviewed": "2026-09-14"
     },
     "documentos/gobernanza_tecnica/README.md": {
       "owner": "Coordinación técnica",
@@ -130,14 +130,6 @@
       "owner": "Ingeniería del módulo",
       "reviewed": "2026-09-05"
     },
-    "documentos/aiu_construccion.md": {
-      "owner": "Ingeniería del módulo",
-      "reviewed": "2026-09-05"
-    },
-    "documentos/alquileres.md": {
-      "owner": "Ingeniería del módulo",
-      "reviewed": "2026-09-05"
-    },
     "documentos/carnets_empresariales.md": {
       "owner": "Ingeniería del módulo",
       "reviewed": "2026-09-05"
@@ -174,10 +166,6 @@
       "owner": "Ingeniería del módulo",
       "reviewed": "2026-09-05"
     },
-    "documentos/domicilios_profesional.md": {
-      "owner": "Ingeniería del módulo",
-      "reviewed": "2026-09-05"
-    },
     "documentos/importaciones_costeo.md": {
       "owner": "Ingeniería del módulo",
       "reviewed": "2026-09-05"
@@ -199,10 +187,6 @@
       "reviewed": "2026-09-05"
     },
     "documentos/tesoreria_presupuesto.md": {
-      "owner": "Ingeniería del módulo",
-      "reviewed": "2026-09-05"
-    },
-    "documentos/parqueadero_tickets_qr.md": {
       "owner": "Ingeniería del módulo",
       "reviewed": "2026-09-05"
     },
@@ -456,11 +440,15 @@
     },
     "documentos/arquitectura_modulos_universales.md": {
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05"
+      "reviewed": "2026-09-14"
     },
     "documentos/matriz_integracion_plantillas.md": {
       "owner": "Ingeniería de módulos",
-      "reviewed": "2026-09-05"
+      "reviewed": "2026-09-14"
+    },
+    "documentos/matriz_preconfiguraciones_basicas.md": {
+      "owner": "Ingeniería de módulos",
+      "reviewed": "2026-09-14"
     },
     "documentos/modulos_empresariales_colombia.md": {
       "owner": "Ingeniería del módulo",
@@ -500,11 +488,11 @@
     },
     "documentos/descripcion_de_modulos": {
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05"
+      "reviewed": "2026-09-14"
     },
     "documentos/mapa_modulos.md": {
       "owner": "Coordinación técnica",
-      "reviewed": "2026-09-05"
+      "reviewed": "2026-09-14"
     },
     "documentos/flujos_operativos.md": {
       "owner": "Coordinación técnica",

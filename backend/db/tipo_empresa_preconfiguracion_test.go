@@ -329,8 +329,8 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.
 
 func TestNuevasPlantillasProduccionMasivaSeleccionadas(t *testing.T) {
 	selected := NuevasPlantillasProduccionMasivaSeleccionados()
-	if len(selected) != 9 {
-		t.Fatalf("plantillas produccion masiva len=%d, want 9: %v", len(selected), selected)
+	if len(selected) != 1 || selected[0] != "taller_mecanico" {
+		t.Fatalf("sistemas adicionales inesperados: %v", selected)
 	}
 
 	seen := map[string]bool{}
@@ -345,11 +345,13 @@ func TestNuevasPlantillasProduccionMasivaSeleccionadas(t *testing.T) {
 		if rank := NuevoVerticalProduccionMasivaRank(modulo); rank != i+1 {
 			t.Fatalf("rank %s=%d want %d", modulo, rank, i+1)
 		}
-		plantilla := GetEmpresaModuloColombiaPlantilla(modulo)
-		preconfig := DefaultTipoEmpresaPreconfiguracion(789, plantilla.Titulo)
-		template, err := ParseTipoEmpresaPreconfigTemplate(preconfig.ConfigJSON)
-		if err != nil {
-			t.Fatalf("preconfig %s invalida: %v", modulo, err)
+		item, ok := getNuevoVerticalTipoEmpresaByModulo(modulo)
+		if !ok {
+			t.Fatalf("sistema adicional %s no encontrado", modulo)
+		}
+		template, ok := defaultNuevoVerticalTipoEmpresaPreconfigTemplate(item.Nombre)
+		if !ok {
+			t.Fatalf("configuracion interna de %s no encontrada", modulo)
 		}
 		if template.IntegracionVertical == nil || !template.IntegracionVertical.ProduccionMasiva {
 			t.Fatalf("%s debe quedar marcado como produccion masiva: %+v", modulo, template.IntegracionVertical)
@@ -376,14 +378,17 @@ func TestNuevasPlantillasProduccionMasivaSeleccionadas(t *testing.T) {
 		}
 		masivos++
 	}
-	if masivos != 9 {
-		t.Fatalf("plantillas masivos=%d, want 9", masivos)
+	if masivos != 1 {
+		t.Fatalf("sistemas adicionales=%d, want 1", masivos)
 	}
 }
 
-func TestIntegracionVerticalClasicaNoSeMarcaComoDiferidaV1(t *testing.T) {
+func TestIntegracionVerticalClasicaNoSePublicaComoAdicional(t *testing.T) {
 	for _, modulo := range []string{"alquileres", "constructora"} {
 		t.Run(modulo, func(t *testing.T) {
+			if isNuevoVerticalTipoEmpresaModulo(modulo) {
+				t.Fatalf("%s no debe publicarse en el catalogo adicional", modulo)
+			}
 			integracion := BuildTipoEmpresaPreconfigIntegracionVertical(modulo)
 			if integracion == nil {
 				t.Fatalf("sin integracion clasica para %s", modulo)

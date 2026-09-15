@@ -277,11 +277,11 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 		},
 		{
 			TipoTarjeta:      paginaPrincipalCardTypeInfoPhoto,
-			Titulo:           "Alquileres de activos",
-			Descripcion:      "Contratos, garantias, checklist, devoluciones, mantenimiento y venta central conectada a clientes y servicios.",
-			ImagenURL:        "/img/company-briefcase-color.svg",
-			ImagenSecundaria: "/img/warehouse-color.svg",
-			Enlace:           "/administrar_empresa.html?module=alquileres",
+			Titulo:           "Taller de motos",
+			Descripcion:      "Ordenes de trabajo, diagnostico, repuestos, mano de obra, garantias, caja y entrega al cliente.",
+			ImagenURL:        "/img/settings-color.svg",
+			ImagenSecundaria: "/img/portal-systems/realistic/taller-mecanico.jpg",
+			Enlace:           "/administrar_empresa.html?module=taller_mecanico",
 		},
 		{
 			TipoTarjeta:      paginaPrincipalCardTypeInfoPhoto,
@@ -325,7 +325,7 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 
 func informacionModulosDefaultConfig() informacionModulosConfig {
 	return informacionModulosConfig{
-		Titulo: "53 modulos activos y 13 plantillas empresariales",
+		Titulo: "Modulos empresariales, 7 preconfiguraciones basicas y Taller de motos",
 		Modulos: []informacionModuloItem{
 			{Titulo: "Inventario profesional", IconoURL: "/img/warehouse-color.svg", Caracteristicas: []string{"Productos", "Servicios", "Recetas", "Categorias", "Bodegas", "Kardex", "Traslados", "Compras", "Proveedores", "Control de existencias"}},
 			{Titulo: "Ventas POS", IconoURL: "/img/punto_venta.png", Caracteristicas: []string{"Venta directa", "Carritos por estacion", "Pagos mixtos", "Abonos", "Descuentos", "Codigos promocionales", "Caja por usuario", "Varias cajas simultaneas"}},
@@ -346,10 +346,11 @@ func informacionModulosDefaultConfig() informacionModulosConfig {
 			{Titulo: "Automatizacion e IA", IconoURL: "/img/gpt.svg", Caracteristicas: []string{"Integracion con IA", "Documentos inteligentes", "IA GPT-5.5 para compras", "Soporte operativo", "Reportes asistidos", "Acciones confirmables"}},
 			{Titulo: "Energia solar", IconoURL: "/img/solar-energy.svg", Caracteristicas: []string{"Monitoreo de paneles", "Controladoras Victron", "SMA Sunny Portal", "SolarEdge Monitoring", "Baterias Powerwall, BYD, Pylontech y Enphase", "Alertas por correo", "Lecturas por gateway local", "BMS y estado de salud"}},
 			{Titulo: "Camaras y DVR", IconoURL: "/img/shield-security-color.svg", Caracteristicas: []string{"Registro de camaras por empresa", "DVR/NVR por canal", "Visores HLS, WebRTC, MJPEG o iframe", "Estaciones tipo camara", "Carga antes o despues de estaciones", "Acceso por permisos", "Monitoreo operativo"}},
-			{Titulo: "Domotica y control fisico", IconoURL: "/img/sensor.png", Caracteristicas: []string{"Domotica por estacion", "Manejo de sensores", "Puertas", "Aparatos", "Permanencia", "Acceso", "Vehiculos", "Parqueaderos", "Trazabilidad operativa"}},
+			{Titulo: "Domotica y control fisico", IconoURL: "/img/sensor.png", Caracteristicas: []string{"Domotica por estacion", "Manejo de sensores", "Puertas", "Aparatos", "Permanencia", "Acceso", "Vehiculos", "Trazabilidad operativa"}},
 			{Titulo: "Gestion empresarial", IconoURL: "/img/company-briefcase-color.svg", Caracteristicas: []string{"Clientes", "CRM", "Usuarios", "Roles", "Permisos", "Licencias", "Auditoria", "Backups", "Comunicaciones", "Soporte", "Chat y tareas"}},
 			{Titulo: "Vida personal", IconoURL: "/img/money.svg", Caracteristicas: []string{"Gastos por usuario", "Foto privada de facturas", "Categorias mensuales", "Suscripciones", "Recordatorios de renovacion o cancelacion", "Proyeccion mensual y anual"}},
-			{Titulo: "13 plantillas listas", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Parqueadero", "Domicilios", "Alquileres", "Construccion / AIU", "Eventos y boleteria", "Salon, barberia y spa", "Veterinaria y pet shop", "Lavanderia y tintoreria", "Taller mecanico", "Transporte de carga / TMS", "Servicios tecnicos", "Funeraria y servicios exequiales", "Parque recreativo"}},
+			{Titulo: "7 preconfiguraciones basicas", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Hotel", "Motel", "Restaurante", "Bar", "Pymes", "Salon de belleza", "Lavadero de autos"}},
+			{Titulo: "Sistema destacado", IconoURL: "/img/settings-color.svg", Caracteristicas: []string{"Taller de motos", "Ordenes de trabajo", "Diagnostico", "Repuestos", "Mano de obra", "Garantias y entrega"}},
 		},
 	}
 }
@@ -629,6 +630,19 @@ func paginaPrincipalCardIsRetired(card paginaPrincipalCard) bool {
 		"inmobiliaria_comercial",
 		"cooperativa_fondo",
 		"capacitacion_empresarial",
+		"parqueadero",
+		"domicilios",
+		"alquileres",
+		"aiu_construccion",
+		"eventos_boleteria",
+		"salon_spa",
+		"veterinaria_petshop",
+		"lavanderia_tintoreria",
+		"transporte_carga_tms",
+		"servicios_tecnicos",
+		"funeraria_exequial",
+		"parque_recreativo",
+		"turnos_atencion",
 	} {
 		if strings.Contains(resource, module) {
 			return true
@@ -641,6 +655,13 @@ func paginaPrincipalCardIsRetired(card paginaPrincipalCard) bool {
 		"agencia de viajes", "operador turistico", "clinica y consultorios", "laboratorio clinico",
 		"colegio y academia", "guarderia infantil", "seguridad privada", "club deportivo",
 		"inmobiliaria comercial", "cooperativa y fondo de empleados", "capacitacion empresarial":
+		return true
+	case "parqueadero", "parqueaderos con ticket qr", "domicilios", "domicilios y entregas",
+		"alquileres", "alquileres de activos", "construccion aiu", "aiu construccion",
+		"eventos y boleteria", "salon barberia y spa", "salon de belleza barberia y spa",
+		"veterinaria y pet shop", "lavanderia y tintoreria", "transporte de carga tms",
+		"servicios tecnicos", "servicios tecnicos a domicilio", "funeraria y servicios exequiales",
+		"parque recreativo", "parque recreativo y atracciones", "turnos", "turnos de atencion":
 		return true
 	default:
 		return false
@@ -698,7 +719,7 @@ func informacionModulosNormalizeFeatures(raw []string, fallback []string) []stri
 func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacionModulosConfig {
 	defaults := informacionModulosDefaultConfig()
 	title := strings.TrimSpace(cfg.Titulo)
-	if title == "" {
+	if title == "" || informacionModulosTitleIsLegacyCatalog(title) {
 		title = defaults.Titulo
 	}
 
@@ -742,7 +763,13 @@ func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacion
 }
 
 func informacionModulosIsTemplatesTitle(title string) bool {
-	return strings.Contains(paginaPrincipalCatalogTextKey(title), "plantilla")
+	key := paginaPrincipalCatalogTextKey(title)
+	return strings.Contains(key, "plantilla") || strings.Contains(key, "preconfiguracion")
+}
+
+func informacionModulosTitleIsLegacyCatalog(title string) bool {
+	key := paginaPrincipalCatalogTextKey(title)
+	return strings.Contains(key, "13 plantilla") || strings.Contains(key, "53 modulo")
 }
 
 func informacionModulosTemplatesDefault(defaults []informacionModuloItem) informacionModuloItem {
@@ -752,9 +779,9 @@ func informacionModulosTemplatesDefault(defaults []informacionModuloItem) inform
 		}
 	}
 	return informacionModuloItem{
-		Titulo:          "13 plantillas listas",
+		Titulo:          "7 preconfiguraciones basicas",
 		IconoURL:        "/img/analytics-color.svg",
-		Caracteristicas: []string{"Parqueadero", "Domicilios", "Alquileres", "Construccion / AIU", "Eventos y boleteria", "Salon, barberia y spa", "Veterinaria y pet shop", "Lavanderia y tintoreria", "Taller mecanico", "Transporte de carga / TMS", "Servicios tecnicos", "Funeraria y servicios exequiales", "Parque recreativo"},
+		Caracteristicas: []string{"Hotel", "Motel", "Restaurante", "Bar", "Pymes", "Salon de belleza", "Lavadero de autos"},
 	}
 }
 
@@ -799,7 +826,7 @@ func informacionModulosMergeDefaultHighlights(source, defaults []informacionModu
 	for _, item := range defaults {
 		key := strings.ToLower(strings.TrimSpace(item.Titulo))
 		switch key {
-		case "camaras y dvr", "energia solar", "vida personal":
+		case "camaras y dvr", "energia solar", "vida personal", "sistema destacado":
 			if !seen[key] && len(source) < informacionModulosDefaultLimit {
 				source = append(source, item)
 				seen[key] = true

@@ -1,6 +1,6 @@
 # Arquitectura de modulos universales
 
-Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-05.
+Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026-09-14.
 
 ## Alcance revisado y límites
 
@@ -38,10 +38,11 @@ Todo modulo del sistema debe nacer como un nucleo universal reutilizable. Los ti
 
 ## Catálogo y especialización
 
-El catálogo actual contiene trece plantillas: cuatro clásicas y nueve nuevas.
-La [matriz de integración](matriz_integracion_plantillas.md) mantiene sus nombres,
-estado y retiradas; no reutilizar la lista histórica de veinte como catálogo
-comercial. Tipos, estados y metadatos viven en el motor común y sus plantillas.
+El catálogo actual contiene siete preconfiguraciones básicas: Hotel, Motel,
+Restaurante, Bar, Pymes, Salón de belleza y Lavadero de autos. Taller de motos
+se conserva como sistema destacado, no como una octava preconfiguración.
+La [matriz vigente](matriz_preconfiguraciones_basicas.md) define el alcance y la
+[ruta histórica](matriz_integracion_plantillas.md) solo evita enlaces rotos.
 El diagnóstico de plantilla no demuestra que cada proceso sectorial, integración
 o requisito regulatorio esté implementado. Los registros demo son solo para
 un entorno aislado autorizado, nunca fuentes de venta, nómina o emisión fiscal.
@@ -49,7 +50,7 @@ un entorno aislado autorizado, nunca fuentes de venta, nómina o emisión fiscal
 ## Bloques canonicos del sistema
 
 - Acceso general: inicio y panel principal.
-- Soluciones universales por negocio: plantillas y capacidades especializadas activadas por licencia.
+- Preconfiguracion inicial: siete sugerencias sobre el núcleo y capacidades especializadas activadas por licencia.
 - Operacion universal y ventas: puntos de venta, carritos, estaciones, reservas, turnos y canales publicos.
 - CRM universal y clientes: clientes, embudos, comunicaciones y cartera comercial.
 - Inventario y compras universales: productos, servicios, compras, bodegas, logistica, produccion y costeo.
@@ -80,6 +81,6 @@ La capa interna puede conservar claves historicas para no romper rutas, permisos
 
 ## Fuentes y aceptación de la revisión
 
-[modulos_plantillas_nuevas.go](../backend/db/modulos_plantillas_nuevas.go), [empresa_plantillas_integracion.go](../backend/handlers/empresa_plantillas_integracion.go), [matriz_integracion_plantillas.md](matriz_integracion_plantillas.md).
+[preconfiguraciones_basicas_catalogo.js](../web/js/preconfiguraciones_basicas_catalogo.js), [pagina_principal_handlers.go](../backend/handlers/pagina_principal_handlers.go) y [matriz_preconfiguraciones_basicas.md](matriz_preconfiguraciones_basicas.md).
 
 Requisitos aplicables: PCS-REQ-001, PCS-REQ-002, PCS-REQ-016 ([matriz transversal](requisitos/especificacion_y_trazabilidad.md)).

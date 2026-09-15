@@ -42,19 +42,6 @@ type empresaVerticalIntegracionItem struct {
 
 var empresaPlantillasCoreModules = []string{"clientes", "inventario", "ventas", "pagos", "finanzas", "facturacion", "reportes", "seguridad"}
 
-type empresaVerticalIntegracionDetalle struct {
-	TemplateActivates    []string
-	TablesTouched        []string
-	RequiredPermissions  []string
-	SaleFlow             []string
-	ReportsProduced      []string
-	FinancialCoreModules []string
-	IncomeFlow           []string
-	ExpenseFlow          []string
-	FinancialTables      []string
-	FinancialReports     []string
-}
-
 func EmpresaPlantillasIntegracionCatalogoHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -102,65 +89,11 @@ func PublicPlantillasIntegracionCatalogoHandler() http.HandlerFunc {
 }
 
 func buildEmpresaPlantillasIntegracionCatalogo() []empresaVerticalIntegracionItem {
-	items := []empresaVerticalIntegracionItem{
-		withVerticalFusion(classicVertical("parqueadero", "linkParqueadero", "Parqueadero", "Ticket QR, placa, entrada/salida, tiempos y reglas tarifarias", "Plantilla de parqueadero conectada al nucleo comun: tickets y cobros crean servicio, venta y pago central sin modulo comercial paralelo."), nil, []string{"estaciones", "turnos_atencion"}, []string{"parque_recreativo"}),
-		classicVertical("domicilios", "linkDomicilios", "Domicilios", "Tracking, domiciliarios, restaurantes aliados, menu, ofertas y estados logisticos", "Plantilla logistica conectada al nucleo comun: pedidos, clientes, menu, ventas y pagos se resuelven en los modulos centrales."),
-		classicVertical("alquileres", "linkAlquileres", "Alquileres", "Contratos, activos, garantias, mantenimientos, kilometraje y mapa GPS", "Plantilla de alquiler conectada al nucleo comun: clientes, activos vendibles, contratos, ventas y pagos usan la fuente unica."),
-		classicVertical("aiu_construccion", "linkAIUConstruccion", "Construccion / AIU", "Capitulos, AIU, presupuestos de obra, retenciones, anticipo, garantia y auditoria tecnica", "Plantilla de construccion conectada al nucleo comun: clientes, contratos, conceptos, ventas, impuestos y reportes se enlazan sin duplicar documentos comerciales."),
-	}
-	items = append(items, nuevasPlantillasIntegracionItems()...)
+	items := nuevasPlantillasIntegracionItems()
 	for idx := range items {
 		items[idx] = enrichEmpresaVerticalReadiness(items[idx])
 	}
 	return items
-}
-
-func withVerticalFusion(item empresaVerticalIntegracionItem, fused, support, similar []string) empresaVerticalIntegracionItem {
-	item.FusedModules = normalizedStringSlice(fused)
-	item.SupportModules = normalizedStringSlice(support)
-	item.SimilarTemplates = normalizedStringSlice(similar)
-	return item
-}
-
-func normalizedStringSlice(values []string) []string {
-	out := make([]string, 0, len(values))
-	seen := map[string]bool{}
-	for _, value := range values {
-		clean := strings.ToLower(strings.TrimSpace(value))
-		if clean == "" || seen[clean] {
-			continue
-		}
-		seen[clean] = true
-		out = append(out, clean)
-	}
-	return out
-}
-
-func classicVertical(module, page, title, ownFlow, reason string) empresaVerticalIntegracionItem {
-	detail := classicVerticalIntegrationDetail(module, page)
-	return empresaVerticalIntegracionItem{
-		ID:                   strings.TrimSpace(page),
-		Modulo:               strings.ToLower(strings.TrimSpace(module)),
-		Page:                 strings.TrimSpace(page),
-		Titulo:               strings.TrimSpace(title),
-		IntegrationStatus:    "plantilla_integrada_nucleo",
-		OperationalVisible:   true,
-		CoreModules:          append([]string{}, empresaPlantillasCoreModules...),
-		TemplateActivates:    copyStringSlice(detail.TemplateActivates),
-		TablesTouched:        copyStringSlice(detail.TablesTouched),
-		RequiredPermissions:  copyStringSlice(detail.RequiredPermissions),
-		SaleFlow:             copyStringSlice(detail.SaleFlow),
-		ReportsProduced:      copyStringSlice(detail.ReportsProduced),
-		FinancialCoreModules: copyStringSlice(detail.FinancialCoreModules),
-		IncomeFlow:           copyStringSlice(detail.IncomeFlow),
-		ExpenseFlow:          copyStringSlice(detail.ExpenseFlow),
-		FinancialTables:      copyStringSlice(detail.FinancialTables),
-		FinancialReports:     copyStringSlice(detail.FinancialReports),
-		DuplicatesCore:       []string{},
-		OwnFlowAllowed:       []string{strings.TrimSpace(ownFlow)},
-		Decision:             "plantilla_universal_nucleo",
-		Motivo:               strings.TrimSpace(reason),
-	}
 }
 
 func nuevasPlantillasIntegracionItems() []empresaVerticalIntegracionItem {
@@ -268,55 +201,6 @@ func hasAllStringValues(values []string, required []string) bool {
 		}
 	}
 	return true
-}
-
-func classicVerticalIntegrationDetail(module, page string) empresaVerticalIntegracionDetalle {
-	module = strings.ToLower(strings.TrimSpace(module))
-	page = strings.TrimSpace(page)
-	baseTables := []string{"clientes", "servicios", "carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"}
-	baseReports := []string{"reporte operativo de la plantilla", "ventas por servicio", "ingresos por periodo", "egresos por periodo", "auditoria por empresa"}
-	basePermissions := []string{
-		"seguridad:R",
-		module + ":R",
-		module + ":C",
-		"clientes:R/C",
-		"inventario:R/C servicios",
-		"ventas:C",
-		"pagos:C",
-		"finanzas:R/C",
-		"reportes:R",
-	}
-	d := empresaVerticalIntegracionDetalle{
-		TemplateActivates:    []string{module, page, "clientes", "inventario/servicios", "ventas", "pagos", "finanzas", "reportes"},
-		TablesTouched:        append([]string{}, baseTables...),
-		RequiredPermissions:  basePermissions,
-		ReportsProduced:      baseReports,
-		SaleFlow:             []string{"registro especializado", "cliente/servicio central", "carrito central", "pago o factura central", "ingreso conciliable en finanzas", "reporte consolidado"},
-		FinancialCoreModules: []string{"ventas", "pagos", "finanzas", "bancos_pagos", "tesoreria_presupuesto", "reportes"},
-		IncomeFlow:           []string{"servicio/producto vendible de la plantilla", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"},
-		ExpenseFlow:          []string{"compra/gasto operativo de la plantilla", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"},
-		FinancialTables:      []string{"carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos", "empresa_finanzas_configuracion", "empresa_finanzas_periodos"},
-		FinancialReports:     []string{"ingresos por plantilla", "egresos por plantilla", "margen operativo", "flujo de caja", "estado de resultados por empresa"},
-	}
-	switch module {
-	case "parqueadero":
-		d.TablesTouched = append(d.TablesTouched, "empresa_parqueadero_config", "empresa_parqueadero_tickets")
-		d.SaleFlow = []string{"ticket de entrada", "tarifa por tipo de vehiculo", "cobro de salida", "carrito con servicio de parqueo", "pago central con referencia de ticket"}
-		d.ReportsProduced = []string{"tickets cerrados", "ocupacion", "ingresos por tipo de vehiculo", "egresos operativos", "anulaciones", "ventas centrales por servicio"}
-	case "domicilios":
-		d.TablesTouched = append(d.TablesTouched, "empresa_domicilios_restaurantes", "empresa_domicilios_menu_items", "empresa_domicilios_orders", "empresa_domicilios_order_items", "empresa_domicilios_tracking", "empresa_domicilios_couriers")
-		d.SaleFlow = []string{"pedido entregado", "cliente y menu como servicios", "items, domicilio y propina", "carrito central", "pago central normalizado"}
-		d.ReportsProduced = []string{"pedidos entregados", "ventas por restaurante/menu", "tracking y couriers", "tarifas de entrega", "egresos logisticos", "ventas centrales por servicio"}
-	case "alquileres":
-		d.TablesTouched = append(d.TablesTouched, "empresa_alquileres_activos", "empresa_alquileres_tarifas", "empresa_alquileres_contratos", "empresa_alquileres_mantenimientos", "empresa_alquileres_ubicaciones")
-		d.SaleFlow = []string{"contrato de alquiler", "cliente central", "activo/tarifa como servicio", "carrito central del contrato", "pago central al cerrar saldo"}
-		d.ReportsProduced = []string{"activos disponibles", "contratos", "garantias", "mantenimientos", "ingresos y egresos por activo", "ventas centrales por activo"}
-	case "aiu_construccion":
-		d.TablesTouched = append(d.TablesTouched, "empresa_aiu_contratos", "empresa_aiu_items", "empresa_aiu_facturas", "empresa_aiu_eventos")
-		d.SaleFlow = []string{"contrato AIU", "cliente y contrato como servicio", "conceptos como servicios", "factura AIU enlazada a carrito", "facturacion central sin recalcular impuestos"}
-		d.ReportsProduced = []string{"contratos por estado", "capitulos/conceptos", "avance y riesgo", "facturas AIU", "ingresos y egresos por obra", "ventas centrales enlazadas"}
-	}
-	return d
 }
 
 func copyStringSlice(in []string) []string {

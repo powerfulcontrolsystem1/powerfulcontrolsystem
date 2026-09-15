@@ -6,15 +6,20 @@ Estado: Vigente. Responsable: Coordinación técnica. Revisión documental: 2026
 
 El [menú flotante](../web/menu.js) agrupa Calculadora y Juegos en Accesorios.
 [Juegos](../web/juegos.html) muestra exclusivamente un menú de seis botones con
-capturas de los juegos. El [contenedor flotante](../web/juegos/ventana.js) y sus
-[estilos](../web/juegos/ventana.css) abren un iframe pequeño, movible, redimensionable
-en PC y minimizable, sin bloquear la aplicación del fondo. Cada juego ocupa ese
-mismo iframe; volver al menú pausa y guarda. Cerrar oculta el iframe y conserva
-su estado en memoria. No se interceptan los atajos de la aplicación anfitriona.
+capturas de los juegos y abre en una ventana independiente, redimensionable y
+reutilizable. Administrar empresa permanece en su ventana y no pierde el
+`contentFrame`. Cada juego ocupa la sala PCS PLAY; volver al menú pausa y guarda.
+No se interceptan los atajos de la aplicación anfitriona.
 El catálogo presenta primero GTAS, seguido de Pac-Man Canvas, Tetris,
 Buscaminas, Solitario Klondike y la aventura submarina sorpresa. DOON se retira.
 La calculadora conserva su ventana compacta. En móvil el mando semitransparente
-se superpone al juego; no se abre una pestaña nueva.
+se superpone al juego. Si el navegador bloquea ventanas emergentes, el sistema
+lo informa sin reemplazar la página activa del panel.
+
+La sala, créditos y controles declaran nodos `data-appearance-node`. El arranque
+compartido `theme_bootstrap.js` aplica `data-theme`, `data-appearance-mode` y las
+clases clara/oscura antes de pintar; `sala.css` define superficies, bordes,
+contraste, foco y sombras para ambos modos sin recolorear los escenarios.
 
 La [sala](../web/juegos/sala.js), sus [estilos](../web/juegos/sala.css) y el
 [núcleo de audio/estado](../web/juegos/core.js) coordinan una sola partida activa,
@@ -175,6 +180,7 @@ puntos únicos, tres vidas y animación completa, restauración y oclusión por 
 [Pruebas de audio](../tools/gtas_audio.test.mjs) verifican silencio, proximidad,
 liberación de conexiones y firmas distintas para música, armas e impactos.
 [La prueba de migración de Springfield](../backend/db/juegos_simsong_test.go) comprueba que los guardados retirados se conservan y que el CHECK admite el nuevo juego.
-La aceptación visual incluye controles, pausa, guardado/carga, audio activado y
-pantalla completa en escritorio y viewport móvil. La evidencia de cada candidato
+La aceptación visual incluye nodos claros/oscuros, controles, pausa,
+guardado/carga, audio activado y pantalla completa en escritorio y viewport móvil.
+La evidencia de cada candidato
 se conserva fuera de Git; no se deduce despliegue de la mera existencia del código.

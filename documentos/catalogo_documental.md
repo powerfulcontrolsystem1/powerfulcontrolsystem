@@ -7,7 +7,7 @@ No editar manualmente. Generar con `node tools/docs_catalog.mjs --write`; valida
 Política y significado de estados: [marco documental](gobernanza_tecnica/marco_documental.md).
 Inventario y hallazgos detallados: [JSON](catalogo_documental.json). La clasificación no acredita revisión semántica ni producción.
 
-Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
+Documentos: 161. Hallazgos locales: 0; bloqueantes: 0.
 
 | Estado | Cantidad |
 | --- | --- |
@@ -16,7 +16,7 @@ Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 | generado | 20 |
 | referencia_externa | 1 |
 | referencia_por_validar | 4 |
-| vigente | 137 |
+| vigente | 134 |
 
 ## Índice completo
 
@@ -46,8 +46,6 @@ Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/README.md](<README.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/activos_fijos_avanzado.md](<activos_fijos_avanzado.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/activos_fijos_niif_fiscal.md](<activos_fijos_niif_fiscal.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
-| [documentos/aiu_construccion.md](<aiu_construccion.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
-| [documentos/alquileres.md](<alquileres.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/api/README.md](<api/README.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/api/ayuda_apis.md](<api/ayuda_apis.md>) | vigente | Ingeniería de API | 2026-09-05 |
 | [documentos/api/inventario_api_movil.md](<api/inventario_api_movil.md>) | generado | Ingeniería backend y datos | Pendiente / no aplica |
@@ -68,7 +66,7 @@ Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/arquitectura/inventario_supply_chain_plan_105.md](<arquitectura/inventario_supply_chain_plan_105.md>) | generado | Ingeniería backend y datos | Pendiente / no aplica |
 | [documentos/arquitectura/inventario_ui_plan_106.md](<arquitectura/inventario_ui_plan_106.md>) | generado | Ingeniería backend y datos | Pendiente / no aplica |
 | [documentos/arquitectura/matriz_rutas_multiempresa.md](<arquitectura/matriz_rutas_multiempresa.md>) | generado | Ingeniería backend y datos | Pendiente / no aplica |
-| [documentos/arquitectura_modulos_universales.md](<arquitectura_modulos_universales.md>) | vigente | Coordinación técnica | 2026-09-05 |
+| [documentos/arquitectura_modulos_universales.md](<arquitectura_modulos_universales.md>) | vigente | Coordinación técnica | 2026-09-14 |
 | [documentos/calidad/code_quality_baseline.json](<calidad/code_quality_baseline.json>) | generado | Coordinación técnica | Pendiente / no aplica |
 | [documentos/calidad/estrategia_verificacion.md](<calidad/estrategia_verificacion.md>) | vigente | QA/operación | 2026-09-05 |
 | [documentos/carnets_empresariales.md](<carnets_empresariales.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
@@ -85,7 +83,7 @@ Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/contabilidad_colombia.md](<contabilidad_colombia.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/contabilidad_colombia_avanzada.md](<contabilidad_colombia_avanzada.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/contexto_codex.md](<contexto_codex.md>) | vigente | Coordinación técnica | 2026-09-05 |
-| [documentos/contexto_especifico_del_sistema.md](<contexto_especifico_del_sistema.md>) | vigente | Coordinación técnica | 2026-09-05 |
+| [documentos/contexto_especifico_del_sistema.md](<contexto_especifico_del_sistema.md>) | vigente | Coordinación técnica | 2026-09-14 |
 | [documentos/contexto_general_del_sistema.md](<contexto_general_del_sistema.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/crm_ventas_avanzadas.md](<crm_ventas_avanzadas.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/decisiones_tecnicas.md](<decisiones_tecnicas.md>) | vigente | Coordinación técnica | 2026-09-05 |
@@ -93,7 +91,7 @@ Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/deploy_nginx_reverse_proxy_vps.md](<deploy_nginx_reverse_proxy_vps.md>) | vigente | QA/operación | 2026-09-05 |
 | [documentos/desarrollo/configuracion_y_entornos.md](<desarrollo/configuracion_y_entornos.md>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/desarrollo/incorporacion.md](<desarrollo/incorporacion.md>) | vigente | Coordinación técnica | 2026-09-05 |
-| [documentos/descripcion_de_modulos](<descripcion_de_modulos>) | vigente | Coordinación técnica | 2026-09-05 |
+| [documentos/descripcion_de_modulos](<descripcion_de_modulos>) | vigente | Coordinación técnica | 2026-09-14 |
 | [documentos/descripcion_del_proyecto](<descripcion_del_proyecto>) | vigente | Coordinación técnica | 2026-09-05 |
 | [documentos/diagramas/diagrama_entidad_relacion.md](<diagramas/diagrama_entidad_relacion.md>) | vigente | Ingeniería de arquitectura | 2026-09-05 |
 | [documentos/diagramas/diagramas_sistema_pcs.md](<diagramas/diagramas_sistema_pcs.md>) | vigente | Ingeniería de arquitectura | 2026-09-05 |
@@ -102,12 +100,11 @@ Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/diagramas/documentacion_tecnica_completa_manifest.json](<diagramas/documentacion_tecnica_completa_manifest.json>) | generado | Coordinación técnica | Pendiente / no aplica |
 | [documentos/diagramas/estructura_del_codigo.md](<diagramas/estructura_del_codigo.md>) | vigente | Coordinación técnica | 2026-09-14 |
 | [documentos/docker_vps_operacion.md](<docker_vps_operacion.md>) | vigente | QA/operación | 2026-09-05 |
-| [documentos/domicilios_profesional.md](<domicilios_profesional.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/domotica_raspberry_tunnel.md](<domotica_raspberry_tunnel.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/email_corporativo_mailu.md](<email_corporativo_mailu.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/energia_solar.md](<energia_solar.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/erp_multiempresa/README.md](<erp_multiempresa/README.md>) | vigente | Coordinación técnica | 2026-09-05 |
-| [documentos/estado_actual.md](<estado_actual.md>) | vigente | Coordinación técnica | 2026-09-07 |
+| [documentos/estado_actual.md](<estado_actual.md>) | vigente | Coordinación técnica | 2026-09-14 |
 | [documentos/estructura_bd.md](<estructura_bd.md>) | vigente | Coordinación técnica | 2026-09-14 |
 | [documentos/flujos_operativos.md](<flujos_operativos.md>) | vigente | Coordinación técnica | 2026-09-14 |
 | [documentos/gobernanza_tecnica/README.md](<gobernanza_tecnica/README.md>) | vigente | Coordinación técnica | 2026-09-05 |
@@ -162,15 +159,15 @@ Documentos: 164. Hallazgos locales: 0; bloqueantes: 0.
 | [documentos/logistica_wms.md](<logistica_wms.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/manual_de_instalacion.md](<manual_de_instalacion.md>) | vigente | QA/operación | 2026-09-05 |
 | [documentos/manual_vps_seguridad.md](<manual_vps_seguridad.md>) | vigente | QA/operación | 2026-09-05 |
-| [documentos/mapa_modulos.md](<mapa_modulos.md>) | vigente | Coordinación técnica | 2026-09-05 |
-| [documentos/matriz_integracion_plantillas.md](<matriz_integracion_plantillas.md>) | vigente | Ingeniería de módulos | 2026-09-05 |
+| [documentos/mapa_modulos.md](<mapa_modulos.md>) | vigente | Coordinación técnica | 2026-09-14 |
+| [documentos/matriz_integracion_plantillas.md](<matriz_integracion_plantillas.md>) | vigente | Ingeniería de módulos | 2026-09-14 |
+| [documentos/matriz_preconfiguraciones_basicas.md](<matriz_preconfiguraciones_basicas.md>) | vigente | Ingeniería de módulos | 2026-09-14 |
 | [documentos/matriz_roles_permisos_pos_multiempresa.md](<matriz_roles_permisos_pos_multiempresa.md>) | vigente | Coordinación técnica | 2026-09-11 |
 | [documentos/modulos_empresariales_colombia.md](<modulos_empresariales_colombia.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/nextcloud_empresarial.md](<nextcloud_empresarial.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/nomina_colombia_avanzada.md](<nomina_colombia_avanzada.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/observability_runbook.md](<observability_runbook.md>) | vigente | QA/operación | 2026-09-05 |
 | [documentos/operacion/incidentes_y_continuidad.md](<operacion/incidentes_y_continuidad.md>) | vigente | QA/operación | 2026-09-05 |
-| [documentos/parqueadero_tickets_qr.md](<parqueadero_tickets_qr.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/portal_contador.md](<portal_contador.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/portal_terceros_certificados.md](<portal_terceros_certificados.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
 | [documentos/produccion_mrp.md](<produccion_mrp.md>) | vigente | Ingeniería del módulo | 2026-09-05 |
