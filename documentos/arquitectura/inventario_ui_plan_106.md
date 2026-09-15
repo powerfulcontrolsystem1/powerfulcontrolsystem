@@ -5,9 +5,9 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 ## Alcance
 
 - Páginas HTML: **294**
-- Controles detectados: **5752**
-- Acciones a cubrir en E2E: **2825**
-- Entradas y selectores: **2927**
+- Controles detectados: **5753**
+- Acciones a cubrir en E2E: **2821**
+- Entradas y selectores: **2932**
 - Controles con marcador dinámico: **819**
 - Estado: inventario estático previo; la cobertura funcional, visual, por permisos y de IA se registra en el runner E2E y la matriz P106.
 
@@ -3955,17 +3955,6 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | button/button | accion | - | &#9776; Ocultar menu | sí |
 
-### `web/administrar_empresa/nextcloud.html` (6)
-
-| # | Tipo | Clase | ID | Etiqueta | Dinámico |
-| ---: | --- | --- | --- | --- | --- |
-| 1 | button/button | accion | nextcloudProvision | Preparar espacio | no |
-| 2 | button/button | accion | nextcloudReset | Restablecer acceso | no |
-| 3 | button/button | accion | nextcloudToggle | Desactivar espacio | no |
-| 4 | button/button | accion | nextcloudOpen | Abrir Nextcloud | no |
-| 5 | a/- | accion | nextcloudFullPage | Abrir en pagina completa | no |
-| 6 | button/button | accion | nextcloudCopy | Copiar credencial | no |
-
 ### `web/administrar_empresa/niif.html` (28)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
@@ -5216,7 +5205,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 29 | button/button | accion | - | Imprimir ahora | sí |
 | 30 | button/button | accion | - | Cerrar | sí |
 
-### `web/administrar_empresa/vida.html` (73)
+### `web/administrar_empresa/vida.html` (80)
 
 | # | Tipo | Clase | ID | Etiqueta | Dinámico |
 | ---: | --- | --- | --- | --- | --- |
@@ -5228,7 +5217,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 6 | button/button | accion | - | Gastos | sí |
 | 7 | button/button | accion | - | Reportes | sí |
 | 8 | button/button | accion | - | Historial de precios | sí |
-| 9 | button/button | accion | - | Suscripciones | sí |
+| 9 | button/button | accion | - | Recurrentes | sí |
 | 10 | input/month | entrada | vidaMonth | vidaMonth | no |
 | 11 | button/button | accion | - | Ver todos | sí |
 | 12 | input/date | entrada | vidaFilterFrom | vidaFilterFrom | no |
@@ -5241,7 +5230,7 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 19 | input/- | entrada | vidaReportMerchant | vidaReportMerchant | no |
 | 20 | select/- | entrada | vidaReportPayment | Todos Efectivo Débito Crédito Transferencia Billetera Otro | no |
 | 21 | button/button | accion | vidaReportFilterBtn | Actualizar reporte | no |
-| 22 | button/button | accion | - | + Nueva suscripción | sí |
+| 22 | button/button | accion | - | + Nuevo plan recurrente | sí |
 | 23 | input/- | entrada | vidaPriceCodeFilter | vidaPriceCodeFilter | no |
 | 24 | input/- | entrada | vidaPriceNameFilter | vidaPriceNameFilter | no |
 | 25 | button/button | accion | vidaPriceFilterBtn | Buscar | no |
@@ -5254,45 +5243,52 @@ Generado por `node tools/plan106_ui_inventory.mjs`. No editar manualmente.
 | 32 | select/- | entrada | vidaExpensePayment | Efectivo Tarjeta débito Tarjeta crédito Transferencia Billetera digital Otro | no |
 | 33 | input/- | entrada | vidaExpenseCurrency | COP | no |
 | 34 | textarea/- | entrada | vidaExpenseDescription | descripcion | no |
-| 35 | input/- | entrada | vidaExpenseProduct | producto_nombre | no |
-| 36 | input/- | entrada | vidaExpenseBarcode | codigo_barras | no |
-| 37 | button/button | accion | vidaScanOpen | Usar cámara | no |
-| 38 | input/number | entrada | vidaExpenseQuantity | 1 | no |
-| 39 | input/number | entrada | vidaExpenseUnitPrice | precio_unitario | no |
-| 40 | input/file | accion | vidaExpenseReceipt | recibo | no |
-| 41 | button/button | accion | - | Cancelar | sí |
-| 42 | button/submit | accion | vidaExpenseSave | Guardar gasto | no |
-| 43 | button/button | accion | - | × | sí |
-| 44 | input/file | accion | vidaAIInvoice | factura | no |
-| 45 | select/- | entrada | vidaAIPayment | Efectivo Tarjeta débito Tarjeta crédito Transferencia Billetera digital Otro | no |
-| 46 | button/button | accion | - | Cancelar | sí |
-| 47 | button/submit | accion | vidaAISubmit | Leer y registrar | no |
-| 48 | button/button | accion | vidaScanClose | × | no |
-| 49 | button/button | accion | vidaScanCancel | Cancelar | no |
+| 35 | input/checkbox | accion | vidaExpenseRecurring | recurrente | no |
+| 36 | select/- | entrada | vidaExpensePeriod | Semanal Mensual Trimestral Semestral Anual Personalizada (meses) | no |
+| 37 | input/number | entrada | vidaExpenseInterval | 1 | no |
+| 38 | input/date | entrada | vidaExpenseNextPayment | proximo_pago | no |
+| 39 | input/number | entrada | vidaExpenseReminderDays | 5 | no |
+| 40 | select/- | entrada | vidaExpenseReminderType | Pagar o renovar Revisar o cancelar Pagar, renovar o cancelar | no |
+| 41 | input/checkbox | accion | vidaExpenseAutoRenew | auto_renovacion | no |
+| 42 | input/- | entrada | vidaExpenseProduct | producto_nombre | no |
+| 43 | input/- | entrada | vidaExpenseBarcode | codigo_barras | no |
+| 44 | button/button | accion | vidaScanOpen | Usar cámara | no |
+| 45 | input/number | entrada | vidaExpenseQuantity | 1 | no |
+| 46 | input/number | entrada | vidaExpenseUnitPrice | precio_unitario | no |
+| 47 | input/file | accion | vidaExpenseReceipt | recibo | no |
+| 48 | button/button | accion | - | Cancelar | sí |
+| 49 | button/submit | accion | vidaExpenseSave | Guardar gasto | no |
 | 50 | button/button | accion | - | × | sí |
-| 51 | input/hidden | entrada | vidaSubscriptionId | vidaSubscriptionId | no |
-| 52 | input/- | entrada | vidaSubscriptionName | vidaSubscriptionName | no |
-| 53 | input/- | entrada | vidaSubscriptionProvider | vidaSubscriptionProvider | no |
-| 54 | input/number | entrada | vidaSubscriptionCost | vidaSubscriptionCost | no |
-| 55 | input/- | entrada | vidaSubscriptionCurrency | COP | no |
-| 56 | select/- | entrada | vidaSubscriptionPeriod | Semanal Mensual Trimestral Semestral Anual Personalizada (meses) | no |
-| 57 | input/number | entrada | vidaSubscriptionInterval | 1 | no |
-| 58 | input/date | entrada | vidaSubscriptionStart | vidaSubscriptionStart | no |
-| 59 | input/date | entrada | vidaSubscriptionNext | vidaSubscriptionNext | no |
-| 60 | input/number | entrada | vidaSubscriptionReminder | 5 | no |
-| 61 | select/- | entrada | vidaSubscriptionReminderType | Renovar Cancelar Renovar o cancelar | no |
-| 62 | select/- | entrada | vidaSubscriptionState | Activa Pausada Cancelada Vencida | no |
-| 63 | input/checkbox | accion | vidaSubscriptionAuto | vidaSubscriptionAuto | no |
-| 64 | textarea/- | entrada | vidaSubscriptionNotes | vidaSubscriptionNotes | no |
-| 65 | button/button | accion | - | Cancelar | sí |
-| 66 | button/submit | accion | vidaSubscriptionSave | Guardar suscripción | no |
-| 67 | button/button | accion | - | × | sí |
-| 68 | input/checkbox | accion | vidaReminderEmail | vidaReminderEmail | no |
-| 69 | input/checkbox | accion | vidaReminderWhatsApp | vidaReminderWhatsApp | no |
-| 70 | input/- | entrada | vidaReminderPhone | vidaReminderPhone | no |
-| 71 | input/time | entrada | vidaReminderHour | 09:00 | no |
+| 51 | input/file | accion | vidaAIInvoice | factura | no |
+| 52 | select/- | entrada | vidaAIPayment | Efectivo Tarjeta débito Tarjeta crédito Transferencia Billetera digital Otro | no |
+| 53 | button/button | accion | - | Cancelar | sí |
+| 54 | button/submit | accion | vidaAISubmit | Leer y registrar | no |
+| 55 | button/button | accion | vidaScanClose | × | no |
+| 56 | button/button | accion | vidaScanCancel | Cancelar | no |
+| 57 | button/button | accion | - | × | sí |
+| 58 | input/hidden | entrada | vidaSubscriptionId | vidaSubscriptionId | no |
+| 59 | input/- | entrada | vidaSubscriptionName | vidaSubscriptionName | no |
+| 60 | input/- | entrada | vidaSubscriptionProvider | vidaSubscriptionProvider | no |
+| 61 | input/number | entrada | vidaSubscriptionCost | vidaSubscriptionCost | no |
+| 62 | input/- | entrada | vidaSubscriptionCurrency | COP | no |
+| 63 | select/- | entrada | vidaSubscriptionPeriod | Semanal Mensual Trimestral Semestral Anual Personalizada (meses) | no |
+| 64 | input/number | entrada | vidaSubscriptionInterval | 1 | no |
+| 65 | input/date | entrada | vidaSubscriptionStart | vidaSubscriptionStart | no |
+| 66 | input/date | entrada | vidaSubscriptionNext | vidaSubscriptionNext | no |
+| 67 | input/number | entrada | vidaSubscriptionReminder | 5 | no |
+| 68 | select/- | entrada | vidaSubscriptionReminderType | Renovar Cancelar Renovar o cancelar | no |
+| 69 | select/- | entrada | vidaSubscriptionState | Activa Pausada Cancelada Vencida | no |
+| 70 | input/checkbox | accion | vidaSubscriptionAuto | vidaSubscriptionAuto | no |
+| 71 | textarea/- | entrada | vidaSubscriptionNotes | vidaSubscriptionNotes | no |
 | 72 | button/button | accion | - | Cancelar | sí |
-| 73 | button/submit | accion | vidaReminderSave | Guardar avisos | no |
+| 73 | button/submit | accion | vidaSubscriptionSave | Guardar suscripción | no |
+| 74 | button/button | accion | - | × | sí |
+| 75 | input/checkbox | accion | vidaReminderEmail | vidaReminderEmail | no |
+| 76 | input/checkbox | accion | vidaReminderWhatsApp | vidaReminderWhatsApp | no |
+| 77 | input/- | entrada | vidaReminderPhone | vidaReminderPhone | no |
+| 78 | input/time | entrada | vidaReminderHour | 09:00 | no |
+| 79 | button/button | accion | - | Cancelar | sí |
+| 80 | button/submit | accion | vidaReminderSave | Guardar avisos | no |
 
 ### `web/administrar_empresa/youtube_station_browser.html` (4)
 

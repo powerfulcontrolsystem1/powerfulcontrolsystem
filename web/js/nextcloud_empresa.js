@@ -4,6 +4,10 @@
   var state = { empresaID: 0, data: null };
 
   function byID(id) { return document.getElementById(id); }
+  function setStatus(message) {
+    var node = byID("nextcloudStatus");
+    if (node) node.textContent = String(message || "");
+  }
   function cookie(name) {
     var match = String(document.cookie || "").match(new RegExp("(?:^|;\\s*)" + name + "=([^;]*)"));
     return match ? decodeURIComponent(match[1]) : "";
@@ -34,38 +38,14 @@
     }
     return data;
   }
-  function setBusy(value) {
-    ["nextcloudProvision", "nextcloudReset", "nextcloudToggle", "nextcloudOpen"].forEach(function (id) {
-      var node = byID(id); if (node) node.disabled = !!value;
-    });
-  }
   function render(data) {
     state.data = data || {};
-    byID("nextcloudUser").textContent = state.data.nextcloud_user || "-";
-    byID("nextcloudQuota").textContent = state.data.quota_mb ? state.data.quota_mb + " MB" : "-";
-    byID("nextcloudProvisioned").textContent = state.data.provisioned ? "Aprovisionado" : "Pendiente";
-    byID("nextcloudToggle").textContent = state.data.active ? "Desactivar espacio" : "Activar espacio";
-    var status = !state.data.enabled ? "Servicio desactivado por el super administrador."
-      : !state.data.configured ? "Falta completar la configuracion global de Nextcloud."
-      : !state.data.active ? "Espacio documental desactivado para esta empresa."
-      : state.data.provisioned ? "Cuenta lista para usar." : "Cuenta asignada; prepara el espacio para crearla en Nextcloud.";
-    byID("nextcloudStatus").textContent = status;
-    byID("nextcloudProvision").disabled = !state.data.configured || !state.data.active || !!state.data.provisioned;
-    byID("nextcloudReset").disabled = !state.data.configured || !state.data.active || !state.data.provisioned;
-    byID("nextcloudOpen").disabled = !state.data.web_url || !state.data.active || !state.data.provisioned;
-    byID("nextcloudToggle").disabled = !state.data.configured && !state.data.active;
-    if (state.data.temporary_password) {
-      byID("nextcloudTemporaryPassword").textContent = state.data.temporary_password;
-      byID("nextcloudCredential").classList.add("visible");
-    }
   }
   function embedNextcloud(url) {
     if (!url) return;
     var frame = byID("nextcloudFrame");
-    var container = byID("nextcloudEmbed");
-    if (!frame || !container) return;
-    container.classList.add("visible");
-    byID("nextcloudEmbedStatus").textContent = "Iniciando sesion segura...";
+    if (!frame) return;
+    setStatus("Iniciando sesion segura.");
     if (frame.getAttribute("src") !== url) frame.setAttribute("src", url);
   }
   function openCompanyNextcloudWhenReady(data) {
@@ -74,49 +54,31 @@
       embedNextcloud(data.autologin_url);
       return;
     }
-    byID("nextcloudEmbedStatus").textContent = data.autologin_error || "Inicio automatico no disponible.";
-    byID("nextcloudEmbed").classList.add("visible");
+    setStatus(data.autologin_error || "Inicio automatico no disponible.");
   }
   async function run(action) {
-    setBusy(true);
-    byID("nextcloudStatus").textContent = "Procesando...";
+    setStatus("Preparando el espacio de Nextcloud.");
     try {
       var data = await request(action, "POST");
       render(data);
       if (action === "provision") openCompanyNextcloudWhenReady(data);
     }
-    catch (error) { byID("nextcloudStatus").textContent = error.message; }
-    finally { if (state.data) render(state.data); }
+    catch (error) { setStatus(error.message); }
   }
   async function load() {
     state.empresaID = resolveEmpresaID();
-    if (!state.empresaID) { byID("nextcloudStatus").textContent = "No se pudo resolver la empresa activa. Vuelve a abrir esta opcion desde Administrar empresa."; setBusy(true); return; }
+    if (!state.empresaID) { setStatus("No se pudo resolver la empresa activa."); return; }
     try {
       var data = await request("", "GET");
       render(data);
       if (data.configured && data.active && !data.provisioned) run("provision");
       else openCompanyNextcloudWhenReady(data);
     }
-    catch (error) { byID("nextcloudStatus").textContent = error.message; setBusy(true); }
+    catch (error) { setStatus(error.message); }
   }
 
-  byID("nextcloudProvision").addEventListener("click", function () { run("provision"); });
-  byID("nextcloudReset").addEventListener("click", function () {
-    if (window.confirm("Se invalidara la contraseña actual de Nextcloud. ¿Continuar?")) run("reset_password");
-  });
-  byID("nextcloudToggle").addEventListener("click", function () {
-    var action = state.data && state.data.active ? "deactivate" : "activate";
-    run(action);
-  });
-  byID("nextcloudOpen").addEventListener("click", function () {
-    if (state.data) openCompanyNextcloudWhenReady(state.data);
-  });
   byID("nextcloudFrame").addEventListener("load", function () {
-    byID("nextcloudEmbedStatus").textContent = "Nextcloud abierto para esta empresa";
-  });
-  byID("nextcloudCopy").addEventListener("click", function () {
-    var value = byID("nextcloudTemporaryPassword").textContent;
-    if (value && navigator.clipboard) navigator.clipboard.writeText(value);
+    setStatus("Nextcloud abierto para esta empresa.");
   });
   load();
 }());

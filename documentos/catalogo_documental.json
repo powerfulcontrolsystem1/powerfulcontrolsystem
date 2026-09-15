@@ -399,7 +399,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "00529003f533f108dc1101527b48764570630bce8541f0204f9a95d2f551d529"
+      "sha256_lf": "b47d45fc626f8a1e784270c2c8a4c14a734a3d33f7b7f6b5e5c3be3e159ce181"
     },
     {
       "path": "documentos/arquitectura/matriz_rutas_multiempresa.md",
@@ -1299,7 +1299,7 @@
       "owner": "Ingeniería del módulo",
       "reviewed": "2026-09-05",
       "review_due": "2026-12-04",
-      "sha256_lf": "3edd686413a59dbee399fa7a13b3e1cc7e04ce5e45693edb14ea8d781b97046d"
+      "sha256_lf": "a1b7baf1a90fee21b16b429f6d4f55fa279735f94c9ced22e85b7385648cff01"
     },
     {
       "path": "documentos/nomina_colombia_avanzada.md",

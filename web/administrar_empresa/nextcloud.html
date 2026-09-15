@@ -3,42 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Nextcloud empresarial</title>
-  <link rel="stylesheet" href="/estilos.css">
-  <link rel="stylesheet" href="/nextcloud_empresa.css?v=20260913-sso">
+  <title>Nextcloud</title>
+  <link rel="stylesheet" href="/nextcloud_empresa.css?v=20260914-fullpage">
 </head>
-<body class="empresa-subpage">
-  <main class="nextcloud-page">
-    <header class="nextcloud-header">
-      <div class="nextcloud-title">
-        <img src="/img/google-drive.svg" alt="">
-        <div><h1>Nextcloud empresarial</h1><p>Archivos privados de la empresa</p></div>
-      </div>
-    </header>
-    <div id="nextcloudStatus" class="nextcloud-status" role="status">Cargando estado...</div>
-    <section class="nextcloud-grid" aria-label="Estado de la cuenta Nextcloud">
-      <div class="nextcloud-field"><span>Usuario</span><strong id="nextcloudUser">-</strong></div>
-      <div class="nextcloud-field"><span>Cuota</span><strong id="nextcloudQuota">-</strong></div>
-      <div class="nextcloud-field"><span>Estado</span><strong id="nextcloudProvisioned">-</strong></div>
-    </section>
-    <div class="nextcloud-actions">
-      <button id="nextcloudProvision" class="btn primary" type="button">Preparar espacio</button>
-      <button id="nextcloudReset" class="btn secondary" type="button">Restablecer acceso</button>
-      <button id="nextcloudToggle" class="btn secondary" type="button">Desactivar espacio</button>
-      <button id="nextcloudOpen" class="btn secondary" type="button">Abrir Nextcloud</button>
-      <a id="nextcloudFullPage" class="btn secondary" href="https://nextcloud.powerfulcontrolsystem.com" target="_blank" rel="noopener noreferrer">Abrir en pagina completa</a>
-    </div>
-    <section id="nextcloudCredential" class="nextcloud-credential" aria-live="polite">
-      <strong>Credencial temporal de un solo vistazo</strong>
-      <code id="nextcloudTemporaryPassword"></code>
-      <button id="nextcloudCopy" class="btn secondary" type="button">Copiar credencial</button>
-    </section>
-    <section id="nextcloudEmbed" class="nextcloud-embed" aria-label="Nextcloud integrado">
-      <div class="nextcloud-embed-header"><span>Nextcloud</span><span id="nextcloudEmbedStatus" class="nextcloud-embed-status">Preparando vista integrada...</span></div>
-      <iframe id="nextcloudFrame" class="nextcloud-frame" title="Nextcloud empresarial integrado" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen"></iframe>
-      <p class="nextcloud-embed-help">La sesion corresponde exclusivamente a la empresa seleccionada. Puedes cerrar sesion o cambiar la clave desde el menu de perfil de Nextcloud.</p>
-    </section>
+<body>
+  <main class="nextcloud-page" aria-label="Nextcloud">
+    <p id="nextcloudStatus" class="nextcloud-status" role="status" aria-live="polite"></p>
+    <iframe id="nextcloudFrame" class="nextcloud-frame" title="Nextcloud" loading="eager" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen"></iframe>
   </main>
-  <script src="/js/nextcloud_empresa.js?v=20260913-sso"></script>
+  <script src="/js/nextcloud_empresa.js?v=20260914-fullpage"></script>
 </body>
 </html>
