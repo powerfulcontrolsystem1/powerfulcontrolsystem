@@ -390,7 +390,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "e77e09ccbdfb05d1fcf25ce50ca8c5479c91123b6f054ed0e587f6691206b1a8"
+      "sha256_lf": "1c4302ff041f7a8d1495e5c7c920ea325a3fbd5811517a4bf652d753886bc4e1"
     },
     {
       "path": "documentos/arquitectura/inventario_storage_plan_105.md",
@@ -426,7 +426,7 @@
       "owner": "Ingeniería backend y datos",
       "reviewed": null,
       "review_due": null,
-      "sha256_lf": "a5683a82c7a943a83413cea00534e7a93f1f8bb378356818c02f060a8b6898fb"
+      "sha256_lf": "735789ced603cdd40302239242538fc761713d2660ff771f90745a5b2bb75a38"
     },
     {
       "path": "documentos/arquitectura_modulos_universales.md",
