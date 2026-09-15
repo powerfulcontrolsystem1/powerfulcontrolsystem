@@ -281,10 +281,11 @@ sin publicar, `actualizar_repositorio.ps1` publica `HEAD` y configura el
 upstream antes de continuar. Asi `rs` no omite una rama de trabajo solo porque
 los cambios ya fueron commiteados manualmente.
 
-Durante la extraccion remota, `sync_to_vps.ps1` borra las rutas retiradas
-`web/Juegos`, `juegos` y `web/img/juegos` antes de aplicar el paquete. Esto
-evita que los archivos estaticos de un modulo eliminado sobrevivan a una
-sincronizacion incremental.
+Durante la extraccion remota, `sync_to_vps.ps1` limpia las fuentes publicables
+de `web` y `documentos` antes de aplicar el paquete. Conserva `web/uploads` como
+estado operativo y mantiene los secretos y logs excluidos del backend. Esto
+evita que páginas, recursos o documentos retirados sobrevivan a una
+sincronizacion incremental y vuelvan a entrar en las imágenes Docker.
 
 ## Roles de plataforma
 

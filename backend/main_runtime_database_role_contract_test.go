@@ -55,6 +55,27 @@ func TestProductionBootstrapBackfillsBackupRoleWithoutLoggingSecret(t *testing.T
 	}
 }
 
+func TestProductionSyncRemovesRetiredWebAndDocumentationSources(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "scripts", "sync_to_vps.ps1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(raw)
+	for _, required := range []string{
+		`$cleanWebSourceCmd = "if [ -d '$RemotePath/web' ]`,
+		`! -name 'uploads' -exec rm -rf {} +`,
+		`$cleanDocumentsSourceCmd = "rm -rf '$RemotePath/documentos'"`,
+		`$cleanBackendSourceCmd && $cleanWebSourceCmd && $cleanDocumentsSourceCmd`,
+	} {
+		if !strings.Contains(content, required) {
+			t.Fatalf("production source mirror contract is missing %q", required)
+		}
+	}
+	if strings.Contains(content, `rm -rf '$RemotePath/web'`) {
+		t.Fatal("production sync must preserve the web/uploads runtime directory")
+	}
+}
+
 func TestFrontendWaitsForHealthyBackendAndProbesDynamicRoutes(t *testing.T) {
 	composeRaw, err := os.ReadFile(filepath.Join("..", "deploy", "docker-compose.platform.yml"))
 	if err != nil {
