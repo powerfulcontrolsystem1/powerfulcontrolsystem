@@ -438,12 +438,9 @@ func parseEmpresaVidaGastoCreate(r *http.Request, empresaID int64, usuarioID str
 }
 
 func vidaFormBool(raw string) bool {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "1", "true", "on", "si", "sí", "yes":
-		return true
-	default:
-		return false
-	}
+	normalized := strings.ToLower(strings.TrimSpace(raw))
+	return normalized == "1" || normalized == "true" || normalized == "on" ||
+		normalized == "si" || normalized == "sí" || normalized == "yes"
 }
 
 // vidaRecurringSubscriptionFromGasto maps the optional schedule in a manual
