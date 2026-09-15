@@ -10,6 +10,19 @@ Estado: Vigente. Responsable: Ingeniería del módulo. Revisión documental: 202
 
 Esta revisión contrasta documentación con las fuentes locales citadas; no ejecuta el flujo comercial ni acredita UI, proveedor, hardware o producción. Las pruebas y estados fechados del cuerpo son antecedentes, no resultados nuevos.
 
+## Actualizacion 2026-09-14 - lienzo completo dentro de Administrar empresa
+
+`Administrar empresa > Nextcloud` conserva el menu y las acciones globales del
+shell empresarial, pero dedica todo el panel de contenido al iframe de
+Nextcloud. La subpagina ya no muestra encabezado, usuario tecnico, cuota,
+estado, credencial ni botones de aprovisionamiento, restablecimiento,
+activacion o apertura; esas operaciones siguen protegidas en backend y la
+preparacion inicial se ejecuta automaticamente antes del autologin.
+
+El iframe usa el alto y ancho completos del panel tanto en escritorio como en
+movil. Cerrar sesion, cambiar la clave, configurar la apariencia y demas
+acciones de la cuenta permanecen disponibles en el menu propio de Nextcloud.
+
 ## Actualizacion 2026-09-13 - inicio automatico empresarial seguro
 
 `Administrar empresa > Nextcloud` emite un token HMAC de 45 segundos ligado
@@ -69,14 +82,12 @@ aprovisionada de la empresa autorizada.
 
 Cuando la cuenta ya esta aprovisionada, `Administrar empresa > Nextcloud`
 permanece dentro del panel derecho del shell y carga la vista de Nextcloud en
-el mismo modulo integrado. Ya no se reemplaza la pagina principal ni se abre
-una pestaña nueva. Para una cuenta nueva, PCS muestra primero la contrasena
-temporal una unica vez y no incrusta el proveedor hasta que exista una cuenta
-lista. El usuario puede cerrar sesion y cambiar contrasena desde el menu de
-perfil y Seguridad de Nextcloud. La expiracion forzada de una contrasena
-temporal se configura en el servidor Nextcloud mediante su politica de
-contrasenas, no en PCS, para que sea aplicada por el mismo proveedor de
-identidad.
+el mismo modulo integrado. Para una cuenta nueva, PCS la prepara en segundo
+plano y abre el proveedor tan pronto queda lista. El usuario puede cerrar
+sesion y cambiar contrasena desde el menu de perfil y Seguridad de Nextcloud.
+La expiracion forzada de una contrasena temporal se configura en el servidor
+Nextcloud mediante su politica de contrasenas, no en PCS, para que sea aplicada
+por el mismo proveedor de identidad.
 
 La incrustacion depende de que `pcs_sso` este habilitado y configurado con
 `https://powerfulcontrolsystem.com` como origen. Si no hay secreto SSO, el shell
@@ -97,8 +108,8 @@ y a cada empresa nueva. La activacion global no depende del Nextcloud auxiliar
 de VPS2. La cuenta remota se aprovisiona de forma idempotente con OCS.
 
 La cuota se lee de la configuracion global de Nextcloud al asignar o actualizar
-empresas; el arranque no debe reemplazarla por un valor fijo. La pagina solo
-habilita Abrir y WebDAV cuando la cuenta de la empresa esta activa y fue
+empresas; el arranque no debe reemplazarla por un valor fijo. La subpagina solo
+carga el autologin cuando la cuenta de la empresa esta activa y fue
 aprovisionada correctamente. Si el usuario abre la pagina dentro de Administrar
 empresa, el identificador se obtiene del contexto protegido del shell y no de
 un parametro manipulable como fuente de autoridad.

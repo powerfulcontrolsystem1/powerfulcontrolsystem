@@ -48,6 +48,7 @@ const (
 	corporateEmailDefaultMax            = 5
 	corporateEmailDirectProvisionScript = "/app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh"
 	corporateEmailDirectDeleteScript    = "/app/project_export/deploy/scripts/vps-delete-mailu-mailbox.sh"
+	corporateEmailThemeSyncScript       = "/app/project_export/deploy/scripts/vps-sync-snappymail-theme.sh"
 )
 
 type CorporateEmailConfig struct {
@@ -1006,6 +1007,32 @@ func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfi
 	return corporateEmailProvisionResult{OK: true, Status: "provisionado"}
 }
 
+func syncEmpresaEmailSnappyMailTheme(account dbpkg.EmpresaEmailCorporativo, theme string) error {
+	if err := validateCorporateEmailAccountForProvision(account); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "bash", corporateEmailThemeSyncScript)
+	cmd.Env = append(os.Environ(),
+		"PCS_MAILU_EMAIL="+strings.ToLower(strings.TrimSpace(account.Email)),
+		"PCS_MAILU_THEME_MODE="+normalizeCorporateEmailTheme(theme),
+		"PCS_MAILU_THEME="+corporateEmailThemeName(theme),
+	)
+	output, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return errors.New("tiempo agotado sincronizando el tema de SnappyMail")
+	}
+	if err != nil {
+		msg := sanitizeProvisionCommandOutput(string(output))
+		if msg == "" {
+			msg = "no se pudo sincronizar el tema de SnappyMail"
+		}
+		return errors.New(msg)
+	}
+	return nil
+}
+
 func validateCorporateEmailAccountForProvision(account dbpkg.EmpresaEmailCorporativo) error {
 	email := strings.ToLower(strings.TrimSpace(account.Email))
 	if !regexp.MustCompile(`^[a-z0-9][a-z0-9._%+-]{0,126}@[a-z0-9.-]+\.[a-z]{2,}$`).MatchString(email) {
@@ -1738,12 +1765,10 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 				writeCorporateEmailAutologinError(w, http.StatusConflict, "No se pudo preparar el acceso automatico al buzon corporativo.")
 				return
 			}
-			// SnappyMail stores the selected theme in the mailbox settings file.
-			// Synchronize it before creating the browser session so the embedded
-			// webmail follows the light/dark mode selected in PCS.
-			if corporateEmailAutomaticProvisioningEnabled(cfg) {
-				_ = provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, *account, password, theme)
-			}
+			// Theme persistence belongs to SnappyMail and is independent of the
+			// Mailu provisioning provider (API or direct). Keep it separate so
+			// both production modes follow the appearance selected in PCS.
+			_ = syncEmpresaEmailSnappyMailTheme(*account, theme)
 			redirectURL, setCookies, redirectErr := snappyMailAutologinRedirectURL(cfg, account.Email, password, theme)
 			if redirectErr != nil {
 				writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. Intenta nuevamente desde el panel.")

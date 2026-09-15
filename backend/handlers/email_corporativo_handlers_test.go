@@ -92,6 +92,27 @@ func TestCorporateEmailDirectScriptIsPinnedToReviewedPath(t *testing.T) {
 	}
 }
 
+func TestSnappyMailThemeSyncScriptPersistsBothSettingsFiles(t *testing.T) {
+	if corporateEmailThemeSyncScript != "/app/project_export/deploy/scripts/vps-sync-snappymail-theme.sh" {
+		t.Fatalf("unexpected SnappyMail theme sync script %q", corporateEmailThemeSyncScript)
+	}
+	raw, err := os.ReadFile(filepath.Join("..", "..", "deploy", "scripts", "vps-sync-snappymail-theme.sh"))
+	if err != nil {
+		t.Fatalf("read SnappyMail theme sync script: %v", err)
+	}
+	source := string(raw)
+	for _, expected := range []string{
+		`update_theme_setting "$path/settings"`,
+		`update_theme_setting "$path/settings_local"`,
+		`PCS_MAILU_THEME_MODE`,
+		`PCSLight|PCSDark`,
+	} {
+		if !strings.Contains(source, expected) {
+			t.Fatalf("SnappyMail theme sync contract missing %q", expected)
+		}
+	}
+}
+
 func TestCorporateEmailAppendThemePreservesSnappyMailSSOQuery(t *testing.T) {
 	got := corporateEmailAppendThemeToURI("/webmail/index.php?sso&hash=abc123", "dark")
 	if !strings.HasPrefix(got, "/webmail/index.php?sso&hash=abc123&") {

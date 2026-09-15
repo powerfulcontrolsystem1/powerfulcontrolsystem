@@ -548,6 +548,30 @@ func TestPanelGuidedSetupUsesCSRFAndNextcloudKeepsEmpresaContext(t *testing.T) {
 	if !strings.Contains(string(nextcloud), "__resolveEmpresaIdContext") || !strings.Contains(string(nextcloud), "__empresaModuleGuard.resolveEmpresaId") {
 		t.Fatal("Nextcloud must resolve the validated company context from its parent shell")
 	}
+	page, err := os.ReadFile(filepath.Join("..", "web", "administrar_empresa", "nextcloud.html"))
+	if err != nil {
+		t.Fatalf("read Nextcloud company page: %v", err)
+	}
+	pageSource := string(page)
+	if !strings.Contains(pageSource, `id="nextcloudFrame"`) || !strings.Contains(pageSource, `loading="eager"`) {
+		t.Fatal("Nextcloud company page must dedicate its content canvas to the eager autologin iframe")
+	}
+	for _, removed := range []string{
+		"Nextcloud empresarial", "Archivos privados de la empresa", "nextcloudProvision",
+		"nextcloudReset", "nextcloudToggle", "nextcloudOpen", "nextcloudFullPage",
+		"nextcloudUser", "nextcloudQuota", "nextcloudProvisioned",
+	} {
+		if strings.Contains(pageSource, removed) {
+			t.Fatalf("Nextcloud company page must not render legacy management chrome %q", removed)
+		}
+	}
+	styles, err := os.ReadFile(filepath.Join("..", "web", "nextcloud_empresa.css"))
+	if err != nil {
+		t.Fatalf("read Nextcloud company styles: %v", err)
+	}
+	if !strings.Contains(string(styles), "min-height: 100vh") || !strings.Contains(string(styles), "overflow: hidden") {
+		t.Fatal("Nextcloud company iframe must fill the available shell content viewport")
+	}
 }
 
 func TestSuperAdministradoresMutationsIncludeCSRF(t *testing.T) {
